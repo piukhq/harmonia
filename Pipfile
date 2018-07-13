@@ -1,0 +1,36 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+sqlalchemy = "*"
+"psycopg2-binary" = "*"
+flask = "*"
+influxdb = "*"
+raven = {extras = ["flask"]}
+flask-cors = "*"
+"e1839a8" = {path = ".", editable = true}
+click = "*"
+colorama = "*"
+redis = "*"
+apscheduler = "*"
+humanize = "*"
+apispec = "*"
+marshmallow = "*"
+marshmallow-sqlalchemy = "*"
+kombu = "*"
+harmonia = {editable = true, path = "."}
+
+[dev-packages]
+alembic = "*"
+jedi = "*"
+importmagic = "*"
+"autopep8" = "*"
+yapf = "*"
+"flake8" = "*"
+pytest = "*"
+pytest-cov = "*"
+
+[requires]
+python_version = "3.6"
