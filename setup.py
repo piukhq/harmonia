@@ -17,8 +17,8 @@ setuptools.setup(
     ),
     entry_points={
         'console_scripts': (
-            'txmatch_import = app.imports.cli:main',
-            'txmatch_core = app.core.cli:main',
+            'txmatch_import = app.imports.cli:cli',
+            'txmatch_core = app.core.cli:cli',
         ),
     },
 )

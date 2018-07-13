@@ -1,14 +1,9 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, Integer, String
 
-import settings
+from app.db import Base
 
-
-db_engine = create_engine(settings.POSTGRES_DSN)
-Session = sessionmaker(bind=db_engine)
-
-Base = declarative_base()
+# import other module's models here to be recognised by alembic.
+from app.imports.models import ImportTransaction  # noqa
 
 
 class SchemeTransaction(Base):
@@ -20,3 +15,14 @@ class SchemeTransaction(Base):
     points_earned = Column(Integer)
     card_id = Column(String)
     total_points = Column(Integer)
+
+    def __str__(self):
+        return (
+            '<SchemeTransaction('
+            f"id={self.id}, "
+            f"transaction_id={self.transaction_id}, "
+            f"pence={self.pence}, "
+            f"points_earned={self.points_earned}, "
+            f"card_id={self.card_id}, "
+            f"total_points={self.total_points}"
+            ')>')

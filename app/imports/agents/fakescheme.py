@@ -30,10 +30,15 @@ class FakeSchemeTransactionSchema(Schema):
             card_id=data['card']['id'],
             total_points=data['card']['balance'])
 
+    @staticmethod
+    def get_transaction_id(data):
+        return data['id']
+
 
 class FakeSchemeAPIAgent(ActiveAPIAgent):
     url = 'http://127.0.0.1:8001/api/transactions'
     schema_class = FakeSchemeTransactionSchema
+    provider_slug = 'fake'
 
     class Config:
         schedule = ConfigValue(SCHEDULE, default='* * * * *')

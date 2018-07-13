@@ -8,7 +8,8 @@ from sqlalchemy import create_engine
 
 sys.path.append(os.getcwd())
 
-from app.models import Base  # noqa
+from app.db import Base  # noqa
+from app.models import *  # noqa
 import settings  # noqa
 
 # setup default sqlalchemy configuration (loggers et cetera.)

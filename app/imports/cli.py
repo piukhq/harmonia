@@ -14,7 +14,7 @@ def info(text):
 @click.option('-y', '--no-user-input', is_flag=True)
 @click.option('--immediate', is_flag=True)
 @click.option('--debug', is_flag=True)
-def main(agent, no_user_input, immediate, debug):
+def cli(agent, no_user_input, immediate, debug):
     def show_error(msg):
         click.echo(
             f"{click.style('Error:', fg='red')} {msg}\n"
@@ -56,8 +56,9 @@ def main(agent, no_user_input, immediate, debug):
         click.echo()
 
     if no_user_input or click.confirm('Do you wish to run this agent?'):
+        click.echo()
         agent_instance.run(immediate=immediate, debug=debug)
 
 
 if __name__ == '__main__':
-    main()
+    cli()
