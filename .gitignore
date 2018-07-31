@@ -5,3 +5,7 @@ __pycache__
 .idea
 *.org
 monitor
+.mypy_cache
+.coverage
+.env
+htmlcov

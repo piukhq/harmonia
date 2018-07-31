@@ -1,0 +1,34 @@
+stages:
+  - tests
+  - build
+  - deploy
+
+tests:
+  stage: tests
+  script:
+    - pipenv install --system --deploy
+    - export POSTGRES_DSN="postgres://postgres@${POSTGRES_PORT_5432_TCP_ADDR}:5432${POSTGRES_NAME}"
+    - export REDIS_DSN="redis://redis@${REDIS_PORT_6379_TCP_ADDR}:6379/0"
+    - export QUEUE_TRANSPORT_DSN="amqp://${RABBITMQ_PORT_5672_TCP_ADDR}:5672"
+    - pytest --cov-report term-missing --cov=app
+  services:
+    - postgres:9.4.4
+    - redis:4
+    - rabbitmq:3
+
+complexity:
+  stage: tests
+  script:
+    - xenon --max-average A --max-modules B --max-absolute B .
+
+style:
+  stage: tests
+  script:
+    - flake8
+
+type-check:
+  stage: tests
+  before_script:
+    - pip install mypy
+  script:
+    - mypy --ignore-missing-imports app

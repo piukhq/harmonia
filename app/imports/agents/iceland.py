@@ -1,6 +1,6 @@
 import inspect
 
-from .bases.active_api_agent import ActiveAPIAgent
+from app.imports.agents.bases.active_api_agent import ActiveAPIAgent
 from app.config import ConfigValue, KEY_PREFIX
 
 
@@ -22,6 +22,3 @@ class IcelandAPIAgent(ActiveAPIAgent):
             into the transaction matching system.
             The current schedule is "{self.Config.schedule}".
             """)
-
-    def do_import(self):
-        pass

@@ -5,6 +5,8 @@ AGENTS = {
     'iceland': 'app.imports.agents.iceland.IcelandAPIAgent',
     'irg': 'app.imports.agents.irg.IRGAPIAgent',
     'fake': 'app.imports.agents.fakescheme.FakeSchemeAPIAgent',
+    'fake2': 'app.imports.agents.passive_test.PassiveTestAgent',
+    'testdir': 'app.imports.agents.testdir.TestDirAgent',
 }
 
 
