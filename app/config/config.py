@@ -19,7 +19,8 @@ def _validate_key(key):
 
 def get(key, *, default=None, redis=_redis):
     _validate_key(key)
-    redis.set(key, default, nx=True)
+    if default is not None:
+        redis.set(key, default, nx=True)
     val = redis.get(key)
     return val.decode() if val is not None else None
 

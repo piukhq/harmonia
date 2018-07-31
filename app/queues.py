@@ -106,7 +106,6 @@ class StrictQueue:
                 message.ack()
 
         worker = Worker(self.connection, self.queue, message_callback=receive_message)
-
         worker.run()
 
 

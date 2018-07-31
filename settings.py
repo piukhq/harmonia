@@ -19,7 +19,7 @@ def getenv(key, default=None, conv=str, required=True):
 Global logging level. Applies to any logger obtained through `app.reporting.get_logger`.
 https://docs.python.org/3/library/logging.html#logging-levels
 """
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = getattr(logging, getenv('LOG_LEVEL', default='debug').upper())
 
 
 """
@@ -28,7 +28,6 @@ Postgres is used as the main database for the transaction matching system.
 https://www.postgresql.org/docs/10/static/libpq-connect.html#LIBPQ-CONNSTRING
 """
 POSTGRES_DSN = getenv('POSTGRES_DSN')
-TEST_POSTGRES_DSN = getenv('TEST_POSTGRES_DSN', required=False)
 
 """
 Connection string for Redis.
@@ -36,7 +35,6 @@ Redis is used as a configuration store that can be updated at runtime.
 https://redis-py.readthedocs.io/en/latest/#redis.StrictRedis.from_url
 """
 REDIS_DSN = getenv('REDIS_DSN')
-TEST_REDIS_DSN = getenv('TEST_REDIS_DSN', required=False)
 
 """
 The prefix used on every Redis key.

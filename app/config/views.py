@@ -1,5 +1,7 @@
-from . import config, schemas
 from flask import request, jsonify, Blueprint
+
+from app.config import config, schemas
+from app.api.utils import expects_json
 
 
 api = Blueprint(
@@ -25,15 +27,13 @@ def list_keys():
     } for k, v in config.all_keys())
 
     schema = schemas.KeyValuePairSchema()
-    data, errors = schema.dump(config_values, many=True)
-
-    if errors:
-        return jsonify(errors), 500
+    data, _ = schema.dump(config_values, many=True)
 
     return jsonify(data)
 
 
 @api.route('/keys/<key>', methods=['PUT'])
+@expects_json
 def update_key(key):
     """Update a config key
     ---
@@ -62,11 +62,9 @@ def update_key(key):
 
     schema = schemas.KeyValuePairSchema()
 
-    data, errors = schema.dump({
+    data, _ = schema.dump({
         'key': key,
         'value': config.get(key),
     })
 
-    if errors:
-        return jsonify(errors), 500
     return jsonify(data)

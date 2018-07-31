@@ -4,13 +4,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import requests
 
-from app.imports.agents.bases.base import BaseAgent, ImportTransactionAlreadyExistsError
+from app.imports.agents.bases.base import BaseAgent, log
 from app.status import status_monitor
-from app.reporting import get_logger
-from app.queues import import_queue
-
-
-log = get_logger('agnt')
 
 
 class ActiveAPIAgent(BaseAgent):
@@ -63,29 +58,8 @@ class ActiveAPIAgent(BaseAgent):
             else:
                 log.error(e)
 
-    def get_schema(self):
-        return self.schema_class()
-
     def do_import(self):
         resp = requests.get(self.url)
         resp.raise_for_status()
-
-        schema = self.get_schema()
-        transactions, errors = schema.load(resp.json(), many=True)
-
-        name = self.__class__.__name__
-
-        if errors:
-            log.error(f"Import translation for {name} failed: {errors}")
-            return
-        else:
-            log.info(f"Import translation successful for {name}: {len(transactions)} transactions loaded.")
-
-        for transaction in transactions:
-            try:
-                self._create_import_transaction(schema, transaction)
-            except ImportTransactionAlreadyExistsError:
-                log.info('Not pushing transaction to the import queue as it appears to already exist.')
-            else:
-                log.info('Pushing transaction to the import queue.')
-                import_queue.push([schema.to_scheme_transaction(tx) for tx in transactions], many=True)
+        transactions_data = resp.json()
+        self._import_transactions(transactions_data)
