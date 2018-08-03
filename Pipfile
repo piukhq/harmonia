@@ -10,7 +10,6 @@ flask = "*"
 influxdb = "*"
 raven = {extras = ["flask"]}
 flask-cors = "*"
-"e1839a8" = {path = ".", editable = true}
 click = "*"
 colorama = "*"
 redis = "*"
@@ -20,7 +19,6 @@ apispec = "*"
 marshmallow = "*"
 marshmallow-sqlalchemy = "*"
 kombu = "*"
-harmonia = {editable = true, path = "."}
 inotify = "*"
 
 [dev-packages]

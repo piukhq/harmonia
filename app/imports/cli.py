@@ -11,11 +11,12 @@ def info(text):
 
 @click.command()
 @click.option('-a', '--agent', type=click.Choice(registry.AGENTS.keys()), required=True)
-@click.option('-y', '--no-user-input', is_flag=True)
-@click.option('--immediate', is_flag=True)
-@click.option('--debug', is_flag=True)
-def cli(agent, no_user_input, immediate, debug):
-    def show_error(msg):
+@click.option('-y', '--no-user-input', is_flag=True, help='bypass the y/N prompt to run the agent')
+@click.option('--immediate', is_flag=True, help='run the agent in immediate mode')
+@click.option('--debug', is_flag=True, help='run the agent in debug mode')
+@click.option('-N', '--dry-run', is_flag=True, help='print agent information then quit without executing')
+def cli(agent: str, no_user_input: bool, immediate: bool, debug: bool, dry_run: bool) -> None:
+    def show_error(msg: str) -> None:
         click.echo(
             f"{click.style('Error:', fg='red')} {msg}\n"
             f"Check the value for key {info(agent)} "
@@ -54,6 +55,9 @@ def cli(agent, no_user_input, immediate, debug):
         click.echo(
             f"{click.style('Warning', fg='yellow')}: Debug mode is on. Exceptions will not be handled gracefully!")
         click.echo()
+
+    if dry_run:
+        return
 
     if no_user_input or click.confirm('Do you wish to run this agent?'):
         click.echo()
