@@ -1,3 +1,5 @@
+import os
+
 from marshmallow import Schema, fields
 
 from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
@@ -26,3 +28,11 @@ class PassiveTestAgentSchema(Schema):
 class PassiveTestAgent(PassiveAPIAgent):
     schema_class = PassiveTestAgentSchema
     provider_slug = 'passive-test-merchant'
+
+    def help(self):
+        return self._help(
+            module=self.__module__,
+            wsgi_file=os.path.relpath(__file__, os.curdir))
+
+
+app = PassiveTestAgent().create_app()
