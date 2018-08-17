@@ -1,13 +1,10 @@
 from flask import request, jsonify, Blueprint
+from marshmallow.exceptions import ValidationError
 
 from app.config import config, schemas
 from app.api.utils import expects_json
 
-
-api = Blueprint(
-    'config_api',
-    __name__,
-    url_prefix='/api/config')
+api = Blueprint('config_api', __name__, url_prefix='/api/config')
 
 
 @api.route('/keys')
@@ -27,7 +24,7 @@ def list_keys():
     } for k, v in config.all_keys())
 
     schema = schemas.KeyValuePairSchema()
-    data, _ = schema.dump(config_values, many=True)
+    data = schema.dump(config_values, many=True)
 
     return jsonify(data)
 
@@ -50,10 +47,10 @@ def update_key(key):
     """
     schema = schemas.UpdateKeyRequestSchema()
 
-    data, errors = schema.load(request.json)
-
-    if errors:
-        return jsonify(errors), 400
+    try:
+        data = schema.load(request.json)
+    except ValidationError as ex:
+        return jsonify(ex.messages), 400
 
     try:
         config.update(key, data['value'])
@@ -62,7 +59,7 @@ def update_key(key):
 
     schema = schemas.KeyValuePairSchema()
 
-    data, _ = schema.dump({
+    data = schema.dump({
         'key': key,
         'value': config.get(key),
     })

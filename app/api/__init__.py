@@ -8,7 +8,6 @@ from raven.contrib.flask import Sentry
 from app.version import __version__
 import settings
 
-
 spec = APISpec(
     title='Transaction Matching API',
     version=__version__,
@@ -33,11 +32,7 @@ sentry = Sentry()
 def create_app():
     app = Flask(__name__)
 
-    sentry.init_app(
-        app,
-        dsn=settings.SENTRY_DSN,
-        logging=True,
-        level=logging.ERROR)
+    sentry.init_app(app, dsn=settings.SENTRY_DSN, logging=True, level=logging.ERROR)
 
     CORS(app)
 

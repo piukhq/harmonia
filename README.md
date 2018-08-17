@@ -30,6 +30,7 @@ pipenv install --dev
 2. Create `.env` file. See `settings.py` for settings that must be or can be set in here. You should also set the `FLASK_ENV` and `FLASK_DEBUG` variables if you want to run the flask server.
 
 ```
+FLASK_APP = app.api:app
 FLASK_ENV = development
 FLASK_DEBUG = true
 

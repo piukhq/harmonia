@@ -1,8 +1,9 @@
+import typing as t
 import inspect
 
 from flask import Flask, jsonify, request
 
-from .base import BaseAgent, log
+from app.imports.agents.bases.base import BaseAgent, log
 
 
 class PassiveAPIAgent(BaseAgent):
@@ -12,30 +13,32 @@ class PassiveAPIAgent(BaseAgent):
         app.config['DEBUG'] = debug
         app.config['ENV'] = env
 
-        @app.route('/')
+        @app.route('/', methods=['POST'])
         def index() -> str:
             if request.json is None:
                 return jsonify({'ok': False, 'reason': 'A JSON body is expected.'})
-            self._import_transactions([request.json])
+            transactions_data = self.extract_transactions(request.json)
+            self._import_transactions(transactions_data)
             return jsonify({'ok': True})
 
         return app
+
+    def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
+        return [request_json]
 
     def run(self, *, immediate: bool = False, debug: bool = True) -> None:
         if debug is True:
             app = self.create_app(debug=True)
             app.run()
         else:
-            log.warning(
-                'This agent should only be run this way for local testing and development. '
-                'A production deployment should utilise a server such as uWSGI or Gunicorn. '
-                f"The WSGI callable is `{self.__module__}.app`. "
-                'Run with --debug if you actually want to use this CLI.')
+            log.warning('This agent should only be run this way for local testing and development. '
+                        'A production deployment should utilise a server such as uWSGI or Gunicorn. '
+                        f"The WSGI callable is `{self.__module__}.app`. "
+                        'Run with --debug if you actually want to use this CLI.')
 
     def _help(self, module, wsgi_file):
-        return inspect.cleandoc(
-            f"""
-            This is a test agent based on the PassiveAPIAgent base class.
+        return inspect.cleandoc(f"""
+            This is an agent based on the PassiveAPIAgent base class.
             It can be run through the txmatch_import CLI for local testing and development if the --debug flag is given.
 
             For a production deployment, a WSGI compatible server such as uWSGI or Gunicorn should be used.

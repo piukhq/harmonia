@@ -15,4 +15,5 @@ def expects_json(f):
         if request.json is None:
             return error_response('A JSON body is expected but was not provided.')
         return f(*args, **kwargs)
+
     return ensure_json_is_present

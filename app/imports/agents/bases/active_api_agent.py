@@ -5,7 +5,6 @@ from apscheduler.triggers.cron import CronTrigger
 import requests
 
 from app.imports.agents.bases.base import BaseAgent, log
-from app.status import status_monitor
 
 
 class ActiveAPIAgent(BaseAgent):
@@ -14,9 +13,8 @@ class ActiveAPIAgent(BaseAgent):
         try:
             return CronTrigger.from_crontab(schedule)
         except ValueError:
-            log.error(
-                (f"Schedule '{schedule}' is not in a recognised format! "
-                 f"Reverting to default of '* * * * *'."))
+            log.error((f"Schedule '{schedule}' is not in a recognised format! "
+                       f"Reverting to default of '* * * * *'."))
             return CronTrigger.from_crontab('* * * * *')
 
     def run(self, immediate=False, debug=False):
@@ -29,9 +27,7 @@ class ActiveAPIAgent(BaseAgent):
         scheduler = BackgroundScheduler()
 
         schedule = self.Config.schedule
-        job = scheduler.add_job(
-            self.tick,
-            trigger=self._get_trigger(schedule))
+        job = scheduler.add_job(self.tick, trigger=self._get_trigger(schedule))
         scheduler.start()
 
         try:
@@ -48,8 +44,6 @@ class ActiveAPIAgent(BaseAgent):
             log.debug('Done!')
 
     def tick(self):
-        status_monitor.scheduled_task_checkin(self.__class__.__name__)
-
         try:
             self.do_import()
         except Exception as e:

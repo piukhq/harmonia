@@ -17,11 +17,10 @@ class DirectoryWatchAgent(BaseAgent):
         try:
             adapter.add_watch(self.Config.watch_directory)
         except inotify.calls.InotifyError as ex:
-            log.critical(
-                f"Failed to set watch on `{self.Config.watch_directory}`. "
-                'Please check that the directory exists, '
-                'and that we have read & execute permissions on it. '
-                f"Error code: {ex.errno}")
+            log.critical(f"Failed to set watch on `{self.Config.watch_directory}`. "
+                         'Please check that the directory exists, '
+                         'and that we have read & execute permissions on it. '
+                         f"Error code: {ex.errno}")
             return
 
         log.info(f"Awaiting events on {self.Config.watch_directory}")

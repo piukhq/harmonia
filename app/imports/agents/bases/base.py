@@ -2,12 +2,14 @@ import inspect
 import typing as t
 
 from sqlalchemy.exc import IntegrityError
+from marshmallow.exceptions import ValidationError
 import marshmallow
 
 from app.imports import models
 from app.db import Session
 from app.reporting import get_logger
-from app.queues import import_queue
+from app.queues import import_queue, QueuePushSchemaError
+from app.status import status_monitor
 
 session = Session()
 
@@ -27,16 +29,15 @@ class BaseAgent:
     provider_slug = 'PROVIDER_NOT_SET'
 
     def help(self) -> str:
-        return inspect.cleandoc(
-            """
+        return inspect.cleandoc("""
             This is a new import agent.
             Implement all the required methods (see agent base classes) and
             override this help method to provide specific information.
             """)
 
     def run(self, *, immediate: bool = False, debug: bool = True) -> None:
-        raise NotImplementedError(inspect.cleandoc(
-            """
+        raise NotImplementedError(
+            inspect.cleandoc("""
             Override the run method in your agent to act as the main entry point
             into the import process.
             """))
@@ -56,10 +57,9 @@ class BaseAgent:
         """
         schema = self.get_schema()
         log.debug(f"Creating import transaction with {schema} for {data}")
+
         import_transaction = models.ImportTransaction(
-            transaction_id=schema.get_transaction_id(data),
-            provider_slug=self.provider_slug,
-            data=data)
+            transaction_id=schema.get_transaction_id(data), provider_slug=self.provider_slug, data=data)
 
         session.add(import_transaction)
 
@@ -67,9 +67,8 @@ class BaseAgent:
             session.commit()
         except IntegrityError:
             session.rollback()
-            log.warning(
-                'Imported transaction appears to be a duplicate. '
-                'Raising an ImportTransactionAlreadyExistsError to signify this.')
+            log.warning('Imported transaction appears to be a duplicate. '
+                        'Raising an ImportTransactionAlreadyExistsError to signify this.')
             raise ImportTransactionAlreadyExistsError
 
     def _import_transactions(self, transactions_data: t.List[t.Dict[str, t.Any]]) -> None:
@@ -81,18 +80,22 @@ class BaseAgent:
         """
         name = self.__class__.__name__
         schema = self.get_schema()
-        transactions, errors = schema.load(transactions_data, many=True)
 
-        if errors:
-            log.error(f"Import translation for {name} failed: {errors}")
+        try:
+            transactions = schema.load(transactions_data, many=True)
+        except ValidationError as ex:
+            log.error(f"Import translation for {name} failed: {ex.messages}")
             return
-        elif transactions is None:
+
+        if transactions is None:
             log.error(
                 f"Import translation for {name} failed: schema.load returned None. Confirm that the schema_class for "
                 f"{name} is correct.")
             return
         else:
             log.info(f"Import translation successful for {name}: {len(transactions)} transactions loaded.")
+
+        status_monitor.checkin(name)
 
         transactions_to_enqueue = []
         for transaction in transactions:
@@ -104,5 +107,13 @@ class BaseAgent:
                 transactions_to_enqueue.append(transaction)
 
         scheme_transactions = [schema.to_scheme_transaction(tx) for tx in transactions_to_enqueue]
-        import_queue.push(scheme_transactions, many=True)
-        log.info(f"{len(scheme_transactions)} transactions pushed to import queue.")
+
+        try:
+            import_queue.push(scheme_transactions, many=True)
+        except QueuePushSchemaError as ex:
+            log.critical('Failed to push transactions to import queue! '
+                         'This may indicate an issue with the schema provided by the agent. '
+                         f"Please check the to_scheme_transaction method on {type(schema).__name__}. "
+                         f"Original error(s): {ex}")
+        else:
+            log.info(f"{len(scheme_transactions)} transactions pushed to import queue.")

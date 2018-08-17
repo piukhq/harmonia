@@ -2,11 +2,11 @@ import logging
 
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
+from marshmallow.exceptions import ValidationError
 
 from app.reporting import get_logger
 from app import schemas
 import settings
-
 
 amqp_logger = logging.getLogger('amqp')
 amqp_logger.setLevel(logging.INFO)
@@ -24,10 +24,7 @@ class QueuePullSchemaError(Exception):
 
 class StrictQueue:
     def __init__(self, transport_dsn, *, name, schema_class, retry=True):
-        self.connection = Connection(
-            transport_dsn,
-            connect_timeout=3,
-            heartbeat=5)
+        self.connection = Connection(transport_dsn, connect_timeout=3, heartbeat=5)
 
         self.queue = Queue(name, Exchange(name), routing_key=name)
 
@@ -46,15 +43,16 @@ class StrictQueue:
         self.connection.ensure_connection(**self.retry_policy)
 
     def _retry_callback(self, exc, interval):
-        log.warning(f"Failed to connect to RabbitMQ: {exc}. Retrying in {interval}s...")
+        log.warning(f"Failed to connect to RabbitMQ @ {self.connection.hostname}: {exc}. Retrying in {interval}s...")
 
     def _produce(self, obj):
-        log.debug(f"Dumping {obj.__class__.__name__} object with {self.schema.__class__.__name__}")
-        data, errors = self.schema.dump(obj)
+        data = self.schema.dump(obj)
+
+        errors = self.schema.validate(data)
         if errors:
             raise QueuePushSchemaError(errors)
 
-        log.debug(f"Dumped data: {data}. Publishing...")
+        log.debug(f"Dumped data: {data}. Publishing now.")
         self.producer.publish(
             data,
             retry=self.retry,
@@ -62,7 +60,6 @@ class StrictQueue:
             exchange=self.queue.exchange,
             routing_key=self.queue.routing_key,
             declare=[self.queue])
-        log.debug('Published!')
 
     def push(self, obj, many=False):
         log.debug(f"Pushing {type(obj).__name__} to queue '{self.queue.name}', many: {many}")
@@ -89,9 +86,10 @@ class StrictQueue:
                 log.info(f"Revived connection to broker.")
 
         def receive_message(body, message):
-            obj, errors = self.schema.load(body)
-            if errors:
-                raise QueuePullSchemaError(errors)
+            try:
+                obj = self.schema.load(body)
+            except ValidationError as ex:
+                raise QueuePullSchemaError(ex.messages)
 
             try:
                 message_callback(obj)
@@ -100,13 +98,10 @@ class StrictQueue:
                     f"Message handler '{message_callback.__name__}' on the '{self.queue.name}' queue has failed ({ex})."
                     ' Message has not been acknowledged.')
             else:
-                log.debug(
-                    f"Message has been successfully processed by '{message_callback.__name__}' "
-                    f"on the '{self.queue.name}' queue.")
                 message.ack()
 
         worker = Worker(self.connection, self.queue, message_callback=receive_message)
         worker.run()
 
 
-import_queue = StrictQueue(settings.QUEUE_TRANSPORT_DSN, name='imports', schema_class=schemas.SchemeTransactionSchema)
+import_queue = StrictQueue(settings.AMQP_DSN, name='imports', schema_class=schemas.SchemeTransactionSchema)

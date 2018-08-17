@@ -3,11 +3,9 @@ from redis import StrictRedis
 from app.reporting import get_logger
 import settings
 
-
 log = get_logger('conf')
 
 KEY_PREFIX = f"{settings.REDIS_KEY_PREFIX}:config:"
-
 
 _redis = StrictRedis.from_url(settings.REDIS_DSN)
 
