@@ -1,13 +1,8 @@
 from flask import Blueprint, jsonify
 
-from app.status import status_monitor
-from . import schemas
+from app.status import status_monitor, schemas
 
-
-api = Blueprint(
-    'status_api',
-    __name__,
-    url_prefix='/api/status')
+api = Blueprint('status_api', __name__, url_prefix='/api/status')
 
 
 @api.route('/')
@@ -21,9 +16,8 @@ def get_status():
           schema: StatusReportSchema
     """
     schema = schemas.StatusReportSchema()
-    data, errors = schema.dump(status_monitor.report())
-
+    data = schema.dump(status_monitor.report())
+    errors = schema.validate(data)
     if errors:
-        return jsonify(errors), 500
-
+        raise ValueError(errors)
     return jsonify(data)

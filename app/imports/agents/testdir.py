@@ -1,5 +1,5 @@
+from datetime import datetime
 import typing as t
-import json
 
 from marshmallow import Schema, fields
 
@@ -7,37 +7,45 @@ from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent, 
 from app.config import ConfigValue, KEY_PREFIX
 from app import models
 
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
 
-WATCH_DIRECTORY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
+PROVIDER_SLUG = 'testdir'
 
 
 class TestDirAgentTransactionSchema(Schema):
-    tid = fields.String()
-    value = fields.Integer()
-    card = fields.String()
+    transuid = fields.String(required=True)
+    merchno = fields.String(required=True)
+    timestamp = fields.Integer(required=True)
+    spend = fields.Decimal(required=True)
+    currency_code = fields.String(required=True)
 
     @staticmethod
     def to_scheme_transaction(data: t.Dict[str, t.Any]) -> models.SchemeTransaction:
         return models.SchemeTransaction(
-            transaction_id=data['tid'],
-            pence=data['value'],
-            points_earned=None,
-            card_id=data['card'],
-            total_points=None)
+            provider_slug=PROVIDER_SLUG,
+            mid=data['merchno'],
+            transaction_id=data['transuid'],
+            transaction_date=datetime.fromtimestamp(data['timestamp']),
+            spend_amount=data['spend'] * 100,
+            spend_multiplier=100,
+            spend_currency=data['currency_code'].upper(),
+            points_amount=None,
+            points_multiplier=None,
+            extra_fields={})
 
     @staticmethod
     def get_transaction_id(data: t.Dict[str, t.Any]) -> str:
-        return data['tid']
+        return data['transuid']
 
 
 class TestDirAgent(DirectoryWatchAgent):
     schema_class = TestDirAgentTransactionSchema
-    provider_slug = 'testdir'
+    provider_slug = PROVIDER_SLUG
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY, default='./testdir')
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default='./itx')
 
-    def yield_transactions_data(self, fd: t.TextIO) -> t.Iterable[models.SchemeTransaction]:
+    def yield_transactions_data(self, fd: t.TextIO) -> t.Iterable[t.Dict[str, t.Any]]:
         def warn(line, ex):
             MAX_LEN = 12
             if len(line) > MAX_LEN:
@@ -47,9 +55,9 @@ class TestDirAgent(DirectoryWatchAgent):
 
         for line in fd:
             try:
-                data = json.loads(line)
-            except json.decoder.JSONDecodeError as ex:
+                mapping = {k.strip(): v.strip() for k, v in [kv.split(':') for kv in line.split('|')]}
+            except Exception as ex:
                 warn(line, ex)
                 continue
 
-            yield data
+            yield mapping

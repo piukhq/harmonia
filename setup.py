@@ -12,9 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://git.bink.com/olympus/harmonia',
-    classifiers=(
-        'Programming Language :: Python :: 3',
-    ),
+    classifiers=('Programming Language :: Python :: 3', ),
     entry_points={
         'console_scripts': (
             'txmatch_import = app.imports.cli:cli',

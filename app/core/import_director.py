@@ -1,12 +1,20 @@
 from app.reporting import get_logger
 from app.queues import import_queue
-
+from app.status import status_monitor
+from app.db import Session
 
 log = get_logger('ipdr')
+session = Session()
 
 
 class ImportDirector:
     def enter_loop(self):
         def handle_transaction(transaction):
-            log.info(f"Received {transaction}! This would be imported, matched, et cetera.")
+            status_monitor.checkin(self.__class__.__name__)
+
+            session.add(transaction)
+            session.commit()
+
+            log.info(f"Received transaction {transaction.transaction_id}! This would be posted to the matching queue.")
+
         import_queue.pull(handle_transaction)

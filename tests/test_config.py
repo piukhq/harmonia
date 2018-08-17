@@ -132,24 +132,18 @@ def test_list_keys_api(redis, token0, api_client):
 def test_update_key_api(redis, token0, token1, api_client):
     k = make_key('test-update-key-api-0')
     resp = api_client.put(
-        url_for('config_api.update_key', key=k),
-        json={
+        url_for('config_api.update_key', key=k), json={
             'value': token0,
         })
     assert resp.status_code == 400, resp.json
 
     redis.set(k, token0)
     resp = api_client.put(
-        url_for('config_api.update_key', key=k),
-        json={
+        url_for('config_api.update_key', key=k), json={
             'value': token1,
         })
     assert resp.status_code == 200, resp.json
     assert redis.get(k).decode() == token1
 
-    resp = api_client.put(
-        url_for('config_api.update_key', key=k),
-        json={
-            'bad': True
-        })
+    resp = api_client.put(url_for('config_api.update_key', key=k), json={'bad': True})
     assert resp.status_code == 400, resp.json

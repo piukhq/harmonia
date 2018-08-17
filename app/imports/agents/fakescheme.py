@@ -1,3 +1,5 @@
+from datetime import datetime
+from decimal import Decimal
 import inspect
 
 from marshmallow import Schema, fields
@@ -6,29 +8,32 @@ from .bases.active_api_agent import ActiveAPIAgent
 from app.config import ConfigValue, KEY_PREFIX
 from app import models
 
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.fake.schedule"
 
-SCHEDULE = f"{KEY_PREFIX}imports.agents.fake.schedule"
-
-
-class FakeSchemeCardSchema(Schema):
-    class Meta:
-        fields = ('balance', 'id',)
+PROVIDER_SLUG = 'fake'
 
 
 class FakeSchemeTransactionSchema(Schema):
-    card = fields.Nested(FakeSchemeCardSchema, required=True)
-
-    class Meta:
-        fields = ('card', 'id', 'pence', 'points_earned',)
+    amount = fields.String()
+    earned = fields.String()
+    id = fields.String()
+    merchant_id = fields.String()
+    occurred_on = fields.String()
 
     @staticmethod
     def to_scheme_transaction(data):
+        spend_parts = data['amount'].split(' ')
         return models.SchemeTransaction(
+            provider_slug=PROVIDER_SLUG,
+            mid=data['merchant_id'],
             transaction_id=data['id'],
-            pence=data['pence'],
-            points_earned=data['points_earned'],
-            card_id=data['card']['id'],
-            total_points=data['card']['balance'])
+            transaction_date=datetime.strptime(data['occurred_on'], '%a, %d %b %Y %H:%M:%S %Z'),
+            spend_amount=int(Decimal(spend_parts[0]) * 100),
+            spend_multiplier=100,
+            spend_currency=spend_parts[1].upper(),
+            points_amount=data['points_earned'],
+            points_multiplier=1,
+            extra_fields={})
 
     @staticmethod
     def get_transaction_id(data):
@@ -36,16 +41,14 @@ class FakeSchemeTransactionSchema(Schema):
 
 
 class FakeSchemeAPIAgent(ActiveAPIAgent):
-    url = 'http://127.0.0.1:8001/api/transactions'
+    url = 'http://127.0.0.1:41234/transactions'
     schema_class = FakeSchemeTransactionSchema
-    provider_slug = 'fake'
+    provider_slug = PROVIDER_SLUG
 
     class Config:
-        schedule = ConfigValue(SCHEDULE, default='* * * * *')
+        schedule = ConfigValue(SCHEDULE_KEY, default='* * * * *')
 
     def help(self):
-        return inspect.cleandoc(
-            f"""
-            This agent works with the dummy loyalty scheme server found in ~/dev/loyaltyscheme.
-            It calls /api/transactions on a schedule.
+        return inspect.cleandoc(f"""
+            This agent calls {self.url} on a schedule of {self.Config.schedule}
             """)
