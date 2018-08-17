@@ -1,5 +1,7 @@
 # Harmonia
 
+[![pipeline status](https://git.bink.com/Olympus/harmonia/badges/develop/pipeline.svg)](https://git.bink.com/Olympus/harmonia/commits/develop) [![coverage report](https://git.bink.com/Olympus/harmonia/badges/develop/coverage.svg)](https://git.bink.com/Olympus/harmonia/commits/develop)
+
 Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodite.
 
 ## Prerequisites
