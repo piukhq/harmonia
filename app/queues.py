@@ -105,3 +105,4 @@ class StrictQueue:
 
 
 import_queue = StrictQueue(settings.AMQP_DSN, name='imports', schema_class=schemas.SchemeTransactionSchema)
+matching_queue = StrictQueue(settings.AMQP_DSN, name='matching', schema_class=schemas.SchemeTransactionSchema)

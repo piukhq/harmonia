@@ -1,5 +1,5 @@
 from app.reporting import get_logger
-from app.queues import import_queue
+from app.queues import import_queue, matching_queue
 from app.status import status_monitor
 from app.db import Session
 
@@ -15,6 +15,7 @@ class ImportDirector:
             session.add(transaction)
             session.commit()
 
-            log.info(f"Received transaction {transaction.transaction_id}! This would be posted to the matching queue.")
+            log.info(f"Received & persisted transaction {transaction.transaction_id}! Posting to the matching queue.")
+            matching_queue.push(transaction)
 
         import_queue.pull(handle_transaction)
