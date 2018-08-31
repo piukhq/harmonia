@@ -1,5 +1,7 @@
 from python:3.6
 workdir /app
+run pip install pipenv uwsgi alembic
+add Pipfile* ./
+run pipenv install --deploy --system
 add . .
-run pip install uwsgi pipenv && pipenv install --deploy --system
-cmd ["uwsgi","--http",":5000","--wsgi-file","app/api.py","--callable","app","--master"]
+run pip install .

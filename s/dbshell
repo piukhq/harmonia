@@ -1,0 +1,5 @@
+#! /bin/bash
+
+source s/_common
+
+docker-compose exec postgres psql -U postgres

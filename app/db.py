@@ -33,7 +33,7 @@ def _object_hook(val):
     if t == 'datetime':
         return datetime.fromtimestamp(t['epoch'])
     elif t == 'Decimal':
-        return Decimal(t['repr'])
+        return Decimal(val['repr'])
 
     raise TypeError(f"custom deserializer can't handle {type(val).__name__} ({val}) yet! "
                     f"you can add support in {__file__}")

@@ -1,5 +1,5 @@
 from app.reporting import get_logger
-from app.queues import import_queue, matching_queue
+from app import feeds, queues
 from app.status import status_monitor
 from app.db import Session
 
@@ -8,14 +8,33 @@ session = Session()
 
 
 class ImportDirector:
-    def enter_loop(self):
-        def handle_transaction(transaction):
-            status_monitor.checkin(self.__class__.__name__)
+    def enter_loop(self) -> None:
+        raise NotImplementedError
 
-            session.add(transaction)
+
+class SchemeImportDirector(ImportDirector):
+    def enter_loop(self) -> None:
+        def handle_scheme_tx(scheme_tx):
+            status_monitor.checkin(self)
+
+            session.add(scheme_tx)
             session.commit()
 
-            log.info(f"Received & persisted transaction {transaction.transaction_id}! Posting to the matching queue.")
-            matching_queue.push(transaction)
+            log.info(
+                f"Received & persisted scheme transaction {scheme_tx.transaction_id}! Posting to the matching queue.")
+            queues.matching_queue.push(scheme_tx)
 
-        import_queue.pull(handle_transaction)
+        feeds.scheme.queue.pull(handle_scheme_tx)
+
+
+class PaymentImportDirector(ImportDirector):
+    def enter_loop(self) -> None:
+        def handle_payment_tx(payment_tx):
+            status_monitor.checkin(self)
+
+            session.add(payment_tx)
+            session.commit()
+
+            log.info(f"Received & persisted payment transaction {payment_tx.transaction_id}!")
+
+        feeds.payment.queue.pull(handle_payment_tx)

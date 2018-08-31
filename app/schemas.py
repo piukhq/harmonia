@@ -1,3 +1,5 @@
+import typing as t
+
 from marshmallow import Schema, post_load, fields
 
 from app import models
@@ -17,5 +19,22 @@ class SchemeTransactionSchema(Schema):
     extra_fields = fields.Dict(required=True, allow_none=False)
 
     @post_load
-    def make_transaction(self, data):
+    def make_transaction(self, data: t.Dict) -> models.SchemeTransaction:
         return models.SchemeTransaction(**data)
+
+
+class PaymentTransactionSchema(Schema):
+    provider_slug = fields.String(required=True, allow_none=False)
+    mid = fields.String(required=True, allow_none=False)
+    transaction_id = fields.String(required=True, allow_none=False)
+    transaction_date = fields.DateTime(required=True, allow_none=False)
+    spend_amount = fields.Integer(required=True, allow_none=False)
+    spend_multiplier = fields.Integer(required=True, allow_none=False)
+    spend_currency = fields.String(required=True, allow_none=False)
+    card_token = fields.String(required=True, allow_none=False)
+
+    extra_fields = fields.Dict(required=True, allow_none=False)
+
+    @post_load
+    def make_transaction(self, data: t.Dict) -> models.PaymentTransaction:
+        return models.PaymentTransaction(**data)

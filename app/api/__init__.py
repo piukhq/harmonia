@@ -1,3 +1,4 @@
+import typing as t
 import logging
 
 from apispec import APISpec
@@ -21,7 +22,8 @@ spec = APISpec(
 )
 
 
-def define_schema(schema_class):
+def define_schema(schema_class: t.Type) -> t.Type:
+    """A decorator to automatically define an apispec schema for a class."""
     spec.definition(schema_class.__name__, schema=schema_class)
     return schema_class
 
@@ -29,7 +31,7 @@ def define_schema(schema_class):
 sentry = Sentry()
 
 
-def create_app():
+def create_app() -> Flask:
     app = Flask(__name__)
 
     sentry.init_app(app, dsn=settings.SENTRY_DSN, logging=True, level=logging.ERROR)
