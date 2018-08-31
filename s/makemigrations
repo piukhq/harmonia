@@ -1,0 +1,21 @@
+#! /bin/bash
+
+source s/_common
+
+p 'starting temp db'
+docker run -d --name makemigrations-db -p 5432:5432 postgres:latest
+
+p 'waiting for db to start'
+sleep 5
+
+p 'migrating temp db'
+pipenv run alembic upgrade head
+
+p 'making new migrations'
+pipenv run alembic revision --autogenerate
+
+p 'testing new migrations'
+pipenv run alembic upgrade head
+
+p 'removing temp db'
+docker rm -f makemigrations-db

@@ -72,14 +72,17 @@ class BaseAgent:
         log.info(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
         return new, duplicate
 
-    def _persist_import_transactions(self, provider_transactions: t.List[t.Dict]) -> None:
+    def _persist_import_transactions(self, provider_transactions: t.List[t.Dict], source: t.Optional[str]) -> None:
         """Saves provider_transactions to the import_transactions table."""
         log.info(f"Saving {len(provider_transactions)} provider transaction(s) to import_transactions table.")
         schema = self.get_schema()
         for tx in provider_transactions:
             session.add(
                 ImportTransaction(
-                    transaction_id=schema.get_transaction_id(tx), provider_slug=self.provider_slug, data=tx))
+                    transaction_id=schema.get_transaction_id(tx),
+                    provider_slug=self.provider_slug,
+                    data=tx,
+                    source=source))
         session.commit()
 
     def _translate_provider_transactions(self, provider_transactions: t.List[t.Dict]) -> t.List:
@@ -89,7 +92,7 @@ class BaseAgent:
         log.info(f"Translating {len(provider_transactions)} provider transaction(s) to queue schema.")
         return [schema.to_queue_transaction(tx) for tx in provider_transactions]
 
-    def _import_transactions(self, provider_transactions: t.List[t.Dict]) -> None:
+    def _import_transactions(self, provider_transactions: t.List[t.Dict], *, source: t.Optional[str] = None) -> None:
         """
         Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
@@ -102,6 +105,6 @@ class BaseAgent:
         if new:
             to_queue = self._translate_provider_transactions(new)
             self.feed.queue.push(to_queue, many=True)
-            self._persist_import_transactions(new)
+            self._persist_import_transactions(new, source)
         else:
             log.debug('No new transactions found in import set, not pushing anything to the import queue.')

@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 import os
 
@@ -42,4 +43,4 @@ class DirectoryWatchAgent(BaseAgent):
         with open(file_path, 'r') as fd:
             transactions_data = list(self.yield_transactions_data(fd))
         transactions_data = self.get_schema().load(transactions_data, many=True)
-        self._import_transactions(transactions_data)
+        self._import_transactions(transactions_data, source=Path(file_path).name)
