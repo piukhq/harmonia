@@ -7,7 +7,7 @@ logging.basicConfig(
     format='%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s')
 
 
-def get_logger(tag):
+def get_logger(tag: str) -> logging.Logger:
     """
     Returns a configured logger for the given logging tag string.
     """

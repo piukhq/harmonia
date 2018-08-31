@@ -5,7 +5,7 @@ from marshmallow import Schema, fields
 
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent, log
 from app.config import ConfigValue, KEY_PREFIX
-from app import models
+from app import models, feeds
 
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
 
@@ -16,17 +16,17 @@ class TestDirAgentTransactionSchema(Schema):
     transuid = fields.String(required=True)
     merchno = fields.String(required=True)
     timestamp = fields.Integer(required=True)
-    spend = fields.Decimal(required=True)
+    spend = fields.Integer(required=True)
     currency_code = fields.String(required=True)
 
     @staticmethod
-    def to_scheme_transaction(data: t.Dict[str, t.Any]) -> models.SchemeTransaction:
+    def to_queue_transaction(data: t.Dict[str, t.Any]) -> models.SchemeTransaction:
         return models.SchemeTransaction(
             provider_slug=PROVIDER_SLUG,
             mid=data['merchno'],
             transaction_id=data['transuid'],
             transaction_date=datetime.fromtimestamp(data['timestamp']),
-            spend_amount=data['spend'] * 100,
+            spend_amount=data['spend'],
             spend_multiplier=100,
             spend_currency=data['currency_code'].upper(),
             points_amount=None,
@@ -41,6 +41,7 @@ class TestDirAgentTransactionSchema(Schema):
 class TestDirAgent(DirectoryWatchAgent):
     schema_class = TestDirAgentTransactionSchema
     provider_slug = PROVIDER_SLUG
+    feed = feeds.scheme
 
     class Config:
         watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default='./itx')
@@ -57,7 +58,10 @@ class TestDirAgent(DirectoryWatchAgent):
             try:
                 mapping = {k.strip(): v.strip() for k, v in [kv.split(':') for kv in line.split('|')]}
             except Exception as ex:
-                warn(line, ex)
-                continue
+                if self.debug:
+                    raise
+                else:
+                    warn(line, ex)
+                    continue
 
             yield mapping

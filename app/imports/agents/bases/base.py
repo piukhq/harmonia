@@ -1,15 +1,13 @@
 import inspect
 import typing as t
 
-from sqlalchemy.exc import IntegrityError
-from marshmallow.exceptions import ValidationError
 import marshmallow
 
-from app.imports import models
+from app.imports.models import ImportTransaction
 from app.db import Session
 from app.reporting import get_logger
-from app.queues import import_queue, QueuePushSchemaError
 from app.status import status_monitor
+from app import feeds
 
 session = Session()
 
@@ -20,13 +18,22 @@ class ImportTransactionAlreadyExistsError(Exception):
     pass
 
 
-def _no_schema_class(obj):
-    raise ValueError(f"{obj.__class__.__name__} needs to add a `schema_class` class variable!")
+def _missing_property(obj, prop: str):
+    raise NotImplementedError(f"{type(obj).__name__} needs to add a `{prop}` class variable!")
 
 
 class BaseAgent:
-    schema_class = _no_schema_class
-    provider_slug = 'PROVIDER_NOT_SET'
+    @property
+    def schema_class(self) -> t.Callable:
+        return _missing_property(self, 'schema_class')
+
+    @property
+    def provider_slug(self) -> str:
+        return _missing_property(self, 'provider_slug')
+
+    @property
+    def feed(self) -> feeds.Feed:
+        return _missing_property(self, 'feed')
 
     def help(self) -> str:
         return inspect.cleandoc("""
@@ -45,75 +52,56 @@ class BaseAgent:
     def get_schema(self) -> marshmallow.Schema:
         """
         Returns an instance of the schema class that should be used to load/dump
-        scheme transactions for this merchant's transactions data.
+        transactions for this merchant's transactions data.
         """
         return self.schema_class()
 
-    def _create_import_transaction(self, data: t.Dict[str, t.Any]):
-        """
-        Creates an ImportTransaction in the database for the given data.
-        Raises an ImportTransactionAlreadyExistsError if the transaction is not
-        unique.
-        """
+    def _find_new_transactions(self, provider_transactions: t.List[t.Dict]) -> t.Tuple:
+        """Splits provider_transactions into two lists containing new and duplicate transactions.
+        Returns a tuple (new, duplicate)"""
         schema = self.get_schema()
-        log.debug(f"Creating import transaction with {schema} for {data}")
+        tids = [schema.get_transaction_id(t) for t in provider_transactions]
+        duplicate_ids = [
+            t[0] for t in session.query(ImportTransaction.transaction_id).filter(
+                ImportTransaction.transaction_id.in_(tids)).all()
+        ]
+        new: t.List[t.Dict] = []
+        duplicate: t.List[t.Dict] = []
+        for tid, tx in zip(tids, provider_transactions):
+            (duplicate if tid in duplicate_ids else new).append(tx)
+        log.info(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
+        return new, duplicate
 
-        import_transaction = models.ImportTransaction(
-            transaction_id=schema.get_transaction_id(data), provider_slug=self.provider_slug, data=data)
+    def _persist_import_transactions(self, provider_transactions: t.List[t.Dict]) -> None:
+        """Saves provider_transactions to the import_transactions table."""
+        log.info(f"Saving {len(provider_transactions)} provider transaction(s) to import_transactions table.")
+        schema = self.get_schema()
+        for tx in provider_transactions:
+            session.add(
+                ImportTransaction(
+                    transaction_id=schema.get_transaction_id(tx), provider_slug=self.provider_slug, data=tx))
+        session.commit()
 
-        session.add(import_transaction)
+    def _translate_provider_transactions(self, provider_transactions: t.List[t.Dict]) -> t.List:
+        """Translates provider_transactions to a list of SchemeTransaction or PaymentTransaction instances.
+        Returns the list of transaction instances."""
+        schema = self.get_schema()
+        log.info(f"Translating {len(provider_transactions)} provider transaction(s) to queue schema.")
+        return [schema.to_queue_transaction(tx) for tx in provider_transactions]
 
-        try:
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            log.warning('Imported transaction appears to be a duplicate. '
-                        'Raising an ImportTransactionAlreadyExistsError to signify this.')
-            raise ImportTransactionAlreadyExistsError
-
-    def _import_transactions(self, transactions_data: t.List[t.Dict[str, t.Any]]) -> None:
+    def _import_transactions(self, provider_transactions: t.List[t.Dict]) -> None:
         """
-        Imports the given list of transaction data elements using the agent's
-        schema.
+        Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
         transaction data to be matched.
         """
-        name = self.__class__.__name__
-        schema = self.get_schema()
+        status_monitor.checkin(self)
 
-        try:
-            transactions = schema.load(transactions_data, many=True)
-        except ValidationError as ex:
-            log.error(f"Import translation for {name} failed: {ex.messages}")
-            return
+        new, duplicate = self._find_new_transactions(provider_transactions)
 
-        if transactions is None:
-            log.error(
-                f"Import translation for {name} failed: schema.load returned None. Confirm that the schema_class for "
-                f"{name} is correct.")
-            return
+        if new:
+            to_queue = self._translate_provider_transactions(new)
+            self.feed.queue.push(to_queue, many=True)
+            self._persist_import_transactions(new)
         else:
-            log.info(f"Import translation successful for {name}: {len(transactions)} transactions loaded.")
-
-        status_monitor.checkin(name)
-
-        transactions_to_enqueue = []
-        for transaction in transactions:
-            try:
-                self._create_import_transaction(transaction)
-            except ImportTransactionAlreadyExistsError:
-                log.info('Not pushing transaction to the import queue as it appears to already exist.')
-            else:
-                transactions_to_enqueue.append(transaction)
-
-        scheme_transactions = [schema.to_scheme_transaction(tx) for tx in transactions_to_enqueue]
-
-        try:
-            import_queue.push(scheme_transactions, many=True)
-        except QueuePushSchemaError as ex:
-            log.critical('Failed to push transactions to import queue! '
-                         'This may indicate an issue with the schema provided by the agent. '
-                         f"Please check the to_scheme_transaction method on {type(schema).__name__}. "
-                         f"Original error(s): {ex}")
-        else:
-            log.info(f"{len(scheme_transactions)} transactions pushed to import queue.")
+            log.debug('No new transactions found in import set, not pushing anything to the import queue.')

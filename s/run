@@ -1,0 +1,7 @@
+#! /bin/bash
+
+source s/_common
+
+p 'running containers'
+
+docker-compose up -d

@@ -1,3 +1,5 @@
+import typing as t
+
 from flask import request, jsonify, Blueprint
 from marshmallow.exceptions import ValidationError
 
@@ -7,8 +9,11 @@ from app.api.utils import expects_json
 api = Blueprint('config_api', __name__, url_prefix='/api/config')
 
 
+ResponseType = t.Tuple[t.Dict, int]
+
+
 @api.route('/keys')
-def list_keys():
+def list_keys() -> ResponseType:
     """List config keys
     ---
     get:
@@ -31,7 +36,7 @@ def list_keys():
 
 @api.route('/keys/<key>', methods=['PUT'])
 @expects_json
-def update_key(key):
+def update_key(key: str) -> ResponseType:
     """Update a config key
     ---
     put:
@@ -45,10 +50,9 @@ def update_key(key):
           description: The updated key and value.
           schema: KeyValuePairSchema
     """
-    schema = schemas.UpdateKeyRequestSchema()
-
+    request_schema = schemas.UpdateKeyRequestSchema()
     try:
-        data = schema.load(request.json)
+        data = request_schema.load(request.json)
     except ValidationError as ex:
         return jsonify(ex.messages), 400
 
@@ -57,11 +61,8 @@ def update_key(key):
     except KeyError as e:
         return jsonify({'error': str(e).strip('"')}), 400
 
-    schema = schemas.KeyValuePairSchema()
-
-    data = schema.dump({
+    response_schema = schemas.KeyValuePairSchema()
+    return jsonify(response_schema.dump({
         'key': key,
         'value': config.get(key),
-    })
-
-    return jsonify(data)
+    }))

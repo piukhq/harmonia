@@ -1,6 +1,7 @@
+import typing as t
 import logging
 
-from kombu import Connection, Exchange, Queue
+from kombu import Connection, Exchange, Queue, Message
 from kombu.mixins import ConsumerMixin
 from marshmallow.exceptions import ValidationError
 
@@ -23,7 +24,7 @@ class QueuePullSchemaError(Exception):
 
 
 class StrictQueue:
-    def __init__(self, transport_dsn, *, name, schema_class, retry=True):
+    def __init__(self, transport_dsn: str, *, name: str, schema_class, retry: bool = True) -> None:
         self.connection = Connection(transport_dsn, connect_timeout=3, heartbeat=5)
 
         self.queue = Queue(name, Exchange(name), routing_key=name)
@@ -42,10 +43,10 @@ class StrictQueue:
 
         self.connection.ensure_connection(**self.retry_policy)
 
-    def _retry_callback(self, exc, interval):
+    def _retry_callback(self, exc: Exception, interval: float) -> None:
         log.warning(f"Failed to connect to RabbitMQ @ {self.connection.hostname}: {exc}. Retrying in {interval}s...")
 
-    def _produce(self, obj):
+    def _produce(self, obj: t.Dict) -> None:
         data = self.schema.dump(obj)
 
         errors = self.schema.validate(data)
@@ -61,31 +62,31 @@ class StrictQueue:
             routing_key=self.queue.routing_key,
             declare=[self.queue])
 
-    def push(self, obj, many=False):
-        log.debug(f"Pushing {type(obj).__name__} to queue '{self.queue.name}', many: {many}")
+    def push(self, obj: t.Dict, many: bool = False) -> None:
+        log.debug(f"Pushing {type(obj).__name__} to queue '{self.queue.name}', many: {many}.")
         if many is True:
             for element in obj:
                 self._produce(element)
         else:
             self._produce(obj)
 
-    def pull(self, message_callback):
+    def pull(self, message_callback: t.Callable):
         class Worker(ConsumerMixin):
-            def __init__(self, connection, queue, *, message_callback):
+            def __init__(self, connection: Connection, queue: Queue, *, message_callback: t.Callable) -> None:
                 self.connection = connection
                 self.queue = queue
                 self.message_callback = message_callback
 
-            def get_consumers(self, consumer_class, channel):
+            def get_consumers(self, consumer_class: t.Type, channel) -> t.List:
                 return [consumer_class(queues=[self.queue], callbacks=[self.message_callback])]
 
-            def on_connection_error(self, exc, interval):
+            def on_connection_error(self, exc: Exception, interval: float) -> None:
                 log.warning(f"Lost connection to broker ({exc}), will retry in {interval}s.")
 
-            def on_connection_revived(self):
+            def on_connection_revived(self) -> None:
                 log.info(f"Revived connection to broker.")
 
-        def receive_message(body, message):
+        def receive_message(body: t.Dict, message: Message) -> None:
             try:
                 obj = self.schema.load(body)
             except ValidationError as ex:
@@ -104,5 +105,4 @@ class StrictQueue:
         worker.run()
 
 
-import_queue = StrictQueue(settings.AMQP_DSN, name='imports', schema_class=schemas.SchemeTransactionSchema)
 matching_queue = StrictQueue(settings.AMQP_DSN, name='matching', schema_class=schemas.SchemeTransactionSchema)

@@ -1,3 +1,5 @@
+import typing as t
+
 from datetime import datetime
 import time
 import re
@@ -11,18 +13,23 @@ import settings
 class StatusMonitor:
     checkin_name_pattern = re.compile(f"{settings.REDIS_KEY_PREFIX}:status:checkins:(.*)")
 
-    def __init__(self, redis):
+    def __init__(self, redis: StrictRedis) -> None:
         self.redis = redis
 
-    def checkin(self, slug):
-        key = f"{settings.REDIS_KEY_PREFIX}:status:checkins:{slug}"
+    def checkin(self, obj: object) -> None:
+        key = f"{settings.REDIS_KEY_PREFIX}:status:checkins:{type(obj).__name__}"
         self.redis.set(key, time.time())
 
-    def _get_checkin_details(self, key):
+    def _get_checkin_details(self, key: str) -> t.Dict[str, t.Any]:
         checkin_timestamp = float(self.redis.get(key).decode())
         checkin_datetime = datetime.fromtimestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
-        checkin_name = self.checkin_name_pattern.match(key).group(1)
+
+        checkin_name_match = self.checkin_name_pattern.match(key)
+        if checkin_name_match is not None:
+            checkin_name = checkin_name_match.group(1)
+        else:
+            checkin_name = f"<failed to get name from key \"{key}\">"
         return {
             'timestamp': checkin_timestamp,
             'datetime': checkin_datetime,
@@ -31,7 +38,7 @@ class StatusMonitor:
             'name': checkin_name,
         }
 
-    def _get_postgres_health(self):
+    def _get_postgres_health(self) -> t.Dict[str, t.Any]:
         from psycopg2 import connect
 
         errors = []
@@ -51,7 +58,7 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def _get_redis_health(self):
+    def _get_redis_health(self) -> t.Dict[str, t.Any]:
         from redis import StrictRedis
 
         errors = []
@@ -69,7 +76,7 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def _get_amqp_health(self):
+    def _get_amqp_health(self) -> t.Dict[str, t.Any]:
         from kombu import Connection
 
         errors = []
@@ -87,7 +94,7 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def report(self):
+    def report(self) -> t.Dict[str, t.Any]:
         redis_health = self._get_redis_health()
 
         if redis_health['healthy']:

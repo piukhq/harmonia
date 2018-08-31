@@ -20,8 +20,10 @@ marshmallow = "*"
 marshmallow-sqlalchemy = "*"
 kombu = "*"
 inotify = "*"
+tenacity = "*"
 
 [dev-packages]
+harmonia = {editable = true, path = "."}
 alembic = "*"
 jedi = "*"
 importmagic = "*"
