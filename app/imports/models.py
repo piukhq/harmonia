@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, JSON, UniqueConstraint
+from sqlalchemy import Column, Integer, String, JSON, DateTime, UniqueConstraint
 
 from app.db import Base, auto_repr
+from app import postgres
 
 
 @auto_repr
@@ -11,7 +12,11 @@ class ImportTransaction(Base):
     id = Column(Integer, primary_key=True)
     transaction_id = Column(String(50), nullable=False)
     provider_slug = Column(String(50), nullable=False)
+    source = Column(String(50), nullable=True)
     data = Column(JSON)
+
+    created_at = Column(DateTime, server_default=postgres.utcnow())
+    updated_at = Column(DateTime, onupdate=postgres.utcnow())
 
     def __str__(self):
         return ('<ImportTransaction('

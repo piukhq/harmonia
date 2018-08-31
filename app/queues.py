@@ -26,9 +26,7 @@ class QueuePullSchemaError(Exception):
 class StrictQueue:
     def __init__(self, transport_dsn: str, *, name: str, schema_class, retry: bool = True) -> None:
         self.connection = Connection(transport_dsn, connect_timeout=3, heartbeat=5)
-
         self.queue = Queue(name, Exchange(name), routing_key=name)
-
         self.producer = self.connection.Producer()
 
         self.schema = schema_class()
