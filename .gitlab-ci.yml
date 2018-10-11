@@ -10,7 +10,7 @@ tests:
     - export POSTGRES_DSN="postgres://postgres@${POSTGRES_PORT_5432_TCP_ADDR}:5432${POSTGRES_NAME}"
     - export REDIS_DSN="redis://redis@${REDIS_PORT_6379_TCP_ADDR}:6379/0"
     - export AMQP_DSN="amqp://${RABBITMQ_PORT_5672_TCP_ADDR}:5672"
-    - pytest --cov-report term-missing --cov=app
+    - pytest -v --cov-report term-missing --cov=app
   services:
     - postgres:9.4.4
     - redis:4
