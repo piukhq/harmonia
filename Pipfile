@@ -21,17 +21,14 @@ marshmallow-sqlalchemy = "*"
 kombu = "*"
 inotify = "*"
 tenacity = "*"
+pyyaml = "*"
 
 [dev-packages]
 harmonia = {editable = true, path = "."}
 alembic = "*"
-jedi = "*"
-importmagic = "*"
-"autopep8" = "*"
-yapf = "*"
-"flake8" = "*"
 pytest = "*"
 pytest-cov = "*"
+pytest-mock = "*"
 mypy = "*"
 
 [pipenv]

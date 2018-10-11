@@ -2,6 +2,8 @@ import typing as t
 import logging
 
 from apispec import APISpec
+from apispec.ext.flask import FlaskPlugin
+from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, jsonify, render_template
 from flask_cors import CORS
 from raven.contrib.flask import Sentry
@@ -12,9 +14,10 @@ import settings
 spec = APISpec(
     title='Transaction Matching API',
     version=__version__,
+    openapi_version='2.0',
     plugins=[
-        'apispec.ext.flask',
-        'apispec.ext.marshmallow',
+        FlaskPlugin(),
+        MarshmallowPlugin(),
     ],
     info={
         'description': 'Management API for the transaction matching system.',

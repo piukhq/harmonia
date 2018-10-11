@@ -1,8 +1,8 @@
 from time import sleep
 
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-import requests
 
 from app.imports.agents.bases.base import BaseAgent, log
 

@@ -13,28 +13,27 @@ class ImportDirector:
 
 
 class SchemeImportDirector(ImportDirector):
+    def handle_scheme_tx(self, scheme_tx):
+        status_monitor.checkin(self)
+
+        session.add(scheme_tx)
+        session.commit()
+
+        log.info(f"Received & persisted scheme transaction {scheme_tx.transaction_id}! Posting to the matching queue.")
+        queues.matching_queue.push(scheme_tx)
+
     def enter_loop(self) -> None:
-        def handle_scheme_tx(scheme_tx):
-            status_monitor.checkin(self)
-
-            session.add(scheme_tx)
-            session.commit()
-
-            log.info(
-                f"Received & persisted scheme transaction {scheme_tx.transaction_id}! Posting to the matching queue.")
-            queues.matching_queue.push(scheme_tx)
-
-        feeds.scheme.queue.pull(handle_scheme_tx)
+        feeds.scheme.queue.pull(self.handle_scheme_tx)
 
 
 class PaymentImportDirector(ImportDirector):
+    def handle_payment_tx(self, payment_tx):
+        status_monitor.checkin(self)
+
+        session.add(payment_tx)
+        session.commit()
+
+        log.info(f"Received & persisted payment transaction {payment_tx.transaction_id}!")
+
     def enter_loop(self) -> None:
-        def handle_payment_tx(payment_tx):
-            status_monitor.checkin(self)
-
-            session.add(payment_tx)
-            session.commit()
-
-            log.info(f"Received & persisted payment transaction {payment_tx.transaction_id}!")
-
-        feeds.payment.queue.pull(handle_payment_tx)
+        feeds.payment.queue.pull(self.handle_payment_tx)

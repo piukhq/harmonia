@@ -21,7 +21,8 @@ def cli(agent: str, no_user_input: bool, immediate: bool, debug: bool, dry_run: 
             f"{click.style('Error:', fg='red')} {msg}\n"
             f"Check the value for key {info(agent)} "
             f"in {info('app/imports/agents/registry.py')}. "
-            f"The format should be {info('module.path.ClassName')}.",
+            f"The format should be {info('module.path.ClassName')}. "
+            f"It is currently {registry.AGENTS[agent]}.",
             err=True)
         if debug:
             raise
@@ -38,7 +39,7 @@ def cli(agent: str, no_user_input: bool, immediate: bool, debug: bool, dry_run: 
     except registry.InvalidAgentClassError:
         show_error('Failed to find agent class in module.')
 
-    click.echo(f"Loaded {info(type(agent_instance).__name__)} " f"agent from {info(registry.AGENTS[agent])}.")
+    click.echo(f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry.AGENTS[agent])}.")
 
     click.echo()
     click.echo('Agent help text:')

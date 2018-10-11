@@ -59,12 +59,9 @@ class StatusMonitor:
         }
 
     def _get_redis_health(self) -> t.Dict[str, t.Any]:
-        from redis import StrictRedis
-
         errors = []
         try:
-            r = StrictRedis.from_url(settings.REDIS_DSN)
-            r.ping()
+            self.redis.ping()
             healthy = True
         except Exception as ex:
             healthy = False
@@ -120,4 +117,5 @@ class StatusMonitor:
         }
 
 
-status_monitor = StatusMonitor(StrictRedis.from_url(settings.REDIS_DSN))
+redis_args = {'socket_timeout': 1, 'socket_connect_timeout': 3, 'socket_keepalive': True, 'retry_on_timeout': False}
+status_monitor = StatusMonitor(StrictRedis.from_url(settings.REDIS_DSN, **redis_args))
