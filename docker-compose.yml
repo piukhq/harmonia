@@ -25,7 +25,7 @@ services:
   scheme-import-director:
     image: olympus.azurecr.io/harmonia:latest
     build: .
-    command: txcore import_director scheme
+    command: txcore import-director scheme
     environment:
       - POSTGRES_DSN=postgres://postgres@postgres
       - REDIS_DSN=redis://redis/0
@@ -34,7 +34,7 @@ services:
   payment-import-director:
     image: olympus.azurecr.io/harmonia:latest
     build: .
-    command: txcore import_director payment
+    command: txcore import-director payment
     environment:
       - POSTGRES_DSN=postgres://postgres@postgres
       - REDIS_DSN=redis://redis/0
@@ -43,7 +43,7 @@ services:
   matching-worker:
     image: olympus.azurecr.io/harmonia:latest
     build: .
-    command: txcore matching_worker
+    command: txcore matching-worker
     environment:
       - POSTGRES_DSN=postgres://postgres@postgres
       - REDIS_DSN=redis://redis/0
