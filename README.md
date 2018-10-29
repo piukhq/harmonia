@@ -10,7 +10,7 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 
 ## Dependencies
 
-The following is a list of the important dependencies used in the project. You do not need to install these manually. See [local development](#Local%20Development) for installation instructions.
+The following is a list of the important dependencies used in the project. You do not need to install these manually. See [local development](#local-development) for installation instructions.
 
 * [SQLAlchemy](https://www.sqlalchemy.org) - Object-relational mapping library. Used for interacting with PostgreSQL.
 * [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
