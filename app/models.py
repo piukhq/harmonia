@@ -1,48 +1,97 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from enum import Enum
 
-from app.db import Base, auto_repr
+import sqlalchemy as s
+
+from app.db import Base, auto_repr, ModelMixin
 
 # import other module's models here to be recognised by alembic.
 from app.imports.models import ImportTransaction  # noqa
-from app import postgres
 
 
 @auto_repr
-class SchemeTransaction(Base):
-    __tablename__ = 'scheme_transactions'
+class LoyaltyScheme(Base, ModelMixin):
+    __tablename__ = 'loyalty_scheme'
 
-    id = Column(Integer, primary_key=True)
-    provider_slug = Column(String(50), nullable=False)  # hermes scheme slug for the scheme that sent us the transaction
-    mid = Column(String(50), nullable=False)  # merchant ID of the merchant/store this transaction originated from
-    transaction_id = Column(String(100), nullable=False)  # unique identifier assigned by the provider
-    transaction_date = Column(DateTime, nullable=False)  # date this transaction was originally made
-    spend_amount = Column(Integer, nullable=False)  # the amount of money that was involved in the transaction
-    spend_multiplier = Column(Integer, nullable=False)  # amount that spend_amount was multiplied by to make it integral
-    spend_currency = Column(String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
-    points_amount = Column(Integer)  # number of points that were involved in the transaction
-    points_multiplier = Column(Integer)  # amount points_amount was multiplied by to make it integral
+    slug = s.Column(s.String(50), nullable=False)  # hermes scheme slug
 
-    extra_fields = Column(JSON)  # any extra data used for exports
-
-    created_at = Column(DateTime, server_default=postgres.utcnow())
-    updated_at = Column(DateTime, onupdate=postgres.utcnow())
+    merchant_identifiers = s.orm.relationship('MerchantIdentifier', backref='loyalty_scheme')
 
 
 @auto_repr
-class PaymentTransaction(Base):
-    __tablename__ = 'payment_transactions'
+class PaymentProvider(Base, ModelMixin):
+    __tablename__ = 'payment_provider'
 
-    id = Column(Integer, primary_key=True)
-    provider_slug = Column(String(50), nullable=False)  # hermes payment card slug for the provider of the transaction
-    mid = Column(String(50), nullable=False)  # merchant ID of the merchant/store this transaction originated from
-    transaction_id = Column(String(100), nullable=False)  # unique identifier assigned by the provider
-    transaction_date = Column(DateTime, nullable=False)  # date this transaction was originally made
-    spend_amount = Column(Integer, nullable=False)  # the amount of money that was involved in the transaction
-    spend_multiplier = Column(Integer, nullable=False)  # amount that spend_amount was multiplied by to make it integral
-    spend_currency = Column(String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
-    card_token = Column(String(100))  # token assigned to the card that was used
+    slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
 
-    extra_fields = Column(JSON)  # any extra data used for exports
+    merchant_identifiers = s.orm.relationship('MerchantIdentifier', backref='payment_provider')
 
-    created_at = Column(DateTime, server_default=postgres.utcnow())
-    updated_at = Column(DateTime, onupdate=postgres.utcnow())
+
+@auto_repr
+class MerchantIdentifier(Base, ModelMixin):
+    __tablename__ = 'merchant_identifier'
+
+    mid = s.Column(s.String(50), nullable=False, index=True)
+    loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey('loyalty_scheme.id'))
+    payment_provider_id = s.Column(s.Integer, s.ForeignKey('payment_provider.id'))
+    location = s.Column(s.String(250), nullable=True)
+    postcode = s.Column(s.String(16), nullable=True)
+
+    scheme_transactions = s.orm.relationship('SchemeTransaction', backref='merchant_identifier')
+    payment_transactions = s.orm.relationship('PaymentTransaction', backref='merchant_identifier')
+    matched_transactions = s.orm.relationship('MatchedTransaction', backref='merchant_identifier')
+
+
+@auto_repr
+class SchemeTransaction(Base, ModelMixin):
+    __tablename__ = 'scheme_transaction'
+
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey('merchant_identifier.id'))
+    transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant
+    transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
+    spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
+    spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
+    spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
+    points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
+    points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
+
+    extra_fields = s.Column(s.JSON)  # any extra data used for exports
+
+
+@auto_repr
+class PaymentTransaction(Base, ModelMixin):
+    __tablename__ = 'payment_transaction'
+
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey('merchant_identifier.id'))
+    transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the provider
+    transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
+    spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
+    spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
+    spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
+    card_token = s.Column(s.String(100))  # token assigned to the card that was used
+
+    extra_fields = s.Column(s.JSON)  # any extra data used for exports
+
+
+class MatchingType(Enum):
+    SPOTTED = 0      # payment tx identified with no scheme feed available
+    LOYALTY = 1      # payment tx identified with loyalty tx scheme feed available
+    NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
+    MIXED = 3        # payment tx identified with full tx scheme feed available
+
+
+@auto_repr
+class MatchedTransaction(Base, ModelMixin):
+    __tablename__ = 'matched_transaction'
+
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey('merchant_identifier.id'))
+    transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant/provider
+    transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
+    spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
+    spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
+    spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
+    points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
+    points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
+    card_token = s.Column(s.String(100))  # token assigned to the card that was used
+    matching_type = s.Column(s.Enum(MatchingType), nullable=False)  # type of matching, see MatchingType for options
+
+    extra_fields = s.Column(s.JSON)  # combination of the same field on the scheme and payment transaction models

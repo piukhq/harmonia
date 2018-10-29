@@ -3,15 +3,15 @@ import typing as t
 
 import marshmallow
 
-from app.imports.models import ImportTransaction
 from app.db import Session
+from app.imports.models import ImportTransaction
+from app.queues import StrictQueue
 from app.reporting import get_logger
 from app.status import status_monitor
-from app import feeds
 
 session = Session()
 
-log = get_logger('agnt')
+log = get_logger('import-agent')
 
 
 class ImportTransactionAlreadyExistsError(Exception):
@@ -32,8 +32,8 @@ class BaseAgent:
         return _missing_property(self, 'provider_slug')
 
     @property
-    def feed(self) -> feeds.Feed:
-        return _missing_property(self, 'feed')
+    def queue(self) -> StrictQueue:
+        return _missing_property(self, 'queue')
 
     def help(self) -> str:
         return inspect.cleandoc("""
@@ -104,7 +104,7 @@ class BaseAgent:
 
         if new:
             to_queue = self._translate_provider_transactions(new)
-            self.feed.queue.push(to_queue, many=True)
+            self.queue.push(to_queue, many=True)
             self._persist_import_transactions(new, source)
         else:
             log.debug('No new transactions found in import set, not pushing anything to the import queue.')

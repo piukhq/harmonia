@@ -6,7 +6,7 @@ import tenacity
 from app.reporting import get_logger
 import settings
 
-log = get_logger('conf')
+log = get_logger('config')
 
 KEY_PREFIX = f"{settings.REDIS_KEY_PREFIX}:config:"
 
@@ -17,7 +17,7 @@ def _retry_callback(retry_state: tenacity.RetryCallState) -> None:
     wait = _ensure_connection.retry.wait
     sleep_for = min(wait.max, wait.start + (retry_state.attempt_number - 1) * wait.increment)
 
-    log.error(f"Failed to connect to redis: \"{retry_state.outcome.exception()}\". " f"Retrying in {sleep_for}s...")
+    log.error(f"Failed to connect to redis: \"{retry_state.outcome.exception()}\". " f"Retrying in {sleep_for}s…")
 
 
 @tenacity.retry(wait=tenacity.wait_incrementing(start=3, increment=3, max=30), before_sleep=_retry_callback)

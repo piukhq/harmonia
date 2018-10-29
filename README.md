@@ -16,7 +16,7 @@ The following is a list of the important dependencies used in the project. You d
 * [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
 * [Flask](http://flask.pocoo.org) - API framework.
 * [InfluxDB](http://influxdb-python.readthedocs.io/en/latest) - Time-series database used for logging performance metrics.
-* [Raven](https://docs.sentry.io/clients/python) - Client for the Sentry error reporting platform. Integrates with Flask.
+* [Sentry SDK](https://docs.sentry.io/quickstart?platform=python) - Client for the Sentry error reporting platform. Includes Flask integration.
 * [Click](http://click.pocoo.org/6) - Used for building the management CLI for each part of the system.
 * [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration.
 * [APScheduler](https://apscheduler.readthedocs.io/en/latest) - Used for scheduling various time-based parts of the system.

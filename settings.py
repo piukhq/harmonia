@@ -1,6 +1,12 @@
 import logging
 import os
 
+from sentry_sdk.integrations.flask import FlaskIntegration
+import kombu.serialization
+import sentry_sdk
+
+from app import encoding
+
 
 class ConfigVarRequiredError(Exception):
     pass
@@ -18,6 +24,10 @@ def getenv(key, default=None, conv=str, required=True):
 # Global logging level. Applies to any logger obtained through `app.reporting.get_logger`.
 # https://docs.python.org/3/library/logging.html#logging-levels
 LOG_LEVEL = getattr(logging, getenv('LOG_LEVEL', default='debug').upper())
+
+# Canonical name of the environment we're running in.
+# e.g. dev, staging, production
+ENVIRONMENT_ID = getenv('ENVIRONMENT_ID', default='unknown').lower()
 
 # Connection string for Postgres.
 # Postgres is used as the main database for the transaction matching system.
@@ -41,7 +51,16 @@ INFLUXDB_DSN = getenv('INFLUXDB_DSN', required=False)
 # https://docs.sentry.io/quickstart/#about-the-dsn
 SENTRY_DSN = getenv('SENTRY_DSN', required=False)
 
+if SENTRY_DSN is not None:
+    sentry_sdk.init(dsn=SENTRY_DSN, environment=ENVIRONMENT_ID, integrations=[FlaskIntegration()])
+
 # AMQP Queue transport connection string.
 # This is used by kombu to interact with the various queues used by transaction matching.
 # http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html#urls
 AMQP_DSN = getenv('AMQP_DSN')
+
+# JSON encoding with custom extensions. Used in queue messages, postgres JSON field storage, et cetera.
+JSON_SERIALIZER = 'txmatch+json'
+
+kombu.serialization.register(
+    JSON_SERIALIZER, encoding.dumps, encoding.loads, content_type='application/txmatch+json', content_encoding='utf-8')
