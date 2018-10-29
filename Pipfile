@@ -8,7 +8,6 @@ sqlalchemy = "*"
 "psycopg2-binary" = "*"
 flask = "*"
 influxdb = "*"
-raven = {extras = ["flask"]}
 flask-cors = "*"
 click = "*"
 colorama = "*"
@@ -22,6 +21,9 @@ kombu = "*"
 inotify = "*"
 tenacity = "*"
 pyyaml = "*"
+sentry-sdk = "*"
+pendulum = "*"
+apispec-webframeworks = "*"
 
 [dev-packages]
 harmonia = {editable = true, path = "."}

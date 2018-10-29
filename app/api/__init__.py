@@ -1,15 +1,12 @@
 import typing as t
-import logging
 
 from apispec import APISpec
-from apispec.ext.flask import FlaskPlugin
+from apispec_webframeworks.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, jsonify, render_template
 from flask_cors import CORS
-from raven.contrib.flask import Sentry
 
 from app.version import __version__
-import settings
 
 spec = APISpec(
     title='Transaction Matching API',
@@ -31,13 +28,8 @@ def define_schema(schema_class: t.Type) -> t.Type:
     return schema_class
 
 
-sentry = Sentry()
-
-
 def create_app() -> Flask:
     app = Flask(__name__)
-
-    sentry.init_app(app, dsn=settings.SENTRY_DSN, logging=True, level=logging.ERROR)
 
     CORS(app)
 

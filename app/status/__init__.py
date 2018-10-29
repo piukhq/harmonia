@@ -1,13 +1,15 @@
-import typing as t
-
-from datetime import datetime
 import time
 import re
 
 from redis import StrictRedis
 import humanize
+import pendulum
 
+from app.reporting import get_logger
 import settings
+
+
+log = get_logger('status-monitor')
 
 
 class StatusMonitor:
@@ -16,29 +18,36 @@ class StatusMonitor:
     def __init__(self, redis: StrictRedis) -> None:
         self.redis = redis
 
-    def checkin(self, obj: object) -> None:
-        key = f"{settings.REDIS_KEY_PREFIX}:status:checkins:{type(obj).__name__}"
-        self.redis.set(key, time.time())
+    def checkin(self, obj: object, suffix: str = None) -> None:
+        if suffix is not None:
+            checkin_name = f"{type(obj).__name__}:{suffix}"
+        else:
+            checkin_name = type(obj).__name__
 
-    def _get_checkin_details(self, key: str) -> t.Dict[str, t.Any]:
+        key = f"{settings.REDIS_KEY_PREFIX}:status:checkins:{checkin_name}"
+        self.redis.set(key, time.time())
+        log.debug(f"{checkin_name} has checked in")
+
+    def _get_checkin_details(self, key: str) -> dict:
         checkin_timestamp = float(self.redis.get(key).decode())
-        checkin_datetime = datetime.fromtimestamp(checkin_timestamp)
+        checkin_datetime = pendulum.from_timestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
 
         checkin_name_match = self.checkin_name_pattern.match(key)
         if checkin_name_match is not None:
             checkin_name = checkin_name_match.group(1)
         else:
-            checkin_name = f"<failed to get name from key \"{key}\">"
+            checkin_name = f"<failed to get name from key {repr(key)}>"
+
         return {
             'timestamp': checkin_timestamp,
             'datetime': checkin_datetime,
             'seconds_ago': seconds_ago,
-            'human_readable': humanize.naturaltime(checkin_datetime),
+            'human_readable': humanize.naturaltime(checkin_datetime.naive()),  # humanize uses naive datetimes
             'name': checkin_name,
         }
 
-    def _get_postgres_health(self) -> t.Dict[str, t.Any]:
+    def _get_postgres_health(self) -> dict:
         from psycopg2 import connect
 
         errors = []
@@ -58,7 +67,7 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def _get_redis_health(self) -> t.Dict[str, t.Any]:
+    def _get_redis_health(self) -> dict:
         errors = []
         try:
             self.redis.ping()
@@ -73,12 +82,12 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def _get_amqp_health(self) -> t.Dict[str, t.Any]:
+    def _get_amqp_health(self) -> dict:
         from kombu import Connection
 
         errors = []
         try:
-            conn = Connection(settings.AMQP_DSN, connect_timeout=3, heartbeat=5)
+            conn = Connection(settings.AMQP_DSN, connect_timeout=3)
             conn.connect()
             healthy = True
         except Exception as ex:
@@ -91,7 +100,7 @@ class StatusMonitor:
             'errors': errors,
         }
 
-    def report(self) -> t.Dict[str, t.Any]:
+    def report(self) -> dict:
         redis_health = self._get_redis_health()
 
         if redis_health['healthy']:
@@ -103,7 +112,8 @@ class StatusMonitor:
             checkins = []
 
         return {
-            'checkins': checkins,
+            'checkins':
+            checkins,
             'services': [{
                 'name': 'postgres',
                 **self._get_postgres_health(),

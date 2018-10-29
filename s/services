@@ -2,6 +2,9 @@
 
 source s/_common
 
+p 'removing existing services'
+docker rm -f postgres rabbitmq redis || true
+
 p 'rabbitmq'
 docker run -d -p5672:5672 -p15672:15672 --name rabbitmq rabbitmq:management || true
 
@@ -10,3 +13,5 @@ docker run -d -p5432:5432 --name postgres postgres || true
 
 p 'redis'
 docker run -d -p6379:6379 --name redis redis || true
+
+s/migrate

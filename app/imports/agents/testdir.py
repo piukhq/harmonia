@@ -5,7 +5,7 @@ from marshmallow import Schema, fields
 
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent, log
 from app.config import ConfigValue, KEY_PREFIX
-from app import models, feeds
+from app import models, queues
 
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
 
@@ -20,7 +20,7 @@ class TestDirAgentTransactionSchema(Schema):
     currency_code = fields.String(required=True)
 
     @staticmethod
-    def to_queue_transaction(data: t.Dict[str, t.Any]) -> models.SchemeTransaction:
+    def to_queue_transaction(data: dict) -> models.SchemeTransaction:
         return models.SchemeTransaction(
             provider_slug=PROVIDER_SLUG,
             mid=data['merchno'],
@@ -34,19 +34,19 @@ class TestDirAgentTransactionSchema(Schema):
             extra_fields={})
 
     @staticmethod
-    def get_transaction_id(data: t.Dict[str, t.Any]) -> str:
+    def get_transaction_id(data: dict) -> str:
         return data['transuid']
 
 
 class TestDirAgent(DirectoryWatchAgent):
     schema_class = TestDirAgentTransactionSchema
     provider_slug = PROVIDER_SLUG
-    feed = feeds.scheme
+    queue = queues.scheme_import_queue
 
     class Config:
         watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default='./itx')
 
-    def yield_transactions_data(self, fd: t.TextIO) -> t.Iterable[t.Dict[str, t.Any]]:
+    def yield_transactions_data(self, fd: t.TextIO) -> t.Iterable[dict]:
         def warn(line, ex):
             MAX_LEN = 12
             if len(line) > MAX_LEN:

@@ -34,12 +34,12 @@ class ActiveAPIAgent(BaseAgent):
             while scheduler.running:
                 new_schedule = self.Config.schedule
                 if new_schedule != schedule:
-                    log.debug(f"Schedule has been changed from {schedule} to {new_schedule}! Rescheduling...")
+                    log.debug(f"Schedule has been changed from {schedule} to {new_schedule}! Rescheduling…")
                     schedule = new_schedule
                     job.reschedule(self._get_trigger(schedule))
                 sleep(5)
         except KeyboardInterrupt:
-            log.debug('Shutting down...')
+            log.debug('Shutting down…')
             scheduler.shutdown()
             log.debug('Done!')
 

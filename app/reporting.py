@@ -9,7 +9,6 @@ logging.basicConfig(
 
 def get_logger(tag: str) -> logging.Logger:
     """
-    Returns a configured logger for the given logging tag string.
+    Returns a correctly configured logger for the given logging tag string.
     """
-    assert len(tag) == 4, 'Logging tags must be exactly 4 characters long'
     return logging.getLogger('txmatch.{}'.format(tag.lower()))
