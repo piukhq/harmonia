@@ -41,13 +41,13 @@ class MatchingQueueSchema(Schema):
     payment_transaction_id = fields.Integer(required=True, allow_none=False)
 
     @post_load
-    def make_payment_transaction(self, data: dict) -> models.PaymentTransaction:
-        return session.query(models.PaymentTransaction).get(data['payment_transaction_id'])
+    def make_payment_transaction_id(self, data: dict) -> int:
+        return data['payment_transaction_id']
 
 
 class ExportQueueSchema(Schema):
     matched_transaction_id = fields.Integer(required=True, allow_none=False)
 
     @post_load
-    def make_matched_transaction(self, data: dict) -> models.MatchedTransaction:
-        return session.query(models.MatchedTransaction).get(data['matched_transaction_id'])
+    def make_payment_transaction_id(self, data: dict) -> int:
+        return data['matched_transaction_id']

@@ -39,6 +39,7 @@ class MatchingRetryWorker:
                     })
 
     def enter_loop(self) -> None:
+        self.log.info(f"Started.")
         while True:
             try:
                 self.tick()

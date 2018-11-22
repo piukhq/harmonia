@@ -1,15 +1,16 @@
 #! /usr/bin/env python3
-from collections import namedtuple
-from base64 import b64encode
-from uuid import uuid4
 import random
+import typing as t
+from base64 import b64encode
+from collections import namedtuple
+from uuid import uuid4
 
-import sqlalchemy
-import pendulum
 import click
+import pendulum
+import sqlalchemy
 
 from app import models, queues
-from app.db import Session, Base
+from app.db import Base, Session
 
 session = Session()
 
@@ -27,7 +28,7 @@ MID_CONFIGS = [
 ]
 
 
-def get_or_create(model: Base, query: list, create_fields: dict) -> (Base, bool):
+def get_or_create(model: Base, query: list, create_fields: dict) -> t.Tuple[Base, bool]:
     try:
         return session.query(model).filter(*query).one(), False
     except sqlalchemy.orm.exc.NoResultFound:
@@ -107,22 +108,22 @@ def produce_transaction():
     print(f"pushed stx & ptx for mid#{mid.id}")
 
 
-def produce():
+def produce(once: bool):
+    if once is True:
+        produce_transaction()
+        return
     while True:
         produce_transaction()
         input('\x1b[7m\u23ce \x1b[0m to produce again')
 
 
 @click.command()
-@click.option('--once', is_flag=True, help='only produce one transaction')
+@click.option('--once', is_flag=True)
 def cli(once: bool) -> None:
-    if once is True:
-        produce_transaction()
-    else:
-        try:
-            produce()
-        except KeyboardInterrupt:
-            print('\nbye')
+    try:
+        produce(once)
+    except KeyboardInterrupt:
+        print('\nbye')
 
 
 if __name__ == '__main__':

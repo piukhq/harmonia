@@ -24,7 +24,7 @@ spec = APISpec(
 
 def define_schema(schema_class: t.Type) -> t.Type:
     """A decorator to automatically define an apispec schema for a class."""
-    spec.definition(schema_class.__name__, schema=schema_class)
+    spec.components.schema(schema_class.__name__, schema=schema_class)
     return schema_class
 
 
@@ -53,7 +53,7 @@ def create_app() -> Flask:
 
     with app.test_request_context():
         for view_func in app.view_functions.values():
-            spec.add_path(view=view_func)
+            spec.path(view=view_func)
 
     return app
 
