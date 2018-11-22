@@ -32,8 +32,8 @@ class StrictQueue:
 
         self.retry = retry
         self.retry_policy = {
-            'interval_start': 3,
-            'interval_step': 3,
+            'interval_start': 1,
+            'interval_step': 1,
             'interval_max': 30,
             'errback': self._retry_callback,
         }

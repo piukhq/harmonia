@@ -2,13 +2,14 @@ from enum import Enum
 
 import sqlalchemy as s
 
-from app.db import Base, auto_repr, ModelMixin
+from app.db import Base, ModelMixin, auto_repr, auto_str
 
 # import other module's models here to be recognised by alembic.
 from app.imports.models import ImportTransaction  # noqa
 
 
 @auto_repr
+@auto_str('id', 'slug')
 class LoyaltyScheme(Base, ModelMixin):
     __tablename__ = 'loyalty_scheme'
 
@@ -18,6 +19,7 @@ class LoyaltyScheme(Base, ModelMixin):
 
 
 @auto_repr
+@auto_str('id', 'slug')
 class PaymentProvider(Base, ModelMixin):
     __tablename__ = 'payment_provider'
 
@@ -27,6 +29,7 @@ class PaymentProvider(Base, ModelMixin):
 
 
 @auto_repr
+@auto_str('id', 'mid')
 class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = 'merchant_identifier'
 
@@ -41,7 +44,13 @@ class MerchantIdentifier(Base, ModelMixin):
     matched_transactions = s.orm.relationship('MatchedTransaction', backref='merchant_identifier')
 
 
+class TransactionStatus(Enum):
+    PENDING = 0
+    MATCHED = 1
+
+
 @auto_repr
+@auto_str('id', 'transaction_id')
 class SchemeTransaction(Base, ModelMixin):
     __tablename__ = 'scheme_transaction'
 
@@ -53,11 +62,15 @@ class SchemeTransaction(Base, ModelMixin):
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
     points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
+    status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
 
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
 
+    matched_transactions = s.orm.relationship('MatchedTransaction', backref='scheme_transaction')
+
 
 @auto_repr
+@auto_str('id', 'transaction_id')
 class PaymentTransaction(Base, ModelMixin):
     __tablename__ = 'payment_transaction'
 
@@ -68,18 +81,22 @@ class PaymentTransaction(Base, ModelMixin):
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     card_token = s.Column(s.String(100))  # token assigned to the card that was used
+    status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
 
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
 
+    matched_transactions = s.orm.relationship('MatchedTransaction', backref='payment_transaction')
+
 
 class MatchingType(Enum):
-    SPOTTED = 0      # payment tx identified with no scheme feed available
-    LOYALTY = 1      # payment tx identified with loyalty tx scheme feed available
+    SPOTTED = 0  # payment tx identified with no scheme feed available
+    LOYALTY = 1  # payment tx identified with loyalty tx scheme feed available
     NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
-    MIXED = 3        # payment tx identified with full tx scheme feed available
+    MIXED = 3  # payment tx identified with full tx scheme feed available
 
 
 @auto_repr
+@auto_str('id', 'transaction_id')
 class MatchedTransaction(Base, ModelMixin):
     __tablename__ = 'matched_transaction'
 
@@ -93,5 +110,8 @@ class MatchedTransaction(Base, ModelMixin):
     points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
     card_token = s.Column(s.String(100))  # token assigned to the card that was used
     matching_type = s.Column(s.Enum(MatchingType), nullable=False)  # type of matching, see MatchingType for options
+    status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
+    payment_transaction_id = s.Column(s.Integer, s.ForeignKey('payment_transaction.id'))
+    scheme_transaction_id = s.Column(s.Integer, s.ForeignKey('scheme_transaction.id'))
 
     extra_fields = s.Column(s.JSON)  # combination of the same field on the scheme and payment transaction models

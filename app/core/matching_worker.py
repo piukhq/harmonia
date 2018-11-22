@@ -7,8 +7,8 @@ import sentry_sdk
 from app.db import Session
 from app.matching import retry
 from app.matching.agents.active import AGENTS
-from app.matching.agents.base import BaseMatchingAgent
-from app.models import MatchedTransaction, PaymentTransaction
+from app.matching.agents.base import BaseMatchingAgent, MatchResult
+from app.models import MatchedTransaction, PaymentTransaction, SchemeTransaction, TransactionStatus
 from app.queues import export_queue, matching_queue
 from app.reporting import get_logger
 from app.status import status_monitor
@@ -58,7 +58,6 @@ class MatchingWorker:
         retry.store(payment_tx.id, retry.RetryEntry(retry_at, retry_count, headers['X-Queued-At']))
 
     def _persist(self, matched_tx: MatchedTransaction):
-        self.log.critical(f"Would persist {repr(matched_tx)}!")
         session.add(matched_tx)
         session.commit()
         self.log.info(f"Persisted matched transaction #{matched_tx.id}")
@@ -69,15 +68,15 @@ class MatchingWorker:
         except KeyError as ex:
             raise self.NoMatchingAgent(f"No matching agent is registered for slug {repr(slug)}") from ex
 
-    def _try_match(self, agent: BaseMatchingAgent, payment_tx: PaymentTransaction) -> t.Optional[MatchedTransaction]:
+    def _try_match(self, agent: BaseMatchingAgent, payment_tx: PaymentTransaction) -> t.Optional[MatchResult]:
         try:
             return agent.match()
         except agent.NoMatchFound:
             return None
         except Exception as ex:
-            raise self.AgentError(f"An error occurred when matching with agent {repr(agent)}") from ex
+            raise self.AgentError(f"An error occurred when matching with agent {agent}") from ex
 
-    def _match(self, payment_tx: PaymentTransaction) -> t.Optional[MatchedTransaction]:
+    def _match(self, payment_tx: PaymentTransaction) -> t.Optional[MatchResult]:
         """Attempts to match the given payment transaction.
         Returns the matched transaction on success.
         Raises UnusableTransaction if the transaction cannot be matched."""
@@ -88,28 +87,43 @@ class MatchingWorker:
 
     def _export(self, matched_tx: MatchedTransaction) -> None:
         self._persist(matched_tx)
-        export_queue.push(matched_tx)
+        export_queue.push({
+            'matched_transaction_id': matched_tx.id,
+        })
 
-    def handle_transaction(self, payment_tx: PaymentTransaction, headers: dict) -> bool:
+    def handle_transaction(self, payment_tx_id: int, headers: dict) -> bool:
         """Runs the matching process for a single payment transaction."""
         status_monitor.checkin(self, suffix=self.name)
 
+        payment_tx = session.query(PaymentTransaction).get(payment_tx_id)
+
         self.log.debug(f"Received payment transaction #{payment_tx.id}. Attempting to match…")
 
+        match_result = None
         try:
-            matched_tx = self._match(payment_tx)
+            match_result = self._match(payment_tx)
         except (self.NoMatchingAgent, self.AgentError) as ex:
-            sentry_id = sentry_sdk.capture_exception(ex)
-            self.log.error(f"Failed to match payment transaction #{payment_tx.id}: {ex}. Sentry issue ID: {sentry_id}.")
-            should_retry = True
+            if self.debug is True:
+                raise ex
+            else:
+                sentry_id = sentry_sdk.capture_exception(ex)
+                self.log.error(
+                    f"Failed to match payment transaction #{payment_tx.id}: {ex}. Sentry issue ID: {sentry_id}.")
 
-        if should_retry is True or matched_tx is None:
-            self.log.debug(f"Matching failed, submitting payment transaction #{payment_tx.id} for retry")
+        if match_result is None:
+            self.log.debug(f"Matching failed, submitting payment transaction #{payment_tx.id} for retry.")
             self._retry(payment_tx, headers)
             return True
 
-        self.log.debug(f"Matching succeeded! Persisting & exporting payment transaction #{payment_tx.id}")
-        self._export(matched_tx)
+        self.log.debug(f"Matching succeeded! Marking transactions as matched.")
+        payment_tx.status = TransactionStatus.MATCHED
+
+        scheme_tx = session.query(SchemeTransaction).get(match_result.scheme_tx_id)
+        scheme_tx.status = TransactionStatus.MATCHED
+        session.commit()
+
+        self.log.debug(f"Persisting & exporting payment transaction #{payment_tx.id}.")
+        self._export(match_result.matched_tx)
 
         return True
 

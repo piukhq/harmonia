@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 from app import postgres, encoding
 import settings
 
-
 db_engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, json_deserializer=encoding.loads)
 Session = sessionmaker(bind=db_engine)
 
@@ -21,6 +20,18 @@ def auto_repr(cls):
 
     cls.__repr__ = __repr__
     return cls
+
+
+def auto_str(*fields):
+    def decorator(cls):
+        def __str__(self):
+            field_values = (f"{k}={repr(getattr(self, k))}" for k in fields)
+            return f"{type(self).__name__}({', '.join(field_values)})"
+
+        cls.__str__ = __str__
+        return cls
+
+    return decorator
 
 
 class ModelMixin:
