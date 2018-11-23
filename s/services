@@ -14,4 +14,7 @@ docker run -d -p5432:5432 --name postgres postgres || true
 p 'redis'
 docker run -d -p6379:6379 --name redis redis || true
 
+p 'giving postgres a chance to start'
+sleep 3
+
 s/migrate

@@ -32,5 +32,34 @@ class BaseMatchingAgent:
         search_fields['mid'] = self.payment_transaction.mid
         return session.query(SchemeTransaction).filter(**search_fields)
 
+    def _find_applicable_scheme_transactions(self):
+        return session.query(SchemeTransaction).filter(
+            SchemeTransaction.merchant_identifier_id == self.payment_transaction.merchant_identifier_id)
+
+    def _fine_match(self, scheme_transactions, fields):
+        return scheme_transactions.filter_by(**fields)
+
+    def _make_matched_transaction_fields(self, scheme_transaction):
+        st_fields = {
+            k: getattr(scheme_transaction, k)
+            for k in ('merchant_identifier_id', 'transaction_id', 'transaction_date', 'spend_amount',
+                      'spend_multiplier', 'spend_currency', 'points_amount', 'points_multiplier')
+        }
+        return {
+            **st_fields,
+            'card_token': self.payment_transaction.card_token,
+            'payment_transaction_id': self.payment_transaction.id,
+            'scheme_transaction_id': scheme_transaction.id,
+            'extra_fields': {
+                **self.payment_transaction.extra_fields,
+                **scheme_transaction.extra_fields,
+            },
+        }
+
     def match(self) -> MatchResult:
-        raise NotImplementedError('Matching agents must override the match() method.')
+        self.log.info(f"Matching {self.payment_transaction}")
+        scheme_transactions = self._find_applicable_scheme_transactions()
+        return self.do_match(scheme_transactions)
+
+    def do_match(self, scheme_transactions) -> MatchResult:
+        raise NotImplementedError('Matching agents must implement the do_match method.')
