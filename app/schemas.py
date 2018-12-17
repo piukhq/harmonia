@@ -42,12 +42,20 @@ class MatchingQueueSchema(Schema):
 
     @post_load
     def make_payment_transaction_id(self, data: dict) -> int:
-        return data['payment_transaction_id']
+        return data["payment_transaction_id"]
 
 
 class ExportQueueSchema(Schema):
     matched_transaction_id = fields.Integer(required=True, allow_none=False)
 
     @post_load
-    def make_payment_transaction_id(self, data: dict) -> int:
-        return data['matched_transaction_id']
+    def make_matched_transaction_id(self, data: dict) -> int:
+        return data["matched_transaction_id"]
+
+
+class PendingExportQueueSchema(Schema):
+    pending_export_id = fields.Integer(required=True, allow_none=False)
+
+    @post_load
+    def make_pending_export_id(self, data: dict) -> int:
+        return data["pending_export_id"]

@@ -3,13 +3,13 @@ import typing as t
 
 from marshmallow import Schema, fields
 
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent, log
+from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.config import ConfigValue, KEY_PREFIX
 from app import models, queues
 
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
 
-PROVIDER_SLUG = 'testdir'
+PROVIDER_SLUG = "testdir"
 
 
 class TestDirAgentTransactionSchema(Schema):
@@ -23,19 +23,20 @@ class TestDirAgentTransactionSchema(Schema):
     def to_queue_transaction(data: dict) -> models.SchemeTransaction:
         return models.SchemeTransaction(
             provider_slug=PROVIDER_SLUG,
-            mid=data['merchno'],
-            transaction_id=data['transuid'],
-            transaction_date=datetime.fromtimestamp(data['timestamp']),
-            spend_amount=data['spend'],
+            mid=data["merchno"],
+            transaction_id=data["transuid"],
+            transaction_date=datetime.fromtimestamp(data["timestamp"]),
+            spend_amount=data["spend"],
             spend_multiplier=100,
-            spend_currency=data['currency_code'].upper(),
+            spend_currency=data["currency_code"].upper(),
             points_amount=None,
             points_multiplier=None,
-            extra_fields={})
+            extra_fields={},
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return data['transuid']
+        return data["transuid"]
 
 
 class TestDirAgent(DirectoryWatchAgent):
@@ -44,19 +45,22 @@ class TestDirAgent(DirectoryWatchAgent):
     queue = queues.scheme_import_queue
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default='./itx')
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default="./itx")
 
-    def yield_transactions_data(self, fd: t.TextIO) -> t.Iterable[dict]:
+    def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:
         def warn(line, ex):
             MAX_LEN = 12
             if len(line) > MAX_LEN:
                 overlap = len(line) - MAX_LEN
                 line = f"{line[:MAX_LEN]} [+{overlap} chars]"
-            log.warning(f"Invalid line in file: `{line}` ({repr(ex)}). Skipping.")
+            self.log.warning(f"Invalid line in file: `{line}` ({repr(ex)}). Skipping.")
 
         for line in fd:
             try:
-                mapping = {k.strip(): v.strip() for k, v in [kv.split(':') for kv in line.split('|')]}
+                mapping = {
+                    k.strip(): v.strip()
+                    for k, v in [kv.split(b":") for kv in line.split(b"|")]
+                }
             except Exception as ex:
                 if self.debug:
                     raise

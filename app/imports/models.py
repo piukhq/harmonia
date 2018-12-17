@@ -1,14 +1,17 @@
-from sqlalchemy import Column, String, JSON, UniqueConstraint
+import sqlalchemy as s
 
 from app.db import Base, auto_repr, ModelMixin
 
 
 @auto_repr
 class ImportTransaction(Base, ModelMixin):
-    __tablename__ = 'import_transaction'
-    __table_args__ = (UniqueConstraint('provider_slug', 'transaction_id', name='_slug_tid_uc'), )
+    __tablename__ = "import_transaction"
+    __table_args__ = (
+        s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_it_uc"),
+    )
 
-    transaction_id = Column(String(50), nullable=False)
-    provider_slug = Column(String(50), nullable=False)
-    source = Column(String(500), nullable=True)
-    data = Column(JSON)
+    transaction_id = s.Column(s.String(50), nullable=False)
+    provider_slug = s.Column(s.String(50), nullable=False)
+    identified = s.Column(s.Boolean, nullable=False)
+    source = s.Column(s.String(500), nullable=True)
+    data = s.Column(s.JSON)

@@ -4,12 +4,29 @@ source s/_common
 
 s/services
 
-p 'producing a transaction'
-pipenv run s/producer.py --once
+p 'seeding database'
+pipenv run s/seed.py
 
-p 'running import directors'
-pipenv run txcore import-director --once scheme
-pipenv run txcore import-director --once payment
+p 'producing transaction files'
+pipenv run s/producer.py -n 1 --scheme-file files/imports/aĉetado/transactions-2018-12-04 --payment-file files/imports/kasisto/card-tx-20181204
+
+p 'running scheme import agent'
+pipenv run tximport --no-splash --agent aĉetado --once --debug --no-user-input --quiet
+
+p 'running payment import agent'
+pipenv run tximport --no-splash --agent kasisto --once --debug --no-user-input --quiet
+
+p 'running scheme import director'
+pipenv run txcore --no-splash import-director --once --debug scheme
+
+p 'running payment import director'
+pipenv run txcore --no-splash import-director --once --debug payment
 
 p 'running matching worker'
-pipenv run txcore matching-worker --debug
+pipenv run txcore --no-splash matching-worker --once --debug
+
+p 'running export director'
+pipenv run txcore --no-splash export-director --once --debug
+
+p 'running aĉetado export agent'
+pipenv run txexport --no-splash -a aĉetado --once --debug --quiet --no-user-input

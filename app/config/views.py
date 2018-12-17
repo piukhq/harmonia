@@ -6,13 +6,13 @@ from marshmallow.exceptions import ValidationError
 from app.config import config, schemas
 from app.api.utils import expects_json
 
-api = Blueprint('config_api', __name__, url_prefix='/api/config')
+api = Blueprint("config_api", __name__, url_prefix="/api/config")
 
 
 ResponseType = t.Tuple[t.Dict, int]
 
 
-@api.route('/keys')
+@api.route("/keys")
 def list_keys() -> ResponseType:
     """List config keys
     ---
@@ -23,10 +23,7 @@ def list_keys() -> ResponseType:
           description: A list of config keys.
           schema: KeyValuePairSchema
     """
-    config_values = list({
-        'key': k,
-        'value': v,
-    } for k, v in config.all_keys())
+    config_values = list({"key": k, "value": v} for k, v in config.all_keys())
 
     schema = schemas.KeyValuePairSchema()
     data = schema.dump(config_values, many=True)
@@ -34,7 +31,7 @@ def list_keys() -> ResponseType:
     return jsonify(data)
 
 
-@api.route('/keys/<key>', methods=['PUT'])
+@api.route("/keys/<key>", methods=["PUT"])
 @expects_json
 def update_key(key: str) -> ResponseType:
     """Update a config key
@@ -57,12 +54,9 @@ def update_key(key: str) -> ResponseType:
         return jsonify(ex.messages), 400
 
     try:
-        config.update(key, data['value'])
+        config.update(key, data["value"])
     except KeyError as e:
-        return jsonify({'error': str(e).strip('"')}), 400
+        return jsonify({"error": str(e).strip('"')}), 400
 
     response_schema = schemas.KeyValuePairSchema()
-    return jsonify(response_schema.dump({
-        'key': key,
-        'value': config.get(key),
-    }))
+    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}))

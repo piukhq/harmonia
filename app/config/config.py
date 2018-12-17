@@ -6,7 +6,7 @@ import tenacity
 from app.reporting import get_logger
 import settings
 
-log = get_logger('config')
+log = get_logger("config")
 
 KEY_PREFIX = f"{settings.REDIS_KEY_PREFIX}:config:"
 
@@ -15,19 +15,27 @@ _redis = StrictRedis.from_url(settings.REDIS_DSN)
 
 def _retry_callback(retry_state: tenacity.RetryCallState) -> None:
     wait = _ensure_connection.retry.wait
-    sleep_for = min(wait.max, wait.start + (retry_state.attempt_number - 1) * wait.increment)
+    sleep_for = min(
+        wait.max, wait.start + (retry_state.attempt_number - 1) * wait.increment
+    )
 
-    log.error(f"Failed to connect to redis: \"{retry_state.outcome.exception()}\". " f"Retrying in {sleep_for}s…")
+    log.error(
+        f'Failed to connect to redis: "{retry_state.outcome.exception()}". '
+        f"Retrying in {sleep_for}s…"
+    )
 
 
-@tenacity.retry(wait=tenacity.wait_incrementing(start=3, increment=3, max=30), before_sleep=_retry_callback)
+@tenacity.retry(
+    wait=tenacity.wait_incrementing(start=3, increment=3, max=30),
+    before_sleep=_retry_callback,
+)
 def _ensure_connection(redis: StrictRedis) -> None:
     redis.ping()
 
 
 def _validate_key(key: str) -> None:
     if not key.startswith(KEY_PREFIX):
-        raise ValueError(f"Config key must start with `{KEY_PREFIX}`.")
+        raise ValueError(f"Config key must start with `{KEY_PREFIX}`")
 
 
 def get(key: str, *, default=None, redis: StrictRedis = _redis) -> str:
@@ -43,7 +51,7 @@ def update(key: str, value: str, *, redis: StrictRedis = _redis) -> None:
     _validate_key(key)
     _ensure_connection(redis)
     if redis.set(key, value, xx=True) is None:
-        raise KeyError(f"Can't update key `{key}` as it doesn't exist!")
+        raise KeyError(f"Can't update key `{key}` as it doesn't exist")
 
 
 def all_keys(*, redis: StrictRedis = _redis) -> t.Iterable[t.Tuple[str, str]]:
