@@ -33,6 +33,7 @@ pytest-cov = "*"
 pytest-mock = "*"
 mypy = "*"
 loguru = "*"
+better-exceptions = "*"
 
 [pipenv]
 allow_prereleases = true

@@ -173,3 +173,15 @@ Migrations should be manually squashed before each deployment for efficiency's s
 ## Deployment
 
 There is a Dockerfile provided in the project root. Build an image from this to get a deployment-ready version of the project.
+
+## Development Tools
+
+The Pipfile includes a few useful tools to aid project development.
+
+### Loguru
+
+Logs can be made more readable with the use of [loguru](https://github.com/Delgan/loguru) by setting `USE_LOGURU=true` in the `.env` file.
+
+### Better Exceptions
+
+Stack traces can be enchanced with [better-exceptions](https://github.com/Qix-/better-exceptions) by setting `BETTER_EXCEPTIONS=true` in the `.env` file.

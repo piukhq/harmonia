@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "feb2906e3e739507b5092ad633548f382010fbfaf5025418d6de6b62ee41aa1b"
+            "sha256": "666073e40323f37e41bad7fa9219d3fe73d9b66f709f9747b0fd85b0e3f750ca"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -26,11 +26,11 @@
                 "yaml"
             ],
             "hashes": [
-                "sha256:50b1cb8f0dc12db00a53e748b27ae601efdc210f1cb4358729173337b2e47354",
-                "sha256:648934f67aefa386cdde5d1d38ceb1c9fe9157c59824a6fb5499409a70dabab4"
+                "sha256:8072aaba54cb430787c3662512d5c9fe521eae1ec0b6d7d05b129814b6b48f69",
+                "sha256:93a6046bf692e8e4398101d447fffcf148b9dbed66d886073e05b491cd6835fd"
             ],
             "index": "pypi",
-            "version": "==1.0.0b5"
+            "version": "==1.0.0b6"
         },
         "apispec-webframeworks": {
             "hashes": [
@@ -387,6 +387,13 @@
             ],
             "version": "==18.2.0"
         },
+        "better-exceptions": {
+            "hashes": [
+                "sha256:0a73efef96b48f867ea980227ac3b00d36a92754e6d316ad2ee472f136014580"
+            ],
+            "index": "pypi",
+            "version": "==0.2.1"
+        },
         "better-exceptions-fork": {
             "hashes": [
                 "sha256:5f0983da51e956dbdaf8b9a3d10e2774b382ce6c6ff2e54685c33e2dbe8f1472"
@@ -441,11 +448,11 @@
         },
         "loguru": {
             "hashes": [
-                "sha256:45b339d659633804d0fe6bde0b5e35598fc4de5344623d5148e0a6a3b5328245",
-                "sha256:4f9384d7846848cfc2eb9415003c94ac23f8757960835fc36af127949c0652ad"
+                "sha256:f30d70d64a44d28322f630ea59fe27c4adfc33ce1c22fc7564dfe811f9669397",
+                "sha256:fc0ea6e626a84825ed7c7d58a395042f8ff53030d8a4b866f47cab3b19b4d944"
             ],
             "index": "pypi",
-            "version": "==0.2.2"
+            "version": "==0.2.3"
         },
         "mako": {
             "hashes": [
@@ -525,10 +532,10 @@
         },
         "pygments": {
             "hashes": [
-                "sha256:6301ecb0997a52d2d31385e62d0a4a4cf18d2f2da7054a5ddad5c366cd39cee7",
-                "sha256:82666aac15622bd7bb685a4ee7f6625dd716da3ef7473620c192c0168aae64fc"
+                "sha256:5ffada19f6203563680669ee7f53b64dabbeb100eb51b61996085e99c03b284a",
+                "sha256:e8218dd399a61674745138520d0d4cf2621d7e032439341bc3f647bff125818d"
             ],
-            "version": "==2.3.0"
+            "version": "==2.3.1"
         },
         "pytest": {
             "hashes": [
