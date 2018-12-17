@@ -2,10 +2,10 @@ from flask import Blueprint, jsonify
 
 from app.status import status_monitor, schemas
 
-api = Blueprint('status_api', __name__, url_prefix='/api/status')
+api = Blueprint("status_api", __name__, url_prefix="/api/status")
 
 
-@api.route('/')
+@api.route("/")
 def get_status():
     """---
     get:

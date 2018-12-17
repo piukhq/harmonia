@@ -1,0 +1,75 @@
+version: "3.7"
+
+x-harmonia-svc: &harmonia-svc
+  image: harmonia
+  build: .
+  environment:
+    - POSTGRES_DSN=postgresql://postgres@postgres:5432/postgres
+    - REDIS_DSN=redis://redis:6379/0
+    - AMQP_DSN=amqp://rabbitmq:5672/
+    - LOG_LEVEL=debug
+  volumes:
+    - ./files/:/app/files/
+  depends_on:
+    - postgres
+    - rabbitmq
+    - redis
+
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  migrate:
+    <<: *harmonia-svc
+    command: alembic upgrade head
+
+  seed:
+    <<: *harmonia-svc
+    command: s/seed.py
+    depends_on:
+      - migrate
+
+  import-agent-acxetado:
+    <<: *harmonia-svc
+    command: tximport --no-splash -a aĉetado -y -q
+
+  import-agent-kasisto:
+    <<: *harmonia-svc
+    command: tximport --no-splash -a kasisto -y -q
+
+  import-director-scheme:
+    <<: *harmonia-svc
+    command: txcore --no-splash import-director scheme
+
+  import-director-payment:
+    <<: *harmonia-svc
+    command: txcore --no-splash import-director payment
+
+  matching-worker:
+    <<: *harmonia-svc
+    command: txcore --no-splash matching-worker
+
+  matching-retry-worker:
+    <<: *harmonia-svc
+    command: txcore --no-splash matching-retry-worker
+
+  export-director:
+    <<: *harmonia-svc
+    command: txcore --no-splash export-director
+
+  export-agent-acxetado:
+    <<: *harmonia-svc
+    command: txexport --no-splash -a aĉetado -y -q

@@ -1,0 +1,102 @@
+import textwrap
+import typing as t
+
+import click
+
+from app.core.cli import SPLASH
+from app.registry import Registry, RegistryError
+
+
+def info(text):
+    return click.style(text, fg="cyan")
+
+
+def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
+    @click.command()
+    @click.option(
+        "-a", "--agent", type=click.Choice(registry._entries.keys()), required=True
+    )
+    @click.option(
+        "-y",
+        "--no-user-input",
+        is_flag=True,
+        help="bypass the y/N prompt to run the agent",
+    )
+    @click.option("--once", is_flag=True, help="run the agent once")
+    @click.option("--debug", is_flag=True, help="run the agent in debug mode")
+    @click.option(
+        "-N",
+        "--dry-run",
+        is_flag=True,
+        help="print agent information then quit without executing",
+    )
+    @click.option(
+        "-q",
+        "--quiet",
+        is_flag=True,
+        help="skip printing agent information and warnings",
+    )
+    @click.option(
+        "--splash/--no-splash",
+        default=True,
+        help="whether or not to show the harmonia splash",
+    )
+    def cli(
+        agent: str,
+        no_user_input: bool,
+        once: bool,
+        debug: bool,
+        dry_run: bool,
+        quiet: bool,
+        splash: bool,
+    ) -> None:
+        if splash:
+            click.echo(SPLASH)
+
+        try:
+            agent_instance = registry.instantiate(agent, debug=debug)
+        except RegistryError as ex:
+            click.echo(
+                f"{click.style('Error:', fg='red')} {ex}\n"
+                f"Check the value for key {info(agent)} "
+                f"in {info(registry_file)}. "
+                f"It is currently set to {info(registry._entries[agent])}.",
+                err=True,
+            )
+            if debug:
+                raise
+            else:
+                click.echo(f"Run with {info('--debug')} for a stack trace.")
+                raise click.Abort()
+
+        if not quiet:
+            click.echo(
+                f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}."
+            )
+
+            click.echo()
+            click.echo("Agent help text:")
+            click.echo()
+            click.echo(textwrap.indent(agent_instance.help(), "    "))
+            click.echo()
+
+            if once:
+                click.echo("Agent will be run once.")
+                click.echo()
+
+            if debug:
+                click.echo(
+                    f"{click.style('Warning', fg='yellow')}: "
+                    "Debug mode is on. Exceptions will not be handled gracefully!"
+                )
+                click.echo()
+
+        if dry_run:
+            return
+
+        if no_user_input or click.confirm("Do you wish to run this agent?"):
+            if not no_user_input:
+                click.echo()
+            agent_instance.run(once=once)
+
+    return cli

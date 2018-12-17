@@ -26,12 +26,13 @@ pendulum = "*"
 apispec-webframeworks = "*"
 
 [dev-packages]
-harmonia = {editable = true, path = "."}
+harmonia = {editable = true,path = "."}
 alembic = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 mypy = "*"
+loguru = "*"
 
 [pipenv]
 allow_prereleases = true

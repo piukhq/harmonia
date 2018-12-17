@@ -6,11 +6,11 @@ from app.api import utils
 def test_expects_json():
     app = Flask(__name__)
 
-    @app.route('/')
+    @app.route("/")
     @utils.expects_json
     def index():
-        return 'This should not pass!'
+        return "This should not pass!"
 
     client = app.test_client()
-    resp = client.get('/')
+    resp = client.get("/")
     assert resp.status_code == 400, resp.json
