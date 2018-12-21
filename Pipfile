@@ -7,23 +7,20 @@ name = "pypi"
 sqlalchemy = "*"
 "psycopg2-binary" = "*"
 flask = "*"
-influxdb = "*"
 flask-cors = "*"
 click = "*"
-colorama = "*"
 redis = "*"
 apscheduler = "*"
 humanize = "*"
 apispec = "*"
 marshmallow = "*"
 marshmallow-sqlalchemy = "*"
-kombu = "*"
 inotify = "*"
 tenacity = "*"
-pyyaml = "*"
 sentry-sdk = "*"
 pendulum = "*"
 apispec-webframeworks = "*"
+rq = "*"
 
 [dev-packages]
 harmonia = {editable = true,path = "."}
@@ -32,8 +29,6 @@ pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 mypy = "*"
-loguru = "*"
-better-exceptions = "*"
 
 [pipenv]
 allow_prereleases = true

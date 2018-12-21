@@ -4,7 +4,7 @@ import inspect
 
 import click
 
-from app.db import Session, Base
+from app.db import session, Base
 from app.models import (
     ImportTransaction,
     SchemeTransaction,
@@ -102,7 +102,6 @@ def cli() -> None:
 @cli.command(help="start from an import transaction")
 @click.argument("import_transaction_id")
 def forward(import_transaction_id: int) -> None:
-    session = Session()
     import_transaction = session.query(ImportTransaction).get(import_transaction_id)
 
     scheme_transaction = (
@@ -153,7 +152,6 @@ def forward(import_transaction_id: int) -> None:
 @cli.command(help="work backwards from an export transaction")
 @click.argument("export_transaction_id")
 def reverse(export_transaction_id: int) -> None:
-    session = Session()
     export_transaction = session.query(ExportTransaction).get(export_transaction_id)
     matched_transaction = (
         session.query(MatchedTransaction)

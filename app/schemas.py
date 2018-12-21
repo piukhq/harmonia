@@ -1,9 +1,6 @@
 from marshmallow import Schema, fields, post_load
 
 from app import models
-from app.db import Session
-
-session = Session()
 
 
 class SchemeImportQueueSchema(Schema):

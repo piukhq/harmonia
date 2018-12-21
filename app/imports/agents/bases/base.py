@@ -3,16 +3,13 @@ import typing as t
 import marshmallow
 from sqlalchemy.orm.exc import NoResultFound
 
-from app import models, base_agent
-from app.db import Session
+from app import models, base_agent, tasks
+from app.db import session
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
-from app.queues import StrictQueue
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
-
-session = Session()
 
 
 class ImportTransactionAlreadyExistsError(Exception):
@@ -31,10 +28,6 @@ class BaseAgent(base_agent.BaseAgent):
     @property
     def provider_slug(self) -> str:
         return missing_property(self, "provider_slug")
-
-    @property
-    def queue(self) -> StrictQueue:
-        return missing_property(self, "queue")
 
     @property
     def feed_type(self) -> ImportFeedTypes:
@@ -140,7 +133,13 @@ class BaseAgent(base_agent.BaseAgent):
                 )
             else:
                 queue_tx = schema.to_queue_transaction(tx_data, merchant_identifier_id)
-                self.queue.push(queue_tx)
+
+                import_task = {
+                    ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
+                    ImportFeedTypes.PAYMENT: tasks.import_payment_transaction,
+                }[self.feed_type]
+                tasks.import_queue.enqueue(import_task, queue_tx)
+
                 session.add(
                     models.ImportTransaction(
                         transaction_id=tid,

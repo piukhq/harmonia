@@ -3,7 +3,6 @@ import typing as t
 
 import click
 
-from app.core.cli import SPLASH
 from app.registry import Registry, RegistryError
 
 
@@ -36,11 +35,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         is_flag=True,
         help="skip printing agent information and warnings",
     )
-    @click.option(
-        "--splash/--no-splash",
-        default=True,
-        help="whether or not to show the harmonia splash",
-    )
     def cli(
         agent: str,
         no_user_input: bool,
@@ -48,11 +42,7 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         debug: bool,
         dry_run: bool,
         quiet: bool,
-        splash: bool,
     ) -> None:
-        if splash:
-            click.echo(SPLASH)
-
         try:
             agent_instance = registry.instantiate(agent, debug=debug)
         except RegistryError as ex:

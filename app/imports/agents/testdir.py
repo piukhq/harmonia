@@ -1,11 +1,11 @@
-from datetime import datetime
 import typing as t
+from datetime import datetime
 
 from marshmallow import Schema, fields
 
+from app import models
+from app.config import KEY_PREFIX, ConfigValue
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
-from app.config import ConfigValue, KEY_PREFIX
-from app import models, queues
 
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.testdir.watch_directory"
 
@@ -42,7 +42,6 @@ class TestDirAgentTransactionSchema(Schema):
 class TestDirAgent(DirectoryWatchAgent):
     schema_class = TestDirAgentTransactionSchema
     provider_slug = PROVIDER_SLUG
-    queue = queues.scheme_import_queue
 
     class Config:
         watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default="./itx")

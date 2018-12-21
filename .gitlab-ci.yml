@@ -7,9 +7,8 @@ tests:
   stage: tests
   script:
     - pipenv install --system --deploy
-    - export POSTGRES_DSN="postgresql://postgres@${POSTGRES_PORT_5432_TCP_ADDR}:5432${POSTGRES_NAME}"
-    - export REDIS_DSN="redis://redis@${REDIS_PORT_6379_TCP_ADDR}:6379/0"
-    - export AMQP_DSN="amqp://${RABBITMQ_PORT_5672_TCP_ADDR}:5672"
+    - export TXM_POSTGRES_DSN="postgresql://postgres@${POSTGRES_PORT_5432_TCP_ADDR}:5432${POSTGRES_NAME}"
+    - export TXM_REDIS_DSN="redis://redis@${REDIS_PORT_6379_TCP_ADDR}:6379/0"
     - pytest -v --cov-report term-missing --cov=app
   services:
     - postgres:9.4.4

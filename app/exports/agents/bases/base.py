@@ -1,4 +1,4 @@
-from app import base_agent
+from app import base_agent, models
 from app.reporting import get_logger
 
 
@@ -32,17 +32,21 @@ class BaseAgent(base_agent.BaseAgent):
 
     def run(self, *, once: bool = False):
         raise NotImplementedError(
-            "Override the run method in your agent to act as the entry point "
-            "into the export process."
+            "This method should be overridden by specicialised base agents."
         )
 
-    def export(self, matched_transaction_id: int, *, once: bool = False):
+    def handle_pending_export(self, pending_export: models.PendingExport) -> None:
+        raise NotImplementedError(
+            "This method should be overridden by specicialised base agents."
+        )
+
+    def export(self, matched_transaction_id: int):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point "
             "into the singular export process."
         )
 
-    def export_all(self, *, once: bool = False, debug: bool = False):
+    def export_all(self):
         raise NotImplementedError(
             "Override the export_all method in your agent to act as the entry point "
             "into the batch export process."

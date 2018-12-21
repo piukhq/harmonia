@@ -1,18 +1,19 @@
-from app import queues
-from app.db import Session
+from typing import cast
+
+from app import tasks
+from app.db import session
+from app.exports.agents.bases.base import BaseAgent
+from app.exports.agents.registry import export_agents
 from app.exports.models import PendingExport
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.status import status_monitor
 
 log = get_logger("export-director")
-session = Session()
 
 
 class ExportDirector:
-    def on_matched_transaction(
-        self, matched_transaction_id: int, headers: dict
-    ) -> bool:
+    def handle_matched_transaction(self, matched_transaction_id: int) -> None:
         status_monitor.checkin(self)
 
         log.debug(f"Recieved matched transaction #{matched_transaction_id}.")
@@ -32,14 +33,16 @@ class ExportDirector:
         session.add(pending_export)
         session.commit()
 
-        log.debug(
-            f"Notifying pending export queue of pending export #{pending_export.id}."
-        )
-        queues.pending_export_queue.push({"pending_export_id": pending_export.id})
+        log.info(f"Sending trigger for single export agents: {pending_export}.")
+        tasks.export_queue.enqueue(tasks.export_single_transaction, pending_export.id)
 
-        return True
+        session.close()
 
-    def enter_loop(self, *, debug: bool = False, once: bool = False) -> None:
-        queues.export_queue.pull(
-            self.on_matched_transaction, raise_exceptions=debug, once=once
-        )
+    def handle_pending_export(self, pending_export_id: int) -> None:
+        pending_export = session.query(PendingExport).get(pending_export_id)
+        agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))
+
+        log.info(f"Received {pending_export}, delegating to {agent}.")
+        agent.handle_pending_export(pending_export)
+
+        session.close()

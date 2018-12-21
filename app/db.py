@@ -10,7 +10,9 @@ db_engine = s.create_engine(
     json_serializer=encoding.dumps,
     json_deserializer=encoding.loads,
 )
+
 Session = sessionmaker(bind=db_engine)
+session = Session()
 
 Base = declarative_base()
 
