@@ -1,12 +1,10 @@
 import typing as t
 from collections import namedtuple
 
-from app.db import Session
+from app.db import session
 from app.models import PaymentTransaction, SchemeTransaction
 from app.reporting import get_logger
 from app.utils import missing_property
-
-session = Session()
 
 MatchResult = namedtuple("MatchResult", "matched_tx scheme_tx_id")
 

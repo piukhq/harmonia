@@ -78,20 +78,6 @@ class StatusMonitor:
 
         return {"dsn": settings.REDIS_DSN, "healthy": healthy, "errors": errors}
 
-    def _get_amqp_health(self) -> dict:
-        from kombu import Connection
-
-        errors = []
-        try:
-            conn = Connection(settings.AMQP_DSN, connect_timeout=3)
-            conn.connect()
-            healthy = True
-        except Exception as ex:
-            healthy = False
-            errors.append(ex)
-
-        return {"dsn": settings.AMQP_DSN, "healthy": healthy, "errors": errors}
-
     def report(self) -> dict:
         redis_health = self._get_redis_health()
 
@@ -110,7 +96,6 @@ class StatusMonitor:
             "services": [
                 {"name": "postgres", **self._get_postgres_health()},
                 {"name": "redis", **redis_health},
-                {"name": "amqp", **self._get_amqp_health()},
             ],
         }
 

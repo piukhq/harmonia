@@ -3,18 +3,14 @@ import typing as t
 import pendulum
 from marshmallow import Schema, fields
 
-from app import models, queues
+from app import models
 from app.config import KEY_PREFIX, ConfigValue
-from app.db import Session
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split
 
 PROVIDER_SLUG = "aĉetado"
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.aĉetado.watch_directory"
-
-
-session = Session()
 
 
 class PendulumField(fields.Field):
@@ -63,7 +59,6 @@ class AĉetadoAgent(DirectoryWatchAgent):
     schema_class = AĉetadoAgentTransactionSchema
     feed_type = ImportFeedTypes.SCHEME
     provider_slug = PROVIDER_SLUG
-    queue = queues.scheme_import_queue
 
     file_fields = ["mid", "transaction_id", "date", "spend", "points"]
     file_field_types = {"spend": int, "points": int}

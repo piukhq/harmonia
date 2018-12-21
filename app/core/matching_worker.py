@@ -1,11 +1,8 @@
 import typing as t
 
-import humanize
-import pendulum
 import sentry_sdk
 
-from app.db import Session
-from app.matching import retry
+from app.db import session
 from app.matching.agents.active import AGENTS
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.models import (
@@ -14,11 +11,10 @@ from app.models import (
     SchemeTransaction,
     TransactionStatus,
 )
-from app.queues import export_queue, matching_queue
 from app.reporting import get_logger
 from app.status import status_monitor
-
-session = Session()
+from app import tasks
+import settings
 
 
 class MatchingWorker:
@@ -31,45 +27,13 @@ class MatchingWorker:
     class AgentError(Exception):
         pass
 
-    def __init__(self, name: str, debug: bool = False) -> None:
-        self.name = name
-        self.debug = debug
+    def __init__(self) -> None:
+        self.log = get_logger(f"matching-worker")
 
-        self.log = get_logger(f"matching-worker.{self.name}")
-
-        if self.debug:
+        if settings.DEBUG:
             self.log.warning(
                 "Running in debug mode. Exceptions will not be handled gracefully!"
             )
-
-    @staticmethod
-    def _get_retry_delay(retry_count: int) -> int:
-        return (
-            2 ** retry_count
-        ) * 60  # starts at 60 seconds and doubles with each retry
-
-    def _retry(self, payment_tx: PaymentTransaction, headers: dict):
-        try:
-            last_try = headers["X-Retried-At"]
-        except KeyError:
-            last_try = headers["X-Queued-At"]
-
-        retry_count = headers["X-Retry-Count"]
-        delay = self._get_retry_delay(retry_count)
-        retry_at = last_try + delay
-
-        when = humanize.naturaltime(delay, future=True)
-
-        self.log.info(
-            f"Payment transaction #{payment_tx.id} has been retried {retry_count} time(s) "
-            f"and was last tried at {pendulum.from_timestamp(last_try)}. "
-            f"Storing a retry entry to try again {when} at {pendulum.from_timestamp(retry_at)}."
-        )
-
-        retry.store(
-            payment_tx.id,
-            retry.RetryEntry(retry_at, retry_count, headers["X-Queued-At"]),
-        )
 
     def _persist(self, matched_tx: MatchedTransaction):
         session.add(matched_tx)
@@ -107,23 +71,30 @@ class MatchingWorker:
 
     def _export(self, matched_tx: MatchedTransaction) -> None:
         self._persist(matched_tx)
-        export_queue.push({"matched_transaction_id": matched_tx.id})
+        tasks.export_queue.enqueue(tasks.export_matched_transaction, matched_tx.id)
 
-    def handle_transaction(self, payment_tx_id: int, headers: dict) -> bool:
+    def handle_payment_transaction(self, payment_transaction_id: int) -> None:
         """Runs the matching process for a single payment transaction."""
-        status_monitor.checkin(self, suffix=self.name)
+        status_monitor.checkin(self)
 
-        payment_tx = session.query(PaymentTransaction).get(payment_tx_id)
+        payment_tx = session.query(PaymentTransaction).get(payment_transaction_id)
 
         self.log.debug(
             f"Received payment transaction #{payment_tx.id}. Attempting to match…"
         )
 
+        if payment_tx.status == TransactionStatus.MATCHED:
+            self.log.debug(
+                f"Payment transaction #{payment_tx.id} has already been matched. Ignoring."
+            )
+            session.close()
+            return
+
         match_result = None
         try:
             match_result = self._match(payment_tx)
         except (self.NoMatchingAgent, self.AgentError) as ex:
-            if self.debug is True:
+            if settings.DEBUG:
                 raise ex
             else:
                 sentry_id = sentry_sdk.capture_exception(ex)
@@ -132,11 +103,9 @@ class MatchingWorker:
                 )
 
         if match_result is None:
-            self.log.debug(
-                f"Matching failed, submitting payment transaction #{payment_tx.id} for retry."
-            )
-            self._retry(payment_tx, headers)
-            return True
+            self.log.info("Failed to find any matches.")
+            session.close()
+            return
 
         self.log.debug(f"Matching succeeded! Marking transactions as matched.")
         payment_tx.status = TransactionStatus.MATCHED
@@ -148,10 +117,31 @@ class MatchingWorker:
         self.log.debug(f"Persisting & exporting payment transaction #{payment_tx.id}.")
         self._export(match_result.matched_tx)
 
-        return True
+        session.close()
 
-    def enter_loop(self, once: bool) -> None:
-        self.log.info(f"{type(self).__name__} commencing matching feed consumption.")
-        matching_queue.pull(
-            self.handle_transaction, raise_exceptions=self.debug, once=once
+    def handle_scheme_transaction(self, scheme_transaction_id: int) -> None:
+        """Finds potential matching payment transactions and requeues a matching job for them."""
+        status_monitor.checkin(self)
+
+        scheme_transaction = session.query(SchemeTransaction).get(scheme_transaction_id)
+
+        self.log.debug(
+            f"Received scheme transaction #{scheme_transaction.id}. Finding potential matches…"
         )
+
+        payment_transactions = session.query(PaymentTransaction).filter(
+            PaymentTransaction.merchant_identifier_id
+            == scheme_transaction.merchant_identifier_id,
+            PaymentTransaction.status == TransactionStatus.PENDING,
+        )
+
+        if payment_transactions:
+            self.log.debug(
+                f"Found {payment_transactions.count()} potential matches. Enqueueing matching jobs."
+            )
+            for payment_transaction in payment_transactions:
+                tasks.matching_queue.enqueue(
+                    tasks.match_payment_transaction, payment_transaction.id
+                )
+
+        session.close()

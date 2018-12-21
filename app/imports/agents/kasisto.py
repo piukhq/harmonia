@@ -3,18 +3,14 @@ import typing as t
 import pendulum
 from marshmallow import Schema, fields
 
-from app import models, queues
+from app import models
 from app.config import KEY_PREFIX, ConfigValue
-from app.db import Session
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split, PendulumField
 
 PROVIDER_SLUG = "kasisto"
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.kasisto.watch_directory"
-
-
-session = Session()
 
 
 class KasistoAgentTransactionSchema(Schema):
@@ -52,7 +48,6 @@ class KasistoAgent(DirectoryWatchAgent):
     schema_class = KasistoAgentTransactionSchema
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
-    queue = queues.payment_import_queue
 
     file_fields = ["mid", "transaction_id", "date", "spend", "token"]
     file_field_types = {"spend": int}

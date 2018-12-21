@@ -35,7 +35,7 @@ class DirectoryWatchAgent(BaseAgent):
         adapter = inotify.adapters.Inotify()
 
         try:
-            adapter.add_watch(watch_path)
+            adapter.add_watch(str(watch_path))
         except inotify.calls.InotifyError as ex:
             self.log.critical(
                 f"Failed to set watch on `{watch_path}`. "

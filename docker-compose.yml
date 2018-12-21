@@ -4,30 +4,24 @@ x-harmonia-svc: &harmonia-svc
   image: harmonia
   build: .
   environment:
-    - POSTGRES_DSN=postgresql://postgres@postgres:5432/postgres
-    - REDIS_DSN=redis://redis:6379/0
-    - AMQP_DSN=amqp://rabbitmq:5672/
-    - LOG_LEVEL=debug
+    - TXM_POSTGRES_DSN=postgresql://postgres@postgres:5432/postgres
+    - TXM_REDIS_DSN=redis://redis:6379/0
+    - TXM_LOG_LEVEL=debug
   volumes:
     - ./files/:/app/files/
   depends_on:
     - postgres
-    - rabbitmq
     - redis
 
 services:
   postgres:
+    container_name: postgres
     image: postgres:latest
     ports:
       - 5432:5432
 
-  rabbitmq:
-    image: rabbitmq:management
-    ports:
-      - 5672:5672
-      - 15672:15672
-
   redis:
+    container_name: redis
     image: redis:latest
     ports:
       - 6379:6379
@@ -39,37 +33,23 @@ services:
   seed:
     <<: *harmonia-svc
     command: s/seed.py
-    depends_on:
-      - migrate
 
   import-agent-acxetado:
     <<: *harmonia-svc
-    command: tximport --no-splash -a aĉetado -y -q
+    command: tximport -a aĉetado -y -q
 
   import-agent-kasisto:
     <<: *harmonia-svc
-    command: tximport --no-splash -a kasisto -y -q
+    command: tximport -a kasisto -y -q
 
-  import-director-scheme:
+  import-worker:
     <<: *harmonia-svc
-    command: txcore --no-splash import-director scheme
-
-  import-director-payment:
-    <<: *harmonia-svc
-    command: txcore --no-splash import-director payment
+    command: rq worker import -u redis://redis:6379/0
 
   matching-worker:
     <<: *harmonia-svc
-    command: txcore --no-splash matching-worker
+    command: rq worker matching -u redis://redis:6379/0
 
-  matching-retry-worker:
+  export-worker:
     <<: *harmonia-svc
-    command: txcore --no-splash matching-retry-worker
-
-  export-director:
-    <<: *harmonia-svc
-    command: txcore --no-splash export-director
-
-  export-agent-acxetado:
-    <<: *harmonia-svc
-    command: txexport --no-splash -a aĉetado -y -q
+    command: rq worker export -u redis://redis:6379/0

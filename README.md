@@ -19,7 +19,6 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
     - [End-to-End Matching Test](#end-to-end-matching-test)
         - [PostgreSQL](#postgresql)
         - [Redis](#redis)
-        - [RabbitMQ](#rabbitmq)
 - [Migrations](#migrations)
 - [Deployment](#deployment)
 
@@ -36,7 +35,6 @@ The following is a list of the important dependencies used in the project. You d
 * [SQLAlchemy](https://www.sqlalchemy.org) - Object-relational mapping library. Used for interacting with PostgreSQL.
 * [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
 * [Flask](http://flask.pocoo.org) - API framework.
-* [InfluxDB](http://influxdb-python.readthedocs.io/en/latest) - Time-series database used for logging performance metrics.
 * [Sentry SDK](https://docs.sentry.io/quickstart?platform=python) - Client for the Sentry error reporting platform. Includes Flask integration.
 * [Click](http://click.pocoo.org/6) - Used for building the management CLI for each part of the system.
 * [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration.
@@ -54,6 +52,8 @@ pipenv install --dev
 
 Project configuration is done through environment variables. A convenient way to set these is in a `.env` file in the project root. This file will be sourced by Pipenv when `pipenv run` and `pipenv shell` are used. See `settings.py` for configuration options that can be set in this file.
 
+All transaction matching environment variables are prefixed with `TXM_`.
+
 To make a `.env` file from the provided example:
 
 ```bash
@@ -62,7 +62,7 @@ cp .env.example .env
 
 The provided example is sufficient as a basic configuration, but modification may be required for specific use-cases.
 
-The `.env` file contains connection strings for the three major services used in the project; PostgreSQL, RabbitMQ, and Redis. These connection strings assume a local instance of these services listening on the default ports.
+The `.env` file contains connection strings for the two major services used in the project; PostgreSQL and Redis. These connection strings assume a local instance of these services listening on the default ports.
 
 To quickly create docker containers for the required services:
 
@@ -118,13 +118,9 @@ To run the end-to-end script:
 s/quick_work
 ```
 
-This will destroy any existing docker containers with the names `postgres`, `redis`, or `rabbitmq`. It will then create new instances of these services, migrate the database, place some example transactions on the import queue, run the scheme & payment importers, then run the matching worker. The process is finished when you see a log line similar to the following:
+This will destroy any existing docker containers with the name `postgres` or `redis`. It will then create new instances of these services, migrate the database, and run each stage of the transaction import, matching, and export process.
 
-```
-2018-11-23 09:46:40,408 :: message-queue.export :: DEBUG :: Dumped data: {'matched_transaction_id': 1}. Publishing now.
-```
-
-At this point the matching worker can be closed (`KeyboardInterrupt` is handled cleanly.) The PostgreSQL, Redis, and RabbitMQ containers will be left as-is. You can inspect the state of these systems to see the side-effects of running the matching system.
+When everything is finished, the PostgreSQL and Redis containers will be left as-is. You can inspect the state of these systems to see the side-effects of running the matching system.
 
 #### PostgreSQL
 
@@ -156,13 +152,7 @@ get txmatch:status:checkins:SchemeImportDirector
 
 The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.
 
-#### RabbitMQ
-
-Navigate to http://localhost:15672 to see the RabbitMQ management dashboard. The default username and password is `guest`/`guest`.
-
-If the system worked correctly, all txmatch queues should be empty save for the export queue, which should contain a single message. If you fetch this message, you should see a JSON payload containing the numeric ID of the MatchedTransaction to be exported.
-
-## Migrations
+# Migrations
 
 [alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.
 
@@ -173,15 +163,3 @@ Migrations should be manually squashed before each deployment for efficiency's s
 ## Deployment
 
 There is a Dockerfile provided in the project root. Build an image from this to get a deployment-ready version of the project.
-
-## Development Tools
-
-The Pipfile includes a few useful tools to aid project development.
-
-### Loguru
-
-Logs can be made more readable with the use of [loguru](https://github.com/Delgan/loguru) by setting `USE_LOGURU=true` in the `.env` file.
-
-### Better Exceptions
-
-Stack traces can be enchanced with [better-exceptions](https://github.com/Qix-/better-exceptions) by setting `BETTER_EXCEPTIONS=true` in the `.env` file.

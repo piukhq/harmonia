@@ -10,23 +10,23 @@ pipenv run s/seed.py
 p 'producing transaction files'
 pipenv run s/producer.py -n 1 --scheme-file files/imports/aĉetado/transactions-2018-12-04 --payment-file files/imports/kasisto/card-tx-20181204
 
-p 'running scheme import agent'
-pipenv run tximport --no-splash --agent aĉetado --once --debug --no-user-input --quiet
-
 p 'running payment import agent'
-pipenv run tximport --no-splash --agent kasisto --once --debug --no-user-input --quiet
+pipenv run tximport --agent kasisto --no-user-input --quiet --once
 
-p 'running scheme import director'
-pipenv run txcore --no-splash import-director --once --debug scheme
-
-p 'running payment import director'
-pipenv run txcore --no-splash import-director --once --debug payment
+p 'running import worker'
+pipenv run rq worker import --burst
 
 p 'running matching worker'
-pipenv run txcore --no-splash matching-worker --once --debug
+pipenv run rq worker matching --burst
 
-p 'running export director'
-pipenv run txcore --no-splash export-director --once --debug
+p 'running scheme import agent'
+pipenv run tximport --agent aĉetado --no-user-input --quiet --once
 
-p 'running aĉetado export agent'
-pipenv run txexport --no-splash -a aĉetado --once --debug --quiet --no-user-input
+p 'running import worker'
+pipenv run rq worker import --burst
+
+p 'running matching worker'
+pipenv run rq worker matching --burst
+
+p 'running export worker'
+pipenv run rq worker export --burst

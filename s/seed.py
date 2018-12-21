@@ -5,9 +5,7 @@ from collections import namedtuple
 import sqlalchemy
 
 from app import models
-from app.db import Base, Session
-
-session = Session()
+from app.db import Base, session
 
 MIDConfig = namedtuple("MIDConfig", "mid location postcode")
 

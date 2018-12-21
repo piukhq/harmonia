@@ -3,10 +3,7 @@ import typing as t
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from app import models
-from app.db import Session
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
-
-session = Session()
 
 
 class ExampleMatchingAgent(BaseMatchingAgent):
@@ -27,6 +24,7 @@ class ExampleMatchingAgent(BaseMatchingAgent):
             self.log.warning(
                 f"Couldn't match any scheme transactions to payment transaction #{self.payment_transaction.id}."
             )
+            return None
         except MultipleResultsFound:
             self.log.warning(
                 f"More than one scheme transaction matches payment transaction #{self.payment_transaction.id}."
