@@ -8,7 +8,7 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 - [Prerequisites](#prerequisites)
 - [Dependencies](#dependencies)
@@ -152,7 +152,7 @@ get txmatch:status:checkins:SchemeImportDirector
 
 The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.
 
-# Migrations
+## Migrations
 
 [alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.
 
