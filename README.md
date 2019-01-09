@@ -135,12 +135,12 @@ docker exec -it postgres psql -U postgres
 select * from payment_provider;
 select * from loyalty_scheme;
 select * from merchant_identifier;
+select * from import_transaction;
 select * from payment_transaction;
 select * from scheme_transaction;
 select * from matched_transaction;
+select * from export_transaction;
 ```
-
-Please note that no entry will have been made in the `import_transaction` table as the transactions were placed directly on the import queue, rather than being run through an import agent.
 
 #### Redis
 
