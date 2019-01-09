@@ -37,8 +37,10 @@ The following is a list of the important dependencies used in the project. You d
 * [Flask](http://flask.pocoo.org) - API framework.
 * [Sentry SDK](https://docs.sentry.io/quickstart?platform=python) - Client for the Sentry error reporting platform. Includes Flask integration.
 * [Click](http://click.pocoo.org/6) - Used for building the management CLI for each part of the system.
-* [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration.
+* [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration and task queues.
 * [APScheduler](https://apscheduler.readthedocs.io/en/latest) - Used for scheduling various time-based parts of the system.
+* [Marshmallow](https://marshmallow.readthedocs.io/en/latest) - (De)serialization library for converting between JSON payloads and database objects.
+* [rq](https://python-rq.org) - Redis-based task queue. Most transaction matching processes run as RQ jobs.
 
 ## Project Setup
 
