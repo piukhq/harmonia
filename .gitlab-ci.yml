@@ -13,7 +13,6 @@ tests:
   services:
     - postgres:9.4.4
     - redis:4
-    - rabbitmq:3
 
 complexity:
   stage: tests
