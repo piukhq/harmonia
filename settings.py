@@ -64,3 +64,6 @@ if SENTRY_DSN is not None:
 
 # JSON encoding with custom extensions. Used in queue messages, postgres JSON field storage, et cetera.
 JSON_SERIALIZER = "txmatch+json"
+
+# Base URL for the Hermes API
+HERMES_URL = getenv("TXM_HERMES_URL")

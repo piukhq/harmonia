@@ -7,7 +7,7 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class ExampleMatchingAgent(BaseMatchingAgent):
-    scheme_slug = "aĉetado"
+    scheme_slug = "acxetado"
 
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         scheme_transactions = self._fine_match(

@@ -9,7 +9,7 @@ from app.db import Base, session
 
 MIDConfig = namedtuple("MIDConfig", "mid location postcode")
 
-LOYALTY_SCHEME_SLUG = "aĉetado"
+LOYALTY_SCHEME_SLUG = "acxetado"
 PAYMENT_PROVIDER_SLUG = "kasisto"
 MID_CONFIGS = [
     MIDConfig("1234", "60 Argyll Road, Llandegwning", "LL53 1PH"),

@@ -9,7 +9,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split
 
-PROVIDER_SLUG = "aĉetado"
+PROVIDER_SLUG = "acxetado"
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.aĉetado.watch_directory"
 
 
@@ -65,7 +65,7 @@ class AĉetadoAgent(DirectoryWatchAgent):
 
     class Config:
         watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default="files/imports/aĉetado"
+            WATCH_DIRECTORY_KEY, default="files/imports/acxetado"
         )
 
     def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:

@@ -4,6 +4,8 @@ from apispec import APISpec
 from apispec_webframeworks.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, jsonify, render_template
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from flask_cors import CORS
 
 from app.version import __version__
@@ -23,10 +25,33 @@ def define_schema(schema_class: t.Type) -> t.Type:
     return schema_class
 
 
+def add_admin_views(admin):
+    from app import models, db
+
+    model_classes = [
+        models.ExportTransaction,
+        models.ImportTransaction,
+        models.LoyaltyScheme,
+        models.MatchedTransaction,
+        models.MerchantIdentifier,
+        models.PaymentProvider,
+        models.PaymentTransaction,
+        models.PendingExport,
+        models.SchemeTransaction,
+    ]
+
+    for model_class in model_classes:
+        admin.add_view(ModelView(model_class, db.session))
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
     CORS(app)
+
+    app.config['FLASK_ADMIN_SWATCH'] = 'flatly'
+    admin = Admin(app, name="Transaction Matching", template_mode="bootstrap3")
+    add_admin_views(admin)
 
     from app.config.views import api as config_api
     from app.status.views import api as status_api

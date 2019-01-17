@@ -69,9 +69,9 @@ class MatchingWorker:
         agent = agent_class(payment_tx)
         return self._try_match(agent, payment_tx)
 
-    def _export(self, matched_tx: MatchedTransaction) -> None:
+    def _identify(self, matched_tx: MatchedTransaction) -> None:
         self._persist(matched_tx)
-        tasks.export_queue.enqueue(tasks.export_matched_transaction, matched_tx.id)
+        tasks.matching_queue.enqueue(tasks.identify_matched_transaction, matched_tx.id)
 
     def handle_payment_transaction(self, payment_transaction_id: int) -> None:
         """Runs the matching process for a single payment transaction."""
@@ -114,8 +114,8 @@ class MatchingWorker:
         scheme_tx.status = TransactionStatus.MATCHED
         session.commit()
 
-        self.log.debug(f"Persisting & exporting payment transaction #{payment_tx.id}.")
-        self._export(match_result.matched_tx)
+        self.log.debug(f"Persisting & identifying payment transaction #{payment_tx.id}.")
+        self._identify(match_result.matched_tx)
 
         session.close()
 

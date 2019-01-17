@@ -21,6 +21,7 @@ sentry-sdk = "*"
 pendulum = "*"
 apispec-webframeworks = "*"
 rq = "*"
+flask-admin = "*"
 
 [dev-packages]
 harmonia = {editable = true,path = "."}

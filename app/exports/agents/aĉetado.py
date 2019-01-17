@@ -7,7 +7,7 @@ from app.models import ExportTransaction, MatchedTransaction, MatchedTransaction
 
 
 class AĉetadoAgent(SingleExportAgent):
-    provider_slug = "aĉetado"
+    provider_slug = "acxetado"
 
     def help(self):
         return inspect.cleandoc(
@@ -28,6 +28,7 @@ class AĉetadoAgent(SingleExportAgent):
         export_data = {
             "transaction_id": matched_transaction.transaction_id,
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",
+            "loyalty_card_number": matched_transaction.user_identity.loyalty_id,
         }
         self.log.info(f"In a real agent we'd send this somewhere: {export_data}")
 

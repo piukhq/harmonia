@@ -4,11 +4,18 @@ source s/_common
 
 s/services
 
+p 'setting up hermes'
+pushd ~/projects/olympus/hermes
+psql -h localhost -U postgres -c "create database hermes";
+~/.virtualenvs/hermes/bin/python manage.py migrate
+~/.virtualenvs/hermes/bin/python manage.py loaddata seed.json
+popd
+
 p 'seeding database'
 pipenv run s/seed.py
 
 p 'producing transaction files'
-pipenv run s/producer.py -n 1 --scheme-file files/imports/aĉetado/transactions-2018-12-04 --payment-file files/imports/kasisto/card-tx-20181204
+pipenv run s/producer.py -n 1 --scheme-file files/imports/acxetado/transactions-2018-12-04 --payment-file files/imports/kasisto/card-tx-20181204
 
 p 'running payment import agent'
 pipenv run tximport --agent kasisto --no-user-input --quiet --once
@@ -20,7 +27,7 @@ p 'running matching worker'
 pipenv run rq worker matching --burst
 
 p 'running scheme import agent'
-pipenv run tximport --agent aĉetado --no-user-input --quiet --once
+pipenv run tximport --agent acxetado --no-user-input --quiet --once
 
 p 'running import worker'
 pipenv run rq worker import --burst

@@ -3,7 +3,7 @@ from rq import Queue
 
 import settings
 from app import models
-from app.core import import_director, matching_worker, export_director
+from app.core import import_director, matching_worker, export_director, identifier
 
 redis = StrictRedis.from_url(settings.REDIS_DSN)
 
@@ -30,6 +30,11 @@ def match_payment_transaction(payment_transaction_id: int) -> None:
 def match_scheme_transaction(scheme_transaction_id: int) -> None:
     worker = matching_worker.MatchingWorker()
     worker.handle_scheme_transaction(scheme_transaction_id)
+
+
+def identify_matched_transaction(matched_transaction_id: int) -> None:
+    tx_identifier = identifier.Identifier()
+    tx_identifier.identify_matched_transaction(matched_transaction_id)
 
 
 def export_matched_transaction(matched_transaction_id: int) -> None:

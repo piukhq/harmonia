@@ -182,6 +182,21 @@ class MatchedTransaction(Base, ModelMixin):
     payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
     scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
+    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="matched_transaction")
+
     extra_fields = s.Column(
         s.JSON
     )  # combination of the same field on the scheme and payment transaction models
+
+
+@auto_repr
+class UserIdentity(Base, ModelMixin):
+    __tablename__ = "user_identity"
+
+    loyalty_id = s.Column(s.String(250), nullable=False)
+    scheme_account_id = s.Column(s.Integer, nullable=False)
+    user_id = s.Column(s.Integer, nullable=False)
+    credentials = s.Column(s.Text, nullable=False)
+
+    matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
+    matched_transaction = s.orm.relationship("MatchedTransaction", back_populates="user_identity")
