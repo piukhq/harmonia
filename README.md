@@ -114,6 +114,14 @@ s/tests
 
 There is a script provided that will run all the major components of the system in order. This should show a transaction going through the import->match process, and is useful for testing the interaction between the import stage and the matching worker.
 
+Both the transaction file production script (`s/producer.py`) and the import agents will expect their respective import directories to already exist. By default they will look for files in `./files/imports/SLUG/*`.
+
+To make the required import directories:
+
+```bash
+mkdir -p files/imports/{acxtedo,kasisto}
+```
+
 Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.
 
 Example of a valid Hermes setup:
@@ -144,7 +152,7 @@ index e9cbc54..946067c 100644
 @@ -15,7 +15,7 @@ from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView
  from rest_framework.response import Response
  from rest_framework.views import APIView
- 
+
 -from payment_card import metis, serializers
 +from payment_card import serializers
  from payment_card.forms import CSVUploadForm
@@ -156,7 +164,7 @@ index e9cbc54..946067c 100644
          PaymentCardAccountEntry.objects.create(user=user, payment_card_account=account)
 -        metis.enrol_new_payment_card(account)
          return account
- 
+
      @staticmethod
 @@ -190,7 +189,6 @@ class ListCreatePaymentCardAccount(APIView):
          if old_account.is_deleted:
