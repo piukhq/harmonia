@@ -83,13 +83,13 @@ def produce_transaction() -> dict:
 
     sa_resp = requests.post(
         f"{HERMES}/schemes/accounts",
-        json={"order": 0, "scheme": 1, "card_number": "1234567890"},
+        json={"order": 0, "scheme": 1, "card_number": str(uuid4())},
         headers=headers,
     )
     sa_resp.raise_for_status()
 
     status_resp = requests.post(
-        f"{HERMES}/schemes/accounts/1/status",
+        f"{HERMES}/schemes/accounts/{sa_resp.json()['id']}/status",
         json={"journey": "link", "status": 1},
         headers={"Authorization": "Token F616CE5C88744DD52DB628FAD8B3D"},
     )

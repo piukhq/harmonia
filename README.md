@@ -114,20 +114,74 @@ s/tests
 
 There is a script provided that will run all the major components of the system in order. This should show a transaction going through the import->match process, and is useful for testing the interaction between the import stage and the matching worker.
 
+Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.
+
+Example of a valid Hermes setup:
+
+```bash
+git clone git@git.bink.com:Olympus/hermes.git ~/hermes
+cd ~/hermes
+docker run -d -p 5432:5432 postgres:latest
+echo -e "HERMES_DATABASE_HOST=localhost\nHERMES_DATABASE_NAME=postgres" > .env
+python3 -m venv ~/.virtualenvs/hermes
+. ~/.virtualenvs/hermes/bin/activate
+pip install -r requirements.txt
+./manage.py migrate
+./manage.py runserver
+```
+
+After setting Hermes up, modify `s/quick_work` and set the variables `HERMES_PATH` and `HERMES_PY` to the correct values.
+
+Note: As part of running the end-to-end test, we need to add a payment card account to Hermes. Usually this relies on Metis being available to enrol the card. You can set this up locally along with Pelops as a mock API for Metis to use instead of Spreedly, however for simplicity's sake I recommend just removing the code in Hermes that makes the call to Metis. A potential mitigation for this issue would be to update Hermes so that it does not call Metis when it's running in LOCAL mode.
+
+Here is a diff that removes the metis calls from Hermes at the time of writing:
+
+```diff
+diff --git a/payment_card/views.py b/payment_card/views.py
+index e9cbc54..946067c 100644
+--- a/payment_card/views.py
++++ b/payment_card/views.py
+@@ -15,7 +15,7 @@ from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView
+ from rest_framework.response import Response
+ from rest_framework.views import APIView
+ 
+-from payment_card import metis, serializers
++from payment_card import serializers
+ from payment_card.forms import CSVUploadForm
+ from payment_card.models import PaymentCard, PaymentCardAccount, PaymentCardAccountImage, ProviderStatusMapping
+ from payment_card.serializers import PaymentCardClientSerializer
+@@ -171,7 +171,6 @@ class ListCreatePaymentCardAccount(APIView):
+                 return ListCreatePaymentCardAccount.supercede_old_card(account, old_account, user)
+         account.save()
+         PaymentCardAccountEntry.objects.create(user=user, payment_card_account=account)
+-        metis.enrol_new_payment_card(account)
+         return account
+ 
+     @staticmethod
+@@ -190,7 +189,6 @@ class ListCreatePaymentCardAccount(APIView):
+         if old_account.is_deleted:
+             account.save()
+             PaymentCardAccountEntry.objects.create(user=user, payment_card_account=account)
+-            metis.enrol_existing_payment_card(account)
+         else:
+             account.status = old_account.status
+             account.save()
+```
+
 To run the end-to-end script:
 
 ```bash
 s/quick_work
 ```
 
-This will destroy any existing docker containers with the name `postgres` or `redis`. It will then create new instances of these services, migrate the database, and run each stage of the transaction import, matching, and export process.
+This will destroy any existing docker containers with the name `txm-postgres` or `txm-redis`. It will then create new instances of these services, migrate the database, and run each stage of the transaction import, matching, and export process.
 
 When everything is finished, the PostgreSQL and Redis containers will be left as-is. You can inspect the state of these systems to see the side-effects of running the matching system.
 
 #### PostgreSQL
 
 ```bash
-docker exec -it postgres psql -U postgres
+docker exec -it txm-postgres psql -U postgres
 
 # this is not required, however it helps when viewing very wide tables
 \x on
@@ -145,7 +199,7 @@ select * from export_transaction;
 #### Redis
 
 ```bash
-docker exec -it redis redis-cli
+docker exec -it txm-redis redis-cli
 
 keys *
 get txmatch:status:checkins:PaymentImportDirector
@@ -158,7 +212,7 @@ The `txmatch:status:checkins:*` keys contain timestamps from when various parts 
 
 [alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.
 
-A convenience script is provided in `s/makemigration` that will generate a new migration and test it by running it against a temporary database. This can be used as the first step in creating a new migration. Migrations created by this script should not be submitted as-is. _Note: in order to test the new migration, a new postgres container is created that is listening on port 5432. If you already have a postgres instance on this port, stop it before running the makemigration script._
+A convenience script is provided in `s/makemigration` that will generate a new migration and test it by running it against a temporary database. This can be used as the first step in creating a new migration. Migrations created by this script should not be submitted as-is. _Note: in order to test the new migration, a new postgres container is created that is listening on port 55555. If you already have a postgres instance on this port, stop it before running the makemigration script._
 
 Migrations should be manually squashed before each deployment for efficiency's sake. As a rule of thumb, each merge request should only include a single migration containing all the required changes for that feature. In some cases this will not be possible.
 

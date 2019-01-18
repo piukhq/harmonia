@@ -4,8 +4,8 @@ x-harmonia-svc: &harmonia-svc
   image: harmonia
   build: .
   environment:
-    - TXM_POSTGRES_DSN=postgresql://postgres@postgres:5432/postgres
-    - TXM_REDIS_DSN=redis://redis:6379/0
+    - TXM_POSTGRES_DSN=postgresql://postgres@postgres:51234/postgres
+    - TXM_REDIS_DSN=redis://redis:61234/0
     - TXM_LOG_LEVEL=debug
   volumes:
     - ./files/:/app/files/
@@ -18,13 +18,13 @@ services:
     container_name: postgres
     image: postgres:latest
     ports:
-      - 5432:5432
+      - 51234:5432
 
   redis:
     container_name: redis
     image: redis:latest
     ports:
-      - 6379:6379
+      - 61234:6379
 
   migrate:
     <<: *harmonia-svc
@@ -44,12 +44,12 @@ services:
 
   import-worker:
     <<: *harmonia-svc
-    command: rq worker import -u redis://redis:6379/0
+    command: rq worker import -u redis://redis:61234/0
 
   matching-worker:
     <<: *harmonia-svc
-    command: rq worker matching -u redis://redis:6379/0
+    command: rq worker matching -u redis://redis:61234/0
 
   export-worker:
     <<: *harmonia-svc
-    command: rq worker export -u redis://redis:6379/0
+    command: rq worker export -u redis://redis:61234/0

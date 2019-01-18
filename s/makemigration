@@ -3,10 +3,11 @@
 source s/_common
 
 p 'removing existing temp db if exists'
-docker rm -f makemigration-db || true
+docker rm -f txm-makemigration-db || true
 
 p 'starting temp db'
-docker run -d --rm --name makemigration-db -p 5432:5432 postgres:latest
+docker run -d --rm --name txm-makemigration-db -p 55555:5432 postgres:latest
+export TXM_POSTGRES_DSN=postgresql://postgres@localhost:55555
 
 p 'waiting for db to start'
 sleep 5
@@ -21,4 +22,4 @@ p 'testing new migration'
 pipenv run alembic upgrade head
 
 p 'stopping temp db'
-docker stop makemigration-db
+docker stop txm-makemigration-db

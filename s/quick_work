@@ -4,11 +4,14 @@ source s/_common
 
 s/services
 
+# change these to match your hermes source directories
+export HERMES_PATH="$HOME/hermes"
+export HERMES_PY="$HOME/.virtualenvs/hermes/bin/python"
+
 p 'setting up hermes'
-pushd ~/projects/olympus/hermes
-psql -h localhost -U postgres -c "create database hermes";
-~/.virtualenvs/hermes/bin/python manage.py migrate
-~/.virtualenvs/hermes/bin/python manage.py loaddata seed.json
+cp hermes-seed.json /tmp/hermes-seed.json
+pushd "$HERMES_PATH"
+"$HERMES_PY" manage.py loaddata /tmp/hermes-seed.json
 popd
 
 p 'seeding database'
@@ -21,19 +24,19 @@ p 'running payment import agent'
 pipenv run tximport --agent kasisto --no-user-input --quiet --once
 
 p 'running import worker'
-pipenv run rq worker import --burst
+pipenv run rq worker import --burst -u redis://localhost:61234/0
 
 p 'running matching worker'
-pipenv run rq worker matching --burst
+pipenv run rq worker matching --burst -u redis://localhost:61234/0
 
 p 'running scheme import agent'
 pipenv run tximport --agent acxetado --no-user-input --quiet --once
 
 p 'running import worker'
-pipenv run rq worker import --burst
+pipenv run rq worker import --burst -u redis://localhost:61234/0
 
 p 'running matching worker'
-pipenv run rq worker matching --burst
+pipenv run rq worker matching --burst -u redis://localhost:61234/0
 
 p 'running export worker'
-pipenv run rq worker export --burst
+pipenv run rq worker export --burst -u redis://localhost:61234/0
