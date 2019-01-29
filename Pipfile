@@ -22,6 +22,7 @@ pendulum = "*"
 apispec-webframeworks = "*"
 rq = "*"
 flask-admin = "*"
+responses = "*"
 
 [dev-packages]
 harmonia = {editable = true,path = "."}
