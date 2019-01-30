@@ -1,15 +1,15 @@
 """add user_identity table
 
-Revision ID: 9822c15b1ed0
+Revision ID: a18ff2319d57
 Revises: 731b1776a55d
-Create Date: 2019-01-16 14:53:20.329173+00:00
+Create Date: 2019-01-30 11:56:51.717486+00:00
 
 """
 from alembic import op
 import sqlalchemy as sa
 
 
-revision = "9822c15b1ed0"
+revision = "a18ff2319d57"
 down_revision = "731b1776a55d"
 branch_labels = None
 depends_on = None
@@ -30,11 +30,22 @@ def upgrade():
         sa.Column("scheme_account_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("credentials", sa.Text(), nullable=False),
-        sa.Column("matched_transaction_id", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["matched_transaction_id"], ["matched_transaction.id"]),
         sa.PrimaryKeyConstraint("id"),
+    )
+    op.add_column(
+        "matched_transaction",
+        sa.Column("user_identity_id", sa.Integer(), nullable=True),
+    )
+    op.create_foreign_key(
+        None,
+        "matched_transaction",
+        "user_identity",
+        ["user_identity_id"],
+        ["id"],
     )
 
 
 def downgrade():
+    op.drop_constraint(None, "matched_transaction", type_="foreignkey")
+    op.drop_column("matched_transaction", "user_identity_id")
     op.drop_table("user_identity")
