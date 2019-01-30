@@ -24,7 +24,8 @@ def auto_repr(cls):
         return "{}({})".format(
             type(self).__name__,
             ", ".join(
-                f"{k}={repr(v)}" for k, v in vars(self).items() if not k.startswith("_")
+                f"{col.name}={repr(getattr(self, col.name))}"
+                for col in self.__table__.columns
             ),
         )
 

@@ -1,4 +1,5 @@
 import requests
+import sentry_sdk
 
 from app.reporting import get_logger
 from app import models, db, tasks
@@ -6,10 +7,6 @@ from app.service.hermes import hermes
 
 
 log = get_logger("identifier")
-
-
-class HermesRequestFailed(Exception):
-    pass
 
 
 class SchemeAccountNotFound(Exception):
@@ -24,20 +21,10 @@ class Identifier:
             matched_transaction.merchant_identifier.loyalty_scheme.slug
         )
 
-        resp = hermes.payment_card_user_info(
+        json = hermes.payment_card_user_info(
             loyalty_scheme_slug, matched_transaction.card_token
         )
 
-        log.debug(
-            f"Hermes identification request responded with {resp.status_code} {resp.reason}"
-        )
-
-        try:
-            resp.raise_for_status()
-        except Exception as ex:
-            raise HermesRequestFailed from ex
-
-        json = resp.json()
         if matched_transaction.card_token in json:
             return json[matched_transaction.card_token]
         else:
@@ -51,15 +38,18 @@ class Identifier:
             scheme_account_id=user_info["scheme_account_id"],
             user_id=user_info["user_id"],
             credentials=user_info["credentials"],
-            matched_transaction_id=matched_transaction.id,
         )
 
-        log.debug(f"Persisting {user_identity}.")
+        matched_transaction.user_identity = user_identity
 
         db.session.add(user_identity)
         db.session.commit()
 
-    def identify_matched_transaction(self, matched_transaction_id: int) -> None:
+        log.debug(f"Persisted {user_identity}.")
+
+    def identify_matched_transaction(
+        self, matched_transaction_id: int
+    ) -> None:
         log.debug(
             f"Attempting identification of matched transaction #{matched_transaction_id}"
         )
@@ -77,7 +67,10 @@ class Identifier:
         try:
             user_info = self.payment_card_user_info(matched_transaction)
         except requests.RequestException:
-            log.debug("Failed to get user info from Hermes.")
+            event_id = sentry_sdk.capture_exception()
+            log.debug(
+                f"Failed to get user info from Hermes. Sentry event ID: {event_id}"
+            )
             return
 
         self.persist_user_identity(matched_transaction, user_info)
