@@ -5,7 +5,7 @@ source s/_common
 s/services
 
 # change these to match your hermes source directories
-export HERMES_PATH="$HOME/hermes"
+export HERMES_PATH="$HOME/projects/olympus/hermes"
 export HERMES_PY="$HOME/.virtualenvs/hermes/bin/python"
 
 p 'setting up hermes'
@@ -18,10 +18,10 @@ p 'seeding database'
 pipenv run s/seed.py
 
 p 'producing transaction files'
-pipenv run s/producer.py -n 1 --scheme-file files/imports/acxetado/transactions-2018-12-04 --payment-file files/imports/kasisto/card-tx-20181204
+pipenv run s/producer.py -n 1 --scheme-file files/imports/example-loyalty-scheme/transactions-2018-12-04 --payment-file files/imports/example-payment-provider/card-tx-20181204
 
 p 'running payment import agent'
-pipenv run tximport --agent kasisto --no-user-input --quiet --once
+pipenv run tximport --agent example-payment-provider --no-user-input --quiet --once --debug
 
 p 'running import worker'
 pipenv run rq worker import --burst -u redis://localhost:61234/0
@@ -30,7 +30,7 @@ p 'running matching worker'
 pipenv run rq worker matching --burst -u redis://localhost:61234/0
 
 p 'running scheme import agent'
-pipenv run tximport --agent acxetado --no-user-input --quiet --once
+pipenv run tximport --agent example-loyalty-scheme --no-user-input --quiet --once
 
 p 'running import worker'
 pipenv run rq worker import --burst -u redis://localhost:61234/0

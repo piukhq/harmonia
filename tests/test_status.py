@@ -41,9 +41,7 @@ def test_health_report(redis):
         == f"{settings.REDIS_KEY_PREFIX}:status:checkins:HealthReportTest123"
     )
     assert report["checkins"][0]["name"] == "HealthReportTest123"
-    assert {"postgres", "redis"}.issubset(
-        {s["name"] for s in report["services"]}
-    )
+    assert {"postgres", "redis"}.issubset({s["name"] for s in report["services"]})
 
 
 def test_health_report_without_redis():

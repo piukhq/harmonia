@@ -67,9 +67,12 @@ class DirectoryWatchAgent(BaseAgent):
         raise NotImplementedError
 
     def do_import(self, file_path: Path):
+        self.log.debug("Getting data from agent…")
         with file_path.open("r") as fd:
             transactions_data = list(self.yield_transactions_data(fd))
-        transactions_data = self.get_schema().load(transactions_data, many=True)
+        self.log.debug("Loading data with schema…")
+        transactions_data = self.schema.load(transactions_data, many=True)
+        self.log.debug("Importing transactions…")
         self._import_transactions(transactions_data, source=str(file_path))
         self.log.info(f"Imported {file_path} successfully. Deleting.")
         file_path.unlink()

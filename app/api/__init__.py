@@ -49,7 +49,7 @@ def create_app() -> Flask:
 
     CORS(app)
 
-    app.config['FLASK_ADMIN_SWATCH'] = 'flatly'
+    app.config["FLASK_ADMIN_SWATCH"] = "flatly"
     admin = Admin(app, name="Transaction Matching", template_mode="bootstrap3")
     add_admin_views(admin)
 

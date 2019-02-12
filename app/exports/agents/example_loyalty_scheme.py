@@ -6,8 +6,8 @@ from app.exports.agents.bases.single_export_agent import SingleExportAgent
 from app.models import ExportTransaction, MatchedTransaction, MatchedTransactionStatus
 
 
-class AĉetadoAgent(SingleExportAgent):
-    provider_slug = "acxetado"
+class ExampleLoyaltySchemeAgent(SingleExportAgent):
+    provider_slug = "example-loyalty-scheme"
 
     def help(self):
         return inspect.cleandoc(

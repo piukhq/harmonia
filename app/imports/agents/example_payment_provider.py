@@ -9,11 +9,13 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split, PendulumField
 
-PROVIDER_SLUG = "kasisto"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.kasisto.watch_directory"
+PROVIDER_SLUG = "example-payment-provider"
+WATCH_DIRECTORY_KEY = (
+    f"{KEY_PREFIX}imports.agents.example-payment-provider.watch_directory"
+)
 
 
-class KasistoAgentTransactionSchema(Schema):
+class ExamplePaymentProviderAgentTransactionSchema(Schema):
     mid = fields.String(required=True)
     transaction_id = fields.String(required=True)
     date = PendulumField(required=True)
@@ -22,11 +24,11 @@ class KasistoAgentTransactionSchema(Schema):
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int
+        data: dict, merchant_identifier_id: int, transaction_id: str
     ) -> models.PaymentTransaction:
         return models.PaymentTransaction(
             merchant_identifier_id=merchant_identifier_id,
-            transaction_id=data["transaction_id"],
+            transaction_id=transaction_id,
             transaction_date=pendulum.instance(data["date"]),
             spend_amount=data["spend"],
             spend_multiplier=100,
@@ -44,8 +46,8 @@ class KasistoAgentTransactionSchema(Schema):
         return data["mid"]
 
 
-class KasistoAgent(DirectoryWatchAgent):
-    schema_class = KasistoAgentTransactionSchema
+class ExamplePaymentProviderAgent(DirectoryWatchAgent):
+    schema = ExamplePaymentProviderAgentTransactionSchema()
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -54,7 +56,7 @@ class KasistoAgent(DirectoryWatchAgent):
 
     class Config:
         watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default="files/imports/kasisto"
+            WATCH_DIRECTORY_KEY, default="files/imports/example-payment-provider"
         )
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:

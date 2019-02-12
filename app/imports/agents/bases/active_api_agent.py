@@ -21,5 +21,5 @@ class ActiveAPIAgent(BaseAgent):
     def do_import(self):
         resp = requests.get(self.url)
         resp.raise_for_status()
-        transactions_data = self.get_schema().load(resp.json(), many=True)
+        transactions_data = self.schema.load(resp.json(), many=True)
         self._import_transactions(transactions_data)

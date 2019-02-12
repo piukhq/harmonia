@@ -47,9 +47,7 @@ class Identifier:
 
         log.debug(f"Persisted {user_identity}.")
 
-    def identify_matched_transaction(
-        self, matched_transaction_id: int
-    ) -> None:
+    def identify_matched_transaction(self, matched_transaction_id: int) -> None:
         log.debug(
             f"Attempting identification of matched transaction #{matched_transaction_id}"
         )

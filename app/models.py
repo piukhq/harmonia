@@ -40,9 +40,7 @@ class MerchantIdentifier(Base, ModelMixin):
 
     mid = s.Column(s.String(50), nullable=False, index=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
-    payment_provider_id = s.Column(
-        s.Integer, s.ForeignKey("payment_provider.id")
-    )
+    payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
     location = s.Column(s.String(250), nullable=True)
     postcode = s.Column(s.String(16), nullable=True)
 
@@ -67,9 +65,7 @@ class TransactionStatus(Enum):
 class SchemeTransaction(Base, ModelMixin):
     __tablename__ = "scheme_transaction"
 
-    merchant_identifier_id = s.Column(
-        s.Integer, s.ForeignKey("merchant_identifier.id")
-    )
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey("merchant_identifier.id"))
     transaction_id = s.Column(
         s.String(100), nullable=False
     )  # unique identifier assigned by the merchant
@@ -92,9 +88,7 @@ class SchemeTransaction(Base, ModelMixin):
         s.Integer
     )  # amount points_amount was multiplied by to make it integral
     status = s.Column(
-        s.Enum(TransactionStatus),
-        nullable=False,
-        default=TransactionStatus.PENDING,
+        s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING
     )
 
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
@@ -109,9 +103,7 @@ class SchemeTransaction(Base, ModelMixin):
 class PaymentTransaction(Base, ModelMixin):
     __tablename__ = "payment_transaction"
 
-    merchant_identifier_id = s.Column(
-        s.Integer, s.ForeignKey("merchant_identifier.id")
-    )
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey("merchant_identifier.id"))
     transaction_id = s.Column(
         s.String(100), nullable=False
     )  # unique identifier assigned by the provider
@@ -127,13 +119,9 @@ class PaymentTransaction(Base, ModelMixin):
     spend_currency = s.Column(
         s.String(3), nullable=False
     )  # ISO 4217 alphabetic code for the currency involved
-    card_token = s.Column(
-        s.String(100)
-    )  # token assigned to the card that was used
+    card_token = s.Column(s.String(100))  # token assigned to the card that was used
     status = s.Column(
-        s.Enum(TransactionStatus),
-        nullable=False,
-        default=TransactionStatus.PENDING,
+        s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING
     )
 
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
@@ -146,9 +134,7 @@ class PaymentTransaction(Base, ModelMixin):
 class MatchingType(Enum):
     SPOTTED = 0  # payment tx identified with no scheme feed available
     LOYALTY = 1  # payment tx identified with loyalty tx scheme feed available
-    NON_LOYALTY = (
-        2
-    )  # payment tx identified with non-loyalty tx scheme feed available
+    NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
     MIXED = 3  # payment tx identified with full tx scheme feed available
 
 
@@ -162,9 +148,7 @@ class MatchedTransactionStatus(Enum):
 class MatchedTransaction(Base, ModelMixin):
     __tablename__ = "matched_transaction"
 
-    merchant_identifier_id = s.Column(
-        s.Integer, s.ForeignKey("merchant_identifier.id")
-    )
+    merchant_identifier_id = s.Column(s.Integer, s.ForeignKey("merchant_identifier.id"))
     transaction_id = s.Column(
         s.String(100), nullable=False
     )  # unique identifier assigned by the merchant/provider
@@ -186,9 +170,7 @@ class MatchedTransaction(Base, ModelMixin):
     points_multiplier = s.Column(
         s.Integer
     )  # amount points_amount was multiplied by to make it integral
-    card_token = s.Column(
-        s.String(100)
-    )  # token assigned to the card that was used
+    card_token = s.Column(s.String(100))  # token assigned to the card that was used
     matching_type = s.Column(
         s.Enum(MatchingType), nullable=False
     )  # type of matching, see MatchingType for options
@@ -197,12 +179,8 @@ class MatchedTransaction(Base, ModelMixin):
         nullable=False,
         default=MatchedTransactionStatus.PENDING,
     )
-    payment_transaction_id = s.Column(
-        s.Integer, s.ForeignKey("payment_transaction.id")
-    )
-    scheme_transaction_id = s.Column(
-        s.Integer, s.ForeignKey("scheme_transaction.id")
-    )
+    payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
+    scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
     user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
     user_identity = s.orm.relationship(

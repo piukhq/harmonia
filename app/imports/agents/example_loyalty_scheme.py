@@ -9,8 +9,8 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split
 
-PROVIDER_SLUG = "acxetado"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.aĉetado.watch_directory"
+PROVIDER_SLUG = "example-loyalty-scheme"
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 
 class PendulumField(fields.Field):
@@ -23,7 +23,7 @@ class PendulumField(fields.Field):
         return pendulum.parse(value)
 
 
-class AĉetadoAgentTransactionSchema(Schema):
+class ExampleLoyaltySchemeAgentTransactionSchema(Schema):
     mid = fields.String(required=True)
     transaction_id = fields.String(required=True)
     date = PendulumField(required=True)
@@ -32,11 +32,11 @@ class AĉetadoAgentTransactionSchema(Schema):
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int
+        data: dict, merchant_identifier_id: int, transaction_id: str
     ) -> models.SchemeTransaction:
         return models.SchemeTransaction(
             merchant_identifier_id=merchant_identifier_id,
-            transaction_id=data["transaction_id"],
+            transaction_id=transaction_id,
             transaction_date=pendulum.instance(data["date"]),
             spend_amount=data["spend"],
             spend_multiplier=100,
@@ -55,8 +55,8 @@ class AĉetadoAgentTransactionSchema(Schema):
         return data["mid"]
 
 
-class AĉetadoAgent(DirectoryWatchAgent):
-    schema_class = AĉetadoAgentTransactionSchema
+class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
+    schema = ExampleLoyaltySchemeAgentTransactionSchema()
     feed_type = ImportFeedTypes.SCHEME
     provider_slug = PROVIDER_SLUG
 
@@ -65,7 +65,7 @@ class AĉetadoAgent(DirectoryWatchAgent):
 
     class Config:
         watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default="files/imports/acxetado"
+            WATCH_DIRECTORY_KEY, default="files/imports/example-loyalty-scheme"
         )
 
     def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:

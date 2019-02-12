@@ -37,11 +37,7 @@ def upgrade():
         sa.Column("user_identity_id", sa.Integer(), nullable=True),
     )
     op.create_foreign_key(
-        None,
-        "matched_transaction",
-        "user_identity",
-        ["user_identity_id"],
-        ["id"],
+        None, "matched_transaction", "user_identity", ["user_identity_id"], ["id"]
     )
 
 
