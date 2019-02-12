@@ -1,6 +1,7 @@
 from app.registry import Registry
+from app.imports.agents.bases.base import BaseAgent
 
-import_agents = Registry()
+import_agents = Registry[BaseAgent]()
 import_agents.add(
     "example-loyalty-scheme",
     "app.imports.agents.example_loyalty_scheme.ExampleLoyaltySchemeAgent",

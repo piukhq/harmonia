@@ -18,7 +18,6 @@ class PassiveAPIAgent(BaseAgent):
             if request.json is None:
                 return jsonify({"ok": False, "reason": "A JSON body is expected."})
             transactions_data = self.extract_transactions(request.json)
-            transactions_data = self.schema.load(transactions_data, many=True)
             self._import_transactions(transactions_data, source="POST /")
             return jsonify({"ok": True})
 

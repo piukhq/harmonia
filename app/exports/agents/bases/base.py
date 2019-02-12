@@ -1,4 +1,4 @@
-from app import base_agent, models
+from app import models
 from app.reporting import get_logger
 
 
@@ -8,7 +8,7 @@ def _missing_property(obj, prop: str):
     )
 
 
-class BaseAgent(base_agent.BaseAgent):
+class BaseAgent:
     def __init__(self, *, debug: bool = False) -> None:
         self.debug = debug
         self.log = get_logger(f"export-agent.{self.provider_slug}")

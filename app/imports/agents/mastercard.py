@@ -3,14 +3,11 @@ import inspect
 from decimal import Decimal
 
 import pendulum
-from marshmallow import Schema, fields
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
-
-from app.utils import PendulumField
 
 PROVIDER_SLUG = "mastercard"
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
@@ -18,59 +15,7 @@ WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directo
 DATE_FORMAT = "YYYYMMDD"
 
 
-class MastercardAgentTransactionSchema(Schema):
-    record_type = fields.String(required=True)
-    transaction_sequence_number = fields.String(required=True)
-    bank_account_number = fields.String(required=True)
-    transaction_amount = fields.Decimal(required=True)
-    transaction_date = PendulumField(required=True, date_format=DATE_FORMAT)
-    merchant_dba_name = fields.String(required=True)
-    merchant_id = fields.String(required=True)
-    location_id = fields.String(required=True)
-    issuer_ica_code = fields.String(required=True)
-    transaction_time = fields.Integer(required=True)
-    bank_net_ref_number = fields.String(required=True)
-    bank_customer_number = fields.String(required=True)
-    aggregate_merchant_id = fields.String(required=True)
-
-    @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_id=merchant_identifier_id,
-            transaction_id=transaction_id,
-            transaction_date=pendulum.instance(data["transaction_date"]),
-            spend_amount=int(Decimal(data["transaction_amount"]) * 100),
-            spend_multiplier=100,
-            spend_currency="GBP",
-            card_token=data["bank_customer_number"],
-            extra_fields={
-                k: data[k]
-                for k in (
-                    "record_type",
-                    "bank_account_number",
-                    "merchant_dba_name",
-                    "location_id",
-                    "issuer_ica_code",
-                    "transaction_time",
-                    "bank_net_ref_number",
-                    "aggregate_merchant_id",
-                )
-            },
-        )
-
-    @staticmethod
-    def get_transaction_id(data: dict) -> str:
-        return data["transaction_sequence_number"]
-
-    @staticmethod
-    def get_mid(data: dict) -> str:
-        return data["merchant_id"]
-
-
 class MastercardAgent(DirectoryWatchAgent):
-    schema = MastercardAgentTransactionSchema()
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -91,6 +36,11 @@ class MastercardAgent(DirectoryWatchAgent):
     ]
 
     file_field_types = {"transaction_amount": Decimal, "transaction_time": int}
+    field_transforms: t.Dict[str, t.Callable] = {
+        "transaction_amount": lambda x: int(Decimal(x * 100)),
+        "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
+        "transaction_time": int,
+    }
 
     class Config:
         watch_directory = ConfigValue(
@@ -123,3 +73,38 @@ class MastercardAgent(DirectoryWatchAgent):
         It is currently set up to monitor {self.Config.watch_directory} for files to import.
         """
         )
+
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_id: int, transaction_id: str
+    ) -> models.PaymentTransaction:
+        return models.PaymentTransaction(
+            merchant_identifier_id=merchant_identifier_id,
+            transaction_id=transaction_id,
+            transaction_date=data["transaction_date"],
+            spend_amount=data["transaction_amount"],
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=data["bank_customer_number"],
+            extra_fields={
+                k: data[k]
+                for k in (
+                    "record_type",
+                    "bank_account_number",
+                    "merchant_dba_name",
+                    "location_id",
+                    "issuer_ica_code",
+                    "transaction_time",
+                    "bank_net_ref_number",
+                    "aggregate_merchant_id",
+                )
+            },
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        return data["transaction_sequence_number"]
+
+    @staticmethod
+    def get_mid(data: dict) -> str:
+        return data["merchant_id"]

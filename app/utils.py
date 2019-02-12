@@ -1,8 +1,5 @@
 import typing as t
 
-import marshmallow
-import pendulum
-
 
 def missing_property(obj: object, prop: str) -> t.NoReturn:
     """Useful for ensuring a given property exists on a subclass, and providing a helpful error if it does not."""
@@ -27,19 +24,3 @@ def file_split(fd: t.IO, *, sep: str, buf_size: int = 1024) -> t.Iterable[str]:
             buf += data
     if buf:
         yield buf
-
-
-class PendulumField(marshmallow.fields.Field):
-    def __init__(self, *args, **kwargs):
-        self.date_format = kwargs.get("date_format", None)
-        super().__init__(*args, **kwargs)
-
-    def _serialize(self, value, attr, obj, **kwargs):
-        if value is None:
-            return pendulum.DateTime()
-        return value.isoformat()
-
-    def _deserialize(self, value, attr, data, **kwargs):
-        if self.date_format:
-            return pendulum.from_format(value, self.date_format)
-        return pendulum.parse(value)

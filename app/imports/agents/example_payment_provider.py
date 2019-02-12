@@ -1,13 +1,12 @@
 import typing as t
 
 import pendulum
-from marshmallow import Schema, fields
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
-from app.utils import file_split, PendulumField
+from app.utils import file_split
 
 PROVIDER_SLUG = "example-payment-provider"
 WATCH_DIRECTORY_KEY = (
@@ -15,12 +14,22 @@ WATCH_DIRECTORY_KEY = (
 )
 
 
-class ExamplePaymentProviderAgentTransactionSchema(Schema):
-    mid = fields.String(required=True)
-    transaction_id = fields.String(required=True)
-    date = PendulumField(required=True)
-    spend = fields.Integer(required=True)
-    token = fields.String(required=True)
+class ExamplePaymentProviderAgent(DirectoryWatchAgent):
+    feed_type = ImportFeedTypes.PAYMENT
+    provider_slug = PROVIDER_SLUG
+
+    file_fields = ["mid", "transaction_id", "date", "spend", "token"]
+    field_transforms: t.Dict[str, t.Callable] = {"date": pendulum.parse, "spend": int}
+
+    class Config:
+        watch_directory = ConfigValue(
+            WATCH_DIRECTORY_KEY, default="files/imports/example-payment-provider"
+        )
+
+    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
+        for record in file_split(fd, sep="\x1e"):
+            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     @staticmethod
     def to_queue_transaction(
@@ -29,7 +38,7 @@ class ExamplePaymentProviderAgentTransactionSchema(Schema):
         return models.PaymentTransaction(
             merchant_identifier_id=merchant_identifier_id,
             transaction_id=transaction_id,
-            transaction_date=pendulum.instance(data["date"]),
+            transaction_date=data["date"],
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",
@@ -44,28 +53,3 @@ class ExamplePaymentProviderAgentTransactionSchema(Schema):
     @staticmethod
     def get_mid(data: dict) -> str:
         return data["mid"]
-
-
-class ExamplePaymentProviderAgent(DirectoryWatchAgent):
-    schema = ExamplePaymentProviderAgentTransactionSchema()
-    feed_type = ImportFeedTypes.PAYMENT
-    provider_slug = PROVIDER_SLUG
-
-    file_fields = ["mid", "transaction_id", "date", "spend", "token"]
-    file_field_types = {"spend": int}
-
-    class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default="files/imports/example-payment-provider"
-        )
-
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        for record in file_split(fd, sep="\x1e"):
-            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
-            yield {
-                "mid": raw_data["mid"],
-                "transaction_id": raw_data["transaction_id"],
-                "date": raw_data["date"],
-                "spend": int(raw_data["spend"]),
-                "token": raw_data["token"],
-            }
