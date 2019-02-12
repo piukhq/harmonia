@@ -1,7 +1,6 @@
 import typing as t
 
 import pendulum
-from marshmallow import Schema, fields
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
@@ -13,22 +12,26 @@ PROVIDER_SLUG = "example-loyalty-scheme"
 WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 
-class PendulumField(fields.Field):
-    def _serialize(self, value, attr, obj, **kwargs):
-        if value is None:
-            return pendulum.DateTime()
-        return value.isoformat()
+class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
+    feed_type = ImportFeedTypes.SCHEME
+    provider_slug = PROVIDER_SLUG
 
-    def _deserialize(self, value, attr, data, **kwargs):
-        return pendulum.parse(value)
+    file_fields = ["mid", "transaction_id", "date", "spend", "points"]
+    field_transforms: t.Dict[str, t.Callable] = {
+        "date": pendulum.parse,
+        "spend": int,
+        "points": int,
+    }
 
+    class Config:
+        watch_directory = ConfigValue(
+            WATCH_DIRECTORY_KEY, default="files/imports/example-loyalty-scheme"
+        )
 
-class ExampleLoyaltySchemeAgentTransactionSchema(Schema):
-    mid = fields.String(required=True)
-    transaction_id = fields.String(required=True)
-    date = PendulumField(required=True)
-    spend = fields.Integer(required=True)
-    points = fields.Integer(required=True)
+    def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:
+        for record in file_split(fd, sep="\x1e"):
+            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     @staticmethod
     def to_queue_transaction(
@@ -37,7 +40,7 @@ class ExampleLoyaltySchemeAgentTransactionSchema(Schema):
         return models.SchemeTransaction(
             merchant_identifier_id=merchant_identifier_id,
             transaction_id=transaction_id,
-            transaction_date=pendulum.instance(data["date"]),
+            transaction_date=data["date"],
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",
@@ -53,28 +56,3 @@ class ExampleLoyaltySchemeAgentTransactionSchema(Schema):
     @staticmethod
     def get_mid(data: dict) -> str:
         return data["mid"]
-
-
-class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
-    schema = ExampleLoyaltySchemeAgentTransactionSchema()
-    feed_type = ImportFeedTypes.SCHEME
-    provider_slug = PROVIDER_SLUG
-
-    file_fields = ["mid", "transaction_id", "date", "spend", "points"]
-    file_field_types = {"spend": int, "points": int}
-
-    class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default="files/imports/example-loyalty-scheme"
-        )
-
-    def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:
-        for record in file_split(fd, sep="\x1e"):
-            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
-            yield {
-                "mid": raw_data["mid"],
-                "transaction_id": raw_data["transaction_id"],
-                "date": raw_data["date"],
-                "spend": int(raw_data["spend"]),
-                "points": int(raw_data["points"]),
-            }

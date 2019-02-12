@@ -1,10 +1,9 @@
 import typing as t
 from functools import lru_cache
 
-import marshmallow
 from sqlalchemy.orm.exc import NoResultFound
 
-from app import models, base_agent, tasks, db
+from app import models, tasks, db
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
 from app.reporting import get_logger
@@ -40,14 +39,10 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
     return merchant_identifier.id
 
 
-class BaseAgent(base_agent.BaseAgent):
+class BaseAgent:
     def __init__(self, *, debug: bool = False) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
         self.debug = debug
-
-    @property
-    def schema(self) -> marshmallow.Schema:
-        return missing_property(self, "schema")
 
     @property
     def provider_slug(self) -> str:
@@ -70,30 +65,48 @@ class BaseAgent(base_agent.BaseAgent):
             "into the import process."
         )
 
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_id: int, transaction_id: str
+    ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
+        raise NotImplementedError
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def get_mid(data: dict) -> str:
+        raise NotImplementedError
+
     def _find_new_transactions(
         self, provider_transactions: t.List[dict]
     ) -> t.Tuple[t.List[dict], t.List[dict]]:
         """Splits provider_transactions into two lists containing new and duplicate transactions.
         Returns a tuple (new, duplicate)"""
 
-        tids = {self.schema.get_transaction_id(t) for t in provider_transactions}
+        tids = {self.get_transaction_id(t) for t in provider_transactions}
 
         # we filter for duplicates in python rather than a SQL "in" clause because it's faster.
         duplicate_ids = {
             row[0]
-            for row in db.session.query(models.ImportTransaction.transaction_id)
-            .filter(models.ImportTransaction.provider_slug == self.provider_slug)
+            for row in db.session.query(
+                models.ImportTransaction.transaction_id
+            )
+            .filter(
+                models.ImportTransaction.provider_slug == self.provider_slug
+            )
             .all()
             if row[0] in tids
         }
 
         # Use list of duplicate transaction IDs to partition provider_transactions.
         # seen_tids is used to filter out file duplicates that aren't in the DB yet.
-        seen_tids: t.Set[int] = set()
+        seen_tids: t.Set[str] = set()
         new: t.List[dict] = []
         duplicate: t.List[dict] = []
         for tx in provider_transactions:
-            tid = self.schema.get_transaction_id(tx)
+            tid = self.get_transaction_id(tx)
             if tid in duplicate_ids or tid in seen_tids:
                 duplicate.append(tx)
             else:
@@ -126,8 +139,8 @@ class BaseAgent(base_agent.BaseAgent):
 
         insertions = []
         for tx_data in new:
-            mid = self.schema.get_mid(tx_data)
-            tid = self.schema.get_transaction_id(tx_data)
+            mid = self.get_mid(tx_data)
+            tid = self.get_transaction_id(tx_data)
             try:
                 merchant_identifier_id = self._identify_transaction(mid)
             except MissingMID:
@@ -141,7 +154,7 @@ class BaseAgent(base_agent.BaseAgent):
                     )
                 )
             else:
-                queue_tx = self.schema.to_queue_transaction(
+                queue_tx = self.to_queue_transaction(
                     tx_data, merchant_identifier_id, tid
                 )
 
@@ -160,6 +173,7 @@ class BaseAgent(base_agent.BaseAgent):
                         source=source,
                     )
                 )
-        db.engine.execute(
-            models.ImportTransaction.__table__.insert().values(insertions)
-        )
+        if insertions:
+            db.engine.execute(
+                models.ImportTransaction.__table__.insert().values(insertions)
+            )
