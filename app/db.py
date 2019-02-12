@@ -5,13 +5,13 @@ from sqlalchemy.orm import sessionmaker
 from app import postgres, encoding
 import settings
 
-db_engine = s.create_engine(
+engine = s.create_engine(
     settings.POSTGRES_DSN,
     json_serializer=encoding.dumps,
     json_deserializer=encoding.loads,
 )
 
-Session = sessionmaker(bind=db_engine)
+Session = sessionmaker(bind=engine)
 session = Session()
 
 Base = declarative_base()

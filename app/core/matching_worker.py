@@ -3,7 +3,7 @@ import typing as t
 import sentry_sdk
 
 from app.db import session
-from app.matching.agents.active import AGENTS
+from app.matching.agents.registry import matching_agents
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.models import (
     MatchedTransaction,
@@ -19,9 +19,6 @@ import settings
 
 class MatchingWorker:
     class LoyaltySchemeNotFound(Exception):
-        pass
-
-    class NoMatchingAgent(Exception):
         pass
 
     class AgentError(Exception):
@@ -40,14 +37,6 @@ class MatchingWorker:
         session.commit()
         self.log.info(f"Persisted matched transaction #{matched_tx.id}.")
 
-    def _find_agent(self, slug: str) -> t.Type[BaseMatchingAgent]:
-        try:
-            return AGENTS[slug]
-        except KeyError as ex:
-            raise self.NoMatchingAgent(
-                f"No matching agent is registered for slug {repr(slug)}"
-            ) from ex
-
     def _try_match(
         self, agent: BaseMatchingAgent, payment_tx: PaymentTransaction
     ) -> t.Optional[MatchResult]:
@@ -65,8 +54,7 @@ class MatchingWorker:
         Returns the matched transaction on success.
         Raises UnusableTransaction if the transaction cannot be matched."""
         slug = payment_tx.merchant_identifier.loyalty_scheme.slug
-        agent_class = self._find_agent(slug)
-        agent = agent_class(payment_tx)
+        agent = matching_agents.instantiate(slug, payment_tx)
         return self._try_match(agent, payment_tx)
 
     def _identify(self, matched_tx: MatchedTransaction) -> None:
@@ -93,7 +81,7 @@ class MatchingWorker:
         match_result = None
         try:
             match_result = self._match(payment_tx)
-        except (self.NoMatchingAgent, self.AgentError) as ex:
+        except self.AgentError as ex:
             if settings.DEBUG:
                 raise ex
             else:
@@ -114,7 +102,9 @@ class MatchingWorker:
         scheme_tx.status = TransactionStatus.MATCHED
         session.commit()
 
-        self.log.debug(f"Persisting & identifying payment transaction #{payment_tx.id}.")
+        self.log.debug(
+            f"Persisting & identifying payment transaction #{payment_tx.id}."
+        )
         self._identify(match_result.matched_tx)
 
         session.close()

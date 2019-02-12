@@ -1,10 +1,10 @@
 import typing as t
+from functools import lru_cache
 
 import marshmallow
 from sqlalchemy.orm.exc import NoResultFound
 
-from app import models, base_agent, tasks
-from app.db import session
+from app import models, base_agent, tasks, db
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
 from app.reporting import get_logger
@@ -16,14 +16,38 @@ class ImportTransactionAlreadyExistsError(Exception):
     pass
 
 
+@lru_cache(maxsize=2048)
+def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
+    try:
+        q = db.session.query(models.MerchantIdentifier)
+
+        if feed_type == ImportFeedTypes.SCHEME:
+            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(
+                models.LoyaltyScheme.slug == provider_slug
+            )
+        elif feed_type == ImportFeedTypes.PAYMENT:
+            q = q.join(models.MerchantIdentifier.payment_provider).filter(
+                models.PaymentProvider.slug == provider_slug
+            )
+        else:
+            raise ValueError(f"Unsupported feed type: {feed_type}")
+
+        q = q.filter(models.MerchantIdentifier.mid == mid)
+        merchant_identifier = q.one()
+    except NoResultFound:
+        # An exception would be preferable, but this way lru_cache works properly.
+        return None
+    return merchant_identifier.id
+
+
 class BaseAgent(base_agent.BaseAgent):
     def __init__(self, *, debug: bool = False) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
         self.debug = debug
 
     @property
-    def schema_class(self) -> t.Callable:
-        return missing_property(self, "schema_class")
+    def schema(self) -> marshmallow.Schema:
+        return missing_property(self, "schema")
 
     @property
     def provider_slug(self) -> str:
@@ -46,58 +70,47 @@ class BaseAgent(base_agent.BaseAgent):
             "into the import process."
         )
 
-    def get_schema(self) -> marshmallow.Schema:
-        """
-        Returns an instance of the schema class that should be used to load/dump
-        transactions for this merchant's transactions data.
-        """
-        return self.schema_class()
-
     def _find_new_transactions(
         self, provider_transactions: t.List[dict]
     ) -> t.Tuple[t.List[dict], t.List[dict]]:
         """Splits provider_transactions into two lists containing new and duplicate transactions.
         Returns a tuple (new, duplicate)"""
-        schema = self.get_schema()
-        tids = [schema.get_transaction_id(t) for t in provider_transactions]
+
+        tids = {self.schema.get_transaction_id(t) for t in provider_transactions}
+
+        # we filter for duplicates in python rather than a SQL "in" clause because it's faster.
         duplicate_ids = {
-            t[0]
-            for t in session.query(models.ImportTransaction.transaction_id)
-            .filter(
-                models.ImportTransaction.transaction_id.in_(tids),
-                models.ImportTransaction.provider_slug == self.provider_slug,
-            )
+            row[0]
+            for row in db.session.query(models.ImportTransaction.transaction_id)
+            .filter(models.ImportTransaction.provider_slug == self.provider_slug)
             .all()
+            if row[0] in tids
         }
+
+        # Use list of duplicate transaction IDs to partition provider_transactions.
+        # seen_tids is used to filter out file duplicates that aren't in the DB yet.
+        seen_tids: t.Set[int] = set()
         new: t.List[dict] = []
         duplicate: t.List[dict] = []
-        for tid, tx in zip(tids, provider_transactions):
-            (duplicate if tid in duplicate_ids else new).append(tx)
+        for tx in provider_transactions:
+            tid = self.schema.get_transaction_id(tx)
+            if tid in duplicate_ids or tid in seen_tids:
+                duplicate.append(tx)
+            else:
+                seen_tids.add(tid)
+                new.append(tx)
+
         self.log.info(
             f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set."
         )
+
         return new, duplicate
 
     def _identify_transaction(self, mid: str) -> int:
-        try:
-            q = session.query(models.MerchantIdentifier)
-
-            if self.feed_type == ImportFeedTypes.SCHEME:
-                q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(
-                    models.LoyaltyScheme.slug == self.provider_slug
-                )
-            elif self.feed_type == ImportFeedTypes.PAYMENT:
-                q = q.join(models.MerchantIdentifier.payment_provider).filter(
-                    models.PaymentProvider.slug == self.provider_slug
-                )
-            else:
-                raise ValueError(f"Unsupported feed type: {self.feed_type}")
-
-            q = q.filter(models.MerchantIdentifier.mid == mid)
-            merchant_identifier = q.one()
-        except NoResultFound as ex:
-            raise MissingMID from ex
-        return merchant_identifier.id
+        result = identify_mid(mid, self.feed_type, self.provider_slug)
+        if result is None:
+            raise MissingMID
+        return result
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, source: str
@@ -110,20 +123,16 @@ class BaseAgent(base_agent.BaseAgent):
         status_monitor.checkin(self)
 
         new, duplicate = self._find_new_transactions(provider_transactions)
-        schema = self.get_schema()
 
+        insertions = []
         for tx_data in new:
-            mid = schema.get_mid(tx_data)
-            tid = schema.get_transaction_id(tx_data)
+            mid = self.schema.get_mid(tx_data)
+            tid = self.schema.get_transaction_id(tx_data)
             try:
                 merchant_identifier_id = self._identify_transaction(mid)
             except MissingMID:
-                self.log.warning(
-                    f"Couldn't find MID {mid} for transaction {tid}. "
-                    f"Transaction will not be put on the matching queue."
-                )
-                session.add(
-                    models.ImportTransaction(
+                insertions.append(
+                    dict(
                         transaction_id=tid,
                         provider_slug=self.provider_slug,
                         identified=False,
@@ -132,7 +141,9 @@ class BaseAgent(base_agent.BaseAgent):
                     )
                 )
             else:
-                queue_tx = schema.to_queue_transaction(tx_data, merchant_identifier_id)
+                queue_tx = self.schema.to_queue_transaction(
+                    tx_data, merchant_identifier_id, tid
+                )
 
                 import_task = {
                     ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
@@ -140,8 +151,8 @@ class BaseAgent(base_agent.BaseAgent):
                 }[self.feed_type]
                 tasks.import_queue.enqueue(import_task, queue_tx)
 
-                session.add(
-                    models.ImportTransaction(
+                insertions.append(
+                    dict(
                         transaction_id=tid,
                         provider_slug=self.provider_slug,
                         identified=True,
@@ -149,4 +160,6 @@ class BaseAgent(base_agent.BaseAgent):
                         source=source,
                     )
                 )
-            session.commit()
+        db.engine.execute(
+            models.ImportTransaction.__table__.insert().values(insertions)
+        )

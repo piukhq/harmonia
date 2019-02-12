@@ -119,7 +119,7 @@ Both the transaction file production script (`s/producer.py`) and the import age
 To make the required import directories:
 
 ```bash
-mkdir -p files/imports/{acxtedo,kasisto}
+mkdir -p files/imports/{example-loyalty-scheme,example-payment-provider}
 ```
 
 Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.

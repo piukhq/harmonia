@@ -24,7 +24,9 @@ class SchemeImportDirector(ImportDirector):
             tasks.match_scheme_transaction, scheme_transaction.id
         )
 
-        log.info(f"Received, persisted, and enqueued scheme transaction: {scheme_transaction}.")
+        log.info(
+            f"Received, persisted, and enqueued scheme transaction: {scheme_transaction}."
+        )
 
         session.close()
 

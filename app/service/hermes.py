@@ -13,9 +13,7 @@ class Hermes:
         self.base_url = base_url
         self.session = requests_retry_session()
 
-    def post(
-        self, endpoint: str, json: dict = None, *, name: str
-    ) -> dict:
+    def post(self, endpoint: str, json: dict = None, *, name: str) -> dict:
         log.debug(f"Posting {name} request with parameters: {json}.")
         url = urljoin(self.base_url, endpoint)
         response = self.session.post(url, json=json)
@@ -25,7 +23,9 @@ class Hermes:
     def payment_card_user_info(
         self, loyalty_scheme_slug: str, payment_card_token: str
     ) -> dict:
-        endpoint = f"/payment_cards/accounts/payment_card_user_info/{loyalty_scheme_slug}"
+        endpoint = (
+            f"/payment_cards/accounts/payment_card_user_info/{loyalty_scheme_slug}"
+        )
         return self.post(
             endpoint,
             {"payment_cards": [payment_card_token]},

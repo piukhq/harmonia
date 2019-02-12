@@ -34,13 +34,13 @@ services:
     <<: *harmonia-svc
     command: s/seed.py
 
-  import-agent-acxetado:
+  import-agent-example-loyalty-scheme:
     <<: *harmonia-svc
-    command: tximport -a acxetado -y -q
+    command: tximport -a example-loyalty-scheme -y -q
 
-  import-agent-kasisto:
+  import-agent-example-payment-provider:
     <<: *harmonia-svc
-    command: tximport -a kasisto -y -q
+    command: tximport -a example-payment-provider -y -q
 
   import-worker:
     <<: *harmonia-svc
