@@ -1,6 +1,7 @@
 import sqlalchemy as s
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound  # noqa
 
 from app import postgres, encoding
 import settings

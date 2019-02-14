@@ -85,9 +85,9 @@ class MatchingWorker:
             if settings.DEBUG:
                 raise ex
             else:
-                sentry_id = sentry_sdk.capture_exception(ex)
+                event_id = sentry_sdk.capture_exception(ex)
                 self.log.error(
-                    f"Failed to match payment transaction #{payment_tx.id}: {ex}. Sentry issue ID: {sentry_id}."
+                    f"Failed to match payment transaction #{payment_tx.id}: {ex}. Sentry issue ID: {event_id}."
                 )
 
         if match_result is None:

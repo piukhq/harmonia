@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 sqlalchemy = "*"
-"psycopg2-binary" = "*"
 flask = "*"
 flask-cors = "*"
 click = "*"
@@ -23,13 +22,15 @@ apispec-webframeworks = "*"
 rq = "*"
 flask-admin = "*"
 responses = "*"
+flask-login = "*"
+flask-wtf = "*"
+psycopg2 = "*"
 
 [dev-packages]
 harmonia = {editable = true,path = "."}
 alembic = "*"
 pytest = "*"
 pytest-cov = "*"
-pytest-mock = "*"
 mypy = "*"
 
 [pipenv]

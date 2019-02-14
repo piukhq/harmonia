@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
-        <redoc spec-url="{{ url_for('get_api_spec', fmt='json') }}"></redoc>
+        <redoc spec-url="{{ url_for('core_api.get_api_spec', fmt='json') }}"></redoc>
         <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
     </body>
 </html>

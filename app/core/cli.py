@@ -6,6 +6,7 @@ import csv
 
 from app.core.identify_retry_worker import IdentifyRetryWorker
 from app import models, db
+from app.api import auth
 
 
 @click.group()
@@ -71,7 +72,10 @@ def import_mids(mids_file: t.TextIO) -> None:
     items = [MerchantIdentifier._make(item) for item in csv.reader(mids_file)]
     insertions = []
     for i, item in enumerate(items):
-        print(f"{i+1}/{len(items)} ({int(100 * (i + 1) / len(items))}%)", end="\r")
+        print(
+            f"{i+1}/{len(items)} ({int(100 * (i + 1) / len(items))}%)",
+            end="\r",
+        )
 
         loyalty_scheme = get_loyalty_scheme(item.scheme_provider)
         payment_provider = get_payment_provider(item.card_provider)
@@ -86,7 +90,28 @@ def import_mids(mids_file: t.TextIO) -> None:
             )
         )
     print("\nCommitting…")
-    db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions))
+    db.engine.execute(
+        models.MerchantIdentifier.__table__.insert().values(insertions)
+    )
+
+
+@cli.command()
+def create_administrator():
+    while True:
+        email_address = click.prompt("Email address")
+        if len(email_address) >= 3 and "@" in email_address[1:-1]:
+            break
+        click.echo("Please enter a valid email address.")
+
+    while True:
+        password = click.prompt("Password", hide_input=True)
+        password_confirm = click.prompt("Password (again)", hide_input=True)
+        if password == password_confirm:
+            break
+        click.echo("Passwords don't match. Try again.")
+
+    auth.create_user(email_address, password)
+    click.echo("Added!")
 
 
 if __name__ == "__main__":
