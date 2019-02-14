@@ -1,0 +1,38 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+{{ super() }}
+<div class="row-fluid">
+
+    <div>
+        {% if current_user.is_authenticated %}
+        <p>Select a model above to see details.</p>
+        {% else %}
+        <form method="POST" action="">
+            {{ form.hidden_tag() if form.hidden_tag }}
+            {{ form.email_address.label }} {{ form.email_address }}
+
+            <p>
+                {% if form.email_address.errors %}
+                <ul>
+                    {% for e in form.email_address.errors %}
+                    <li>{{ e }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </p>
+            <p>
+                {{ form.password.label }} {{ form.password }}
+                {% if form.password.errors %}
+                <ul>
+                    {% for e in form.password.errors %}
+                    <li>{{ e }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </p>
+            <button class="btn" type="submit">Submit</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock body %}

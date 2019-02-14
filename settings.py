@@ -11,7 +11,10 @@ class ConfigVarRequiredError(Exception):
 
 
 def getenv(
-    key: str, default: str = None, conv: t.Callable = str, required: bool = True
+    key: str,
+    default: str = None,
+    conv: t.Callable = str,
+    required: bool = True,
 ) -> t.Any:
     """If `default` is None, then the var is non-optional."""
     var = os.getenv(key, default)
@@ -59,7 +62,9 @@ SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 
 if SENTRY_DSN is not None:
     sentry_sdk.init(
-        dsn=SENTRY_DSN, environment=ENVIRONMENT_ID, integrations=[FlaskIntegration()]
+        dsn=SENTRY_DSN,
+        environment=ENVIRONMENT_ID,
+        integrations=[FlaskIntegration()],
     )
 
 # JSON encoding with custom extensions. Used in queue messages, postgres JSON field storage, et cetera.
@@ -67,3 +72,10 @@ JSON_SERIALIZER = "txmatch+json"
 
 # Base URL for the Hermes API
 HERMES_URL = getenv("TXM_HERMES_URL")
+
+# This dictionary is passed to `Flask.config.from_mapping`.
+FLASK = dict(
+    # Secret keys for Flask and WTForms.
+    SECRET_KEY=b"{\xca\xb9\xf6F&\xe5\x9f\xaeq\xbb\xa0\x8a\x94\xce\xb2\xb7\x19\x8e\xaeY\xdb\xe6#\x8azF\x85y0w\x01",
+    WTF_CSRF_SECRET_KEY=b"d\x15MS\x94\x80\xd9>U\x8bd\x97i-\x96Q\x06(\x0f\xc3\xfe\xef`+\xfd\x0e\x07\xfdz\x13^\x99",
+)

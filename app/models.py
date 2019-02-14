@@ -7,6 +7,7 @@ from app.db import Base, ModelMixin, auto_repr, auto_str
 # import other module's models here to be recognised by alembic.
 from app.imports.models import ImportTransaction  # noqa
 from app.exports.models import PendingExport, ExportTransaction  # noqa
+from app.api.models import Administrator  # noqa
 
 
 @auto_repr
