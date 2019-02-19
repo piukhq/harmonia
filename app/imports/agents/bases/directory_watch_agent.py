@@ -13,7 +13,10 @@ inotify.adapters._LOGGER.setLevel(logging.INFO)
 
 
 class DirectoryWatchAgent(BaseAgent):
-    def run(self, *, once: bool = False):
+    file_open_mode = "r"
+
+    def run(self, *, debug: bool = False, once: bool = False):
+        self.debug = debug
         watch_path = Path(self.Config.watch_directory)  # type: ignore
 
         if not watch_path.exists():
@@ -27,7 +30,14 @@ class DirectoryWatchAgent(BaseAgent):
 
         for file_path in watch_path.iterdir():
             self.log.info(f"Found existing file at {file_path}, importing.")
-            self.do_import(file_path)
+
+            try:
+                self.do_import(file_path)
+            except Exception as ex:
+                if self.debug is True:
+                    raise
+                self.log.error(f"Import failed: {repr(ex)}.")
+
             if once is True:
                 self.log.info(
                     "Quitting existing file loop because we were told to run once."
@@ -57,7 +67,13 @@ class DirectoryWatchAgent(BaseAgent):
                 self.log.debug(
                     f"Write event detected at {file_path}! Invoking handler."
                 )
-                self.do_import(file_path)
+
+                try:
+                    self.do_import(file_path)
+                except Exception as ex:
+                    if self.debug is True:
+                        raise
+                    self.log.error(f"Import failed: {repr(ex)}.")
 
                 if once is True:
                     self.log.info(
@@ -69,11 +85,7 @@ class DirectoryWatchAgent(BaseAgent):
         raise NotImplementedError
 
     def do_import(self, file_path: Path):
-        self.log.debug("Getting data from agent…")
-        with file_path.open("r") as fd:
+        with file_path.open(self.file_open_mode) as fd:
             transactions_data = list(self.yield_transactions_data(fd))
-        self.log.debug("Importing transactions…")
         self._import_transactions(transactions_data, source=str(file_path))
-        self.log.info(f"Imported {file_path} successfully. Deleting.")
         file_path.unlink()
-        self.log.info(f"Deleted {file_path} successfully.")

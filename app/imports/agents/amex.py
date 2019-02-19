@@ -46,7 +46,7 @@ class AmexAgent(DirectoryWatchAgent):
         )
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        for line in fd.readlines():
+        for line in fd:
             raw_data = [l.strip() for l in line.split("|")]
 
             if not raw_data or raw_data[0] != "D":

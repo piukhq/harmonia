@@ -11,10 +11,6 @@ from app.status import status_monitor
 from app.utils import missing_property
 
 
-class ImportTransactionAlreadyExistsError(Exception):
-    pass
-
-
 @lru_cache(maxsize=2048)
 def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
     try:
@@ -40,6 +36,9 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
 
 
 class BaseAgent:
+    class ImportError(Exception):
+        pass
+
     def __init__(self, *, debug: bool = False) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
         self.debug = debug

@@ -25,6 +25,7 @@ responses = "*"
 flask-login = "*"
 flask-wtf = "*"
 psycopg2 = "*"
+python-gnupg = "*"
 
 [dev-packages]
 harmonia = {editable = true,path = "."}

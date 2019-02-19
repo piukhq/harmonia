@@ -87,6 +87,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         if no_user_input or click.confirm("Do you wish to run this agent?"):
             if not no_user_input:
                 click.echo()
-            agent_instance.run(once=once)
+            agent_instance.run(debug=debug, once=once)
 
     return cli

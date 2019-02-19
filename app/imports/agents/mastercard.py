@@ -21,7 +21,7 @@ class MastercardAgent(DirectoryWatchAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
-    file_field_widths = [
+    field_widths = [
         ("record_type", 1),
         ("transaction_sequence_number", 13),
         ("bank_account_number", 19),
@@ -37,9 +37,8 @@ class MastercardAgent(DirectoryWatchAgent):
         ("aggregate_merchant_id", 6),
     ]
 
-    file_field_types = {"transaction_amount": Decimal, "transaction_time": int}
     field_transforms: t.Dict[str, t.Callable] = {
-        "transaction_amount": lambda x: int(Decimal(x * 100)),
+        "transaction_amount": lambda x: int(Decimal(x) * 100),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_time": int,
     }
@@ -52,7 +51,7 @@ class MastercardAgent(DirectoryWatchAgent):
     def parse_line(self, line: str) -> dict:
         idx = 0
         data = {}
-        for field, width in self.file_field_widths:
+        for field, width in self.field_widths:
             data[field] = line[idx : idx + width].strip()
             idx += width
         return data
@@ -66,7 +65,7 @@ class MastercardAgent(DirectoryWatchAgent):
                 continue
 
             yield {
-                k: self.file_field_types.get(k, str)(v)
+                k: self.field_transforms.get(k, str)(v)
                 for k, v in raw_data.items()
             }
 
