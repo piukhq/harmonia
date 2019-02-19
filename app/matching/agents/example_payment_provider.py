@@ -6,8 +6,8 @@ from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
-class ExampleLoyaltySchemeAgent(BaseMatchingAgent):
-    scheme_slug = "example-loyalty-scheme"
+class ExamplePaymentProviderAgent(BaseMatchingAgent):
+    scheme_slug = "example-payment-provider"
 
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         scheme_transactions = self._fine_match(

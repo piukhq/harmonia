@@ -10,7 +10,9 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "mastercard"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+WATCH_DIRECTORY_KEY = (
+    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+)
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -63,7 +65,10 @@ class MastercardAgent(DirectoryWatchAgent):
             if raw_data["record_type"] != "D":
                 continue
 
-            yield {k: self.file_field_types.get(k, str)(v) for k, v in raw_data.items()}
+            yield {
+                k: self.file_field_types.get(k, str)(v)
+                for k, v in raw_data.items()
+            }
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -76,10 +81,10 @@ class MastercardAgent(DirectoryWatchAgent):
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.PaymentTransaction:
         return models.PaymentTransaction(
-            merchant_identifier_id=merchant_identifier_id,
+            merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["transaction_date"],
             spend_amount=data["transaction_amount"],
@@ -106,5 +111,5 @@ class MastercardAgent(DirectoryWatchAgent):
         return data["transaction_sequence_number"]
 
     @staticmethod
-    def get_mid(data: dict) -> str:
-        return data["merchant_id"]
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["merchant_id"]]

@@ -67,7 +67,7 @@ class BaseAgent:
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
         raise NotImplementedError
 
@@ -76,7 +76,7 @@ class BaseAgent:
         raise NotImplementedError
 
     @staticmethod
-    def get_mid(data: dict) -> str:
+    def get_mids(data: dict) -> t.List[str]:
         raise NotImplementedError
 
     def _find_new_transactions(
@@ -119,7 +119,7 @@ class BaseAgent:
 
         return new, duplicate
 
-    def _identify_transaction(self, mid: str) -> int:
+    def _identify_mid(self, mid: str) -> int:
         result = identify_mid(mid, self.feed_type, self.provider_slug)
         if result is None:
             raise MissingMID
@@ -139,23 +139,34 @@ class BaseAgent:
 
         insertions = []
         for tx_data in new:
-            mid = self.get_mid(tx_data)
+            mids = self.get_mids(tx_data)
             tid = self.get_transaction_id(tx_data)
-            try:
-                merchant_identifier_id = self._identify_transaction(mid)
-            except MissingMID:
-                insertions.append(
-                    dict(
-                        transaction_id=tid,
-                        provider_slug=self.provider_slug,
-                        identified=False,
-                        data=tx_data,
-                        source=source,
-                    )
-                )
+
+            merchant_identifier_ids = []
+            for mid in mids:
+                try:
+                    merchant_identifier_ids.append(self._identify_mid(mid))
+                except MissingMID:
+                    pass
+
+            if merchant_identifier_ids:
+                identified = True
             else:
+                identified = False
+
+            insertions.append(
+                dict(
+                    transaction_id=tid,
+                    provider_slug=self.provider_slug,
+                    identified=identified,
+                    data=tx_data,
+                    source=source,
+                )
+            )
+
+            if identified:
                 queue_tx = self.to_queue_transaction(
-                    tx_data, merchant_identifier_id, tid
+                    tx_data, merchant_identifier_ids, tid
                 )
 
                 import_task = {
@@ -164,15 +175,6 @@ class BaseAgent:
                 }[self.feed_type]
                 tasks.import_queue.enqueue(import_task, queue_tx)
 
-                insertions.append(
-                    dict(
-                        transaction_id=tid,
-                        provider_slug=self.provider_slug,
-                        identified=True,
-                        data=tx_data,
-                        source=source,
-                    )
-                )
         if insertions:
             db.engine.execute(
                 models.ImportTransaction.__table__.insert().values(insertions)
