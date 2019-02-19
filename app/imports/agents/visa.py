@@ -58,7 +58,7 @@ class VisaAgent(DirectoryWatchAgent):
         ("transaction_gmt_time", 4),
     ]
 
-    field_transforms = {
+    field_transforms: t.Dict[str, t.Callable] = {
         "transaction_amount": int,
         "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
