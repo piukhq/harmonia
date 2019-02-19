@@ -10,7 +10,9 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "amex"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+WATCH_DIRECTORY_KEY = (
+    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+)
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -66,10 +68,10 @@ class AmexAgent(DirectoryWatchAgent):
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.PaymentTransaction:
         return models.PaymentTransaction(
-            merchant_identifier_id=merchant_identifier_id,
+            merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["purchase_date"],
             spend_amount=data["transaction_amount"],
@@ -92,5 +94,5 @@ class AmexAgent(DirectoryWatchAgent):
         return data["transaction_id"]
 
     @staticmethod
-    def get_mid(data: dict) -> str:
-        return data["merchant_number"]
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["merchant_number"]]

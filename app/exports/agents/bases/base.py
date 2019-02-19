@@ -32,7 +32,7 @@ class BaseAgent:
 
     def run(self, *, once: bool = False):
         raise NotImplementedError(
-            "This method should be overridden by specicialised base agents."
+            "This method should be overridden by specialised base agents."
         )
 
     def handle_pending_export(self, pending_export: models.PendingExport) -> None:

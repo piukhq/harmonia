@@ -11,7 +11,9 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "iceland-bonus-card"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+WATCH_DIRECTORY_KEY = (
+    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+)
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
@@ -24,7 +26,9 @@ class IcelandAgent(DirectoryWatchAgent):
         "TransactionCardSchemeId": int,
         "TransactionAmountValue": lambda x: int(Decimal(x) * 100),
         "TransactionCashbackValue": Decimal,
-        "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
+        "TransactionTimestamp": lambda x: pendulum.from_format(
+            x, DATETIME_FORMAT
+        ),
     }
 
     class Config:
@@ -38,7 +42,10 @@ class IcelandAgent(DirectoryWatchAgent):
             if raw_data["TransactionAuthCode"].lower() == "decline":
                 continue
 
-            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
+            yield {
+                k: self.field_transforms.get(k, str)(v)
+                for k, v in raw_data.items()
+            }
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -51,10 +58,10 @@ class IcelandAgent(DirectoryWatchAgent):
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.SchemeTransaction:
         return models.PaymentTransaction(
-            merchant_identifier_id=merchant_identifier_id,
+            merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["TransactionTimestamp"],
             spend_amount=data["TransactionAmountValue"],
@@ -80,5 +87,5 @@ class IcelandAgent(DirectoryWatchAgent):
         return data["TransactionId"]
 
     @staticmethod
-    def get_mid(data: dict) -> str:
-        return data["TransactionStore_Id"]
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["TransactionStore_Id"]]

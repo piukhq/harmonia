@@ -21,7 +21,9 @@ class DirectoryWatchAgent(BaseAgent):
                 f"Watch directory is set to {watch_path} but it does not exist! Attempting to create…"
             )
             watch_path.mkdir(parents=True)
-            self.log.warning(f"Created watch directory {watch_path} successfully.")
+            self.log.warning(
+                f"Created watch directory {watch_path} successfully."
+            )
 
         for file_path in watch_path.iterdir():
             self.log.info(f"Found existing file at {file_path}, importing.")
@@ -51,11 +53,11 @@ class DirectoryWatchAgent(BaseAgent):
             event, _, path, filename = event
 
             if event.mask & inotify.constants.IN_CLOSE_WRITE:
-                file_path = os.path.join(path, filename)
+                file_path = Path(os.path.join(path, filename))
                 self.log.debug(
                     f"Write event detected at {file_path}! Invoking handler."
                 )
-                self.do_import(Path(file_path))
+                self.do_import(file_path)
 
                 if once is True:
                     self.log.info(

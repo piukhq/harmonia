@@ -220,8 +220,6 @@ The `txmatch:status:checkins:*` keys contain timestamps from when various parts 
 
 [alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.
 
-A convenience script is provided in `s/makemigration` that will generate a new migration and test it by running it against a temporary database. This can be used as the first step in creating a new migration. Migrations created by this script should not be submitted as-is. _Note: in order to test the new migration, a new postgres container is created that is listening on port 55555. If you already have a postgres instance on this port, stop it before running the makemigration script._
-
 Migrations should be manually squashed before each deployment for efficiency's sake. As a rule of thumb, each merge request should only include a single migration containing all the required changes for that feature. In some cases this will not be possible.
 
 ## Deployment

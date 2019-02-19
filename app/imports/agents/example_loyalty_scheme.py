@@ -9,7 +9,9 @@ from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app.utils import file_split
 
 PROVIDER_SLUG = "example-loyalty-scheme"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+WATCH_DIRECTORY_KEY = (
+    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+)
 
 
 class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
@@ -31,14 +33,17 @@ class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
     def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:
         for record in file_split(fd, sep="\x1e"):
             raw_data = dict(zip(self.file_fields, record.split("\x1f")))
-            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
+            yield {
+                k: self.field_transforms.get(k, str)(v)
+                for k, v in raw_data.items()
+            }
 
     @staticmethod
     def to_queue_transaction(
-        data: dict, merchant_identifier_id: int, transaction_id: str
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.SchemeTransaction:
         return models.SchemeTransaction(
-            merchant_identifier_id=merchant_identifier_id,
+            merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["date"],
             spend_amount=data["spend"],
@@ -54,5 +59,5 @@ class ExampleLoyaltySchemeAgent(DirectoryWatchAgent):
         return data["transaction_id"]
 
     @staticmethod
-    def get_mid(data: dict) -> str:
-        return data["mid"]
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["mid"]]
