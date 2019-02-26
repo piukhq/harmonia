@@ -1,5 +1,6 @@
 import typing as t
 import inspect
+import logging
 
 import gnupg
 import pendulum
@@ -15,6 +16,9 @@ WATCH_DIRECTORY_KEY = (
 )
 
 DATE_FORMAT = "YYYYMMDD"
+
+
+logging.getLogger("gnupg").setLevel(logging.INFO)
 
 
 class VisaAgent(DirectoryWatchAgent):
