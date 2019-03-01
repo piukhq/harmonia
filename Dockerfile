@@ -1,7 +1,6 @@
-from python:3.6
+from python:3.6-alpine
 workdir /app
-run pip install pipenv uwsgi alembic
-add Pipfile* ./
-run pipenv install --deploy --system
+run apk add build-base postgresql-dev && \
+    pip install pipenv gunicorn alembic
 add . .
-run pip install .
+run pipenv install --deploy --system --ignore-pipfile

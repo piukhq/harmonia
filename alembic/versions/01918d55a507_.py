@@ -19,10 +19,7 @@ def upgrade():
         "import_transaction",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("transaction_id", sa.String(length=50), nullable=False),
@@ -36,10 +33,7 @@ def upgrade():
         "loyalty_scheme",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("slug", sa.String(length=50), nullable=False),
@@ -49,10 +43,7 @@ def upgrade():
         "payment_provider",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("slug", sa.String(length=50), nullable=False),
@@ -62,10 +53,7 @@ def upgrade():
         "merchant_identifier",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("mid", sa.String(length=50), nullable=False),
@@ -77,17 +65,12 @@ def upgrade():
         sa.ForeignKeyConstraint(["payment_provider_id"], ["payment_provider.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_merchant_identifier_mid"), "merchant_identifier", ["mid"], unique=False
-    )
+    op.create_index(op.f("ix_merchant_identifier_mid"), "merchant_identifier", ["mid"], unique=False)
     op.create_table(
         "matched_transaction",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("merchant_identifier_id", sa.Integer(), nullable=True),
@@ -100,9 +83,7 @@ def upgrade():
         sa.Column("points_multiplier", sa.Integer(), nullable=True),
         sa.Column("card_token", sa.String(length=100), nullable=True),
         sa.Column(
-            "matching_type",
-            sa.Enum("SPOTTED", "LOYALTY", "NON_LOYALTY", "MIXED", name="matchingtype"),
-            nullable=False,
+            "matching_type", sa.Enum("SPOTTED", "LOYALTY", "NON_LOYALTY", "MIXED", name="matchingtype"), nullable=False
         ),
         sa.Column("extra_fields", sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(["merchant_identifier_id"], ["merchant_identifier.id"]),
@@ -112,10 +93,7 @@ def upgrade():
         "payment_transaction",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("merchant_identifier_id", sa.Integer(), nullable=True),
@@ -133,10 +111,7 @@ def upgrade():
         "scheme_transaction",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("merchant_identifier_id", sa.Integer(), nullable=True),

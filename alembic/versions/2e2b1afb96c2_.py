@@ -19,10 +19,7 @@ def upgrade():
         "pending_export",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("provider_slug", sa.String(length=50), nullable=False),
@@ -30,12 +27,7 @@ def upgrade():
         sa.ForeignKeyConstraint(["matched_transaction_id"], ["matched_transaction.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_pending_export_provider_slug"),
-        "pending_export",
-        ["provider_slug"],
-        unique=False,
-    )
+    op.create_index(op.f("ix_pending_export_provider_slug"), "pending_export", ["provider_slug"], unique=False)
 
 
 def downgrade():

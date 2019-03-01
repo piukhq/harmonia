@@ -10,9 +10,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "amex"
-WATCH_DIRECTORY_KEY = (
-    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-)
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -41,9 +39,7 @@ class AmexAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}"
-        )
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         for line in fd:
@@ -52,10 +48,7 @@ class AmexAgent(DirectoryWatchAgent):
             if not raw_data or raw_data[0] != "D":
                 continue
 
-            yield {
-                k: self.field_transforms.get(k, str)(v)
-                for k, v in zip(self.file_fields, raw_data)
-            }
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -79,13 +72,7 @@ class AmexAgent(DirectoryWatchAgent):
             spend_currency="GBP",
             card_token=data["card_token"],
             extra_fields={
-                k: data[k]
-                for k in (
-                    "detail_identifier",
-                    "partner_id",
-                    "transaction_date",
-                    "alias_card_number",
-                )
+                k: data[k] for k in ("detail_identifier", "partner_id", "transaction_date", "alias_card_number")
             },
         )
 

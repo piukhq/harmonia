@@ -14,25 +14,17 @@ class SchemeAccountNotFound(Exception):
 
 
 class Identifier:
-    def payment_card_user_info(
-        self, matched_transaction: models.MatchedTransaction
-    ) -> dict:
-        loyalty_scheme_slug = (
-            matched_transaction.merchant_identifier.loyalty_scheme.slug
-        )
+    def payment_card_user_info(self, matched_transaction: models.MatchedTransaction) -> dict:
+        loyalty_scheme_slug = matched_transaction.merchant_identifier.loyalty_scheme.slug
 
-        json = hermes.payment_card_user_info(
-            loyalty_scheme_slug, matched_transaction.card_token
-        )
+        json = hermes.payment_card_user_info(loyalty_scheme_slug, matched_transaction.card_token)
 
         if matched_transaction.card_token in json:
             return json[matched_transaction.card_token]
         else:
             raise SchemeAccountNotFound
 
-    def persist_user_identity(
-        self, matched_transaction: models.MatchedTransaction, user_info: dict
-    ) -> None:
+    def persist_user_identity(self, matched_transaction: models.MatchedTransaction, user_info: dict) -> None:
         user_identity = models.UserIdentity(
             loyalty_id=user_info["loyalty_id"],
             scheme_account_id=user_info["scheme_account_id"],
@@ -48,16 +40,13 @@ class Identifier:
         log.debug(f"Persisted {user_identity}.")
 
     def identify_matched_transaction(self, matched_transaction_id: int) -> None:
-        log.debug(
-            f"Attempting identification of matched transaction #{matched_transaction_id}"
-        )
-        matched_transaction = db.session.query(models.MatchedTransaction).get(
-            matched_transaction_id
-        )
+        log.debug(f"Attempting identification of matched transaction #{matched_transaction_id}")
+        matched_transaction = db.session.query(models.MatchedTransaction).get(matched_transaction_id)
 
         if matched_transaction.user_identity is not None:
             log.warning(
-                f"Skipping identification of matched transaction #{matched_transaction_id} as it already has an "
+                "Skipping identification of matched transaction "
+                f"#{matched_transaction_id} as it already has an "
                 "associated user identity."
             )
             return
@@ -66,15 +55,11 @@ class Identifier:
             user_info = self.payment_card_user_info(matched_transaction)
         except requests.RequestException:
             event_id = sentry_sdk.capture_exception()
-            log.debug(
-                f"Failed to get user info from Hermes. Sentry event ID: {event_id}"
-            )
+            log.debug(f"Failed to get user info from Hermes. Sentry event ID: {event_id}")
             return
 
         self.persist_user_identity(matched_transaction, user_info)
 
         log.debug("Identification complete. Enqueueing export task.")
 
-        tasks.export_queue.enqueue(
-            tasks.export_matched_transaction, matched_transaction_id
-        )
+        tasks.export_queue.enqueue(tasks.export_matched_transaction, matched_transaction_id)

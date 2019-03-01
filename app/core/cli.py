@@ -18,9 +18,7 @@ def cli() -> None:
 @click.option("-d", "--debug", is_flag=True)
 def identify_retry(debug: bool) -> None:
     if debug:
-        print(
-            "Warning: Running in debug mode. Exceptions will not be handled gracefully!"
-        )
+        print("Warning: Running in debug mode. Exceptions will not be handled gracefully!")
     worker = IdentifyRetryWorker(raise_exceptions=debug)
     worker.run()
 
@@ -30,11 +28,7 @@ def identify_retry(debug: bool) -> None:
 def import_mids(mids_file: t.TextIO) -> None:
     @lru_cache(maxsize=256)
     def get_loyalty_scheme(slug: str) -> models.LoyaltyScheme:
-        loyalty_scheme = (
-            db.session.query(models.LoyaltyScheme)
-            .filter(models.LoyaltyScheme.slug == slug)
-            .first()
-        )
+        loyalty_scheme = db.session.query(models.LoyaltyScheme).filter(models.LoyaltyScheme.slug == slug).first()
         if not loyalty_scheme:
             print(f"adding new loyalty scheme for {slug}")
             loyalty_scheme = models.LoyaltyScheme(slug=slug)
@@ -44,11 +38,7 @@ def import_mids(mids_file: t.TextIO) -> None:
 
     @lru_cache(maxsize=256)
     def get_payment_provider(slug: str) -> models.PaymentProvider:
-        payment_provider = (
-            db.session.query(models.PaymentProvider)
-            .filter(models.PaymentProvider.slug == slug)
-            .first()
-        )
+        payment_provider = db.session.query(models.PaymentProvider).filter(models.PaymentProvider.slug == slug).first()
         if not payment_provider:
             print(f"adding new payment provider for {slug}")
             payment_provider = models.PaymentProvider(slug=slug)
@@ -58,24 +48,13 @@ def import_mids(mids_file: t.TextIO) -> None:
 
     MerchantIdentifier = namedtuple(
         "MerchantIdentifier",
-        [
-            "card_provider",
-            "merchant_id",
-            "scheme_provider",
-            "merchant_name",
-            "created_date",
-            "location",
-            "postcode",
-        ],
+        ["card_provider", "merchant_id", "scheme_provider", "merchant_name", "created_date", "location", "postcode"],
     )
 
     items = [MerchantIdentifier._make(item) for item in csv.reader(mids_file)]
     insertions = []
     for i, item in enumerate(items):
-        print(
-            f"{i+1}/{len(items)} ({int(100 * (i + 1) / len(items))}%)",
-            end="\r",
-        )
+        print(f"{i+1}/{len(items)} ({int(100 * (i + 1) / len(items))}%)", end="\r")
 
         loyalty_scheme = get_loyalty_scheme(item.scheme_provider)
         payment_provider = get_payment_provider(item.card_provider)
@@ -90,9 +69,7 @@ def import_mids(mids_file: t.TextIO) -> None:
             )
         )
     print("\nCommitting…")
-    db.engine.execute(
-        models.MerchantIdentifier.__table__.insert().values(insertions)
-    )
+    db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions))
 
 
 @cli.command()

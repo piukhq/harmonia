@@ -6,9 +6,7 @@ from app.db import Base, auto_repr, ModelMixin
 @auto_repr
 class ImportTransaction(Base, ModelMixin):
     __tablename__ = "import_transaction"
-    __table_args__ = (
-        s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_it_uc"),
-    )
+    __table_args__ = (s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_it_uc"),)
 
     transaction_id = s.Column(s.String(50), nullable=False)
     provider_slug = s.Column(s.String(50), nullable=False)

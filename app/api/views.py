@@ -40,9 +40,7 @@ class AdminIndexView(flask_admin.AdminIndexView):
                 flask.flash("Login failed.")
                 return flask.redirect(flask.url_for(".login_view"))
 
-            if not auth.validate_password(
-                form.password.data, user.instance.password_hash
-            ):
+            if not auth.validate_password(form.password.data, user.instance.password_hash):
                 flask.flash("Login failed.")
                 return flask.redirect(flask.url_for(".login_view"))
 

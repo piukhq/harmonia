@@ -18,9 +18,7 @@ def expects_json(f: t.Callable) -> t.Callable:
     @wraps(f)
     def ensure_json_is_present(*args, **kwargs):
         if flask.request.json is None:
-            return error_response(
-                "A JSON body is expected but was not provided."
-            )
+            return error_response("A JSON body is expected but was not provided.")
         return f(*args, **kwargs)
 
     return ensure_json_is_present
@@ -32,10 +30,7 @@ def is_safe_url(target: str) -> bool:
     """
     ref_url = urlparse(flask.request.host_url)
     test_url = urlparse(urljoin(flask.request.host_url, target))
-    return (
-        test_url.scheme in ("http", "https")
-        and ref_url.netloc == test_url.netloc
-    )
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
 
 
 def get_redirect_target() -> t.Optional[str]:

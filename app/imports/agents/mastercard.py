@@ -10,9 +10,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "mastercard"
-WATCH_DIRECTORY_KEY = (
-    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-)
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -44,9 +42,7 @@ class MastercardAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}"
-        )
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -64,10 +60,7 @@ class MastercardAgent(DirectoryWatchAgent):
             if raw_data["record_type"] != "D":
                 continue
 
-            yield {
-                k: self.field_transforms.get(k, str)(v)
-                for k, v in raw_data.items()
-            }
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     def help(self) -> str:
         return inspect.cleandoc(

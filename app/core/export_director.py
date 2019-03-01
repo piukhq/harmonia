@@ -17,19 +17,14 @@ class ExportDirector:
         status_monitor.checkin(self)
 
         log.debug(f"Recieved matched transaction #{matched_transaction_id}.")
-        matched_transaction: MatchedTransaction = session.query(MatchedTransaction).get(
-            matched_transaction_id
-        )
+        matched_transaction: MatchedTransaction = session.query(MatchedTransaction).get(matched_transaction_id)
         loyalty_scheme = matched_transaction.merchant_identifier.loyalty_scheme
 
         log.debug(
             f"Creating pending export entry for loyalty scheme {loyalty_scheme.slug} "
             f"and matched transaction #{matched_transaction_id}."
         )
-        pending_export = PendingExport(
-            provider_slug=loyalty_scheme.slug,
-            matched_transaction_id=matched_transaction_id,
-        )
+        pending_export = PendingExport(provider_slug=loyalty_scheme.slug, matched_transaction_id=matched_transaction_id)
         session.add(pending_export)
         session.commit()
 

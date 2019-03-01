@@ -13,9 +13,7 @@ log = get_logger("status-monitor")
 
 
 class StatusMonitor:
-    checkin_name_pattern = re.compile(
-        f"{settings.REDIS_KEY_PREFIX}:status:checkins:(.*)"
-    )
+    checkin_name_pattern = re.compile(f"{settings.REDIS_KEY_PREFIX}:status:checkins:(.*)")
 
     def __init__(self, redis: StrictRedis) -> None:
         self.redis = redis
@@ -45,9 +43,7 @@ class StatusMonitor:
             "timestamp": checkin_timestamp,
             "datetime": checkin_datetime,
             "seconds_ago": seconds_ago,
-            "human_readable": humanize.naturaltime(
-                checkin_datetime.naive()
-            ),  # humanize uses naive datetimes
+            "human_readable": humanize.naturaltime(checkin_datetime.naive()),  # humanize uses naive datetimes
             "name": checkin_name,
         }
 
@@ -84,26 +80,16 @@ class StatusMonitor:
         if redis_health["healthy"]:
             checkins = [
                 {"key": key.decode(), **self._get_checkin_details(key.decode())}
-                for key in self.redis.scan_iter(
-                    f"{settings.REDIS_KEY_PREFIX}:status:checkins:*"
-                )
+                for key in self.redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
             ]
         else:
             checkins = []
 
         return {
             "checkins": checkins,
-            "services": [
-                {"name": "postgres", **self._get_postgres_health()},
-                {"name": "redis", **redis_health},
-            ],
+            "services": [{"name": "postgres", **self._get_postgres_health()}, {"name": "redis", **redis_health}],
         }
 
 
-redis_args = {
-    "socket_timeout": 1,
-    "socket_connect_timeout": 3,
-    "socket_keepalive": True,
-    "retry_on_timeout": False,
-}
+redis_args = {"socket_timeout": 1, "socket_connect_timeout": 3, "socket_keepalive": True, "retry_on_timeout": False}
 status_monitor = StatusMonitor(StrictRedis.from_url(settings.REDIS_DSN, **redis_args))

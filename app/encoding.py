@@ -11,8 +11,7 @@ def _default(val):
         return {"__type__": "decimal.Decimal", "repr": str(val)}
 
     raise TypeError(
-        f"custom serializer can't handle {type(val).__name__} ({val}) yet! "
-        f"you can add support in {__file__}"
+        f"Custom serializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
     )
 
 
@@ -27,8 +26,7 @@ def _object_hook(val):
         return decimal.Decimal(val["repr"])
 
     raise TypeError(
-        f"custom deserializer can't handle {type(val).__name__} ({val}) yet! "
-        f"you can add support in {__file__}"
+        f"Custom deserializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
     )
 
 

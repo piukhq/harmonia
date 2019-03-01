@@ -17,14 +17,10 @@ class ExampleLoyaltySchemeAgent(SingleExportAgent):
         )
 
     def export(self, matched_transaction_id: int, *, once: bool = False):
-        matched_transaction = session.query(MatchedTransaction).get(
-            matched_transaction_id
-        )
+        matched_transaction = session.query(MatchedTransaction).get(matched_transaction_id)
         self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
 
-        value = Decimal(matched_transaction.spend_amount) / Decimal(
-            matched_transaction.spend_multiplier
-        )
+        value = Decimal(matched_transaction.spend_amount) / Decimal(matched_transaction.spend_multiplier)
         export_data = {
             "transaction_id": matched_transaction.transaction_id,
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",

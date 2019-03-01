@@ -16,9 +16,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column(
-        "import_transaction", sa.Column("identified", sa.Boolean(), nullable=False)
-    )
+    op.add_column("import_transaction", sa.Column("identified", sa.Boolean(), nullable=False))
 
 
 def downgrade():

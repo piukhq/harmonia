@@ -20,10 +20,7 @@ def upgrade():
         "user_identity",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("loyalty_id", sa.String(length=250), nullable=False),
@@ -32,13 +29,8 @@ def upgrade():
         sa.Column("credentials", sa.Text(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.add_column(
-        "matched_transaction",
-        sa.Column("user_identity_id", sa.Integer(), nullable=True),
-    )
-    op.create_foreign_key(
-        None, "matched_transaction", "user_identity", ["user_identity_id"], ["id"]
-    )
+    op.add_column("matched_transaction", sa.Column("user_identity_id", sa.Integer(), nullable=True))
+    op.create_foreign_key(None, "matched_transaction", "user_identity", ["user_identity_id"], ["id"])
 
 
 def downgrade():

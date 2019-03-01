@@ -15,20 +15,12 @@ _redis = StrictRedis.from_url(settings.REDIS_DSN)
 
 def _retry_callback(retry_state: tenacity.RetryCallState) -> None:
     wait = _ensure_connection.retry.wait
-    sleep_for = min(
-        wait.max, wait.start + (retry_state.attempt_number - 1) * wait.increment
-    )
+    sleep_for = min(wait.max, wait.start + (retry_state.attempt_number - 1) * wait.increment)
 
-    log.error(
-        f'Failed to connect to redis: "{retry_state.outcome.exception()}". '
-        f"Retrying in {sleep_for}s…"
-    )
+    log.error(f'Failed to connect to redis: "{retry_state.outcome.exception()}". ' f"Retrying in {sleep_for}s…")
 
 
-@tenacity.retry(
-    wait=tenacity.wait_incrementing(start=3, increment=3, max=30),
-    before_sleep=_retry_callback,
-)
+@tenacity.retry(wait=tenacity.wait_incrementing(start=3, increment=3, max=30), before_sleep=_retry_callback)
 def _ensure_connection(redis: StrictRedis) -> None:
     redis.ping()
 

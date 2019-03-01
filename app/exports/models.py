@@ -15,9 +15,7 @@ class PendingExport(Base, ModelMixin):
 @auto_repr
 class ExportTransaction(Base, ModelMixin):
     __tablename__ = "export_transaction"
-    __table_args__ = (
-        s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_et_uc"),
-    )
+    __table_args__ = (s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_et_uc"),)
 
     matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
     transaction_id = s.Column(s.String(50), nullable=False)

@@ -20,21 +20,11 @@ class Hermes:
         response.raise_for_status()
         return response.json()
 
-    def payment_card_user_info(
-        self, loyalty_scheme_slug: str, payment_card_token: str
-    ) -> dict:
-        endpoint = (
-            f"/payment_cards/accounts/payment_card_user_info/{loyalty_scheme_slug}"
-        )
-        return self.post(
-            endpoint,
-            {"payment_cards": [payment_card_token]},
-            name="payment card user info",
-        )
+    def payment_card_user_info(self, loyalty_scheme_slug: str, payment_card_token: str) -> dict:
+        endpoint = f"/payment_cards/accounts/payment_card_user_info/{loyalty_scheme_slug}"
+        return self.post(endpoint, {"payment_cards": [payment_card_token]}, name="payment card user info")
 
-    def create_join_scheme_account(
-        self, loyalty_scheme_slug: str, user_id: int
-    ) -> dict:
+    def create_join_scheme_account(self, loyalty_scheme_slug: str, user_id: int) -> dict:
         endpoint = f"/accounts/join/{loyalty_scheme_slug}/{user_id}"
         return self.post(endpoint, name="create join scheme account")
 

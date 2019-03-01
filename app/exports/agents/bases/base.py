@@ -3,9 +3,7 @@ from app.reporting import get_logger
 
 
 def _missing_property(obj, prop: str):
-    raise NotImplementedError(
-        f"{type(obj).__name__} is missing a required property: {prop}"
-    )
+    raise NotImplementedError(f"{type(obj).__name__} is missing a required property: {prop}")
 
 
 class BaseAgent:
@@ -31,23 +29,17 @@ class BaseAgent:
         )
 
     def run(self, *, once: bool = False):
-        raise NotImplementedError(
-            "This method should be overridden by specialised base agents."
-        )
+        raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def handle_pending_export(self, pending_export: models.PendingExport) -> None:
-        raise NotImplementedError(
-            "This method should be overridden by specicialised base agents."
-        )
+        raise NotImplementedError("This method should be overridden by specicialised base agents.")
 
     def export(self, matched_transaction_id: int):
         raise NotImplementedError(
-            "Override the export method in your agent to act as the entry point "
-            "into the singular export process."
+            "Override the export method in your agent to act as the entry point into the singular export process."
         )
 
     def export_all(self):
         raise NotImplementedError(
-            "Override the export_all method in your agent to act as the entry point "
-            "into the batch export process."
+            "Override the export_all method in your agent to act as the entry point into the batch export process."
         )

@@ -20,6 +20,4 @@ class BatchExampleAgent(BatchExportAgent):
         )
 
     def export_all(self, *, once: bool = False, debug: bool = False):
-        self.log.info(
-            f"This is where we would batch export all {self.provider_slug} transactions."
-        )
+        self.log.info(f"This is where we would batch export all {self.provider_slug} transactions.")

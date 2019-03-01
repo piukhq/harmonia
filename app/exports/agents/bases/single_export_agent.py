@@ -10,8 +10,7 @@ class SingleExportAgent(BaseAgent):
 
     def export(self, matched_transaction_id: int):
         raise NotImplementedError(
-            "Override the export method in your agent to act as the entry point "
-            "into the singular export process."
+            "Override the export method in your agent to act as the entry point into the singular export process."
         )
 
     def export_all(self):
