@@ -7,9 +7,7 @@ class BatchExportAgent(BaseAgent):
         self.debug = debug
 
         scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule,  # type: ignore
-            callback=self.export_all,
-            logger=self.log,
+            schedule_fn=lambda: self.Config.schedule, callback=self.export_all, logger=self.log  # type: ignore
         )
 
         if once:
@@ -23,6 +21,5 @@ class BatchExportAgent(BaseAgent):
 
     def export_all(self, *, once: bool = False, debug: bool = False):
         raise NotImplementedError(
-            "Override the export_all method in your agent to act as the entry point "
-            "into the batch export process."
+            "Override the export_all method in your agent to act as the entry point into the batch export process."
         )

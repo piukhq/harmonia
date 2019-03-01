@@ -11,9 +11,7 @@ class IdentifyRetryWorker:
     def __init__(self, *, raise_exceptions: bool = False):
         self.raise_exceptions = raise_exceptions
         self.log = reporting.get_logger("identify-retry")
-        self.scheduler = scheduler.CronScheduler(
-            schedule_fn=self.get_schedule, callback=self.tick, logger=self.log
-        )
+        self.scheduler = scheduler.CronScheduler(schedule_fn=self.get_schedule, callback=self.tick, logger=self.log)
 
     def run(self) -> None:
         self.scheduler.run(raise_exceptions=self.raise_exceptions)
@@ -26,11 +24,7 @@ class IdentifyRetryWorker:
             models.MatchedTransaction.user_identity_id.is_(None)
         )
 
-        self.log.debug(
-            f"Found {unidentified_transactions.count()} unidentified matched transactions."
-        )
+        self.log.debug(f"Found {unidentified_transactions.count()} unidentified matched transactions.")
 
         for transaction in unidentified_transactions:
-            tasks.matching_queue.enqueue(
-                tasks.identify_matched_transaction, transaction.id
-            )
+            tasks.matching_queue.enqueue(tasks.identify_matched_transaction, transaction.id)

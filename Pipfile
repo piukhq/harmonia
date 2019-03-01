@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+harmonia = {editable = true,path = "."}
 sqlalchemy = "*"
 flask = "*"
 flask-cors = "*"
@@ -13,7 +14,6 @@ apscheduler = "*"
 humanize = "*"
 apispec = "*"
 marshmallow = "*"
-marshmallow-sqlalchemy = "*"
 inotify = "*"
 tenacity = "*"
 sentry-sdk = "*"
@@ -21,18 +21,18 @@ pendulum = "*"
 apispec-webframeworks = "*"
 rq = "*"
 flask-admin = "*"
-responses = "*"
 flask-login = "*"
 flask-wtf = "*"
 psycopg2 = "*"
 python-gnupg = "*"
+azure-storage-blob = "*"
 
 [dev-packages]
-harmonia = {editable = true,path = "."}
 alembic = "*"
 pytest = "*"
 pytest-cov = "*"
 mypy = "*"
+responses = "*"
 
 [pipenv]
 allow_prereleases = true

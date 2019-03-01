@@ -36,10 +36,7 @@ def test_health_report(redis):
     report = monitor.report()
 
     assert len(report["checkins"]) == 1
-    assert (
-        report["checkins"][0]["key"]
-        == f"{settings.REDIS_KEY_PREFIX}:status:checkins:HealthReportTest123"
-    )
+    assert report["checkins"][0]["key"] == f"{settings.REDIS_KEY_PREFIX}:status:checkins:HealthReportTest123"
     assert report["checkins"][0]["name"] == "HealthReportTest123"
     assert {"postgres", "redis"}.issubset({s["name"] for s in report["services"]})
 
@@ -50,6 +47,4 @@ def test_health_report_without_redis():
     report = monitor.report()
 
     assert report["checkins"] == []
-    assert (
-        next(s for s in report["services"] if s["name"] == "redis")["healthy"] is False
-    )
+    assert next(s for s in report["services"] if s["name"] == "redis")["healthy"] is False

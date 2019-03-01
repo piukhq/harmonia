@@ -20,10 +20,7 @@ def upgrade():
         "export_transaction",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
-            nullable=True,
+            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("matched_transaction_id", sa.Integer(), nullable=True),

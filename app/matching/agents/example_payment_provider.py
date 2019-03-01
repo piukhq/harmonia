@@ -33,8 +33,7 @@ class ExamplePaymentProviderAgent(BaseMatchingAgent):
 
         return MatchResult(
             matched_tx=models.MatchedTransaction(
-                **self._make_matched_transaction_fields(match),
-                matching_type=models.MatchingType.LOYALTY,
+                **self._make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY
             ),
             scheme_tx_id=match.id,
         )

@@ -5,13 +5,7 @@ import inspect
 import click
 
 from app.db import session, Base
-from app.models import (
-    ImportTransaction,
-    SchemeTransaction,
-    PaymentTransaction,
-    MatchedTransaction,
-    ExportTransaction,
-)
+from app.models import ImportTransaction, SchemeTransaction, PaymentTransaction, MatchedTransaction, ExportTransaction
 
 
 BOX_WIDTH = 60
@@ -40,42 +34,25 @@ def down_arrow() -> str:
 
 
 def import_tx_str(tx: ImportTransaction) -> str:
-    return "\n".join(
-        ["IMPORT TX", "", f"imported at {tx.created_at}", f"from {tx.source}"]
-    )
+    return "\n".join(["IMPORT TX", "", f"imported at {tx.created_at}", f"from {tx.source}"])
 
 
 def scheme_tx_str(tx: SchemeTransaction) -> str:
-    return "\n".join(
-        [f"SCHEME TX ({tx.status.name})", "", f"created from import at {tx.created_at}"]
-    )
+    return "\n".join([f"SCHEME TX ({tx.status.name})", "", f"created from import at {tx.created_at}"])
 
 
 def payment_tx_str(tx: PaymentTransaction) -> str:
-    return "\n".join(
-        [
-            f"PAYMENT TX ({tx.status.name})",
-            "",
-            f"created from import at {tx.created_at}",
-        ]
-    )
+    return "\n".join([f"PAYMENT TX ({tx.status.name})", "", f"created from import at {tx.created_at}"])
 
 
 def matched_tx_str(tx: MatchedTransaction) -> str:
     return "\n".join(
-        [
-            f"MATCHED TX ({tx.status.name})",
-            "",
-            f"created from a {tx.matching_type.name} match",
-            f"at {tx.created_at}",
-        ]
+        [f"MATCHED TX ({tx.status.name})", "", f"created from a {tx.matching_type.name} match", f"at {tx.created_at}"]
     )
 
 
 def export_tx_str(tx: ExportTransaction) -> str:
-    return "\n".join(
-        [f"EXPORT TX", "", f"exported at {tx.created_at}", f"to {tx.destination}"]
-    )
+    return "\n".join([f"EXPORT TX", "", f"exported at {tx.created_at}", f"to {tx.destination}"])
 
 
 def tx_str(tx: Base) -> str:
@@ -92,9 +69,7 @@ def chain_tx_str(txs: t.List[Base]) -> str:
     return "\n---\n".join(tx_str(tx) for tx in txs)
 
 
-@click.group(
-    help="find the entire lifecycle of a transaction as it went through the transaction matching system"
-)
+@click.group(help="find the entire lifecycle of a transaction as it went through the transaction matching system")
 def cli() -> None:
     pass
 
@@ -119,20 +94,14 @@ def forward(import_transaction_id: int) -> None:
     if scheme_transaction is not None:
         q = q.filter(MatchedTransaction.scheme_transaction_id == scheme_transaction.id)
     if payment_transaction is not None:
-        q = q.filter(
-            MatchedTransaction.payment_transaction_id == payment_transaction.id
-        )
+        q = q.filter(MatchedTransaction.payment_transaction_id == payment_transaction.id)
 
     matched_transaction = q.one()
 
     if scheme_transaction is None:
-        scheme_transaction = session.query(SchemeTransaction).get(
-            matched_transaction.scheme_transaction_id
-        )
+        scheme_transaction = session.query(SchemeTransaction).get(matched_transaction.scheme_transaction_id)
     if payment_transaction is None:
-        payment_transaction = session.query(PaymentTransaction).get(
-            matched_transaction.payment_transaction_id
-        )
+        payment_transaction = session.query(PaymentTransaction).get(matched_transaction.payment_transaction_id)
 
     export_transaction = (
         session.query(ExportTransaction)
@@ -159,9 +128,7 @@ def reverse(export_transaction_id: int) -> None:
         .one()
     )
     scheme_transaction = (
-        session.query(SchemeTransaction)
-        .filter(SchemeTransaction.id == matched_transaction.scheme_transaction_id)
-        .one()
+        session.query(SchemeTransaction).filter(SchemeTransaction.id == matched_transaction.scheme_transaction_id).one()
     )
     payment_transaction = (
         session.query(PaymentTransaction)

@@ -17,13 +17,9 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
         q = db.session.query(models.MerchantIdentifier)
 
         if feed_type == ImportFeedTypes.SCHEME:
-            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(
-                models.LoyaltyScheme.slug == provider_slug
-            )
+            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
         elif feed_type == ImportFeedTypes.PAYMENT:
-            q = q.join(models.MerchantIdentifier.payment_provider).filter(
-                models.PaymentProvider.slug == provider_slug
-            )
+            q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
@@ -60,8 +56,7 @@ class BaseAgent:
 
     def run(self, *, once: bool = False):
         raise NotImplementedError(
-            "Override the run method in your agent to act as the main entry point"
-            "into the import process."
+            "Override the run method in your agent to act as the main entry point into the import process."
         )
 
     @staticmethod
@@ -78,9 +73,7 @@ class BaseAgent:
     def get_mids(data: dict) -> t.List[str]:
         raise NotImplementedError
 
-    def _find_new_transactions(
-        self, provider_transactions: t.List[dict]
-    ) -> t.Tuple[t.List[dict], t.List[dict]]:
+    def _find_new_transactions(self, provider_transactions: t.List[dict]) -> t.Tuple[t.List[dict], t.List[dict]]:
         """Splits provider_transactions into two lists containing new and duplicate transactions.
         Returns a tuple (new, duplicate)"""
 
@@ -89,12 +82,8 @@ class BaseAgent:
         # we filter for duplicates in python rather than a SQL "in" clause because it's faster.
         duplicate_ids = {
             row[0]
-            for row in db.session.query(
-                models.ImportTransaction.transaction_id
-            )
-            .filter(
-                models.ImportTransaction.provider_slug == self.provider_slug
-            )
+            for row in db.session.query(models.ImportTransaction.transaction_id)
+            .filter(models.ImportTransaction.provider_slug == self.provider_slug)
             .all()
             if row[0] in tids
         }
@@ -112,9 +101,7 @@ class BaseAgent:
                 seen_tids.add(tid)
                 new.append(tx)
 
-        self.log.info(
-            f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set."
-        )
+        self.log.info(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
 
         return new, duplicate
 
@@ -124,9 +111,7 @@ class BaseAgent:
             raise MissingMID
         return result
 
-    def _import_transactions(
-        self, provider_transactions: t.List[dict], *, source: str
-    ) -> None:
+    def _import_transactions(self, provider_transactions: t.List[dict], *, source: str) -> None:
         """
         Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
@@ -164,9 +149,7 @@ class BaseAgent:
             )
 
             if identified:
-                queue_tx = self.to_queue_transaction(
-                    tx_data, merchant_identifier_ids, tid
-                )
+                queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
 
                 import_task = {
                     ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
@@ -175,6 +158,4 @@ class BaseAgent:
                 tasks.import_queue.enqueue(import_task, queue_tx)
 
         if insertions:
-            db.engine.execute(
-                models.ImportTransaction.__table__.insert().values(insertions)
-            )
+            db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))

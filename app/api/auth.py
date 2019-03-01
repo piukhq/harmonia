@@ -16,15 +16,11 @@ PASSWORD_ALGORITHM = f"pbkdf2_{PASSWORD_HASH_DIGEST}"
 
 
 def _generate_user_uid() -> str:
-    return secrets.token_urlsafe(
-        48
-    )  # 48-byte token in a 64-character base64 string.
+    return secrets.token_urlsafe(48)  # 48-byte token in a 64-character base64 string.
 
 
 def _generate_user_salt() -> str:
-    return secrets.token_urlsafe(
-        48
-    )  # 48-byte token in a 64-character base64 string.
+    return secrets.token_urlsafe(48)  # 48-byte token in a 64-character base64 string.
 
 
 def _generate_password_hash(password: str, salt: str) -> str:
@@ -43,10 +39,7 @@ def _generate_password_hash(password: str, salt: str) -> str:
 
 def _hash_password(password: str, salt: str, iterations: int):
     password_hash = hashlib.pbkdf2_hmac(
-        PASSWORD_HASH_DIGEST,
-        password.encode("utf-8"),
-        salt.encode("utf-8"),
-        iterations,
+        PASSWORD_HASH_DIGEST, password.encode("utf-8"), salt.encode("utf-8"), iterations
     )
     password_b64 = base64.b64encode(password_hash).decode("utf-8")
     return password_b64
@@ -62,9 +55,7 @@ def validate_password(password: str, password_hash: str) -> bool:
     try:
         iterations = int(iterations_str)
     except ValueError:
-        log.warning(
-            f"Invalid 'iterations' value in password: {repr(iterations_str)}"
-        )
+        log.warning(f"Invalid 'iterations' value in password: {repr(iterations_str)}")
         return False
 
     confirmation_hash = _hash_password(password, salt, iterations)
@@ -90,9 +81,7 @@ def create_user(email_address: str, password: str) -> models.Administrator:
 
 def get_user(email_address: str) -> models.Administrator:
     return User(
-        db.session.query(models.Administrator)
-        .filter(models.Administrator.email_address == email_address)
-        .one()
+        db.session.query(models.Administrator).filter(models.Administrator.email_address == email_address).one()
     )
 
 

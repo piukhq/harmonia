@@ -29,25 +29,19 @@ class BaseMatchingAgent:
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def _get_scheme_transactions(
-        self, **search_fields
-    ) -> t.List[models.SchemeTransaction]:
+    def _get_scheme_transactions(self, **search_fields) -> t.List[models.SchemeTransaction]:
         search_fields["mid"] = self.payment_transaction.mid
         return session.query(models.SchemeTransaction).filter(**search_fields)
 
     def _find_applicable_scheme_transactions(self):
         return session.query(models.SchemeTransaction).filter(
-            models.SchemeTransaction.merchant_identifier_ids.overlap(
-                self.payment_transaction.merchant_identifier_ids
-            )
+            models.SchemeTransaction.merchant_identifier_ids.overlap(self.payment_transaction.merchant_identifier_ids)
         )
 
     def _fine_match(self, scheme_transactions, fields):
         return scheme_transactions.filter_by(**fields)
 
-    def _make_matched_transaction_fields(
-        self, scheme_transaction: models.SchemeTransaction
-    ) -> dict:
+    def _make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
         matching_merchant_identifier_ids = list(
             set(self.payment_transaction.merchant_identifier_ids).intersection(
                 scheme_transaction.merchant_identifier_ids
@@ -79,10 +73,7 @@ class BaseMatchingAgent:
             "card_token": self.payment_transaction.card_token,
             "payment_transaction_id": self.payment_transaction.id,
             "scheme_transaction_id": scheme_transaction.id,
-            "extra_fields": {
-                **self.payment_transaction.extra_fields,
-                **scheme_transaction.extra_fields,
-            },
+            "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
         }
 
     def match(self) -> t.Optional[MatchResult]:
@@ -91,6 +82,4 @@ class BaseMatchingAgent:
         return self.do_match(scheme_transactions)
 
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
-        raise NotImplementedError(
-            "Matching agents must implement the do_match method"
-        )
+        raise NotImplementedError("Matching agents must implement the do_match method")

@@ -17,9 +17,7 @@ spec = APISpec(
     version=__version__,
     openapi_version="2.0",
     plugins=[FlaskPlugin(), MarshmallowPlugin()],
-    info={
-        "description": "Management API for the transaction matching system."
-    },
+    info={"description": "Management API for the transaction matching system."},
 )
 
 
@@ -37,9 +35,7 @@ def add_admin_views(admin):
             return flask_login.current_user.is_authenticated
 
         def inaccessible_callback(self, name, **kwargs):
-            return flask.redirect(
-                flask.url_for("login", next=flask.request.url)
-            )
+            return flask.redirect(flask.url_for("login", next=flask.request.url))
 
     model_classes = [
         models.Administrator,
@@ -68,11 +64,7 @@ def init_login_manager(app: flask.Flask) -> None:
     @login_manager.user_loader
     def load_user(uid: str) -> auth.User:
         try:
-            administrator = (
-                db.session.query(models.Administrator)
-                .filter(models.Administrator.uid == uid)
-                .one()
-            )
+            administrator = db.session.query(models.Administrator).filter(models.Administrator.uid == uid).one()
         except db.NoResultFound:
             return None
         return auth.User(administrator)
@@ -87,7 +79,7 @@ def init_admin(app: flask.Flask) -> None:
         name="Transaction Matching",
         template_mode="bootstrap3",
         index_view=views.AdminIndexView(),
-        base_template="admin_master.html"
+        base_template="admin_master.html",
     )
     add_admin_views(admin)
 

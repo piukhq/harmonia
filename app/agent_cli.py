@@ -12,37 +12,13 @@ def info(text):
 
 def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     @click.command()
-    @click.option(
-        "-a", "--agent", type=click.Choice(registry._entries.keys()), required=True
-    )
-    @click.option(
-        "-y",
-        "--no-user-input",
-        is_flag=True,
-        help="bypass the y/N prompt to run the agent",
-    )
+    @click.option("-a", "--agent", type=click.Choice(registry._entries.keys()), required=True)
+    @click.option("-y", "--no-user-input", is_flag=True, help="bypass the y/N prompt to run the agent")
     @click.option("--once", is_flag=True, help="run the agent once")
     @click.option("--debug", is_flag=True, help="run the agent in debug mode")
-    @click.option(
-        "-N",
-        "--dry-run",
-        is_flag=True,
-        help="print agent information then quit without executing",
-    )
-    @click.option(
-        "-q",
-        "--quiet",
-        is_flag=True,
-        help="skip printing agent information and warnings",
-    )
-    def cli(
-        agent: str,
-        no_user_input: bool,
-        once: bool,
-        debug: bool,
-        dry_run: bool,
-        quiet: bool,
-    ) -> None:
+    @click.option("-N", "--dry-run", is_flag=True, help="print agent information then quit without executing")
+    @click.option("-q", "--quiet", is_flag=True, help="skip printing agent information and warnings")
+    def cli(agent: str, no_user_input: bool, once: bool, debug: bool, dry_run: bool, quiet: bool) -> None:
         try:
             agent_instance = registry.instantiate(agent, debug=debug)
         except RegistryError as ex:
@@ -60,9 +36,7 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
                 raise click.Abort()
 
         if not quiet:
-            click.echo(
-                f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}."
-            )
+            click.echo(f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}.")
 
             click.echo()
             click.echo("Agent help text:")
@@ -87,6 +61,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         if no_user_input or click.confirm("Do you wish to run this agent?"):
             if not no_user_input:
                 click.echo()
-            agent_instance.run(debug=debug, once=once)
+            agent_instance.run(once=once)
 
     return cli

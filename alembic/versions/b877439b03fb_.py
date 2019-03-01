@@ -17,44 +17,20 @@ depends_on = None
 
 def upgrade():
     op.add_column(
-        "payment_transaction",
-        sa.Column(
-            "merchant_identifier_ids",
-            postgresql.ARRAY(sa.Integer()),
-            nullable=True,
-        ),
+        "payment_transaction", sa.Column("merchant_identifier_ids", postgresql.ARRAY(sa.Integer()), nullable=True)
     )
-    op.drop_constraint(
-        "payment_transaction_merchant_identifier_id_fkey",
-        "payment_transaction",
-        type_="foreignkey",
-    )
+    op.drop_constraint("payment_transaction_merchant_identifier_id_fkey", "payment_transaction", type_="foreignkey")
     op.drop_column("payment_transaction", "merchant_identifier_id")
     op.add_column(
-        "scheme_transaction",
-        sa.Column(
-            "merchant_identifier_ids",
-            postgresql.ARRAY(sa.Integer()),
-            nullable=True,
-        ),
+        "scheme_transaction", sa.Column("merchant_identifier_ids", postgresql.ARRAY(sa.Integer()), nullable=True)
     )
-    op.drop_constraint(
-        "scheme_transaction_merchant_identifier_id_fkey",
-        "scheme_transaction",
-        type_="foreignkey",
-    )
+    op.drop_constraint("scheme_transaction_merchant_identifier_id_fkey", "scheme_transaction", type_="foreignkey")
     op.drop_column("scheme_transaction", "merchant_identifier_id")
 
 
 def downgrade():
     op.add_column(
-        "scheme_transaction",
-        sa.Column(
-            "merchant_identifier_id",
-            sa.INTEGER(),
-            autoincrement=False,
-            nullable=True,
-        ),
+        "scheme_transaction", sa.Column("merchant_identifier_id", sa.INTEGER(), autoincrement=False, nullable=True)
     )
     op.create_foreign_key(
         "scheme_transaction_merchant_identifier_id_fkey",
@@ -65,13 +41,7 @@ def downgrade():
     )
     op.drop_column("scheme_transaction", "merchant_identifier_ids")
     op.add_column(
-        "payment_transaction",
-        sa.Column(
-            "merchant_identifier_id",
-            sa.INTEGER(),
-            autoincrement=False,
-            nullable=True,
-        ),
+        "payment_transaction", sa.Column("merchant_identifier_id", sa.INTEGER(), autoincrement=False, nullable=True)
     )
     op.create_foreign_key(
         "payment_transaction_merchant_identifier_id_fkey",

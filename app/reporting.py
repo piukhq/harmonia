@@ -4,8 +4,7 @@ import settings
 
 
 logging.basicConfig(
-    level=getattr(settings, "LOG_LEVEL", logging.INFO),
-    format="%(asctime)s | %(name)24s | %(levelname)8s | %(message)s",
+    level=getattr(settings, "LOG_LEVEL", logging.INFO), format="%(asctime)s | %(name)24s | %(levelname)8s | %(message)s"
 )
 
 

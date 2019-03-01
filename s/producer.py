@@ -29,20 +29,13 @@ def get(model: Base, query: list) -> Base:
     return session.query(model).filter(*query).one()
 
 
-loyalty_scheme = get(
-    models.LoyaltyScheme, query=[models.LoyaltyScheme.slug == LOYALTY_SCHEME_SLUG]
-)
+loyalty_scheme = get(models.LoyaltyScheme, query=[models.LoyaltyScheme.slug == LOYALTY_SCHEME_SLUG])
 
-payment_provider = get(
-    models.PaymentProvider, query=[models.PaymentProvider.slug == PAYMENT_PROVIDER_SLUG]
-)
+payment_provider = get(models.PaymentProvider, query=[models.PaymentProvider.slug == PAYMENT_PROVIDER_SLUG])
 
 merchant_identifiers = []
 for mid_config in MID_CONFIGS:
-    merchant_identifier = get(
-        models.MerchantIdentifier,
-        query=[models.MerchantIdentifier.mid == mid_config.mid],
-    )
+    merchant_identifier = get(models.MerchantIdentifier, query=[models.MerchantIdentifier.mid == mid_config.mid])
     merchant_identifiers.append(merchant_identifier)
 
 
@@ -55,8 +48,7 @@ def produce_transaction() -> dict:
 
     HERMES = "http://127.0.0.1:8000"
     register_resp = requests.post(
-        f"{HERMES}/users/register",
-        json={"email": f"{token}@txmatch.com", "password": "Password01"},
+        f"{HERMES}/users/register", json={"email": f"{token}@txmatch.com", "password": "Password01"}
     )
     register_resp.raise_for_status()
 
@@ -82,9 +74,7 @@ def produce_transaction() -> dict:
     pca_resp.raise_for_status()
 
     sa_resp = requests.post(
-        f"{HERMES}/schemes/accounts",
-        json={"order": 0, "scheme": 1, "card_number": str(uuid4())},
-        headers=headers,
+        f"{HERMES}/schemes/accounts", json={"order": 0, "scheme": 1, "card_number": str(uuid4())}, headers=headers
     )
     sa_resp.raise_for_status()
 

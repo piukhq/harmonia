@@ -54,9 +54,7 @@ def test_get_unset(redis):
 def test_get_unset_with_default(redis, token0):
     k = make_key("test-get-unset-with-default-0")
     assert config.get(k, default=token0, redis=redis) == token0
-    assert (
-        config.get(k, redis=redis) == token0
-    ), "The previous get should have created a new pair in redis"
+    assert config.get(k, redis=redis) == token0, "The previous get should have created a new pair in redis"
 
 
 def test_update(redis, token0, token1):
@@ -95,9 +93,7 @@ def test_config_value(redis, token0):
     assert cv.__get__(None, None, redis=redis) is None
 
     redis.set(k, token0)
-    assert (
-        cv.__get__(None, None, redis=redis) == token0
-    ), "the cv should return the new value"
+    assert cv.__get__(None, None, redis=redis) == token0, "the cv should return the new value"
 
 
 def test_config_value_with_default(redis, token0, token1):
@@ -105,17 +101,11 @@ def test_config_value_with_default(redis, token0, token1):
     cv = config.ConfigValue(k, default=token0)
     assert cv.key == k
     assert cv.default == token0
-    assert (
-        cv.__get__(None, None, redis=redis) == token0
-    ), "the cv should return its default"
-    assert (
-        redis.get(k).decode() == token0
-    ), "the previous get should have set the default in redis"
+    assert cv.__get__(None, None, redis=redis) == token0, "the cv should return its default"
+    assert redis.get(k).decode() == token0, "the previous get should have set the default in redis"
 
     redis.set(k, token1)
-    assert (
-        cv.__get__(None, None, redis=redis) == token1
-    ), "the cv should return the new value despite its default"
+    assert cv.__get__(None, None, redis=redis) == token1, "the cv should return the new value despite its default"
 
 
 @pytest.fixture
@@ -142,15 +132,11 @@ def test_list_keys_api(redis, token0, api_client):
 
 def test_update_key_api(redis, token0, token1, api_client):
     k = make_key("test-update-key-api-0")
-    resp = api_client.put(
-        url_for("config_api.update_key", key=k), json={"value": token0}
-    )
+    resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token0})
     assert resp.status_code == 400, resp.json
 
     redis.set(k, token0)
-    resp = api_client.put(
-        url_for("config_api.update_key", key=k), json={"value": token1}
-    )
+    resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token1})
     assert resp.status_code == 200, resp.json
     assert redis.get(k).decode() == token1
 

@@ -9,9 +9,7 @@ from app.reporting import get_logger
 
 
 class CronScheduler:
-    def __init__(
-        self, *, schedule_fn: t.Callable, callback: t.Callable, logger: Logger = None
-    ):
+    def __init__(self, *, schedule_fn: t.Callable, callback: t.Callable, logger: Logger = None):
         self.schedule_fn = schedule_fn
         self.callback = callback
         self.log = logger if logger is not None else get_logger("cron-scheduler")
@@ -21,10 +19,7 @@ class CronScheduler:
             return CronTrigger.from_crontab(schedule)
         except ValueError:
             self.log.error(
-                (
-                    f"Schedule '{schedule}' is not in a recognised format! "
-                    f"Reverting to default of '* * * * *'."
-                )
+                (f"Schedule '{schedule}' is not in a recognised format! Reverting to default of '* * * * *'.")
             )
             return CronTrigger.from_crontab("* * * * *")
 
@@ -41,9 +36,7 @@ class CronScheduler:
             while scheduler.running:
                 new_schedule = self.schedule_fn()
                 if new_schedule != schedule:
-                    self.log.debug(
-                        f"Schedule has been changed from {schedule} to {new_schedule}! Rescheduling…"
-                    )
+                    self.log.debug(f"Schedule has been changed from {schedule} to {new_schedule}! Rescheduling…")
                     schedule = new_schedule
                     job.reschedule(self._get_trigger(schedule))
                 sleep(5)

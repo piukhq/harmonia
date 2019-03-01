@@ -11,9 +11,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 
 PROVIDER_SLUG = "iceland-bonus-card"
-WATCH_DIRECTORY_KEY = (
-    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-)
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
@@ -26,15 +24,11 @@ class IcelandAgent(DirectoryWatchAgent):
         "TransactionCardSchemeId": int,
         "TransactionAmountValue": lambda x: int(Decimal(x) * 100),
         "TransactionCashbackValue": Decimal,
-        "TransactionTimestamp": lambda x: pendulum.from_format(
-            x, DATETIME_FORMAT
-        ),
+        "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
     }
 
     class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}"
-        )
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         reader = csv.DictReader(fd)
@@ -42,10 +36,7 @@ class IcelandAgent(DirectoryWatchAgent):
             if raw_data["TransactionAuthCode"].lower() == "decline":
                 continue
 
-            yield {
-                k: self.field_transforms.get(k, str)(v)
-                for k, v in raw_data.items()
-            }
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     def help(self) -> str:
         return inspect.cleandoc(

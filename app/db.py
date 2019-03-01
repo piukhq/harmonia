@@ -6,11 +6,7 @@ from sqlalchemy.orm.exc import NoResultFound  # noqa
 from app import postgres, encoding
 import settings
 
-engine = s.create_engine(
-    settings.POSTGRES_DSN,
-    json_serializer=encoding.dumps,
-    json_deserializer=encoding.loads,
-)
+engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, json_deserializer=encoding.loads)
 
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -19,15 +15,15 @@ Base = declarative_base()
 
 
 def auto_repr(cls):
-    """Generates a __repr__ method for the wrapped class that contains all the member variables"""
+    """
+    Generates a __repr__ method for the wrapped class that contains all the member
+    variables.
+    """
 
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
-            ", ".join(
-                f"{col.name}={repr(getattr(self, col.name))}"
-                for col in self.__table__.columns
-            ),
+            ", ".join(f"{col.name}={repr(getattr(self, col.name))}" for col in self.__table__.columns),
         )
 
     cls.__repr__ = __repr__

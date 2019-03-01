@@ -17,21 +17,12 @@ depends_on = None
 def upgrade():
     TransactionStatus = sa.Enum("PENDING", "MATCHED", name="transactionstatus")
     TransactionStatus.create(op.get_bind())
-    op.add_column(
-        "payment_transaction", sa.Column("status", TransactionStatus, nullable=False)
-    )
-    op.add_column(
-        "scheme_transaction", sa.Column("status", TransactionStatus, nullable=False)
-    )
+    op.add_column("payment_transaction", sa.Column("status", TransactionStatus, nullable=False))
+    op.add_column("scheme_transaction", sa.Column("status", TransactionStatus, nullable=False))
 
-    MatchedTransactionStatus = sa.Enum(
-        "PENDING", "EXPORTED", name="matchedtransactionstatus"
-    )
+    MatchedTransactionStatus = sa.Enum("PENDING", "EXPORTED", name="matchedtransactionstatus")
     MatchedTransactionStatus.create(op.get_bind())
-    op.add_column(
-        "matched_transaction",
-        sa.Column("status", MatchedTransactionStatus, nullable=False),
-    )
+    op.add_column("matched_transaction", sa.Column("status", MatchedTransactionStatus, nullable=False))
 
 
 def downgrade():

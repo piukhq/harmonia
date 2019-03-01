@@ -11,9 +11,7 @@ from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
 from app import models
 
 PROVIDER_SLUG = "visa"
-WATCH_DIRECTORY_KEY = (
-    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-)
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -70,9 +68,7 @@ class VisaAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}"
-        )
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -86,9 +82,7 @@ class VisaAgent(DirectoryWatchAgent):
         gpg = gnupg.GPG(gnupghome="keyring")
         result = gpg.decrypt_file(fd)
         if not result.ok:
-            raise self.ImportError(
-                f"Failed to decrypt file {fd.name}: {result.status}"
-            )
+            raise self.ImportError(f"Failed to decrypt file {fd.name}: {result.status}")
         lines = str(result).split("\n")
         for line in lines:
             if not line.startswith("1601"):
@@ -96,10 +90,7 @@ class VisaAgent(DirectoryWatchAgent):
 
             raw_data = self.parse_line(line)
 
-            yield {
-                k: self.field_transforms.get(k, str)(v)
-                for k, v in raw_data.items()
-            }
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -130,8 +121,5 @@ class VisaAgent(DirectoryWatchAgent):
             spend_multiplier=100,
             spend_currency=data["country_currency_code"],
             card_token=data["external_card_holder_id"],
-            extra_fields={
-                k: data[k]
-                for k in ("merchant_description_name", "merchant_city")
-            },
+            extra_fields={k: data[k] for k in ("merchant_description_name", "merchant_city")},
         )

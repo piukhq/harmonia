@@ -6,7 +6,7 @@ s/services
 
 # change these to match your hermes source directories
 export HERMES_PATH="$HOME/projects/olympus/hermes"
-export HERMES_PY="$HOME/.virtualenvs/hermes/bin/python"
+export HERMES_PY="$HOME/.virtualenvs/hermes-aqZO6leb/bin/python"
 
 p 'setting up hermes'
 cp hermes-seed.json /tmp/hermes-seed.json

@@ -23,9 +23,7 @@ class PassiveAPIAgent(BaseAgent):
 
         return app
 
-    def extract_transactions(
-        self, request_json: t.Dict[str, str]
-    ) -> t.List[t.Dict[str, str]]:
+    def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
         return [request_json]
 
     def run(self, *, once: bool = False) -> None:

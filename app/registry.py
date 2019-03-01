@@ -6,7 +6,7 @@ class RegistryError(Exception):
     pass
 
 
-T = t.TypeVar('T')
+T = t.TypeVar("T")
 
 
 class Registry(t.Generic[T]):
@@ -35,8 +35,6 @@ class Registry(t.Generic[T]):
         try:
             object_class = getattr(mod, class_name)
         except AttributeError as ex:
-            raise RegistryError(
-                f"Class {class_name} was not found in module {mod}"
-            ) from ex
+            raise RegistryError(f"Class {class_name} was not found in module {mod}") from ex
 
         return object_class(*args, **kwargs)

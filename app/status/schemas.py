@@ -23,6 +23,4 @@ class ServiceHealthSchema(Schema):
 @define_schema
 class StatusReportSchema(Schema):
     checkins = fields.Nested(CheckinSchema, many=True, required=True, allow_none=False)
-    services = fields.Nested(
-        ServiceHealthSchema, many=True, required=True, allow_none=False
-    )
+    services = fields.Nested(ServiceHealthSchema, many=True, required=True, allow_none=False)

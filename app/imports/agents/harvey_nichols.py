@@ -9,9 +9,7 @@ from app import models
 
 
 PROVIDER_SLUG = "harvey-nichols"
-WATCH_DIRECTORY_KEY = (
-    f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-)
+WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -59,16 +57,7 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
         "3562073",
     ],
     # Harvey Nichols Online
-    "0002": [
-        "92042873",
-        "88096831",
-        "9426993077",
-        "57741381",
-        "19410201",
-        "19410121",
-        "19410381",
-        "19410461",
-    ],
+    "0002": ["92042873", "88096831", "9426993077", "57741381", "19410201", "19410121", "19410381", "19410461"],
     # Birmingham
     "0003": [
         "05447373",
@@ -120,34 +109,13 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
         "3163221",
     ],
     # Manchester
-    "0006": [
-        "92044733",
-        "92044233",
-        "87256081",
-        "9425638210",
-        "87255901",
-        "9425638228",
-    ],
+    "0006": ["92044733", "92044233", "87256081", "9425638210", "87255901", "9425638228"],
     # Ireland (Not part of the loyalty scheme so no MIDs)
     "0007": [],
     # Bristol
-    "0009": [
-        "92042453",
-        "92042793",
-        "51428981",
-        "9444905814",
-        "51428491",
-        "9444905822",
-    ],
+    "0009": ["92042453", "92042793", "51428981", "9444905814", "51428491", "9444905822"],
     # Beauty Bazaar Liverpool
-    "0018": [
-        "92043263",
-        "65069761",
-        "9447987371",
-        "65119011",
-        "9447988304",
-        "11493993",
-    ],
+    "0018": ["92043263", "65069761", "9447987371", "65119011", "9447988304", "11493993"],
     # Oxo
     "0020": ["92052253", "62461441", "9421011339"],
     # Prism
@@ -160,9 +128,7 @@ class HarveyNicholsAgent(DirectoryWatchAgent):
     provider_slug = PROVIDER_SLUG
 
     class Config:
-        watch_directory = ConfigValue(
-            WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}"
-        )
+        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         yield from json.load(fd)["transactions"]

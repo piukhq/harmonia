@@ -16,28 +16,10 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column(
-        "matched_transaction",
-        sa.Column("payment_transaction_id", sa.Integer(), nullable=True),
-    )
-    op.add_column(
-        "matched_transaction",
-        sa.Column("scheme_transaction_id", sa.Integer(), nullable=True),
-    )
-    op.create_foreign_key(
-        None,
-        "matched_transaction",
-        "payment_transaction",
-        ["payment_transaction_id"],
-        ["id"],
-    )
-    op.create_foreign_key(
-        None,
-        "matched_transaction",
-        "scheme_transaction",
-        ["scheme_transaction_id"],
-        ["id"],
-    )
+    op.add_column("matched_transaction", sa.Column("payment_transaction_id", sa.Integer(), nullable=True))
+    op.add_column("matched_transaction", sa.Column("scheme_transaction_id", sa.Integer(), nullable=True))
+    op.create_foreign_key(None, "matched_transaction", "payment_transaction", ["payment_transaction_id"], ["id"])
+    op.create_foreign_key(None, "matched_transaction", "scheme_transaction", ["scheme_transaction_id"], ["id"])
 
 
 def downgrade():
