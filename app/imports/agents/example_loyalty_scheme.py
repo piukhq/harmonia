@@ -1,29 +1,41 @@
 import typing as t
+import inspect
 
 import pendulum
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
-from app.imports.agents.bases.blob_storage_agent import BlobStorageAgent
+from app.imports.agents.bases.file_agent import FileAgent
 from app.utils import file_split
-import settings
 
 PROVIDER_SLUG = "example-loyalty-scheme"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
-BLOB_LEASE_DURATION_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.blob_lease_duration"
-BLOB_PREFIX_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.blob_prefix"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 
-class ExampleLoyaltySchemeAgentMixin:
+class ExampleLoyaltySchemeAgent(FileAgent):
+    feed_type = ImportFeedTypes.SCHEME
+    provider_slug = PROVIDER_SLUG
+
     file_fields = ["mid", "transaction_id", "date", "spend", "points"]
     field_transforms: t.Dict[str, t.Callable] = {"date": pendulum.parse, "spend": int, "points": int}
 
+    class Config:
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+
+    def help(self) -> str:
+        return inspect.cleandoc(
+            f"""
+            This is an example loyalty scheme transaction file import agent.
+
+            It is currently set up to monitor {self.Config.path} for files to import.
+            """
+        )
+
     def yield_transactions_data(self, fd: t.IO[bytes]) -> t.Iterable[dict]:
-        for record in file_split(fd, sep="\x1e"):
-            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
-            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
+        for record in file_split(fd, sep=b"\x1e"):
+            raw_data = dict(zip(self.file_fields, record.split(b"\x1f")))
+            yield {k: self.field_transforms.get(k, str)(v.decode()) for k, v in raw_data.items()}
 
     @staticmethod
     def to_queue_transaction(
@@ -48,25 +60,3 @@ class ExampleLoyaltySchemeAgentMixin:
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
         return [data["mid"]]
-
-
-class ExampleLoyaltySchemeAgent_BlobStorage(BlobStorageAgent, ExampleLoyaltySchemeAgentMixin):
-    feed_type = ImportFeedTypes.SCHEME
-    provider_slug = PROVIDER_SLUG
-
-    class Config:
-        blob_lease_duration = ConfigValue(BLOB_LEASE_DURATION_KEY, default="60")
-        blob_prefix = ConfigValue(BLOB_PREFIX_KEY, default=f"{PROVIDER_SLUG}/")
-
-
-class ExampleLoyaltySchemeAgent_DirectoryWatch(DirectoryWatchAgent, ExampleLoyaltySchemeAgentMixin):
-    feed_type = ImportFeedTypes.SCHEME
-    provider_slug = PROVIDER_SLUG
-
-    class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default="files/imports/example-loyalty-scheme")
-
-
-ExampleLoyaltySchemeAgent = (
-    ExampleLoyaltySchemeAgent_BlobStorage if settings.USE_BLOB_STORAGE else ExampleLoyaltySchemeAgent_DirectoryWatch
-)

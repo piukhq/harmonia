@@ -8,15 +8,15 @@ import pendulum
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 
 PROVIDER_SLUG = "iceland-bonus-card"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
-class IcelandAgent(DirectoryWatchAgent):
+class IcelandAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -28,7 +28,7 @@ class IcelandAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         reader = csv.DictReader(fd)
@@ -41,10 +41,10 @@ class IcelandAgent(DirectoryWatchAgent):
     def help(self) -> str:
         return inspect.cleandoc(
             f"""
-        This is the Iceland payment transaction file import agent.
+            This is the Iceland payment transaction file import agent.
 
-        It is currently set up to monitor {self.Config.watch_directory} for files to import.
-        """
+            It is currently set up to monitor {self.Config.path} for files to import.
+            """
         )
 
     @staticmethod

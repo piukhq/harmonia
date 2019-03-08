@@ -7,11 +7,11 @@ import pendulum
 
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 from app import models
 
 PROVIDER_SLUG = "visa"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -19,7 +19,7 @@ DATE_FORMAT = "YYYYMMDD"
 logging.getLogger("gnupg").setLevel(logging.INFO)
 
 
-class VisaAgent(DirectoryWatchAgent):
+class VisaAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
     file_open_mode = "rb"
@@ -68,7 +68,16 @@ class VisaAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+
+    def help(self) -> str:
+        return inspect.cleandoc(
+            f"""
+            This is the Visa payment transaction file import agent.
+
+            It is currently set up to monitor {self.Config.path} for files to import.
+            """
+        )
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -91,15 +100,6 @@ class VisaAgent(DirectoryWatchAgent):
             raw_data = self.parse_line(line)
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
-
-    def help(self) -> str:
-        return inspect.cleandoc(
-            f"""
-        This is the Visa payment transaction file import agent.
-
-        It is currently set up to monitor {self.Config.watch_directory} for files to import.
-        """
-        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
