@@ -1,18 +1,19 @@
 import typing as t
+import inspect
 
 import pendulum
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 from app.utils import file_split
 
 PROVIDER_SLUG = "example-payment-provider"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.example-payment-provider.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 
-class ExamplePaymentProviderAgent(DirectoryWatchAgent):
+class ExamplePaymentProviderAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -20,12 +21,21 @@ class ExamplePaymentProviderAgent(DirectoryWatchAgent):
     field_transforms: t.Dict[str, t.Callable] = {"date": pendulum.parse, "spend": int}
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default="files/imports/example-payment-provider")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+
+    def help(self) -> str:
+        return inspect.cleandoc(
+            f"""
+            This is an example payment provider transaction file import agent.
+
+            It is currently set up to monitor {self.Config.path} for files to import.
+            """
+        )
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        for record in file_split(fd, sep="\x1e"):
-            raw_data = dict(zip(self.file_fields, record.split("\x1f")))
-            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
+        for record in file_split(fd, sep=b"\x1e"):
+            raw_data = dict(zip(self.file_fields, record.split(b"\x1f")))
+            yield {k: self.field_transforms.get(k, str)(v.decode()) for k, v in raw_data.items()}
 
     @staticmethod
     def to_queue_transaction(

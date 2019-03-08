@@ -7,16 +7,16 @@ import pendulum
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 
 PROVIDER_SLUG = "amex"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
 
 
-class AmexAgent(DirectoryWatchAgent):
+class AmexAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -39,7 +39,16 @@ class AmexAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+
+    def help(self) -> str:
+        return inspect.cleandoc(
+            f"""
+        This is the Amex payment transaction file import agent.
+
+        It is currently set up to monitor {self.Config.path} for files to import.
+        """
+        )
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         for line in fd:
@@ -49,15 +58,6 @@ class AmexAgent(DirectoryWatchAgent):
                 continue
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
-
-    def help(self) -> str:
-        return inspect.cleandoc(
-            f"""
-        This is the Amex payment transaction file import agent.
-
-        It is currently set up to monitor {self.Config.watch_directory} for files to import.
-        """
-        )
 
     @staticmethod
     def to_queue_transaction(

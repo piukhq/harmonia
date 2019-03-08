@@ -7,15 +7,15 @@ import pendulum
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 
 PROVIDER_SLUG = "mastercard"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATE_FORMAT = "YYYYMMDD"
 
 
-class MastercardAgent(DirectoryWatchAgent):
+class MastercardAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -42,7 +42,7 @@ class MastercardAgent(DirectoryWatchAgent):
     }
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -65,10 +65,10 @@ class MastercardAgent(DirectoryWatchAgent):
     def help(self) -> str:
         return inspect.cleandoc(
             f"""
-        This is the Mastercard payment transaction file import agent.
+            This is the Mastercard payment transaction file import agent.
 
-        It is currently set up to monitor {self.Config.watch_directory} for files to import.
-        """
+            It is currently set up to monitor {self.Config.path} for files to import.
+            """
         )
 
     @staticmethod

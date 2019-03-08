@@ -9,8 +9,11 @@ def missing_property(obj: object, prop: str) -> t.NoReturn:
     raise NotImplementedError(f"{type(obj).__name__} is missing a required property: {prop}")
 
 
-def file_split(fd: t.IO, *, sep: str, buf_size: int = 1024) -> t.Iterable[str]:
-    buf = ""
+def file_split(fd: t.IO[t.AnyStr], *, sep: t.AnyStr, buf_size: int = 1024) -> t.Iterable[t.AnyStr]:
+    if isinstance(sep, bytes):
+        buf = b""
+    else:
+        buf = ""
     while True:
         data = fd.read(buf_size)
         if not data:

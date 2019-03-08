@@ -4,12 +4,12 @@ import json
 
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.directory_watch_agent import DirectoryWatchAgent
+from app.imports.agents.bases.file_agent import FileAgent
 from app import models
 
 
 PROVIDER_SLUG = "harvey-nichols"
-WATCH_DIRECTORY_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -123,12 +123,12 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 }
 
 
-class HarveyNicholsAgent(DirectoryWatchAgent):
+class HarveyNicholsAgent(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
     class Config:
-        watch_directory = ConfigValue(WATCH_DIRECTORY_KEY, default=f"files/imports/{PROVIDER_SLUG}")
+        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
     def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
         yield from json.load(fd)["transactions"]
@@ -138,7 +138,7 @@ class HarveyNicholsAgent(DirectoryWatchAgent):
             f"""
             This is the Harvey Nichols scheme transaction file import agent.
 
-            It is currently set up to monitor {self.Config.watch_directory} for files to import.
+            It is currently set up to monitor {self.Config.path} for files to import.
             """
         )
 
