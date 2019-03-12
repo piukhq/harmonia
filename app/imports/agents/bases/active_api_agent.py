@@ -14,7 +14,7 @@ class ActiveAPIAgent(BaseAgent):
             scheduler.tick()
             return
 
-        scheduler.run(raise_exceptions=self.debug)
+        scheduler.run()
 
     def do_import(self):
         resp = requests.get(self.url)

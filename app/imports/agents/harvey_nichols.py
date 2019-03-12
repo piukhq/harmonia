@@ -130,8 +130,8 @@ class HarveyNicholsAgent(FileAgent):
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        yield from json.load(fd)["transactions"]
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        yield from json.loads(data.decode())["transactions"]
 
     def help(self) -> str:
         return inspect.cleandoc(

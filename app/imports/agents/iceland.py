@@ -1,6 +1,7 @@
 import typing as t
 import inspect
 import csv
+import io
 from decimal import Decimal
 
 import pendulum
@@ -30,7 +31,8 @@ class IcelandAgent(FileAgent):
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:
             if raw_data["TransactionAuthCode"].lower() == "decline":

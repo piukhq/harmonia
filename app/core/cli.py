@@ -7,6 +7,7 @@ import csv
 from app.core.identify_retry_worker import IdentifyRetryWorker
 from app import models, db
 from app.api import auth
+import settings
 
 
 @click.group()
@@ -15,11 +16,10 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("-d", "--debug", is_flag=True)
-def identify_retry(debug: bool) -> None:
-    if debug:
+def identify_retry() -> None:
+    if settings.DEBUG:
         print("Warning: Running in debug mode. Exceptions will not be handled gracefully!")
-    worker = IdentifyRetryWorker(raise_exceptions=debug)
+    worker = IdentifyRetryWorker()
     worker.run()
 
 

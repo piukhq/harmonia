@@ -1,6 +1,5 @@
 import typing as t
 import inspect
-import logging
 
 import gnupg
 import pendulum
@@ -14,9 +13,6 @@ PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATE_FORMAT = "YYYYMMDD"
-
-
-logging.getLogger("gnupg").setLevel(logging.INFO)
 
 
 class VisaAgent(FileAgent):
@@ -87,11 +83,11 @@ class VisaAgent(FileAgent):
             idx += width
         return data
 
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         gpg = gnupg.GPG(gnupghome="keyring")
-        result = gpg.decrypt_file(fd)
+        result = gpg.decrypt(data)
         if not result.ok:
-            raise self.ImportError(f"Failed to decrypt file {fd.name}: {result.status}")
+            raise self.ImportError(f"Decryption failed: {result.status}")
         lines = str(result).split("\n")
         for line in lines:
             if not line.startswith("1601"):

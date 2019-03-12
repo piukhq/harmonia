@@ -72,7 +72,6 @@ if USE_BLOB_STORAGE:
     # Azure Blob Storage account details.
     BLOB_ACCOUNT_NAME = getenv("TXM_BLOB_ACCOUNT_NAME")
     BLOB_ACCOUNT_KEY = getenv("TXM_BLOB_ACCOUNT_KEY")
-    BLOB_CONTAINER_NAME = getenv("TXM_BLOB_CONTAINER_NAME")
 else:
     # The path to load import files from.
     LOCAL_IMPORT_BASE_PATH = getenv("TXM_LOCAL_IMPORT_BASE_PATH", default="files/imports", conv=Path)

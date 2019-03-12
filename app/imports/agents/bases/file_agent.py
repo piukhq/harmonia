@@ -3,103 +3,113 @@ import typing as t
 import logging
 import shutil
 import time
-import io
 
 from azure.storage.blob import Blob, BlockBlobService
-from azure.common import AzureConflictHttpError
+from azure.common import AzureConflictHttpError, AzureMissingResourceHttpError
 import pendulum
 
 from app.imports.agents.bases.base import BaseAgent
 import settings
 
 
-logging.getLogger("azure").setLevel(logging.WARNING)
+logging.getLogger("azure").setLevel(logging.CRITICAL)
 
 
 class FileSourceBase:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         self.path = path
+        self.log = logger
 
-    def provide(self) -> t.Iterable[t.IO]:
+    def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
 
 
 class LocalFileSource(FileSourceBase):
-    def __init__(self, path: Path) -> None:
-        path = settings.LOCAL_IMPORT_BASE_PATH / path
-        super().__init__(path)
-
     def archive(self, filepath: Path) -> None:
         subpath = filepath.relative_to(self.path)
         archive_path = Path("archives") / pendulum.today().to_date_string() / subpath
         archive_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(filepath, archive_path)
 
-    def provide(self) -> t.Iterable[t.IO]:
-        for filepath in (p for p in self.path.iterdir() if p.is_file()):
-            with open(filepath) as fd:
-                yield fd
-            self.archive(filepath)
+    def provide(self, callback: t.Callable) -> None:
+        path = settings.LOCAL_IMPORT_BASE_PATH / self.path
+        for filepath in (p for p in path.iterdir() if p.is_file()):
+            with open(filepath, "rb") as f:
+                data = f.read()
+            try:
+                callback(data=data, source=str(filepath))
+            except Exception as ex:
+                if settings.DEBUG:
+                    raise
+                else:
+                    self.log.error(f"File source callback {callback} for file {filepath} failed: {ex}")
+            else:
+                self.archive(filepath)
 
 
 class BlobFileSource(FileSourceBase):
-    def __init__(self, path: Path) -> None:
-        super().__init__(path)
+    container_name = "imports"
+
+    def __init__(self, path: Path, *, logger: logging.Logger) -> None:
+        super().__init__(path, logger=logger)
         self._bbs = BlockBlobService(settings.BLOB_ACCOUNT_NAME, settings.BLOB_ACCOUNT_KEY)
 
-    def archive(self, blob: Blob, lease_id: str, fd: io.BytesIO) -> None:
+    def archive(self, blob: Blob, lease_id: str) -> None:
         archive_container = f"archive-{pendulum.today().to_date_string()}"
         self._bbs.create_container(container_name=archive_container)
-        self._bbs.create_blob_from_stream(container_name=archive_container, blob_name=blob.name, stream=fd)
-        self._bbs.delete_blob(container_name=settings.BLOB_CONTAINER_NAME, blob_name=blob.name, lease_id=lease_id)
+        self._bbs.create_blob_from_bytes(container_name=archive_container, blob_name=blob.name, blob=blob.content)
+        self._bbs.delete_blob(container_name=self.container_name, blob_name=blob.name, lease_id=lease_id)
 
-    def provide(self) -> t.Iterable[t.IO]:
-        for blob in self._bbs.list_blobs(container_name=settings.BLOB_CONTAINER_NAME, prefix=self.path):
+    def provide(self, callback: t.Callable) -> None:
+        self._bbs.create_container(container_name=self.container_name)
+        for blob in self._bbs.list_blobs(container_name=self.container_name, prefix=self.path):
             try:
                 lease_id = self._bbs.acquire_blob_lease(
-                    container_name=settings.BLOB_CONTAINER_NAME, blob_name=blob.name, lease_duration=60
+                    container_name=self.container_name, blob_name=blob.name, lease_duration=60
                 )
             except AzureConflictHttpError:
+                self.log.debug(f"Skipping blob {blob.name} as it is already leased.")
+                continue
+            except AzureMissingResourceHttpError:
+                self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
                 continue
 
-            fd = io.BytesIO()
-            fd.name = f"{settings.BLOB_CONTAINER_NAME}/{blob.name}"
-            self._bbs.get_blob_to_stream(
-                container_name=settings.BLOB_CONTAINER_NAME, blob_name=blob.name, stream=fd, lease_id=lease_id
+            # update blob with content
+            blob = self._bbs.get_blob_to_bytes(
+                container_name=self.container_name, blob_name=blob.name, lease_id=lease_id
             )
 
-            fd.seek(0)
-            yield fd
+            self.log.debug(f"Invoking callback for blob {blob.name}.")
 
-            fd.seek(0)
-            self.archive(blob, lease_id, fd)
-
-            fd.close()
+            try:
+                callback(data=blob.content, source=f"{self.container_name}/{blob.name}")
+            except Exception as ex:
+                if settings.DEBUG:
+                    raise
+                else:
+                    self.log.error(f"File source callback {callback} for blob {blob.name} failed: {ex}.")
+            else:
+                self.archive(blob, lease_id)
 
 
 class FileAgent(BaseAgent):
-    def __init__(self, *, debug: bool = False) -> None:
-        super().__init__(debug=debug)
+    def _do_import(self, data: bytes, source: str) -> None:
+        self.log.info(f"Importing {source}")
+        transactions_data = list(self.yield_transactions_data(data))
+        self._import_transactions(transactions_data, source=source)
 
-    def _do_import(self, fd: t.IO) -> None:
-        self.log.debug(f"Importing {fd.name}")
-        transactions_data = list(self.yield_transactions_data(fd))  # type: ignore
-        self._import_transactions(transactions_data, source=fd.name)
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        raise NotImplementedError
 
     def run(self, *, once: bool = False) -> None:
         filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.USE_BLOB_STORAGE else LocalFileSource)
-        filesource = filesource_class(Path(self.Config.path))  # type: ignore
+        path = self.Config.path  # type: ignore
+        filesource = filesource_class(Path(path), logger=self.log)
 
         self.log.info("Starting import loop.")
 
         while True:
-            for fd in filesource.provide():
-                self._do_import(fd)
-
-                if once:
-                    self.log.info("Quitting early as we were told to run once.")
-                    return
-
+            filesource.provide(self._do_import)
             self.log.debug("Waiting for 30 seconds.")
             time.sleep(30)
 

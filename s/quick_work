@@ -21,7 +21,7 @@ p 'producing transaction files'
 pipenv run s/producer.py -n 1 --scheme-file files/imports/example-loyalty-scheme/transactions-2018-12-04 --payment-file files/imports/example-payment-provider/card-tx-20181204
 
 p 'running payment import agent'
-pipenv run tximport --agent example-payment-provider --no-user-input --quiet --once --debug
+pipenv run tximport --agent example-payment-provider --no-user-input --quiet --once
 
 p 'running import worker'
 pipenv run rq worker import --burst -u redis://localhost:61234/0
