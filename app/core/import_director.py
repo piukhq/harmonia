@@ -6,12 +6,7 @@ from app.status import status_monitor
 log = get_logger("import-director")
 
 
-class ImportDirector:
-    def enter_loop(self, once: bool = False, debug: bool = False) -> None:
-        raise NotImplementedError
-
-
-class SchemeImportDirector(ImportDirector):
+class SchemeImportDirector:
     def handle_scheme_transaction(self, scheme_transaction: models.SchemeTransaction) -> None:
         status_monitor.checkin(self)
 
@@ -25,7 +20,7 @@ class SchemeImportDirector(ImportDirector):
         session.close()
 
 
-class PaymentImportDirector(ImportDirector):
+class PaymentImportDirector:
     def handle_payment_transaction(self, payment_transaction: models.PaymentTransaction) -> None:
         status_monitor.checkin(self)
 

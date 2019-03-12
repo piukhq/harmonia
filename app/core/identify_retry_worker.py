@@ -8,13 +8,12 @@ class IdentifyRetryWorker:
     class Config:
         schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
 
-    def __init__(self, *, raise_exceptions: bool = False):
-        self.raise_exceptions = raise_exceptions
+    def __init__(self):
         self.log = reporting.get_logger("identify-retry")
         self.scheduler = scheduler.CronScheduler(schedule_fn=self.get_schedule, callback=self.tick, logger=self.log)
 
     def run(self) -> None:
-        self.scheduler.run(raise_exceptions=self.raise_exceptions)
+        self.scheduler.run()
 
     def get_schedule(self) -> str:
         return self.Config.schedule

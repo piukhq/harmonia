@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.reporting import get_logger
+import settings
 
 
 class CronScheduler:
@@ -23,9 +24,7 @@ class CronScheduler:
             )
             return CronTrigger.from_crontab("* * * * *")
 
-    def run(self, *, raise_exceptions: bool = False):
-        self.raise_exceptions = raise_exceptions
-
+    def run(self):
         scheduler = BackgroundScheduler()
         schedule = self.schedule_fn()
 
@@ -49,7 +48,7 @@ class CronScheduler:
         try:
             self.callback()
         except Exception as e:
-            if self.raise_exceptions:
+            if settings.DEBUG:
                 raise
             else:
                 self.log.error(e)

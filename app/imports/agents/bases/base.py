@@ -1,6 +1,8 @@
 import typing as t
 from functools import lru_cache
 
+import redis
+import settings
 from sqlalchemy.orm.exc import NoResultFound
 
 from app import models, tasks, db
@@ -35,9 +37,8 @@ class BaseAgent:
     class ImportError(Exception):
         pass
 
-    def __init__(self, *, debug: bool = False) -> None:
+    def __init__(self) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
-        self.debug = debug
 
     @property
     def provider_slug(self) -> str:
@@ -101,7 +102,7 @@ class BaseAgent:
                 seen_tids.add(tid)
                 new.append(tx)
 
-        self.log.info(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
+        self.log.debug(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
 
         return new, duplicate
 
@@ -121,10 +122,21 @@ class BaseAgent:
 
         new, duplicate = self._find_new_transactions(provider_transactions)
 
+        lock_db = redis.StrictRedis.from_url(settings.REDIS_DSN)
+        lock_db.ping()
+
         insertions = []
         for tx_data in new:
-            mids = self.get_mids(tx_data)
             tid = self.get_transaction_id(tx_data)
+
+            # attempt to lock this transaction id.
+            lock_key = f"{settings.REDIS_KEY_PREFIX}:import-lock:{self.provider_slug}:{tid}"
+            lock = lock_db.lock(lock_key, timeout=300)
+            if not lock.acquire(blocking=False):
+                self.log.warning(f"Transaction {lock_key} is already locked. Skipping.")
+                continue
+
+            mids = self.get_mids(tx_data)
 
             merchant_identifier_ids = []
             for mid in mids:

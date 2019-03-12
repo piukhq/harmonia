@@ -7,8 +7,7 @@ def _missing_property(obj, prop: str):
 
 
 class BaseAgent:
-    def __init__(self, *, debug: bool = False) -> None:
-        self.debug = debug
+    def __init__(self) -> None:
         self.log = get_logger(f"export-agent.{self.provider_slug}")
 
     @property

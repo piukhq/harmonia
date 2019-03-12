@@ -52,9 +52,9 @@ class MastercardAgent(FileAgent):
             idx += width
         return data
 
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        fd.readline()  # discard the header
-        for line in fd.readlines():
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        lines = data.decode().split("\n")[1:]  # the header line is discarded
+        for line in lines:
             raw_data = self.parse_line(line)
 
             if raw_data["record_type"] != "D":

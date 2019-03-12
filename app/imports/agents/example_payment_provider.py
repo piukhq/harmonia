@@ -7,7 +7,6 @@ from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.file_agent import FileAgent
-from app.utils import file_split
 
 PROVIDER_SLUG = "example-payment-provider"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -32,8 +31,8 @@ class ExamplePaymentProviderAgent(FileAgent):
             """
         )
 
-    def yield_transactions_data(self, fd: t.IO) -> t.Iterable[dict]:
-        for record in file_split(fd, sep=b"\x1e"):
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        for record in data.split(b"\x1e"):
             raw_data = dict(zip(self.file_fields, record.split(b"\x1f")))
             yield {k: self.field_transforms.get(k, str)(v.decode()) for k, v in raw_data.items()}
 
