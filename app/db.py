@@ -1,3 +1,5 @@
+import typing as t
+
 import sqlalchemy as s
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -11,7 +13,20 @@ engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, 
 Session = sessionmaker(bind=engine)
 session = Session()
 
-Base = declarative_base()
+Base = declarative_base()  # type: t.Any
+
+
+def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwargs) -> t.Tuple[Base, bool]:
+    instance = session.query(model).filter_by(**kwargs).first()
+    if instance:
+        return instance, False
+    else:
+        params = {**kwargs}
+        if defaults:
+            params.update(defaults)
+        instance = model(**params)
+        session.add(instance)
+        return instance, True
 
 
 def auto_repr(cls):

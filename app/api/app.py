@@ -96,10 +96,12 @@ def create_app() -> flask.Flask:
     from app.api.views import api as core_api
     from app.config.views import api as config_api
     from app.status.views import api as status_api
+    from app.mids.views import api as mids_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)
     app.register_blueprint(status_api)
+    app.register_blueprint(mids_api)
 
     with app.test_request_context():
         for view_func in app.view_functions.values():
