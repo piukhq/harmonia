@@ -4,10 +4,7 @@ from apispec import APISpec
 from apispec_webframeworks.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 import flask
-import flask_admin
-import flask_admin.contrib.sqla
 import flask_cors
-import flask_login
 
 from app.version import __version__
 import settings
@@ -27,71 +24,11 @@ def define_schema(schema_class: t.Type) -> t.Type:
     return schema_class
 
 
-def add_admin_views(admin):
-    from app import models, db
-
-    class ModelView(flask_admin.contrib.sqla.ModelView):
-        def is_accessible(self):
-            return flask_login.current_user.is_authenticated
-
-        def inaccessible_callback(self, name, **kwargs):
-            return flask.redirect(flask.url_for("login", next=flask.request.url))
-
-    model_classes = [
-        models.Administrator,
-        models.ExportTransaction,
-        models.ImportTransaction,
-        models.LoyaltyScheme,
-        models.MatchedTransaction,
-        models.MerchantIdentifier,
-        models.PaymentProvider,
-        models.PaymentTransaction,
-        models.PendingExport,
-        models.SchemeTransaction,
-        models.UserIdentity,
-    ]
-
-    for model_class in model_classes:
-        admin.add_view(ModelView(model_class, db.session))
-
-
-def init_login_manager(app: flask.Flask) -> None:
-    from app import models, db
-    from app.api import auth
-
-    login_manager = flask_login.LoginManager(app)
-
-    @login_manager.user_loader
-    def load_user(uid: str) -> auth.User:
-        try:
-            administrator = db.session.query(models.Administrator).filter(models.Administrator.uid == uid).one()
-        except db.NoResultFound:
-            return None
-        return auth.User(administrator)
-
-
-def init_admin(app: flask.Flask) -> None:
-    from app.api import views
-
-    app.config["FLASK_ADMIN_SWATCH"] = "flatly"
-    admin = flask_admin.Admin(
-        app,
-        name="Transaction Matching",
-        template_mode="bootstrap3",
-        index_view=views.AdminIndexView(),
-        base_template="admin_master.html",
-    )
-    add_admin_views(admin)
-
-
 def create_app() -> flask.Flask:
     app = flask.Flask(__name__)
     app.config.from_mapping(settings.FLASK)  # type: ignore
 
     flask_cors.CORS(app)
-
-    init_login_manager(app)
-    init_admin(app)
 
     from app.api.views import api as core_api
     from app.config.views import api as config_api
