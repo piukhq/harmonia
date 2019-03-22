@@ -1,15 +1,11 @@
-from redis import StrictRedis
 from rq import Queue
 
-import settings
-from app import models
+from app import models, db
 from app.core import import_director, matching_worker, export_director, identifier
 
-redis = StrictRedis.from_url(settings.REDIS_DSN)
-
-import_queue = Queue(name="import", connection=redis)
-matching_queue = Queue(name="matching", connection=redis)
-export_queue = Queue(name="export", connection=redis)
+import_queue = Queue(name="import", connection=db.redis)
+matching_queue = Queue(name="matching", connection=db.redis)
+export_queue = Queue(name="export", connection=db.redis)
 
 
 def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> None:

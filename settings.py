@@ -38,15 +38,36 @@ DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)
 # e.g. dev, staging, production
 ENVIRONMENT_ID = getenv("TXM_ENVIRONMENT_ID", default="unknown").lower()
 
-# Connection string for Postgres.
+# Connection details for Postgres.
 # Postgres is used as the main database for the transaction matching system.
-# https://www.postgresql.org/docs/10/static/libpq-connect.html#LIBPQ-CONNSTRING
-POSTGRES_DSN = getenv("TXM_POSTGRES_DSN")
+POSTGRES_HOST = getenv("TXM_POSTGRES_HOST")
+POSTGRES_PORT = getenv("TXM_POSTGRES_PORT", default="5432", conv=int)
+POSTGRES_USER = getenv("TXM_POSTGRES_USER")
+POSTGRES_PASS = getenv("TXM_POSTGRES_PASS", required=False)
+POSTGRES_DB = getenv("TXM_POSTGRES_DB")
 
-# Connection string for Redis.
+# This shouldn't need to be changed
+POSTGRES_DSN = "".join(
+    [
+        "postgresql+psycopg2://",
+        POSTGRES_USER,
+        f":{POSTGRES_PASS}" if POSTGRES_PASS else "",
+        "@",
+        POSTGRES_HOST,
+        ":",
+        str(POSTGRES_PORT),
+        "/",
+        POSTGRES_DB,
+    ]
+)
+
+# Connection details for Redis.
 # Redis is used as a configuration store that can be updated at runtime.
-# https://redis-py.readthedocs.io/en/latest/#redis.StrictRedis.from_url
-REDIS_DSN = getenv("TXM_REDIS_DSN")
+REDIS_HOST = getenv("TXM_REDIS_HOST")
+REDIS_PORT = getenv("TXM_REDIS_PORT", default="6379")
+REDIS_USER = getenv("TXM_REDIS_USER", required=False)
+REDIS_PASS = getenv("TXM_REDIS_PASS", required=False)
+REDIS_DB = getenv("TXM_REDIS_DB", conv=int)
 
 # The prefix used on every Redis key.
 REDIS_KEY_PREFIX = "txmatch"
@@ -74,7 +95,7 @@ if USE_BLOB_STORAGE:
     BLOB_ACCOUNT_KEY = getenv("TXM_BLOB_ACCOUNT_KEY")
 else:
     # The path to load import files from.
-    LOCAL_IMPORT_BASE_PATH = getenv("TXM_LOCAL_IMPORT_BASE_PATH", default="files/imports", conv=Path)
+    LOCAL_IMPORT_BASE_PATH = getenv("TXM_LOCAL_IMPORT_BASE_PATH", default="files", conv=Path)
 
 # This dictionary is passed to `Flask.config.from_mapping`.
 FLASK = dict(

@@ -1,6 +1,7 @@
 import typing as t
 
 import sqlalchemy as s
+from redis import StrictRedis
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
@@ -62,3 +63,15 @@ class ModelMixin:
 
     created_at = s.Column(s.DateTime, server_default=postgres.utcnow())
     updated_at = s.Column(s.DateTime, onupdate=postgres.utcnow())
+
+
+redis = StrictRedis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
+    password=settings.REDIS_PASS,
+    socket_timeout=1,
+    socket_connect_timeout=3,
+    socket_keepalive=True,
+    retry_on_timeout=False,
+)

@@ -24,19 +24,19 @@ p 'running payment import agent'
 pipenv run tximport --agent example-payment-provider --no-user-input --quiet --once
 
 p 'running import worker'
-pipenv run rq worker import --burst -u redis://localhost:61234/0
+TXM_RQ_QUEUES='import' pipenv run rq worker --burst -c rq_worker_settings
 
 p 'running matching worker'
-pipenv run rq worker matching --burst -u redis://localhost:61234/0
+TXM_RQ_QUEUES='matching' pipenv run rq worker --burst -c rq_worker_settings
 
 p 'running scheme import agent'
 pipenv run tximport --agent example-loyalty-scheme --no-user-input --quiet --once
 
 p 'running import worker'
-pipenv run rq worker import --burst -u redis://localhost:61234/0
+TXM_RQ_QUEUES='import' pipenv run rq worker --burst -c rq_worker_settings
 
 p 'running matching worker'
-pipenv run rq worker matching --burst -u redis://localhost:61234/0
+TXM_RQ_QUEUES='matching' pipenv run rq worker --burst -c rq_worker_settings
 
 p 'running export worker'
-pipenv run rq worker export --burst -u redis://localhost:61234/0
+TXM_RQ_QUEUES='export' pipenv run rq worker --burst -c rq_worker_settings

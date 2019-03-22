@@ -1,11 +1,11 @@
 import time
 import re
 
-from redis import StrictRedis
 import humanize
 import pendulum
 
 from app.reporting import get_logger
+from app.db import redis
 import settings
 
 
@@ -15,9 +15,6 @@ log = get_logger("status-monitor")
 class StatusMonitor:
     checkin_name_pattern = re.compile(f"{settings.REDIS_KEY_PREFIX}:status:checkins:(.*)")
 
-    def __init__(self, redis: StrictRedis) -> None:
-        self.redis = redis
-
     def checkin(self, obj: object, suffix: str = None) -> None:
         if suffix is not None:
             checkin_name = f"{type(obj).__name__}:{suffix}"
@@ -25,11 +22,11 @@ class StatusMonitor:
             checkin_name = type(obj).__name__
 
         key = f"{settings.REDIS_KEY_PREFIX}:status:checkins:{checkin_name}"
-        self.redis.set(key, time.time())
+        redis.set(key, time.time())
         log.debug(f"Service {checkin_name} has checked in.")
 
     def _get_checkin_details(self, key: str) -> dict:
-        checkin_timestamp = float(self.redis.get(key).decode())
+        checkin_timestamp = float(redis.get(key).decode())
         checkin_datetime = pendulum.from_timestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
 
@@ -61,18 +58,32 @@ class StatusMonitor:
             healthy = False
             errors.append(ex)
 
-        return {"dsn": settings.POSTGRES_DSN, "healthy": healthy, "errors": errors}
+        return {
+            "host": settings.POSTGRES_HOST,
+            "port": settings.POSTGRES_PORT,
+            "user": settings.POSTGRES_USER,
+            "db": settings.POSTGRES_DB,
+            "healthy": healthy,
+            "errors": errors,
+        }
 
     def _get_redis_health(self) -> dict:
         errors = []
         try:
-            self.redis.ping()
+            redis.ping()
             healthy = True
         except Exception as ex:
             healthy = False
             errors.append(ex)
 
-        return {"dsn": settings.REDIS_DSN, "healthy": healthy, "errors": errors}
+        return {
+            "host": settings.REDIS_HOST,
+            "port": settings.REDIS_PORT,
+            "user": settings.REDIS_USER,
+            "db": settings.REDIS_DB,
+            "healthy": healthy,
+            "errors": errors,
+        }
 
     def report(self) -> dict:
         redis_health = self._get_redis_health()
@@ -80,7 +91,7 @@ class StatusMonitor:
         if redis_health["healthy"]:
             checkins = [
                 {"key": key.decode(), **self._get_checkin_details(key.decode())}
-                for key in self.redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
+                for key in redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
             ]
         else:
             checkins = []
@@ -91,5 +102,4 @@ class StatusMonitor:
         }
 
 
-redis_args = {"socket_timeout": 1, "socket_connect_timeout": 3, "socket_keepalive": True, "retry_on_timeout": False}
-status_monitor = StatusMonitor(StrictRedis.from_url(settings.REDIS_DSN, **redis_args))
+status_monitor = StatusMonitor()
