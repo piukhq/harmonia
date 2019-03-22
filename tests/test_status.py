@@ -1,19 +1,20 @@
-from redis import StrictRedis
 import pytest
+from redis import StrictRedis
 
-from app.status import StatusMonitor, redis_args
+from app.status import StatusMonitor
 import settings
 
 
 @pytest.fixture
 def redis():
-    r = StrictRedis.from_url(settings.REDIS_DSN, **redis_args)
-    yield r
-    r.flushall()
+    from app.db import redis
+
+    yield redis
+    redis.flushall()
 
 
 def test_checkins(redis: StrictRedis):
-    monitor = StatusMonitor(redis)
+    monitor = StatusMonitor()
 
     class CheckinTest123:
         pass
@@ -25,8 +26,8 @@ def test_checkins(redis: StrictRedis):
     assert key == f"{settings.REDIS_KEY_PREFIX}:status:checkins:CheckinTest123"
 
 
-def test_health_report(redis):
-    monitor = StatusMonitor(redis)
+def test_health_report(redis: StrictRedis):
+    monitor = StatusMonitor()
 
     class HealthReportTest123:
         pass
@@ -39,12 +40,3 @@ def test_health_report(redis):
     assert report["checkins"][0]["key"] == f"{settings.REDIS_KEY_PREFIX}:status:checkins:HealthReportTest123"
     assert report["checkins"][0]["name"] == "HealthReportTest123"
     assert {"postgres", "redis"}.issubset({s["name"] for s in report["services"]})
-
-
-def test_health_report_without_redis():
-    redis = StrictRedis(host="99.99.99.99", **redis_args)
-    monitor = StatusMonitor(redis)
-    report = monitor.report()
-
-    assert report["checkins"] == []
-    assert next(s for s in report["services"] if s["name"] == "redis")["healthy"] is False

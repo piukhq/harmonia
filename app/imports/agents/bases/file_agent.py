@@ -25,15 +25,17 @@ class FileSourceBase:
 
 
 class LocalFileSource(FileSourceBase):
+    def __init__(self, path: Path, *, logger: logging.Logger) -> None:
+        super().__init__(settings.LOCAL_IMPORT_BASE_PATH / "imports" / path, logger=logger)
+
     def archive(self, filepath: Path) -> None:
         subpath = filepath.relative_to(self.path)
-        archive_path = Path("archives") / pendulum.today().to_date_string() / subpath
+        archive_path = settings.LOCAL_IMPORT_BASE_PATH / Path("archives") / pendulum.today().to_date_string() / subpath
         archive_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(filepath, archive_path)
 
     def provide(self, callback: t.Callable) -> None:
-        path = settings.LOCAL_IMPORT_BASE_PATH / self.path
-        for filepath in (p for p in path.iterdir() if p.is_file()):
+        for filepath in (p for p in self.path.iterdir() if p.is_file()):
             with open(filepath, "rb") as f:
                 data = f.read()
             try:
@@ -110,7 +112,9 @@ class FileAgent(BaseAgent):
 
         while True:
             filesource.provide(self._do_import)
-            self.log.debug("Waiting for 30 seconds.")
+            if once is True:
+                self.log.info("Quitting early as we were told to run once.")
+                break
             time.sleep(30)
 
         self.log.info("Shutting down.")

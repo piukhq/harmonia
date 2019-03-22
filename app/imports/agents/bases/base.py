@@ -1,7 +1,6 @@
 import typing as t
 from functools import lru_cache
 
-import redis
 import settings
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -122,16 +121,13 @@ class BaseAgent:
 
         new, duplicate = self._find_new_transactions(provider_transactions)
 
-        lock_db = redis.StrictRedis.from_url(settings.REDIS_DSN)
-        lock_db.ping()
-
         insertions = []
         for tx_data in new:
             tid = self.get_transaction_id(tx_data)
 
             # attempt to lock this transaction id.
             lock_key = f"{settings.REDIS_KEY_PREFIX}:import-lock:{self.provider_slug}:{tid}"
-            lock = lock_db.lock(lock_key, timeout=300)
+            lock = db.redis.lock(lock_key, timeout=300)
             if not lock.acquire(blocking=False):
                 self.log.warning(f"Transaction {lock_key} is already locked. Skipping.")
                 continue
