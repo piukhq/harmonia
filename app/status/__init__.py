@@ -59,10 +59,12 @@ class StatusMonitor:
             errors.append(ex)
 
         return {
-            "host": settings.POSTGRES_HOST,
-            "port": settings.POSTGRES_PORT,
-            "user": settings.POSTGRES_USER,
-            "db": settings.POSTGRES_DB,
+            "connection": {
+                "host": settings.POSTGRES_HOST,
+                "port": settings.POSTGRES_PORT,
+                "user": settings.POSTGRES_USER,
+                "db": settings.POSTGRES_DB,
+            },
             "healthy": healthy,
             "errors": errors,
         }
@@ -77,10 +79,12 @@ class StatusMonitor:
             errors.append(ex)
 
         return {
-            "host": settings.REDIS_HOST,
-            "port": settings.REDIS_PORT,
-            "user": settings.REDIS_USER,
-            "db": settings.REDIS_DB,
+            "connection": {
+                "host": settings.REDIS_HOST,
+                "port": settings.REDIS_PORT,
+                "user": settings.REDIS_USER,
+                "db": settings.REDIS_DB,
+            },
             "healthy": healthy,
             "errors": errors,
         }

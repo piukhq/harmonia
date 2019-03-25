@@ -22,6 +22,7 @@ rq = "*"
 psycopg2 = "*"
 python-gnupg = "*"
 azure-storage-blob = "*"
+marshmallow-sqlalchemy = "*"
 
 [dev-packages]
 alembic = "*"

@@ -1,5 +1,6 @@
 from app.api.app import define_schema
 from marshmallow import Schema, fields
+from marshmallow_sqlalchemy import ModelSchema
 
 
 @define_schema
@@ -15,7 +16,7 @@ class CheckinSchema(Schema):
 @define_schema
 class ServiceHealthSchema(Schema):
     name = fields.String(required=True, allow_none=False)
-    dsn = fields.String(required=True, allow_none=False)
+    connection = fields.Dict(required=True, allow_none=False)
     healthy = fields.Boolean(required=True, allow_none=False)
     errors = fields.List(fields.String, required=True, allow_none=False)
 
@@ -24,3 +25,58 @@ class ServiceHealthSchema(Schema):
 class StatusReportSchema(Schema):
     checkins = fields.Nested(CheckinSchema, many=True, required=True, allow_none=False)
     services = fields.Nested(ServiceHealthSchema, many=True, required=True, allow_none=False)
+
+
+@define_schema
+class ImportTransactionSchema(ModelSchema):
+    id = fields.Integer(required=True, allow_none=False)
+    identified = fields.Boolean(required=True, allow_none=False)
+    provider_slug = fields.String(required=True, allow_none=False)
+    source = fields.String(required=True, allow_none=False)
+    created_at = fields.DateTime(required=True, allow_none=False)
+
+
+@define_schema
+class SchemeTransactionSchema(ModelSchema):
+    id = fields.Integer(required=True, allow_none=False)
+    transaction_date = fields.DateTime(required=True, allow_none=False)
+    spend_amount = fields.Integer(required=True, allow_none=False)
+    points_amount = fields.Integer(required=True, allow_none=False)
+    created_at = fields.DateTime(required=True, allow_none=False)
+
+
+@define_schema
+class PaymentTransactionSchema(ModelSchema):
+    id = fields.Integer(required=True, allow_none=False)
+    transaction_date = fields.DateTime(required=True, allow_none=False)
+    spend_amount = fields.Integer(required=True, allow_none=False)
+    card_token = fields.String(required=True, allow_none=False)
+    created_at = fields.DateTime(required=True, allow_none=False)
+
+
+@define_schema
+class MatchedTransactionSchema(ModelSchema):
+    id = fields.Integer(required=True, allow_none=False)
+    transaction_date = fields.DateTime(required=True, allow_none=False)
+    spend_amount = fields.Integer(required=True, allow_none=False)
+    points_amount = fields.Integer(required=True, allow_none=False)
+    card_token = fields.String(required=True, allow_none=False)
+    created_at = fields.DateTime(required=True, allow_none=False)
+
+
+@define_schema
+class ExportTransactionSchema(ModelSchema):
+    id = fields.Integer(required=True, allow_none=False)
+    provider_slug = fields.String(required=True, allow_none=False)
+    destination = fields.String(required=True, allow_none=False)
+    data = fields.Dict(required=True, allow_none=False)
+    created_at = fields.DateTime(required=True, allow_none=False)
+
+
+@define_schema
+class TransactionLookupSchema(Schema):
+    import_transaction = fields.Nested(ImportTransactionSchema)
+    scheme_transaction = fields.Nested(SchemeTransactionSchema)
+    payment_transaction = fields.Nested(PaymentTransactionSchema)
+    matched_transaction = fields.Nested(MatchedTransactionSchema)
+    export_transaction = fields.Nested(ExportTransactionSchema)

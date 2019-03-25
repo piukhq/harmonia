@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify
 
+from app import db, models
 from app.status import status_monitor, schemas
+from app.api.utils import ResponseType
 
 api = Blueprint("status_api", __name__, url_prefix="/api/status")
 
@@ -21,3 +23,63 @@ def get_status():
     if errors:
         raise ValueError(errors)
     return jsonify(data)
+
+
+@api.route("/transaction/lookup/<transaction_id>")
+def lookup_transaction(transaction_id: str) -> ResponseType:
+    import_transaction = (
+        db.session.query(models.ImportTransaction)
+        .filter(models.ImportTransaction.transaction_id == transaction_id)
+        .first()
+    )
+
+    if not import_transaction:
+        return jsonify({"error": f"Could not find an imported transaction with ID: {transaction_id}"}), 404
+
+    scheme_transaction = (
+        db.session.query(models.SchemeTransaction)
+        .filter(models.SchemeTransaction.transaction_id == import_transaction.transaction_id)
+        .first()
+    )
+    payment_transaction = None
+    if not scheme_transaction:
+        payment_transaction = (
+            db.session.query(models.PaymentTransaction)
+            .filter(models.PaymentTransaction.transaction_id == import_transaction.transaction_id)
+            .first()
+        )
+
+    q = db.session.query(models.MatchedTransaction)
+    if scheme_transaction:
+        q = q.filter(models.MatchedTransaction.scheme_transaction_id == scheme_transaction.id)
+    if payment_transaction:
+        q = q.filter(models.MatchedTransaction.payment_transaction_id == payment_transaction.id)
+
+    matched_transaction = q.first()
+
+    if matched_transaction:
+        scheme_transaction = matched_transaction.scheme_transaction
+        payment_transaction = matched_transaction.payment_transaction
+        export_transaction = (
+            db.session.query(models.ExportTransaction)
+            .filter(models.ExportTransaction.matched_transaction_id == matched_transaction.id)
+            .first()
+        )
+    else:
+        export_transaction = None
+
+    def f(model, *fields):
+        return {f: getattr(model, f) for f in fields}
+
+    schema = schemas.TransactionLookupSchema()
+    return jsonify(
+        schema.dump(
+            {
+                "import_transaction": import_transaction,
+                "scheme_transaction": scheme_transaction,
+                "payment_transaction": payment_transaction,
+                "matched_transaction": matched_transaction,
+                "export_transaction": export_transaction,
+            }
+        )
+    )
