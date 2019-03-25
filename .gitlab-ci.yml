@@ -35,3 +35,25 @@ type-check:
   stage: tests
   script:
     - mypy --ignore-missing-imports app
+
+build-latest:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - docker build --pull -t "$CI_REGISTRY/harmonia:latest" .
+    - docker push "$CI_REGISTRY/harmonia:latest"
+  only:
+    - develop
+
+deploy-dev:
+  stage: deploy
+  image: binkops.azurecr.io/kubedeployer:latest
+  environment: dev
+  script:
+    - kubectl delete po --namespace dev --selector project=harmonia
+  only:
+    - develop
