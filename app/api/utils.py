@@ -3,6 +3,8 @@ from functools import wraps
 
 import flask
 
+ResponseType = t.Tuple[t.Dict, int]
+
 
 def error_response(message: str) -> t.Tuple[t.Dict, int]:
     """Returns a standard JSON error response for the given error message."""

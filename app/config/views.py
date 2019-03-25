@@ -1,15 +1,10 @@
-import typing as t
-
 from flask import request, jsonify, Blueprint
 from marshmallow.exceptions import ValidationError
 
 from app.config import config, schemas
-from app.api.utils import expects_json
+from app.api.utils import expects_json, ResponseType
 
 api = Blueprint("config_api", __name__, url_prefix="/api/config")
-
-
-ResponseType = t.Tuple[t.Dict, int]
 
 
 @api.route("/keys")
