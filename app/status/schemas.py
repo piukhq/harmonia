@@ -75,6 +75,9 @@ class ExportTransactionSchema(ModelSchema):
 
 @define_schema
 class TransactionLookupSchema(Schema):
+    class Meta:
+        ordered = True
+
     import_transaction = fields.Nested(ImportTransactionSchema)
     scheme_transaction = fields.Nested(SchemeTransactionSchema)
     payment_transaction = fields.Nested(PaymentTransactionSchema)

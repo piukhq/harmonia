@@ -15,7 +15,7 @@ class SchemeImportDirector:
 
         tasks.matching_queue.enqueue(tasks.match_scheme_transaction, scheme_transaction.id)
 
-        log.info(f"Received, persisted, and enqueued scheme transaction: {scheme_transaction}.")
+        log.info(f"Received, persisted, and enqueued {scheme_transaction}.")
 
         session.close()
 
@@ -29,6 +29,6 @@ class PaymentImportDirector:
 
         tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
 
-        log.info(f"Received, persisted, and enqueued payment transaction #{payment_transaction}.")
+        log.info(f"Received, persisted, and enqueued {payment_transaction}.")
 
         session.close()

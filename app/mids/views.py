@@ -5,9 +5,10 @@ from flask import Blueprint, request, jsonify
 import werkzeug
 
 from app import models, db
+import settings
 
 
-api = Blueprint("mids_api", __name__, url_prefix="/api/mids")
+api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
 
 
 ResponseType = t.Tuple[t.Dict, int]
@@ -23,6 +24,9 @@ class CSVDialect(csv.Dialect):
 def create_mid_from_item(item: dict) -> dict:
     loyalty_scheme, ls_created = db.get_or_create(models.LoyaltyScheme, slug=item["loyalty_scheme_slug"])
     payment_provider, pp_created = db.get_or_create(models.PaymentProvider, slug=item["payment_provider_slug"])
+
+    if ls_created or pp_created:
+        db.session.commit()
 
     return dict(
         mid=item["mid"],
@@ -50,10 +54,8 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None
 
     mids = [create_mid_from_item(item) for item in reader if not (item["action"] and item["action"].lower() != "a")]
 
-    # new loyalty schemes or payment providers may have been created while generating the new mids.
-    db.session.commit()
-
     db.engine.execute(models.MerchantIdentifier.__table__.insert().values(mids))
+    db.session.commit()
 
 
 @api.route("/", methods=["POST"])

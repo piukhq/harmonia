@@ -141,10 +141,10 @@ class BaseAgent:
                 except MissingMID:
                     pass
 
-            if merchant_identifier_ids:
-                identified = True
-            else:
-                identified = False
+            identified = len(merchant_identifier_ids) > 0
+
+            if not identified:
+                self.log.debug(f"No MIDs were found for transaction {tid}")
 
             insertions.append(
                 dict(

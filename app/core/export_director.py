@@ -2,7 +2,7 @@ from typing import cast
 
 from app import tasks
 from app.db import session
-from app.exports.agents.bases.base import BaseAgent
+from app.exports.agents import BaseAgent
 from app.exports.agents.registry import export_agents
 from app.exports.models import PendingExport
 from app.models import MatchedTransaction

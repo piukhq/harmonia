@@ -1,6 +1,6 @@
 import requests
 
-from app.imports.agents.bases.base import BaseAgent
+from app.imports.agents import BaseAgent
 from app.scheduler import CronScheduler
 
 

@@ -3,25 +3,20 @@ from collections import namedtuple
 
 from app.db import session
 from app.reporting import get_logger
-from app.utils import missing_property
 from app import models
 
-MatchResult = namedtuple("MatchResult", "matched_tx scheme_tx_id")
+MatchResult = namedtuple("MatchResult", ("matched_transaction", "scheme_transaction_id"))
 
 
 class BaseMatchingAgent:
     class NoMatchFound(Exception):
         pass
 
-    @property
-    def scheme_slug(self) -> str:
-        return missing_property(self, "scheme_slug")
-
     def __init__(self, payment_transaction: models.PaymentTransaction) -> None:
         """Matching agents are expected to query for their own SchemeTransaction objects based on properties of the
         given payment transaction."""
         self.payment_transaction = payment_transaction
-        self.log = get_logger(f"matching-agent.{self.scheme_slug}")
+        self.log = get_logger(f"matching-agent.{type(self).__name__}")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(payment_transaction={repr(self.payment_transaction)})"
@@ -35,7 +30,8 @@ class BaseMatchingAgent:
 
     def _find_applicable_scheme_transactions(self):
         return session.query(models.SchemeTransaction).filter(
-            models.SchemeTransaction.merchant_identifier_ids.overlap(self.payment_transaction.merchant_identifier_ids)
+            models.SchemeTransaction.merchant_identifier_ids.overlap(self.payment_transaction.merchant_identifier_ids),
+            models.SchemeTransaction.status == models.TransactionStatus.PENDING,
         )
 
     def _fine_match(self, scheme_transactions, fields):

@@ -1,53 +1,58 @@
 import inspect
 import typing as t
 
-from flask import Flask, jsonify, request
+from flask import Blueprint, jsonify, request
+from marshmallow import ValidationError
 
-from app.imports.agents.bases.base import BaseAgent
+from app import utils
+from app.api import utils as api_utils
+from app.imports.agents import BaseAgent
 import settings
 
 
 class PassiveAPIAgent(BaseAgent):
-    def create_app(self) -> Flask:
-        env = "development" if settings.DEBUG else "production"
-        app = Flask(__name__)
-        app.config["DEBUG"] = settings.DEBUG
-        app.config["ENV"] = env
+    @property
+    def schema(self):
+        return utils.missing_property(self, "schema")
 
-        @app.route("/", methods=["POST"])
+    def get_blueprint(self) -> Blueprint:
+        api = Blueprint(
+            f"{self.provider_slug} transaction import API",
+            __name__,
+            url_prefix=f"{settings.URL_PREFIX}/import/{self.provider_slug}",
+        )
+
+        @api.route("/", methods=["POST"])
+        @api_utils.expects_json
         def index() -> str:
-            if request.json is None:
-                return jsonify({"ok": False, "reason": "A JSON body is expected."})
+            try:
+                self.schema.load(request.json)
+            except ValidationError as ex:
+                return jsonify({"ok": False, "errors": ex.messages})
             transactions_data = self.extract_transactions(request.json)
             self._import_transactions(transactions_data, source="POST /")
             return jsonify({"ok": True})
 
-        return app
+        return api
 
     def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
         return [request_json]
 
     def run(self, *, once: bool = False) -> None:
-        if settings.DEBUG is True:
-            app = self.create_app()
-            app.run()
-        else:
-            self.log.warning(
-                "This agent should only be run this way for local testing and development. "
-                "A production deployment should utilise a server such as uWSGI or Gunicorn. "
-                f"The WSGI callable is `{self.__module__}.app`. "
-                "Enable debug mode if you actually want to use this CLI."
-            )
+        self.log.warning(
+            "This agent cannot be run this way. "
+            "For local testing, use the flask development server. "
+            "A production deployment should utilise a server such as Gunicorn. "
+        )
 
-    def _help(self, module, wsgi_file):
+    def _help(self, module):
         return inspect.cleandoc(
             f"""
             This is an agent based on the PassiveAPIAgent base class.
-            It can be run through the txmatch-import CLI for local testing and development if debug mode is on.
+            It can be run with the flask development server for local testing and development.
 
-            For a production deployment, a WSGI compatible server such as uWSGI or Gunicorn should be used.
-            Examples:
-            * uWSGI: uwsgi --http 127.0.0.1:8080 --wsgi-file {wsgi_file} --callable app
-            * Gunicorn: gunicorn -b 127.0.0.1:8080 {module}:app
+            For a production deployment, a WSGI server such as Gunicorn should be used.
+
+            Endpoint: {settings.URL_PREFIX}/{self.provider_slug}/
             """
         )

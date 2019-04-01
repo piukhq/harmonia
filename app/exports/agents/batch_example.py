@@ -1,6 +1,6 @@
 import inspect
 
-from app.exports.agents.bases.batch_export_agent import BatchExportAgent
+from app.exports.agents import BatchExportAgent
 from app.config import ConfigValue, KEY_PREFIX
 
 SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.batch-example.schedule"

@@ -1,5 +1,5 @@
 from app.db import session
-from app.exports.agents.bases.base import BaseAgent
+from app.exports.agents import BaseAgent
 from app.models import PendingExport
 from app.status import status_monitor
 

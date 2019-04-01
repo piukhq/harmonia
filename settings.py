@@ -4,6 +4,7 @@ import logging
 import os
 
 from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.rq import RqIntegration
 import sentry_sdk
 
 
@@ -77,7 +78,7 @@ REDIS_KEY_PREFIX = "txmatch"
 SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 
 if SENTRY_DSN is not None:
-    sentry_sdk.init(dsn=SENTRY_DSN, environment=ENVIRONMENT_ID, integrations=[FlaskIntegration()])
+    sentry_sdk.init(dsn=SENTRY_DSN, environment=ENVIRONMENT_ID, integrations=[FlaskIntegration(), RqIntegration()])
 
 # JSON encoding with custom extensions.
 # Used in queue messages, postgres JSON field storage, et cetera.
@@ -101,3 +102,6 @@ else:
 FLASK = dict(
     SECRET_KEY=(b"{\xca\xb9\xf6F&\xe5\x9f\xaeq\xbb\xa0\x8a\x94\xce\xb2\xb7\x19\x8e\xaeY\xdb\xe6#\x8azF\x85y0w\x01")
 )
+
+# The prefix used on every API endpoint in the project.
+URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
