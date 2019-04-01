@@ -3,8 +3,9 @@ from marshmallow.exceptions import ValidationError
 
 from app.config import config, schemas
 from app.api.utils import expects_json, ResponseType
+import settings
 
-api = Blueprint("config_api", __name__, url_prefix="/api/config")
+api = Blueprint("config_api", __name__, url_prefix=f"{settings.URL_PREFIX}/config")
 
 
 @api.route("/keys")

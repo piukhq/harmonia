@@ -4,7 +4,7 @@ import json
 
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.file_agent import FileAgent
+from app.imports.agents import FileAgent
 from app import models
 
 
@@ -123,7 +123,7 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 }
 
 
-class HarveyNicholsAgent(FileAgent):
+class HarveyNichols(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 

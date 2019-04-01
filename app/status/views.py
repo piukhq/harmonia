@@ -3,8 +3,9 @@ from flask import Blueprint, jsonify
 from app import db, models
 from app.status import status_monitor, schemas
 from app.api.utils import ResponseType
+import settings
 
-api = Blueprint("status_api", __name__, url_prefix="/api/status")
+api = Blueprint("status_api", __name__, url_prefix=f"{settings.URL_PREFIX}/status")
 
 
 @api.route("/")
@@ -72,14 +73,14 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
         return {f: getattr(model, f) for f in fields}
 
     schema = schemas.TransactionLookupSchema()
-    return jsonify(
-        schema.dump(
-            {
-                "import_transaction": import_transaction,
-                "scheme_transaction": scheme_transaction,
-                "payment_transaction": payment_transaction,
-                "matched_transaction": matched_transaction,
-                "export_transaction": export_transaction,
-            }
-        )
+    data = schema.dump(
+        {
+            "import_transaction": import_transaction,
+            "scheme_transaction": scheme_transaction,
+            "payment_transaction": payment_transaction,
+            "matched_transaction": matched_transaction,
+            "export_transaction": export_transaction,
+        }
     )
+
+    return jsonify(data)

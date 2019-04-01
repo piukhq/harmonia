@@ -24,12 +24,14 @@ class MatchingWorker:
         if settings.DEBUG:
             self.log.warning("Running in debug mode. Exceptions will not be handled gracefully!")
 
-    def _persist(self, matched_tx: models.MatchedTransaction):
-        session.add(matched_tx)
+    def _persist(self, matched_transaction: models.MatchedTransaction):
+        session.add(matched_transaction)
         session.commit()
-        self.log.info(f"Persisted matched transaction #{matched_tx.id}.")
+        self.log.info(f"Persisted matched transaction #{matched_transaction.id}.")
 
-    def _try_match(self, agent: BaseMatchingAgent, payment_tx: models.PaymentTransaction) -> t.Optional[MatchResult]:
+    def _try_match(
+        self, agent: BaseMatchingAgent, payment_transaction: models.PaymentTransaction
+    ) -> t.Optional[MatchResult]:
         try:
             return agent.match()
         except agent.NoMatchFound:
@@ -37,12 +39,12 @@ class MatchingWorker:
         except Exception as ex:
             raise self.AgentError(f"An error occurred when matching with agent {agent}: {ex}") from ex
 
-    def _match(self, payment_tx: models.PaymentTransaction) -> t.Optional[MatchResult]:
+    def _match(self, payment_transaction: models.PaymentTransaction) -> t.Optional[MatchResult]:
         """Attempts to match the given payment transaction.
         Returns the matched transaction on success.
         Raises UnusableTransaction if the transaction cannot be matched."""
         merchant_identifiers = session.query(models.MerchantIdentifier).filter(
-            models.MerchantIdentifier.id.in_(payment_tx.merchant_identifier_ids)
+            models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids)
         )
 
         slugs = [merchant_identifier.payment_provider.slug for merchant_identifier in merchant_identifiers]
@@ -50,41 +52,46 @@ class MatchingWorker:
         slugs_differ = len(set(slugs)) > 1
         if slugs_differ:
             raise ValueError(
-                f"{payment_tx} contains multiple scheme slugs! This is likely caused by an error in the MIDs. "
+                f"{payment_transaction} contains multiple scheme slugs! This is likely caused by an error in the MIDs. "
                 f"Conflicting slugs: {set(slugs)}"
             )
 
         slug = slugs[0]
-        agent = matching_agents.instantiate(slug, payment_tx)
-        return self._try_match(agent, payment_tx)
+        agent = matching_agents.instantiate(slug, payment_transaction)
+        return self._try_match(agent, payment_transaction)
 
-    def _identify(self, matched_tx: models.MatchedTransaction) -> None:
-        self._persist(matched_tx)
-        tasks.matching_queue.enqueue(tasks.identify_matched_transaction, matched_tx.id)
+    def _identify(self, matched_transaction: models.MatchedTransaction) -> None:
+        self._persist(matched_transaction)
+        tasks.matching_queue.enqueue(tasks.identify_matched_transaction, matched_transaction.id)
 
     def handle_payment_transaction(self, payment_transaction_id: int) -> None:
         """Runs the matching process for a single payment transaction."""
         status_monitor.checkin(self)
 
-        payment_tx = session.query(models.PaymentTransaction).get(payment_transaction_id)
+        payment_transaction = session.query(models.PaymentTransaction).get(payment_transaction_id)
 
-        self.log.debug(f"Received payment transaction #{payment_tx.id}. Attempting to match…")
+        if payment_transaction is None:
+            self.log.warning(f"Couldn't find a payment transaction with ID {payment_transaction_id}. Skipping.")
+            session.close()
+            return
 
-        if payment_tx.status == models.TransactionStatus.MATCHED:
-            self.log.debug(f"Payment transaction #{payment_tx.id} has already been matched. Ignoring.")
+        self.log.debug(f"Received payment transaction #{payment_transaction.id}. Attempting to match…")
+
+        if payment_transaction.status == models.TransactionStatus.MATCHED:
+            self.log.debug(f"Payment transaction #{payment_transaction.id} has already been matched. Ignoring.")
             session.close()
             return
 
         match_result = None
         try:
-            match_result = self._match(payment_tx)
+            match_result = self._match(payment_transaction)
         except self.AgentError as ex:
             if settings.DEBUG:
                 raise ex
             else:
                 event_id = sentry_sdk.capture_exception(ex)
                 self.log.error(
-                    f"Failed to match payment transaction #{payment_tx.id}: {ex}. Sentry issue ID: {event_id}."
+                    f"Failed to match payment transaction #{payment_transaction.id}: {ex}. Sentry issue ID: {event_id}."
                 )
 
         if match_result is None:
@@ -93,14 +100,14 @@ class MatchingWorker:
             return
 
         self.log.debug(f"Matching succeeded! Marking transactions as matched.")
-        payment_tx.status = models.TransactionStatus.MATCHED
+        payment_transaction.status = models.TransactionStatus.MATCHED
 
-        scheme_tx = session.query(models.SchemeTransaction).get(match_result.scheme_tx_id)
-        scheme_tx.status = models.TransactionStatus.MATCHED
+        scheme_transaction = session.query(models.SchemeTransaction).get(match_result.scheme_transaction_id)
+        scheme_transaction.status = models.TransactionStatus.MATCHED
         session.commit()
 
-        self.log.debug(f"Persisting & identifying payment transaction #{payment_tx.id}.")
-        self._identify(match_result.matched_tx)
+        self.log.debug(f"Persisting & identifying payment transaction #{payment_transaction.id}.")
+        self._identify(match_result.matched_transaction)
 
         session.close()
 
@@ -109,6 +116,11 @@ class MatchingWorker:
         status_monitor.checkin(self)
 
         scheme_transaction = session.query(models.SchemeTransaction).get(scheme_transaction_id)
+
+        if scheme_transaction is None:
+            self.log.warning(f"Couldn't find a scheme transaction with ID {scheme_transaction_id}. Skipping.")
+            session.close()
+            return
 
         self.log.debug(f"Received scheme transaction #{scheme_transaction.id}. Finding potential matches…")
 

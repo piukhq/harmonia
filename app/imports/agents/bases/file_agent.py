@@ -8,7 +8,7 @@ from azure.storage.blob import Blob, BlockBlobService
 from azure.common import AzureConflictHttpError, AzureMissingResourceHttpError
 import pendulum
 
-from app.imports.agents.bases.base import BaseAgent
+from app.imports.agents import BaseAgent
 import settings
 
 

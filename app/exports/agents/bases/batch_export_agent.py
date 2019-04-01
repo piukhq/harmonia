@@ -1,4 +1,4 @@
-from app.exports.agents.bases.base import BaseAgent
+from app.exports.agents import BaseAgent
 from app.scheduler import CronScheduler
 
 

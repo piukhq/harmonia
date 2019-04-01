@@ -2,7 +2,7 @@ import inspect
 from decimal import Decimal
 
 from app.db import session
-from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.exports.agents import SingleExportAgent
 from app.models import ExportTransaction, MatchedTransaction, MatchedTransactionStatus
 
 

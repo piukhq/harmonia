@@ -9,7 +9,7 @@ import pendulum
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents.bases.file_agent import FileAgent
+from app.imports.agents import FileAgent
 
 PROVIDER_SLUG = "iceland-bonus-card"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -17,7 +17,7 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
-class IcelandAgent(FileAgent):
+class Iceland(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 

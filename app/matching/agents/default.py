@@ -6,16 +6,10 @@ from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
-class ExamplePaymentProviderAgent(BaseMatchingAgent):
-    scheme_slug = "example-payment-provider"
-
+class Default(BaseMatchingAgent):
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         scheme_transactions = self._fine_match(
-            scheme_transactions,
-            {
-                "spend_amount": self.payment_transaction.spend_amount,
-                "transaction_date": self.payment_transaction.transaction_date,
-            },
+            scheme_transactions, {"spend_amount": self.payment_transaction.spend_amount}
         )
 
         try:
@@ -32,8 +26,8 @@ class ExamplePaymentProviderAgent(BaseMatchingAgent):
             return None
 
         return MatchResult(
-            matched_tx=models.MatchedTransaction(
+            matched_transaction=models.MatchedTransaction(
                 **self._make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY
             ),
-            scheme_tx_id=match.id,
+            scheme_transaction_id=match.id,
         )
