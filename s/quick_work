@@ -5,8 +5,8 @@ source s/_common
 s/services
 
 # change these to match your hermes source directories
-export HERMES_PATH="$HOME/projects/olympus/hermes"
-export HERMES_PY="$HOME/.virtualenvs/hermes-aqZO6leb/bin/python"
+export HERMES_PATH="$HOME/Code/hermes"
+export HERMES_PY="$HOME/.local/share/virtualenvs/hermes-48N4KDM9/bin/python"
 
 p 'setting up hermes'
 cp hermes-seed.json /tmp/hermes-seed.json
@@ -15,22 +15,13 @@ pushd "$HERMES_PATH"
 popd
 
 p 'seeding database'
-pipenv run s/seed.py
+s/seed
 
-p 'producing transaction files'
-pipenv run s/producer.py -n 1 --scheme-file files/imports/example-loyalty-scheme/transactions-2018-12-04 --payment-file files/imports/example-payment-provider/card-tx-20181204
+p 'waiting for api to start'
+until curl -sL http://127.0.0.1:5000/txm/status/ >/dev/null; do sleep 2; done
 
-p 'running payment import agent'
-pipenv run tximport --agent example-payment-provider --no-user-input --quiet --once
-
-p 'running import worker'
-TXM_RQ_QUEUES='import' pipenv run rq worker --burst -c rq_worker_settings
-
-p 'running matching worker'
-TXM_RQ_QUEUES='matching' pipenv run rq worker --burst -c rq_worker_settings
-
-p 'running scheme import agent'
-pipenv run tximport --agent example-loyalty-scheme --no-user-input --quiet --once
+p 'producing transactions'
+s/producer
 
 p 'running import worker'
 TXM_RQ_QUEUES='import' pipenv run rq worker --burst -c rq_worker_settings
