@@ -14,7 +14,7 @@ def _validate_key(key: str) -> None:
         raise ValueError(f"Config key must start with `{KEY_PREFIX}`")
 
 
-def get(key: str, *, default=None) -> str:
+def get(key: str, *, default=None) -> t.Optional[str]:
     _validate_key(key)
     if default is not None:
         redis.set(key, default, nx=True)
@@ -28,9 +28,10 @@ def update(key: str, value: str) -> None:
         raise KeyError(f"Can't update key `{key}` as it doesn't exist")
 
 
-def all_keys() -> t.Iterable[t.Tuple[str, str]]:
-    for key in redis.scan_iter(f"{KEY_PREFIX}*"):
-        yield (key.decode(), redis.get(key).decode())
+def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
+    for key in (k.decode() for k in redis.scan_iter(f"{KEY_PREFIX}*")):
+        val = redis.get(key)
+        yield (key, val.decode() if val is not None else None)
 
 
 class ConfigValue:
