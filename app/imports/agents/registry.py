@@ -9,6 +9,3 @@ import_agents.add("harvey-nichols", "app.imports.agents.harvey_nichols.HarveyNic
 import_agents.add("iceland-bonus-card", "app.imports.agents.iceland.Iceland")
 import_agents.add("bink-loyalty", "app.imports.agents.bink_loyalty.BinkLoyalty")
 import_agents.add("bink-payment", "app.imports.agents.bink_payment.BinkPayment")
-
-import_agents.add("example-loyalty-scheme", "app.imports.agents.example_loyalty_scheme.ExampleLoyaltySchemeAgent")
-import_agents.add("example-payment-provider", "app.imports.agents.example_payment_provider.ExamplePaymentProviderAgent")
