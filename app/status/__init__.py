@@ -26,7 +26,9 @@ class StatusMonitor:
         log.debug(f"Service {checkin_name} has checked in.")
 
     def _get_checkin_details(self, key: str) -> dict:
-        checkin_timestamp = float(redis.get(key).decode())
+        checkin_timestamp_val = redis.get(key)
+        if checkin_timestamp_val is not None:
+            checkin_timestamp = float(checkin_timestamp_val.decode())
         checkin_datetime = pendulum.from_timestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
 

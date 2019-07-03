@@ -22,7 +22,7 @@ class PassiveAPIAgent(BaseAgent):
             url_prefix=f"{settings.URL_PREFIX}/import/{self.provider_slug}",
         )
 
-        @api.route("/", methods=["POST"])
+        @api.route("/", strict_slashes=False, methods=["POST"])
         @api_utils.expects_json
         def index() -> str:
             try:

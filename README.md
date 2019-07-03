@@ -64,7 +64,7 @@ cp .env.example .env
 
 The provided example is sufficient as a basic configuration, but modification may be required for specific use-cases.
 
-The `.env` file contains connection strings for the two major services used in the project; PostgreSQL and Redis. These connection strings assume a local instance of these services listening on the default ports.
+The `.env` file contains connection parameters for the two major services used in the project; PostgreSQL and Redis. The default connection parameters assume a local instance of these services listening on ports 51234 (PostgreSQL) and 61234 (Redis.)
 
 To quickly create docker containers for the required services:
 
@@ -74,7 +74,9 @@ s/services
 
 ### Database Schema
 
-Once previous steps have been completed, you will need to create all the tables and indices required by the project.
+If you used the `s/services` script then you can skip this step.
+
+Once PostgreSQL is running, you will need to create all the tables and indices required by the project.
 
 To apply all migrations:
 
@@ -89,7 +91,7 @@ The flask development server is used for running the project locally. This shoul
 To run the flask development server:
 
 ```bash
-s/serve
+s/api
 ```
 
 You may see the following output in the flask server logs:
@@ -107,20 +109,12 @@ Testing is done with `pytest`.
 To execute a full test run:
 
 ```bash
-s/tests
+s/test
 ```
 
 ### End-to-End Matching Test
 
 There is a script provided that will run all the major components of the system in order. This should show a transaction going through the import->match process, and is useful for testing the interaction between the import stage and the matching worker.
-
-Both the transaction file production script (`s/producer.py`) and the import agents will expect their respective import directories to already exist. By default they will look for files in `./files/imports/SLUG/*`.
-
-To make the required import directories:
-
-```bash
-mkdir -p files/imports/{example-loyalty-scheme,example-payment-provider}
-```
 
 Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.
 
@@ -129,13 +123,11 @@ Example of a valid Hermes setup:
 ```bash
 git clone git@git.bink.com:Olympus/hermes.git ~/hermes
 cd ~/hermes
-docker run -d -p 5432:5432 postgres:latest
+docker run -d -p 5432:5432 --name postgres postgres:latest
 echo -e "HERMES_DATABASE_HOST=localhost\nHERMES_DATABASE_NAME=postgres" > .env
-python3 -m venv ~/.virtualenvs/hermes
-. ~/.virtualenvs/hermes/bin/activate
-pip install -r requirements.txt
-./manage.py migrate
-./manage.py runserver
+pipenv install --dev
+pipenv run ./manage.py migrate
+pipenv run ./manage.py runserver
 ```
 
 After setting Hermes up, modify `s/quick_work` and set the variables `HERMES_PATH` and `HERMES_PY` to the correct values.
@@ -183,6 +175,8 @@ s/quick_work
 ```
 
 This will destroy any existing docker containers with the name `txm-postgres` or `txm-redis`. It will then create new instances of these services, migrate the database, and run each stage of the transaction import, matching, and export process.
+
+The `quick_work` script expects the Harmonia API to be running at `http://127.0.0.1:5000`. You can use `s/api` to set this up.
 
 When everything is finished, the PostgreSQL and Redis containers will be left as-is. You can inspect the state of these systems to see the side-effects of running the matching system.
 

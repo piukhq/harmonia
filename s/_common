@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+cyan=$(tput bold)$(tput setab 4)$(tput setaf 7)
+white=$(tput bold)$(tput setab 7)$(tput setaf 0)
+normal=$(tput sgr0)
+
 p() {
-    echo -e "\e[44m \u2139 \e[0m\e[7m $1 \e[0m"
+    env printf "${cyan} \342\204\271 ${white} ${1} ${normal}\n"
 }
