@@ -22,7 +22,7 @@ class PassiveAPIAgent(BaseAgent):
             url_prefix=f"{settings.URL_PREFIX}/import/{self.provider_slug}",
         )
 
-        @api.route("/", methods=["POST"])
+        @api.route("/", strict_slashes=False, methods=["POST"])
         @api_utils.expects_json
         def index() -> str:
             try:
@@ -35,7 +35,9 @@ class PassiveAPIAgent(BaseAgent):
 
         return api
 
-    def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
+    def extract_transactions(
+        self, request_json: t.Dict[str, str]
+    ) -> t.List[t.Dict[str, str]]:
         return [request_json]
 
     def run(self, *, once: bool = False) -> None:
