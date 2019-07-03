@@ -30,6 +30,7 @@ pytest = "*"
 pytest-cov = "*"
 mypy = "*"
 responses = "*"
+flake8 = "*"
 
 [pipenv]
 allow_prereleases = true
