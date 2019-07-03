@@ -114,18 +114,18 @@ s/test
 
 ### End-to-End Matching Test
 
-There is a script provided that will run all the major components of the system in order. This should show a transaction going through the import->match process, and is useful for testing the interaction between the import stage and the matching worker.
+The project includes a script that will run all the major components of the system in order. This shows a transaction going through the import->match->identify->export process, and is useful for testing the interactions between the various system modules.
 
-Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.
+Before running the end-to-end script, you must have the Hermes API running on port 8000.
 
-Example of a valid Hermes setup:
+Example of a valid Hermes setup from scratch:
 
 ```bash
 git clone git@git.bink.com:Olympus/hermes.git ~/hermes
 cd ~/hermes
+pipenv install --dev
 docker run -d -p 5432:5432 --name postgres postgres:latest
 echo -e "HERMES_DATABASE_HOST=localhost\nHERMES_DATABASE_NAME=postgres" > .env
-pipenv install --dev
 pipenv run ./manage.py migrate
 pipenv run ./manage.py runserver
 ```
