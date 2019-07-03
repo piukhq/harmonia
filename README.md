@@ -116,14 +116,6 @@ s/test
 
 There is a script provided that will run all the major components of the system in order. This should show a transaction going through the import->match process, and is useful for testing the interaction between the import stage and the matching worker.
 
-Both the transaction file production script (`s/producer.py`) and the import agents will expect their respective import directories to already exist. By default they will look for files in `./files/imports/SLUG/*`.
-
-To make the required import directories:
-
-```bash
-mkdir -p files/imports/{bink-loyalty,bink-payment}
-```
-
 Before running the end-to-end script, you must have a copy of the Hermes project on your machine with a valid database, and have the server running on port 8000.
 
 Example of a valid Hermes setup:
