@@ -31,6 +31,4 @@ pytest-cov = "*"
 mypy = "*"
 responses = "*"
 flake8 = "*"
-
-[pipenv]
-allow_prereleases = true
+black = "==19.3b0"

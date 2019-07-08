@@ -22,7 +22,7 @@ def list_keys() -> ResponseType:
     config_values = list({"key": k, "value": v} for k, v in config.all_keys())
 
     schema = schemas.KeyValuePairSchema()
-    data = schema.dump(config_values, many=True)
+    data = schema.dump(config_values, many=True).data
 
     return jsonify(data)
 
@@ -55,4 +55,4 @@ def update_key(key: str) -> ResponseType:
         return jsonify({"error": str(e).strip('"')}), 400
 
     response_schema = schemas.KeyValuePairSchema()
-    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}))
+    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}).data)
