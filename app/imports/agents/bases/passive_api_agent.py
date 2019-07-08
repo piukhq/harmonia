@@ -25,10 +25,9 @@ class PassiveAPIAgent(BaseAgent):
         @api.route("/", strict_slashes=False, methods=["POST"])
         @api_utils.expects_json
         def index() -> str:
-            try:
-                self.schema.load(request.json)
-            except ValidationError as ex:
-                return jsonify({"ok": False, "errors": ex.messages})
+            _, errors = self.schema.load(request.json)
+            if errors:
+                return jsonify({"ok": False, "errors": errors})
             transactions_data = self.extract_transactions(request.json)
             self._import_transactions(transactions_data, source="POST /")
             return jsonify({"ok": True})

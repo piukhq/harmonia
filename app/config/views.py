@@ -44,10 +44,9 @@ def update_key(key: str) -> ResponseType:
           schema: KeyValuePairSchema
     """
     request_schema = schemas.UpdateKeyRequestSchema()
-    try:
-        data = request_schema.load(request.json)
-    except ValidationError as ex:
-        return jsonify(ex.messages), 400
+    data, errors = request_schema.load(request.json)
+    if errors:
+        return jsonify(errors), 400
 
     try:
         config.update(key, data["value"])
