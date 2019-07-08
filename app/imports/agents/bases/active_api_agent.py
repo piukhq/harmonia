@@ -19,6 +19,8 @@ class ActiveAPIAgent(BaseAgent):
     def do_import(self):
         resp = requests.get(self.url)
         resp.raise_for_status()
-        transactions_data = self.schema.load(resp.json(), many=True)
-        if transactions_data:
+        transactions_data, errors = self.schema.load(resp.json(), many=True)
+        if errors:
+            self.log.error(f"Failed to load transactions data from API response: {errors}")
+        elif transactions_data:
             self._import_transactions(transactions_data, source=self.url)

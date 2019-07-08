@@ -9,3 +9,4 @@ monitor
 .coverage
 .env
 htmlcov
+.vscode

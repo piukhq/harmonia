@@ -19,7 +19,7 @@ def get_status():
           schema: StatusReportSchema
     """
     schema = schemas.StatusReportSchema()
-    data = schema.dump(status_monitor.report())
+    data = schema.dump(status_monitor.report()).data
     errors = schema.validate(data)
     if errors:
         raise ValueError(errors)
@@ -81,6 +81,6 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
             "matched_transaction": matched_transaction,
             "export_transaction": export_transaction,
         }
-    )
+    ).data
 
     return jsonify(data)
