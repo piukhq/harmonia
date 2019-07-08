@@ -2,7 +2,6 @@ import inspect
 import typing as t
 
 from flask import Blueprint, jsonify, request
-from marshmallow import ValidationError
 
 from app import utils
 from app.api import utils as api_utils
