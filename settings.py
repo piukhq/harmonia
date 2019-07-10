@@ -7,6 +7,11 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.rq import RqIntegration
 import sentry_sdk
 
+from environment import read_env
+
+
+read_env()
+
 
 class ConfigVarRequiredError(Exception):
     pass
