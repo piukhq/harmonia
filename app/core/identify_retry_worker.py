@@ -19,8 +19,10 @@ class IdentifyRetryWorker:
         return self.Config.schedule
 
     def tick(self) -> None:
-        unidentified_transactions = db.session.query(models.MatchedTransaction).filter(
-            models.MatchedTransaction.user_identity_id.is_(None)
+        unidentified_transactions = db.run_query(
+            lambda: db.session.query(models.MatchedTransaction).filter(
+                models.MatchedTransaction.user_identity_id.is_(None)
+            )
         )
 
         self.log.debug(f"Found {unidentified_transactions.count()} unidentified matched transactions.")

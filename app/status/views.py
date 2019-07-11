@@ -28,8 +28,8 @@ def get_status():
 
 @api.route("/transaction/lookup/<transaction_id>")
 def lookup_transaction(transaction_id: str) -> ResponseType:
-    import_transaction = (
-        db.session.query(models.ImportTransaction)
+    import_transaction = db.run_query(
+        lambda: db.session.query(models.ImportTransaction)
         .filter(models.ImportTransaction.transaction_id == transaction_id)
         .first()
     )
@@ -37,32 +37,34 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
     if not import_transaction:
         return jsonify({"error": f"Could not find an imported transaction with ID: {transaction_id}"}), 404
 
-    scheme_transaction = (
-        db.session.query(models.SchemeTransaction)
+    scheme_transaction = db.run_query(
+        lambda: db.session.query(models.SchemeTransaction)
         .filter(models.SchemeTransaction.transaction_id == import_transaction.transaction_id)
         .first()
     )
     payment_transaction = None
     if not scheme_transaction:
-        payment_transaction = (
-            db.session.query(models.PaymentTransaction)
+        payment_transaction = db.run_query(
+            lambda: db.session.query(models.PaymentTransaction)
             .filter(models.PaymentTransaction.transaction_id == import_transaction.transaction_id)
             .first()
         )
 
-    q = db.session.query(models.MatchedTransaction)
-    if scheme_transaction:
-        q = q.filter(models.MatchedTransaction.scheme_transaction_id == scheme_transaction.id)
-    if payment_transaction:
-        q = q.filter(models.MatchedTransaction.payment_transaction_id == payment_transaction.id)
+    def get_matched_transaction():
+        q = db.session.query(models.MatchedTransaction)
+        if scheme_transaction:
+            q = q.filter(models.MatchedTransaction.scheme_transaction_id == scheme_transaction.id)
+        if payment_transaction:
+            q = q.filter(models.MatchedTransaction.payment_transaction_id == payment_transaction.id)
+        return q.first()
 
-    matched_transaction = q.first()
+    matched_transaction = db.run_query(get_matched_transaction)
 
     if matched_transaction:
         scheme_transaction = matched_transaction.scheme_transaction
         payment_transaction = matched_transaction.payment_transaction
-        export_transaction = (
-            db.session.query(models.ExportTransaction)
+        export_transaction = db.run_query(
+            lambda: db.session.query(models.ExportTransaction)
             .filter(models.ExportTransaction.matched_transaction_id == matched_transaction.id)
             .first()
         )

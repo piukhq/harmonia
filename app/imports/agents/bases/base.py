@@ -14,7 +14,7 @@ from app.utils import missing_property
 
 @lru_cache(maxsize=2048)
 def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
-    try:
+    def find_mid():
         q = db.session.query(models.MerchantIdentifier)
 
         if feed_type == ImportFeedTypes.SCHEME:
@@ -25,10 +25,14 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
         q = q.filter(models.MerchantIdentifier.mid == mid)
-        merchant_identifier = q.one()
+        return q.one()
+
+    try:
+        merchant_identifier = db.run_query(find_mid)
     except NoResultFound:
         # An exception would be preferable, but this way lru_cache works properly.
         return None
+
     return merchant_identifier.id
 
 
@@ -82,9 +86,11 @@ class BaseAgent:
         # we filter for duplicates in python rather than a SQL "in" clause because it's faster.
         duplicate_ids = {
             row[0]
-            for row in db.session.query(models.ImportTransaction.transaction_id)
-            .filter(models.ImportTransaction.provider_slug == self.provider_slug)
-            .all()
+            for row in db.run_query(
+                lambda: db.session.query(models.ImportTransaction.transaction_id)
+                .filter(models.ImportTransaction.provider_slug == self.provider_slug)
+                .all()
+            )
             if row[0] in tids
         }
 

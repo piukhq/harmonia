@@ -22,11 +22,8 @@ class CSVDialect(csv.Dialect):
 
 
 def create_mid_from_item(item: dict) -> dict:
-    loyalty_scheme, ls_created = db.get_or_create(models.LoyaltyScheme, slug=item["loyalty_scheme_slug"])
-    payment_provider, pp_created = db.get_or_create(models.PaymentProvider, slug=item["payment_provider_slug"])
-
-    if ls_created or pp_created:
-        db.session.commit()
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=item["loyalty_scheme_slug"])
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=item["payment_provider_slug"])
 
     return dict(
         mid=item["mid"],
@@ -54,8 +51,11 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None
 
     mids = [create_mid_from_item(item) for item in reader if not (item["action"] and item["action"].lower() != "a")]
 
-    db.engine.execute(models.MerchantIdentifier.__table__.insert().values(mids))
-    db.session.commit()
+    def insert_mids():
+        db.engine.execute(models.MerchantIdentifier.__table__.insert().values(mids))
+        db.session.commit()
+
+    db.run_query(insert_mids)
 
 
 @api.route("/", methods=["POST"])

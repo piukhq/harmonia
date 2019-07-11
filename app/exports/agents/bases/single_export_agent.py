@@ -1,4 +1,4 @@
-from app.db import session
+from app import db
 from app.exports.agents import BaseAgent
 from app.models import PendingExport
 from app.status import status_monitor
@@ -25,5 +25,9 @@ class SingleExportAgent(BaseAgent):
         self.export(pending_export.matched_transaction_id)
 
         self.log.info(f"Removing pending export {pending_export}.")
-        session.delete(pending_export)
-        session.commit()
+
+        def delete_pending_export():
+            db.session.delete(pending_export)
+            db.session.commit()
+
+        db.run_query(delete_pending_export)
