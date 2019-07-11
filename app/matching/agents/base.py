@@ -1,9 +1,8 @@
 import typing as t
 from collections import namedtuple
 
-from app.db import session
 from app.reporting import get_logger
-from app import models
+from app import models, db
 
 MatchResult = namedtuple("MatchResult", ("matched_transaction", "scheme_transaction_id"))
 
@@ -26,12 +25,16 @@ class BaseMatchingAgent:
 
     def _get_scheme_transactions(self, **search_fields) -> t.List[models.SchemeTransaction]:
         search_fields["mid"] = self.payment_transaction.mid
-        return session.query(models.SchemeTransaction).filter(**search_fields)
+        return db.run_query(lambda: db.session.query(models.SchemeTransaction).filter(**search_fields))
 
     def _find_applicable_scheme_transactions(self):
-        return session.query(models.SchemeTransaction).filter(
-            models.SchemeTransaction.merchant_identifier_ids.overlap(self.payment_transaction.merchant_identifier_ids),
-            models.SchemeTransaction.status == models.TransactionStatus.PENDING,
+        return db.run_query(
+            lambda: db.session.query(models.SchemeTransaction).filter(
+                models.SchemeTransaction.merchant_identifier_ids.overlap(
+                    self.payment_transaction.merchant_identifier_ids
+                ),
+                models.SchemeTransaction.status == models.TransactionStatus.PENDING,
+            )
         )
 
     def _fine_match(self, scheme_transactions, fields):

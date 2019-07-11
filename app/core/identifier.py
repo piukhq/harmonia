@@ -25,23 +25,29 @@ class Identifier:
             raise SchemeAccountNotFound
 
     def persist_user_identity(self, matched_transaction: models.MatchedTransaction, user_info: dict) -> None:
-        user_identity = models.UserIdentity(
-            loyalty_id=user_info["loyalty_id"],
-            scheme_account_id=user_info["scheme_account_id"],
-            user_id=user_info["user_id"],
-            credentials=user_info["credentials"],
-        )
+        def add_user_identity():
+            user_identity = models.UserIdentity(
+                loyalty_id=user_info["loyalty_id"],
+                scheme_account_id=user_info["scheme_account_id"],
+                user_id=user_info["user_id"],
+                credentials=user_info["credentials"],
+            )
 
-        matched_transaction.user_identity = user_identity
+            matched_transaction.user_identity = user_identity
 
-        db.session.add(user_identity)
-        db.session.commit()
+            db.session.add(user_identity)
+            db.session.commit()
+            return user_identity
 
+        user_identity = db.run_query(add_user_identity)
         log.debug(f"Persisted {user_identity}.")
 
     def identify_matched_transaction(self, matched_transaction_id: int) -> None:
         log.debug(f"Attempting identification of matched transaction #{matched_transaction_id}")
-        matched_transaction = db.session.query(models.MatchedTransaction).get(matched_transaction_id)
+
+        matched_transaction = db.run_query(
+            lambda: db.session.query(models.MatchedTransaction).get(matched_transaction_id)
+        )
 
         if matched_transaction.user_identity is not None:
             log.warning(

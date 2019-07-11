@@ -27,22 +27,34 @@ def identify_retry() -> None:
 def import_mids(mids_file: t.TextIO) -> None:
     @lru_cache(maxsize=256)
     def get_loyalty_scheme(slug: str) -> models.LoyaltyScheme:
-        loyalty_scheme = db.session.query(models.LoyaltyScheme).filter(models.LoyaltyScheme.slug == slug).first()
+        loyalty_scheme = db.run_query(
+            lambda: db.session.query(models.LoyaltyScheme).filter(models.LoyaltyScheme.slug == slug).first()
+        )
         if not loyalty_scheme:
             print(f"adding new loyalty scheme for {slug}")
-            loyalty_scheme = models.LoyaltyScheme(slug=slug)
-            db.session.add(loyalty_scheme)
-            db.session.commit()
+
+            def add_scheme():
+                loyalty_scheme = models.LoyaltyScheme(slug=slug)
+                db.session.add(loyalty_scheme)
+                db.session.commit()
+
+            db.run_query(add_scheme)
         return loyalty_scheme
 
     @lru_cache(maxsize=256)
     def get_payment_provider(slug: str) -> models.PaymentProvider:
-        payment_provider = db.session.query(models.PaymentProvider).filter(models.PaymentProvider.slug == slug).first()
+        payment_provider = db.run_query(
+            lambda: db.session.query(models.PaymentProvider).filter(models.PaymentProvider.slug == slug).first()
+        )
         if not payment_provider:
             print(f"adding new payment provider for {slug}")
-            payment_provider = models.PaymentProvider(slug=slug)
-            db.session.add(payment_provider)
-            db.session.commit()
+
+            def add_provider():
+                payment_provider = models.PaymentProvider(slug=slug)
+                db.session.add(payment_provider)
+                db.session.commit()
+
+            db.run_query(add_provider)
         return payment_provider
 
     MerchantIdentifier = namedtuple(
@@ -68,7 +80,7 @@ def import_mids(mids_file: t.TextIO) -> None:
             )
         )
     print("\nCommitting…")
-    db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions))
+    db.run_query(lambda: db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions)))
 
 
 if __name__ == "__main__":

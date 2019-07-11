@@ -24,16 +24,19 @@ class BinkLoyalty(SingleExportAgent):
 
         self.log.info("Creating export transaction.")
 
-        db.session.add(
-            models.ExportTransaction(
-                matched_transaction_id=matched_transaction.id,
-                transaction_id=matched_transaction.transaction_id,
-                provider_slug=self.provider_slug,
-                destination="the great unknown",
-                data=export_data,
+        def add_transaction():
+            db.session.add(
+                models.ExportTransaction(
+                    matched_transaction_id=matched_transaction.id,
+                    transaction_id=matched_transaction.transaction_id,
+                    provider_slug=self.provider_slug,
+                    destination="the great unknown",
+                    data=export_data,
+                )
             )
-        )
 
-        db.session.commit()
+            db.session.commit()
+
+        db.run_query(add_transaction)
 
         return True

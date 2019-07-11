@@ -5,8 +5,10 @@ from redis import StrictRedis
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
+from sqlalchemy.exc import DBAPIError
 
 from app import postgres, encoding
+from app.reporting import get_logger
 import settings
 
 engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, json_deserializer=encoding.loads)
@@ -17,17 +19,40 @@ session = Session()
 Base = declarative_base()  # type: t.Any
 
 
+log = get_logger("db")
+
+
+# based on the following stackoverflow answer:
+# https://stackoverflow.com/a/30004941
+def run_query(fn, *, attempts=2):
+    while attempts > 0:
+        attempts -= 1
+        try:
+            return fn()
+        except DBAPIError as ex:
+            log.warning(f"Database query {fn} failed with {type(ex).__name__}. {attempts} attempt(s) remaining.")
+            if attempts > 0 and ex.connection_invalidated:
+                session.rollback()
+            else:
+                raise
+
+
 def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwargs) -> t.Tuple[Base, bool]:
-    instance = session.query(model).filter_by(**kwargs).first()
+    instance = run_query(lambda: session.query(model).filter_by(**kwargs).first())
     if instance:
         return instance, False
     else:
         params = {**kwargs}
         if defaults:
             params.update(defaults)
-        instance = model(**params)
-        session.add(instance)
-        return instance, True
+
+        def add_instance():
+            instance = model(**params)
+            session.add(instance)
+            session.commit()
+            return instance
+
+        return run_query(add_instance), True
 
 
 def auto_repr(cls):
