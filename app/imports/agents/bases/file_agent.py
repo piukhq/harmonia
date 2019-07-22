@@ -35,7 +35,7 @@ class LocalFileSource(FileSourceBase):
         shutil.move(filepath, archive_path)
 
     def provide(self, callback: t.Callable) -> None:
-        for filepath in (p for p in self.path.iterdir() if p.is_file()):
+        for filepath in (p for p in self.path.iterdir() if p.is_file() and not p.name.startswith(".")):
             with open(filepath, "rb") as f:
                 data = f.read()
             try:
