@@ -39,8 +39,8 @@ class MerchantIdentifier(Base, ModelMixin):
     mid = s.Column(s.String(50), nullable=False, index=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
     payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
-    location = s.Column(s.String(250), nullable=True)
-    postcode = s.Column(s.String(16), nullable=True)
+    location = s.Column(s.String(250), nullable=False)
+    postcode = s.Column(s.String(16), nullable=False)
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="merchant_identifier")
 
@@ -81,7 +81,7 @@ class PaymentTransaction(Base, ModelMixin):
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
-    card_token = s.Column(s.String(100))  # token assigned to the card that was used
+    card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
 
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
@@ -114,7 +114,7 @@ class MatchedTransaction(Base, ModelMixin):
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
     points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
-    card_token = s.Column(s.String(100))  # token assigned to the card that was used
+    card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     matching_type = s.Column(s.Enum(MatchingType), nullable=False)  # type of matching, see MatchingType for options
     status = s.Column(s.Enum(MatchedTransactionStatus), nullable=False, default=MatchedTransactionStatus.PENDING)
     payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
