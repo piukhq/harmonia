@@ -1,7 +1,7 @@
 stages:
   - tests
   - build
-  - deploy
+  - tagging
 
 tests:
   stage: tests
@@ -49,11 +49,11 @@ build-latest:
   only:
     - develop
 
-deploy-dev:
-  stage: deploy
-  image: binkops.azurecr.io/kubedeployer:latest
+tag-develop:
+  stage: tagging
+  image: binkops.azurecr.io/tagbot:latest
   environment: dev
   script:
-    - kubectl delete po --namespace dev --selector project=harmonia
+    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
   only:
     - develop
