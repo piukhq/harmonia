@@ -54,5 +54,5 @@ class Cooperative(FileAgent):
         try:
             store_id = [data["store_id"]]
         except KeyError:
-            store_id = "unknown"
+            store_id = ["unknown"]
         return store_id
