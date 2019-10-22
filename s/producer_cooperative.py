@@ -16,7 +16,8 @@ HERMES_URL = settings.HERMES_URL
 LOYALTY_SCHEME_SLUG = "cooperative"
 PAYMENT_PROVIDER_SLUG = "bink-payment"
 HARMONIA_URL = s_settings.HARMONIA_URL
-COOP_FILE_WITH_TRANSACTIONS = s_settings.COOP_FILE_WITH_TRANSACTIONS
+COOP_FILE_WITH_TRANSACTIONS_PATH = s_settings.COOP_FILE_WITH_TRANSACTIONS_PATH
+COOP_LIMIT_TRANSACTIONS_FROM_FILE = int(s_settings.COOP_LIMIT_TRANSACTIONS_FROM_FILE)
 
 MOCK_TRANSACTIONS = {
     "transactions": [
@@ -64,10 +65,10 @@ class CooperativeProducer(object):
 
     def create_input_file(self):
         transactions = {}
-        if os.path.isfile(COOP_FILE_WITH_TRANSACTIONS):
-            with open(COOP_FILE_WITH_TRANSACTIONS, "r") as file:
+        if os.path.isfile(COOP_FILE_WITH_TRANSACTIONS_PATH):
+            with open(COOP_FILE_WITH_TRANSACTIONS_PATH, "r") as file:
                 transactions["transactions"] = json.loads(file.read())["transactions"][
-                    :3
+                    :COOP_LIMIT_TRANSACTIONS_FROM_FILE
                 ]
                 self.save_file(transactions, "from_file")
         else:
