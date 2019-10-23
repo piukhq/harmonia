@@ -118,3 +118,23 @@ AES_KEY = "6gZW4ARFINh4DR1uIzn12l7Mh1UF982L"
 
 # Base URL for saving transaction export status.
 ATLAS_URL = getenv("TXM_ATLAS_URL", required=False)
+
+# Variables for Soteria setup:
+CONFIG_SERVICE_URL = getenv("CONFIG_SERVICE_URL", "")
+VAULT_URL = getenv("VAULT_URL", "")
+VAULT_TOKEN = getenv("VAULT_TOKEN", "")
+
+# Authentication token header for Cooperative
+COOP_AUTH_TOKEN_HEADER = "Authorization"
+
+# Transactions limit for one request for Cooperative API
+COOP_LIMIT_PER_REQUEST = getenv("COOP_LIMIT_PER_REQUEST", "1000")
+
+# Transactions authentication scope for Cooperative API
+COOP_TRANSACTIONS_AUTH_SCOPE = "bink-api/matched-transactions"
+
+# Path for saving backup files with response received from Cooperative endpoint
+COOP_RESPONSE_BACKUP_PATH = "files/archives/response_backups/"
+
+# Schedule key for Cooperative API
+COOP_SCHEDULE_KEY = getenv("COOP_SCHEDULE", "")
