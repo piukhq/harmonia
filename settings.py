@@ -134,7 +134,7 @@ COOP_LIMIT_PER_REQUEST = getenv("COOP_LIMIT_PER_REQUEST", "1000")
 COOP_TRANSACTIONS_AUTH_SCOPE = "bink-api/matched-transactions"
 
 # Path for saving backup files with response received from Cooperative endpoint
-COOP_RESPONSE_BACKUP_PATH = "files/archives/response_backups/"
+COOP_RESPONSE_BACKUP_PATH = "files/backup/"
 
 # Schedule key for Cooperative API
 COOP_SCHEDULE_KEY = getenv("COOP_SCHEDULE", "")
