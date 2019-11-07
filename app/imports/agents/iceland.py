@@ -23,7 +23,7 @@ class Iceland(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "TransactionCardSchemeId": int,
-        "TransactionAmountValue": lambda x: int(Decimal(x) * 100),
+        "TransactionAmountValue": lambda x: int(round((float(x) * 1000000) / 10000)),
         "TransactionCashbackValue": Decimal,
         "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
     }
@@ -53,6 +53,10 @@ class Iceland(FileAgent):
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.SchemeTransaction:
+<<<<<<< HEAD
+=======
+
+>>>>>>> Add Iceland import agent with few changes
         return models.SchemeTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
