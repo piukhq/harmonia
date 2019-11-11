@@ -1,0 +1,7 @@
+#! /bin/bash
+
+source s/_common
+
+p 'running end to end test for Iceland'
+pipenv run echo 'end_to_end_active' > /tmp/end_to_end_active
+pipenv run pytest tests/test_end_to_end_iceland.py
