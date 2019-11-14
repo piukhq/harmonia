@@ -3,6 +3,7 @@ import inspect
 import typing as t
 
 from app import models
+from decimal import Decimal
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
 from app.config import KEY_PREFIX, ConfigValue
@@ -39,7 +40,7 @@ class Cooperative(FileAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["timestamp"],
-            spend_amount=int(float(data["amount"]["value"]) * 100),
+            spend_amount=int(Decimal(data["amount"]["value"]) * 100),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
             extra_fields={k: data[k] for k in ("card", "store_id")},
