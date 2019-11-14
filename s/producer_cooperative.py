@@ -8,6 +8,7 @@ from app import models
 from uuid import uuid4
 from s import s_settings
 from base64 import b64encode
+from decimal import Decimal
 from app.db import Base, session
 from s.seed import get_or_create
 from app.reporting import get_logger
@@ -168,7 +169,7 @@ class CooperativeProducer(object):
             json={
                 "date": transaction["timestamp"],
                 "mid": transaction["store_id"],
-                "spend": int(float(transaction["amount"]["value"]) * 100),
+                "spend": int(Decimal(transaction["amount"]["value"]) * 100),
                 "tid": str(uuid4()),
                 "token": payment_card["token"],
             },
