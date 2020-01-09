@@ -13,10 +13,10 @@ class Hermes:
         self.base_url = base_url
         self.session = requests_retry_session()
 
-    def post(self, endpoint: str, json: dict = None, *, name: str) -> dict:
-        log.debug(f"Posting {name} request with parameters: {json}.")
+    def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
+        log.debug(f"Posting {name} request with parameters: {body}.")
         url = urljoin(self.base_url, endpoint)
-        response = self.session.post(url, json=json)
+        response = self.session.post(url, json=body)
         response.raise_for_status()
         return response.json()
 

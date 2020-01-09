@@ -9,6 +9,8 @@ import settings
 def redis():
     from app.db import redis
 
+    redis.flushall()
+
     yield redis
     redis.flushall()
 

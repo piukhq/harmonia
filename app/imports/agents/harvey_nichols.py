@@ -5,6 +5,7 @@ import json
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
+from decimal import Decimal
 from app import models
 
 
@@ -124,7 +125,7 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 
 
 class HarveyNichols(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SCHEME
     provider_slug = PROVIDER_SLUG
 
     class Config:
@@ -150,7 +151,7 @@ class HarveyNichols(FileAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["timestamp"],
-            spend_amount=data["amount"]["value"],
+            spend_amount=int(Decimal(data["amount"]["value"]) * 100),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},

@@ -74,6 +74,7 @@ REDIS_PORT = getenv("TXM_REDIS_PORT", default="6379")
 REDIS_USER = getenv("TXM_REDIS_USER", required=False)
 REDIS_PASS = getenv("TXM_REDIS_PASS", required=False)
 REDIS_DB = getenv("TXM_REDIS_DB", conv=int)
+REDIS_URL = f"redis://:{REDIS_PASS}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 # The prefix used on every Redis key.
 REDIS_KEY_PREFIX = "txmatch"
@@ -110,3 +111,12 @@ FLASK = dict(
 
 # The prefix used on every API endpoint in the project.
 URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
+
+# API key for service authentication.
+SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
+
+# AES Cipher key.
+AES_KEY = "6gZW4ARFINh4DR1uIzn12l7Mh1UF982L"
+
+# Base URL for saving transaction export status.
+ATLAS_URL = getenv("TXM_ATLAS_URL")
