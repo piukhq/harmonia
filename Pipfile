@@ -19,10 +19,12 @@ pendulum = "*"
 apispec-webframeworks = "*"
 rq = "*"
 psycopg2 = "*"
+pycryptodome = "*"
 python-gnupg = "*"
 azure-storage-blob = "*"
 marshmallow-sqlalchemy = "*"
 sentry-sdk = {extras = ["flask"],version = "*"}
+user_auth_token = {git = "ssh://git@git.bink.com/libs/user-token-store.git"}
 
 [dev-packages]
 alembic = "*"
