@@ -16,7 +16,7 @@ config = Configuration(
     Configuration.TRANSACTION_MATCHING_HANDLER,
     settings.VAULT_URL,
     settings.VAULT_TOKEN,
-    settings.SOTERIA_URL if settings.SOTERIA_URL else 'http://localhost',
+    settings.SOTERIA_URL if settings.SOTERIA_URL else "http://localhost",
 )
 
 
