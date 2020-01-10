@@ -16,8 +16,6 @@ tests:
     - export TXM_REDIS_HOST=${REDIS_PORT_6379_TCP_ADDR}
     - export TXM_REDIS_DB=0
     - export TXM_HERMES_URL="http://localhost"
-    - export TXM_ATLAS_URL="http://localhost"
-    - export TXM_VAULT_DSN="http://localhost"
     - pytest --verbose --cov app --cov-report term-missing
   services:
     - postgres:9.4.4

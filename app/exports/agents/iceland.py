@@ -12,6 +12,7 @@ from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
 from app.service.iceland import iceland, config
+import settings
 
 
 PROVIDER_SLUG = "iceland-bonus-card"
@@ -92,6 +93,12 @@ class Iceland(BatchExportAgent):
             atlas.status_request(self.provider_slug, response, transaction, atlas_status)
 
     def export_all(self, once=True):
+        if settings.ATLAS_URL is None:
+            raise settings.ConfigVarRequiredError("ATLAS_URL is required for Iceland exports.")
+
+        if settings.VAULT_DSN is None or settings.VAULT_TOKEN:
+            raise settings.ConfigVarRequiredError("Both VAULT_DSN and VAULT_TOKEN are required for Iceland exports.")
+
         transactions_query_set = session.query(models.MatchedTransaction).filter_by(
             status=models.MatchedTransactionStatus.PENDING
         )
