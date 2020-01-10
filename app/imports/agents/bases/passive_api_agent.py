@@ -24,12 +24,25 @@ class PassiveAPIAgent(BaseAgent):
         @api.route("/", strict_slashes=False, methods=["POST"])
         @api_utils.expects_json
         def index() -> str:
+            """
+            Import transactions
+            ---
+            post:
+                description: Import {} transactions
+                responses:
+                    200:
+                        description: Imported {} successfully
+                    400:
+                        description: Import failed
+            """
             _, errors = self.schema.load(request.json)
             if errors:
                 return jsonify({"ok": False, "errors": errors})
             transactions_data = self.extract_transactions(request.json)
             self._import_transactions(transactions_data, source="POST /")
             return jsonify({"ok": True})
+
+        index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)
 
         return api
 

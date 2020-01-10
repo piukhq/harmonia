@@ -60,7 +60,15 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None
 
 @api.route("/", methods=["POST"])
 def import_mids() -> ResponseType:
-    """Import MIDs"""
+    """
+    Import MIDs
+    ---
+    post:
+        description: Upload MIDs CSV file
+        responses:
+            200:
+                description: "Import was successful"
+    """
     imported: t.List[str] = []
     failed: t.List[t.Dict[str, str]] = []
 
