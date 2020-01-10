@@ -1,26 +1,29 @@
 import json
 import inspect
-import settings
 import requests
+from uuid import uuid4
 
-from uuid import uuid1
+from hashids import Hashids
+from soteria.security import get_security_agent
+
 from app import models
 from app.db import session
-from hashids import Hashids
 from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
-from soteria.security import get_security_agent
 from app.exports.agents import BatchExportAgent
 from app.service.iceland import iceland, config
 
 
-SCHEDULE_KEY = f"{KEY_PREFIX}{settings.ICELAND_SCHEDULE}"
-ALPHABET = "abcdefghijklmnopqrstuvwxyz1234567890"
-hash_id = Hashids(min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet=ALPHABET)
+PROVIDER_SLUG = "iceland-bonus-card"
+SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
+
+hashids = Hashids(
+    min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890"
+)
 
 
 class Iceland(BatchExportAgent):
-    provider_slug = "iceland-bonus-card"
+    provider_slug = PROVIDER_SLUG
 
     class Config:
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
@@ -28,8 +31,8 @@ class Iceland(BatchExportAgent):
     def help(self):
         return inspect.cleandoc(
             f"""
-                This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
-                """
+            This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
+            """
         )
 
     @staticmethod
@@ -51,8 +54,8 @@ class Iceland(BatchExportAgent):
         formatted = []
         for transaction in transactions:
             formatted_transaction = {
-                "record_uid": hash_id.encode(transaction.user_identity.scheme_account_id),
-                "merchant_scheme_id1": hash_id.encode(transaction.user_identity.scheme_account_id),
+                "record_uid": hashids.encode(transaction.user_identity.scheme_account_id),
+                "merchant_scheme_id1": hashids.encode(transaction.user_identity.scheme_account_id),
                 "merchant_scheme_id2": transaction.merchant_identifier.mid,
                 "transaction_id": transaction.transaction_id,
             }
@@ -89,13 +92,12 @@ class Iceland(BatchExportAgent):
             atlas.status_request(self.provider_slug, response, transaction, atlas_status)
 
     def export_all(self, once=True):
-
         transactions_query_set = session.query(models.MatchedTransaction).filter_by(
             status=models.MatchedTransactionStatus.PENDING
         )
 
         formatted_transactions = self.format_transactions(transactions_query_set)
-        request_data = {"message_uid": str(uuid1()), "transactions": formatted_transactions}
+        request_data = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
 
         request = self.format_request(request_data)
 
