@@ -10,12 +10,13 @@ provider_slug = "iceland-bonus-card"
 log = get_logger(provider_slug)
 
 # TODO(cl): might be better to have the agent create this & the service instance
+# TODO(cl): fix the bug in soteria that requires this horrible None handling
 config = Configuration(
     provider_slug,
     Configuration.TRANSACTION_MATCHING_HANDLER,
     settings.VAULT_URL,
     settings.VAULT_TOKEN,
-    settings.SOTERIA_URL,
+    settings.SOTERIA_URL if settings.SOTERIA_URL else 'http://localhost',
 )
 
 
