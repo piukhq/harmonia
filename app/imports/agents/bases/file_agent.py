@@ -5,7 +5,6 @@ import shutil
 import time
 
 from azure.storage.blob import BlobServiceClient
-from azure.common import AzureConflictHttpError, AzureMissingResourceHttpError
 import pendulum
 
 from app.imports.agents import BaseAgent
@@ -67,15 +66,18 @@ class BlobFileSource(FileSourceBase):
         container = self._bbs.get_container_client(self.container_name)
         for blob in container.list_blobs(name_starts_with=self.path):
             blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
-            try:
-                lease_id = blob_client.acquire_lease(lease_duration=60)
-            except AzureConflictHttpError:
-                self.log.debug(f"Skipping blob {blob.name} as it is already leased.")
-                continue
-            except AzureMissingResourceHttpError:
-                self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
-                continue
 
+            # TODO(cl): These errors disappeared from the blob storage library. They need to be replaced with something.
+            # try:
+            #     lease_id = blob_client.acquire_lease(lease_duration=60)
+            # except AzureConflictHttpError:
+            #     self.log.debug(f"Skipping blob {blob.name} as it is already leased.")
+            #     continue
+            # except AzureMissingResourceHttpError:
+            #     self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
+            #     continue
+
+            lease_id = blob_client.acquire_lease(lease_duration=60)
             content = blob_client.download_blob(lease_id=lease_id).readall()
 
             self.log.debug(f"Invoking callback for blob {blob.name}.")
