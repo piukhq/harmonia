@@ -96,7 +96,7 @@ class StatusMonitor:
 
         if redis_health["healthy"]:
             checkins = [
-                {"key": key.decode(), **self._get_checkin_details(key.decode())}
+                {"key": key, **self._get_checkin_details(key)}
                 for key in redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
             ]
         else:

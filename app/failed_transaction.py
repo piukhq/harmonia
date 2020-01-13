@@ -38,9 +38,9 @@ class FailedTransaction:
         """
         key = self._key(scheme_slug, transaction_id)
         limit_reached = False
-        retries = self.storage.get(key)
-        if retries:
-            retries = int(retries.decode("utf-8"))
+        retries_value = self.storage.get(key)
+        if retries_value:
+            retries = int(retries_value.decode("utf-8"))
             if retries <= self.max_retries:
                 self.storage.incr(key)
             else:

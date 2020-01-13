@@ -29,7 +29,7 @@ def update(key: str, value: str) -> None:
 
 
 def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
-    for key in (k.decode() for k in redis.scan_iter(f"{KEY_PREFIX}*")):
+    for key in redis.scan_iter(f"{KEY_PREFIX}*"):
         val = redis.get(key)
         yield (key, val.decode() if val is not None else None)
 

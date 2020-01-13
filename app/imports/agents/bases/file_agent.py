@@ -53,7 +53,7 @@ class BlobFileSource(FileSourceBase):
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
-        self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_CONNECTION_STRING)
+        self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
 
     def archive(self, blob_name, blob_content, lease_id: str) -> None:
         archive_container = f"archive-{pendulum.today().to_date_string()}"
@@ -103,7 +103,7 @@ class FileAgent(BaseAgent):
         raise NotImplementedError
 
     def run(self, *, once: bool = False) -> None:
-        filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.USE_BLOB_STORAGE else LocalFileSource)
+        filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource)
         path = self.Config.path  # type: ignore
         filesource = filesource_class(Path(path), logger=self.log)
 
