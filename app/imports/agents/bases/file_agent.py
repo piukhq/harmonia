@@ -57,12 +57,12 @@ class BlobFileSource(FileSourceBase):
 
     def archive(self, blob_name, blob_content, lease_id: str) -> None:
         archive_container = f"archive-{pendulum.today().to_date_string()}"
-        self._bbs.create_container(container_name=archive_container)
+        self._bbs.create_container(archive_container)
         self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
         self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease_id=lease_id)
 
     def provide(self, callback: t.Callable) -> None:
-        self._bbs.create_container(container_name=self.container_name)
+        self._bbs.create_container(self.container_name)
         container = self._bbs.get_container_client(self.container_name)
         for blob in container.list_blobs(name_starts_with=self.path):
             blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
