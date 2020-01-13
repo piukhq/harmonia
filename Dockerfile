@@ -1,9 +1,20 @@
-FROM python:3.6-alpine
+FROM python:3.8-alpine
 ENV TZ=UTC
 WORKDIR /app
 ADD . .
-RUN apk --no-cache add libpq gnupg && \
-    apk --no-cache add --virtual build-deps build-base postgresql-dev libffi-dev && \
+RUN apk --no-cache add --virtual build-deps \
+      build-base \
+      postgresql-dev \
+      libffi-dev \
+      openssh \
+      git && \
+    apk --no-cache add \
+      libpq \
+      gnupg && \
+    mkdir -p /root/.ssh && \
+    mv /app/deploy_key /root/.ssh/id_rsa && \
+    chmod 0600 /root/.ssh/id_rsa && \
+    ssh-keyscan git.bink.com > /root/.ssh/known_hosts && \
     pip install pipenv gunicorn alembic && \
     pipenv install --deploy --system --ignore-pipfile && \
     pip uninstall --yes pipenv && \
