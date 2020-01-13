@@ -7,6 +7,7 @@ tests:
   stage: tests
   before_script:
     - pipenv install --dev --system --deploy --ignore-pipfile
+    - pipenv graph
   script:
     - export TXM_POSTGRES_USER=postgres
     - export TXM_POSTGRES_HOST=${POSTGRES_PORT_5432_TCP_ADDR}
