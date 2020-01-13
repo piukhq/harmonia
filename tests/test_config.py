@@ -101,7 +101,7 @@ def test_config_value_with_default(redis, token0, token1):
     assert cv.key == k
     assert cv.default == token0
     assert cv.__get__(None, None) == token0, "the cv should return its default"
-    assert redis.get(k).decode() == token0, "the previous get should have set the default in redis"
+    assert redis.get(k) == token0, "the previous get should have set the default in redis"
 
     redis.set(k, token1)
     assert cv.__get__(None, None) == token1, "the cv should return the new value despite its default"
@@ -137,7 +137,7 @@ def test_update_key_api(redis, token0, token1, api_client):
     redis.set(k, token0)
     resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token1})
     assert resp.status_code == 200, resp.json
-    assert redis.get(k).decode() == token1
+    assert redis.get(k) == token1
 
     resp = api_client.put(url_for("config_api.update_key", key=k), json={"bad": True})
     assert resp.status_code == 400, resp.json

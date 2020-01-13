@@ -1,18 +1,17 @@
 import hashlib
 
-from redis import StrictRedis
+from app import db
 
 
 class FailedTransaction:
     class NoSuchTransaction(Exception):
         pass
 
-    def __init__(self, redis_url: str, max_retries: int = 3) -> None:
+    def __init__(self, max_retries: int = 3) -> None:
         """
         Create a failed matched transaction store.
         """
         self.max_retries = max_retries
-        self.storage = StrictRedis.from_url(redis_url)
 
     @staticmethod
     def _key(scheme_slug: str, transaction_id: int) -> str:
@@ -38,15 +37,15 @@ class FailedTransaction:
         """
         key = self._key(scheme_slug, transaction_id)
         limit_reached = False
-        retries = self.storage.get(key)
-        if retries:
-            retries = int(retries.decode("utf-8"))
+        retries_value = db.redis.get(key)
+        if retries_value:
+            retries = int(retries_value)
             if retries <= self.max_retries:
-                self.storage.incr(key)
+                db.redis.incr(key)
             else:
-                self.storage.delete(key)
+                db.redis.delete(key)
                 limit_reached = True
         else:
             # 432000 seconds == 5 days
-            self.storage.set(key, 0, ex=432000, nx=True)
+            db.redis.set(key, 0, ex=432000, nx=True)
         return limit_reached

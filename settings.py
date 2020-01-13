@@ -94,15 +94,13 @@ JSON_SERIALIZER = "txmatch+json"
 HERMES_URL = getenv("TXM_HERMES_URL")
 
 # If set, file-based import agents will talk with blob storage instead.
-USE_BLOB_STORAGE = getenv("TXM_USE_BLOB_STORAGE", default="false", conv=boolconv)
+BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", default="false", conv=boolconv)
 
-if USE_BLOB_STORAGE:
-    # Azure Blob Storage account details.
-    BLOB_ACCOUNT_NAME = getenv("TXM_BLOB_ACCOUNT_NAME")
-    BLOB_ACCOUNT_KEY = getenv("TXM_BLOB_ACCOUNT_KEY")
-else:
+if not BLOB_STORAGE_DSN:
     # The path to load import files from.
     LOCAL_IMPORT_BASE_PATH = getenv("TXM_LOCAL_IMPORT_BASE_PATH", default="files", conv=Path)
+else:
+    LOCAL_IMPORT_BASE_PATH = None
 
 # This dictionary is passed to `Flask.config.from_mapping`.
 FLASK = dict(

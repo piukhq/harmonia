@@ -12,6 +12,7 @@ def get_logger(name: str) -> logging.Logger:
     Returns a correctly configured logger with the given name.
     """
     logger = logging.getLogger(name.lower().replace(" ", "-"))
+    logger.propagate = False
 
     formatter = logging.Formatter(LOG_FORMAT)
 

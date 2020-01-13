@@ -28,7 +28,7 @@ class StatusMonitor:
     def _get_checkin_details(self, key: str) -> dict:
         checkin_timestamp_val = redis.get(key)
         if checkin_timestamp_val is not None:
-            checkin_timestamp = float(checkin_timestamp_val.decode())
+            checkin_timestamp = float(checkin_timestamp_val)
         checkin_datetime = pendulum.from_timestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
 
@@ -96,7 +96,7 @@ class StatusMonitor:
 
         if redis_health["healthy"]:
             checkins = [
-                {"key": key.decode(), **self._get_checkin_details(key.decode())}
+                {"key": key, **self._get_checkin_details(key)}
                 for key in redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
             ]
         else:

@@ -87,9 +87,7 @@ class HarveyNichols(SingleExportAgent):
             atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.MERCHANT_ASSIGNED)
             self.log.debug(f"Matched transaction {matched_transaction_id} is already assigned to a different customer.")
         else:
-            limit_reached = FailedTransaction(settings.REDIS_URL, max_retries=5).retry(
-                self.provider_slug, matched_transaction_id
-            )
+            limit_reached = FailedTransaction(max_retries=5).retry(self.provider_slug, matched_transaction_id)
             if limit_reached:
                 atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.NOT_ASSIGNED)
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")

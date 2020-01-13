@@ -2,6 +2,7 @@ import inspect
 import typing as t
 
 from flask import Blueprint, jsonify, request
+import marshmallow
 
 from app import utils
 from app.api import utils as api_utils
@@ -35,10 +36,11 @@ class PassiveAPIAgent(BaseAgent):
                     400:
                         description: Import failed
             """
-            _, errors = self.schema.load(request.json)
-            if errors:
-                return jsonify({"ok": False, "errors": errors})
-            transactions_data = self.extract_transactions(request.json)
+            try:
+                data = self.schema.load(request.json)
+            except marshmallow.ValidationError as ex:
+                return jsonify({"ok": False, "errors": ex.messages})
+            transactions_data = self.extract_transactions(data)
             self._import_transactions(transactions_data, source="POST /")
             return jsonify({"ok": True})
 
