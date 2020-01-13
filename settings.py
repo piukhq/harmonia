@@ -94,7 +94,7 @@ JSON_SERIALIZER = "txmatch+json"
 HERMES_URL = getenv("TXM_HERMES_URL")
 
 # If set, file-based import agents will talk with blob storage instead.
-BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", default="false", conv=boolconv)
+BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.
