@@ -4,7 +4,7 @@ import logging
 import shutil
 import time
 
-from azure.storage.blob import Blob, BlockBlobService
+from azure.storage.blob import BlobServiceClient
 from azure.common import AzureConflictHttpError, AzureMissingResourceHttpError
 import pendulum
 
@@ -54,21 +54,21 @@ class BlobFileSource(FileSourceBase):
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
-        self._bbs = BlockBlobService(settings.BLOB_ACCOUNT_NAME, settings.BLOB_ACCOUNT_KEY)
+        self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_CONNECTION_STRING)
 
-    def archive(self, blob: Blob, lease_id: str) -> None:
+    def archive(self, blob_name, blob_content, lease_id: str) -> None:
         archive_container = f"archive-{pendulum.today().to_date_string()}"
         self._bbs.create_container(container_name=archive_container)
-        self._bbs.create_blob_from_bytes(container_name=archive_container, blob_name=blob.name, blob=blob.content)
-        self._bbs.delete_blob(container_name=self.container_name, blob_name=blob.name, lease_id=lease_id)
+        self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
+        self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease_id=lease_id)
 
     def provide(self, callback: t.Callable) -> None:
         self._bbs.create_container(container_name=self.container_name)
-        for blob in self._bbs.list_blobs(container_name=self.container_name, prefix=self.path):
+        container = self._bbs.get_container_client(self.container_name)
+        for blob in container.list_blobs(name_starts_with=self.path):
+            blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
             try:
-                lease_id = self._bbs.acquire_blob_lease(
-                    container_name=self.container_name, blob_name=blob.name, lease_duration=60
-                )
+                lease_id = blob_client.acquire_lease(lease_duration=60)
             except AzureConflictHttpError:
                 self.log.debug(f"Skipping blob {blob.name} as it is already leased.")
                 continue
@@ -76,22 +76,19 @@ class BlobFileSource(FileSourceBase):
                 self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
                 continue
 
-            # update blob with content
-            blob = self._bbs.get_blob_to_bytes(
-                container_name=self.container_name, blob_name=blob.name, lease_id=lease_id
-            )
+            content = blob_client.download_blob(lease_id=lease_id).readall()
 
             self.log.debug(f"Invoking callback for blob {blob.name}.")
 
             try:
-                callback(data=blob.content, source=f"{self.container_name}/{blob.name}")
+                callback(data=content, source=f"{self.container_name}/{blob.name}")
             except Exception as ex:
                 if settings.DEBUG:
                     raise
                 else:
                     self.log.error(f"File source callback {callback} for blob {blob.name} failed: {ex}.")
             else:
-                self.archive(blob, lease_id)
+                self.archive(blob.name, content, lease_id)
 
 
 class FileAgent(BaseAgent):
