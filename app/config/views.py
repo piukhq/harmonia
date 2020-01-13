@@ -1,4 +1,5 @@
 from flask import request, jsonify, Blueprint
+import marshmallow
 
 from app.config import config, schemas
 from app.api.utils import expects_json, ResponseType
@@ -21,7 +22,7 @@ def list_keys() -> ResponseType:
     config_values = list({"key": k, "value": v} for k, v in config.all_keys())
 
     schema = schemas.KeyValuePairSchema()
-    data = schema.dump(config_values, many=True).data
+    data = schema.dump(config_values, many=True)
 
     return jsonify(data)
 
@@ -43,9 +44,11 @@ def update_key(key: str) -> ResponseType:
           schema: KeyValuePairSchema
     """
     request_schema = schemas.UpdateKeyRequestSchema()
-    data, errors = request_schema.load(request.json)
-    if errors:
-        return jsonify(errors), 400
+
+    try:
+        data = request_schema.load(request.json)
+    except marshmallow.ValidationError as ex:
+        return jsonify(ex.messages), 400
 
     try:
         config.update(key, data["value"])
@@ -53,4 +56,4 @@ def update_key(key: str) -> ResponseType:
         return jsonify({"error": str(e).strip('"')}), 400
 
     response_schema = schemas.KeyValuePairSchema()
-    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}).data)
+    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}))
