@@ -23,7 +23,7 @@ def test_checkins(redis: StrictRedis):
 
     monitor.checkin(CheckinTest123())
 
-    key, *others = [k.decode() for k in redis.keys()]
+    key, *others = redis.keys()
     assert len(others) == 0
     assert key == f"{settings.REDIS_KEY_PREFIX}:status:checkins:CheckinTest123"
 

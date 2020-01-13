@@ -28,7 +28,7 @@ class StatusMonitor:
     def _get_checkin_details(self, key: str) -> dict:
         checkin_timestamp_val = redis.get(key)
         if checkin_timestamp_val is not None:
-            checkin_timestamp = float(checkin_timestamp_val.decode())
+            checkin_timestamp = float(checkin_timestamp_val)
         checkin_datetime = pendulum.from_timestamp(checkin_timestamp)
         seconds_ago = time.time() - checkin_timestamp
 

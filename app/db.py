@@ -102,4 +102,6 @@ redis = StrictRedis(
     socket_connect_timeout=3,
     socket_keepalive=True,
     retry_on_timeout=False,
+    charset="utf-8",
+    decode_responses=True,
 )

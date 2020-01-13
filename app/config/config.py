@@ -18,8 +18,8 @@ def get(key: str, *, default=None) -> t.Optional[str]:
     _validate_key(key)
     if default is not None:
         redis.set(key, default, nx=True)
-    val = redis.get(key)
-    return val.decode() if val is not None else None
+    val = t.cast(t.Optional[str], redis.get(key))
+    return val
 
 
 def update(key: str, value: str) -> None:
@@ -30,8 +30,8 @@ def update(key: str, value: str) -> None:
 
 def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
     for key in redis.scan_iter(f"{KEY_PREFIX}*"):
-        val = redis.get(key)
-        yield (key, val.decode() if val is not None else None)
+        val = t.cast(t.Optional[str], redis.get(key))
+        yield (key, val)
 
 
 class ConfigValue:
