@@ -11,6 +11,7 @@ from app import postgres, encoding
 from app.reporting import get_logger
 import settings
 
+# add echo=True to enable verbose query logging
 engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, json_deserializer=encoding.loads)
 
 Session = sessionmaker(bind=engine)
@@ -25,20 +26,22 @@ log = get_logger("db")
 # based on the following stackoverflow answer:
 # https://stackoverflow.com/a/30004941
 def run_query(fn, *, attempts=2):
+    log.debug(f"Attempting query for function {fn} with {attempts} attempts")
     while attempts > 0:
         attempts -= 1
         try:
             return fn()
         except DBAPIError as ex:
-            log.warning(f"Database query {fn} failed with {type(ex).__name__}. {attempts} attempt(s) remaining.")
+            log.debug(f"Attempt failed: {type(ex).__name__} {ex}")
+            session.rollback()
             if attempts > 0 and ex.connection_invalidated:
-                session.rollback()
+                log.warning(f"Database query {fn} failed with {type(ex).__name__}. {attempts} attempt(s) remaining.")
             else:
                 raise
 
 
 def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwargs) -> t.Tuple[Base, bool]:
-    instance = run_query(lambda: session.query(model).filter_by(**kwargs).first())
+    instance = run_query(lambda: session.query(model).filter_by(**kwargs).one_or_none())
     if instance:
         return instance, False
     else:
