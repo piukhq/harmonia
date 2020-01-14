@@ -4,7 +4,7 @@ import logging
 import shutil
 import time
 
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, BlobLeaseClient
 from azure.core.exceptions import ResourceExistsError
 import pendulum
 
@@ -56,7 +56,7 @@ class BlobFileSource(FileSourceBase):
         super().__init__(path, logger=logger)
         self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
 
-    def archive(self, blob_name, blob_content, lease_id: str) -> None:
+    def archive(self, blob_name: str, blob_content: bytes, lease: BlobLeaseClient) -> None:
         archive_container = f"archive-{pendulum.today().to_date_string()}"
         try:
             self._bbs.create_container(archive_container)
@@ -64,7 +64,7 @@ class BlobFileSource(FileSourceBase):
             pass  # this is fine
 
         self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
-        self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease_id=lease_id)
+        self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease=lease)
 
     def provide(self, callback: t.Callable) -> None:
         try:
@@ -86,8 +86,8 @@ class BlobFileSource(FileSourceBase):
             #     self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
             #     continue
 
-            lease_id = blob_client.acquire_lease(lease_duration=60)
-            content = blob_client.download_blob(lease_id=lease_id).readall()
+            lease = blob_client.acquire_lease(lease_duration=60)
+            content = blob_client.download_blob(lease=lease).readall()
 
             self.log.debug(f"Invoking callback for blob {blob.name}.")
 
@@ -99,7 +99,7 @@ class BlobFileSource(FileSourceBase):
                 else:
                     self.log.error(f"File source callback {callback} for blob {blob.name} failed: {ex}.")
             else:
-                self.archive(blob.name, content, lease_id)
+                self.archive(blob.name, content, lease)
 
 
 class FileAgent(BaseAgent):
