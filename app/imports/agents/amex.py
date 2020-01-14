@@ -10,7 +10,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
 
 PROVIDER_SLUG = "amex"
-PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.watch_directory"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
