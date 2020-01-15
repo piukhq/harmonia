@@ -1,4 +1,35 @@
+import responses
+
 from app.exports.agents.iceland import Iceland
+import settings
+
+settings.SOTERIA_URL = "http://soteria"
+settings.VAULT_URL = "http://vault"
+settings.VAULT_TOKEN = ""
+
+MOCK_URL = "http://iceland.test"
+
+
+def add_mock_routes():
+    responses.add(
+        "GET",
+        f"{settings.SOTERIA_URL}/configuration",
+        json={
+            "merchant_url": f"{MOCK_URL}/",
+            "integration_service": 0,
+            "retry_limit": 100,
+            "log_level": 0,
+            "callback_url": f"{MOCK_URL}/callback",
+            "country": "uk",
+            "security_credentials": {
+                "outbound": {"credentials": [{"storage_key": "test1"}]},
+                "inbound": {"credentials": [{"storage_key": "test2"}]},
+            },
+        },
+    )
+
+    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test1", json={"data": {"data": {"value": "test3"}}})
+    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test2", json={"data": {"data": {"value": "test4"}}})
 
 
 class Expected:
@@ -95,14 +126,9 @@ class MockTransaction:
         self.merchant_identifier = MerchantIdentifier(mid)
 
 
-def test_request_data() -> None:
-    iceland = Iceland()
-    request_data = iceland.format_request(Expected.request_data)
-
-    assert request_data.keys() == Expected.request_json.keys()
-
-
+@responses.activate
 def test_format_transactions() -> None:
+    add_mock_routes()
     transactions = [MockTransaction(1, 2, 10), MockTransaction(2, 2, 20)]
 
     iceland = Iceland()
@@ -111,7 +137,9 @@ def test_format_transactions() -> None:
     assert formatted_transaction == Expected.formatted_transaction
 
 
+@responses.activate
 def test_check_response_error_codes() -> None:
+    add_mock_routes()
     response = Response(Expected.response_error_codes)
     expected = Expected.response_error_codes
     iceland = Iceland()
@@ -124,7 +152,9 @@ def test_check_response_error_codes() -> None:
     assert str(expected["error_codes"]) in str(error_response)
 
 
+@responses.activate
 def test_check_response_error_codes_internal_server_error() -> None:
+    add_mock_routes()
     response = ResponseNoContent(Expected.response_internal_server_error)
     iceland = Iceland()
     try:

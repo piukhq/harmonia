@@ -4,6 +4,7 @@ import requests
 from uuid import uuid4
 
 from hashids import Hashids
+from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 from app import models
@@ -11,7 +12,7 @@ from app.db import session
 from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
-from app.service.iceland import iceland, config
+from app.service.iceland import IcelandAPI
 import settings
 
 
@@ -28,6 +29,29 @@ class Iceland(BatchExportAgent):
 
     class Config:
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+
+    def __init__(self):
+        super().__init__()
+
+        if settings.SOTERIA_URL is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires the Soteria URL to be set."
+            )
+
+        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
+            )
+
+        self.merchant_config = Configuration(
+            self.provider_slug,
+            Configuration.TRANSACTION_MATCHING_HANDLER,
+            settings.VAULT_URL,
+            settings.VAULT_TOKEN,
+            settings.SOTERIA_URL,
+        )
+
+        self.api = IcelandAPI(self.merchant_config.merchant_url)
 
     def help(self):
         return inspect.cleandoc(
@@ -66,7 +90,8 @@ class Iceland(BatchExportAgent):
 
     def format_request(self, request_data):
         security_class = get_security_agent(
-            config.data["security_credentials"]["outbound"]["service"], config.data["security_credentials"]
+            self.merchant_config.data["security_credentials"]["outbound"]["service"],
+            self.merchant_config.data["security_credentials"],
         )
         json_data = json.dumps(request_data)
         request = security_class.encode(json_data)
@@ -109,7 +134,7 @@ class Iceland(BatchExportAgent):
         request = self.format_request(request_data)
 
         try:
-            response = iceland.merchant_request(request)
+            response = self.api.merchant_request(request)
             self.check_response(response)
             self.internal_requests(response.text, transactions_query_set, atlas.Status.BINK_ASSIGNED)
         except requests.exceptions.RequestException as error:

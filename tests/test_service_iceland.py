@@ -1,7 +1,7 @@
 import pytest
 import responses
 
-from app.service.iceland import Iceland
+from app.service.iceland import IcelandAPI
 
 
 TEST_ICELAND_URL = "http://iceland.test/mock/any"
@@ -43,12 +43,12 @@ response_500_error = {
 
 
 @pytest.fixture
-def iceland() -> Iceland:
-    return Iceland(TEST_ICELAND_URL)
+def iceland() -> IcelandAPI:
+    return IcelandAPI(TEST_ICELAND_URL)
 
 
 @responses.activate
-def test_merchant_request(iceland: Iceland) -> None:
+def test_merchant_request(iceland: IcelandAPI) -> None:
     url = TEST_ICELAND_URL
     responses.add(responses.POST, url=url, json=json, status=204)
 
@@ -59,7 +59,7 @@ def test_merchant_request(iceland: Iceland) -> None:
 
 
 @responses.activate
-def test_merchant_request_bad_500(iceland: Iceland) -> None:
+def test_merchant_request_bad_500(iceland: IcelandAPI) -> None:
     url = TEST_ICELAND_URL
     responses.add(responses.POST, url, json=response_500_error, status=500)
 
@@ -72,7 +72,7 @@ def test_merchant_request_bad_500(iceland: Iceland) -> None:
 
 
 @responses.activate
-def test_merchant_request_bad_400(iceland: Iceland) -> None:
+def test_merchant_request_bad_400(iceland: IcelandAPI) -> None:
     url = TEST_ICELAND_URL
     responses.add(responses.POST, url, json=json, status=400)
 
@@ -84,7 +84,7 @@ def test_merchant_request_bad_400(iceland: Iceland) -> None:
 
 
 @responses.activate
-def test_merchant_request_bad_200(iceland: Iceland) -> None:
+def test_merchant_request_bad_200(iceland: IcelandAPI) -> None:
     url = TEST_ICELAND_URL
     responses.add(responses.POST, url, json=response_200_error)
 
