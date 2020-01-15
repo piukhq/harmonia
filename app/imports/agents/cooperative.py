@@ -43,7 +43,7 @@ class Cooperative(FileAgent):
             spend_amount=int(Decimal(data["amount"]["value"]) * 100),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
-            extra_fields={k: data[k] for k in ("card", "store_id")},
+            extra_fields={k: data[k] for k in ("card",)},
         )
 
     @staticmethod
@@ -52,8 +52,4 @@ class Cooperative(FileAgent):
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        try:
-            store_id = [data["store_id"]]
-        except KeyError:
-            store_id = ["unknown"]
-        return store_id
+        return [data["store_id"]]
