@@ -2,7 +2,6 @@ import typing as t
 from functools import lru_cache
 
 import settings
-from sqlalchemy.orm.exc import NoResultFound
 
 from app import models, tasks, db
 from app.feeds import ImportFeedTypes
@@ -13,7 +12,7 @@ from app.utils import missing_property
 
 
 @lru_cache(maxsize=2048)
-def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
+def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.List[int]:
     def find_mid():
         q = db.session.query(models.MerchantIdentifier)
 
@@ -24,16 +23,10 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str):
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
-        q = q.filter(models.MerchantIdentifier.mid == mid)
-        return q.one()
+        return q.filter(models.MerchantIdentifier.mid == mid)
 
-    try:
-        merchant_identifier = db.run_query(find_mid)
-    except NoResultFound:
-        # An exception would be preferable, but this way lru_cache works properly.
-        return None
-
-    return merchant_identifier.id
+    merchant_identifiers = db.run_query(find_mid)
+    return [mid.id for mid in merchant_identifiers]
 
 
 class BaseAgent:
@@ -111,11 +104,11 @@ class BaseAgent:
 
         return new, duplicate
 
-    def _identify_mid(self, mid: str) -> int:
-        result = identify_mid(mid, self.feed_type, self.provider_slug)
-        if result is None:
+    def _identify_mid(self, mid: str) -> t.List[int]:
+        mids = identify_mid(mid, self.feed_type, self.provider_slug)
+        if not mids:
             raise MissingMID
-        return result
+        return mids
 
     def _import_transactions(self, provider_transactions: t.List[dict], *, source: str) -> None:
         """
@@ -143,7 +136,7 @@ class BaseAgent:
             merchant_identifier_ids = []
             for mid in mids:
                 try:
-                    merchant_identifier_ids.append(self._identify_mid(mid))
+                    merchant_identifier_ids.extend(self._identify_mid(mid))
                 except MissingMID:
                     pass
 
