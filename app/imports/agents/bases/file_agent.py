@@ -5,7 +5,7 @@ import shutil
 import time
 
 from azure.storage.blob import BlobServiceClient, BlobLeaseClient
-from azure.core.exceptions import ResourceExistsError
+from azure.core.exceptions import ResourceExistsError, HttpResponseError
 import pendulum
 
 from app.imports.agents import BaseAgent
@@ -82,17 +82,12 @@ class BlobFileSource(FileSourceBase):
         for blob in container.list_blobs(name_starts_with=self.path):
             blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
 
-            # TODO(cl): These errors disappeared from the blob storage library. They need to be replaced with something.
-            # try:
-            #     lease_id = blob_client.acquire_lease(lease_duration=60)
-            # except AzureConflictHttpError:
-            #     self.log.debug(f"Skipping blob {blob.name} as it is already leased.")
-            #     continue
-            # except AzureMissingResourceHttpError:
-            #     self.log.debug(f"Skipping blob {blob.name} as it has been deleted.")
-            #     continue
+            try:
+                lease = blob_client.acquire_lease(lease_duration=60)
+            except HttpResponseError:
+                self.log.debug(f"Skipping blob {blob.name} as we could not acquire a lease.")
+                continue
 
-            lease = blob_client.acquire_lease(lease_duration=60)
             content = blob_client.download_blob(lease=lease).readall()
 
             self.log.debug(f"Invoking callback for blob {blob.name}.")
