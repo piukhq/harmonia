@@ -53,10 +53,6 @@ class Iceland(FileAgent):
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.SchemeTransaction:
-<<<<<<< HEAD
-=======
-
->>>>>>> Add Iceland import agent with few changes
         return models.SchemeTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,

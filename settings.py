@@ -127,5 +127,5 @@ ATLAS_URL = getenv("TXM_ATLAS_URL", required=False)
 SOTERIA_URL = getenv("TXM_SOTERIA_URL", required=False)
 
 # Hashicorp Vault connection details
-VAULT_DSN = getenv("TXM_VAULT_DSN", required=False)
+VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
