@@ -93,6 +93,10 @@ JSON_SERIALIZER = "txmatch+json"
 # Base URL for the Hermes API
 HERMES_URL = getenv("TXM_HERMES_URL")
 
+# If set, format the scheme slug with this string before sending to Hermes.
+# This allows things such as adding `-mock` to the end of a scheme slug in dev.
+HERMES_SLUG_FORMAT_STRING = getenv("TXM_HERMES_SLUG_FORMAT_STRING", required=False)
+
 # If set, file-based import agents will talk with blob storage instead.
 BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
 
