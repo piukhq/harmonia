@@ -1,4 +1,36 @@
+import responses
+
 from app.exports.agents.cooperative import Cooperative
+import settings
+
+
+settings.SOTERIA_URL = "http://soteria"
+settings.VAULT_URL = "http://vault"
+settings.VAULT_TOKEN = ""
+
+MOCK_URL = "http://cooperative.test"
+
+
+def add_mock_routes():
+    responses.add(
+        "GET",
+        f"{settings.SOTERIA_URL}/configuration",
+        json={
+            "merchant_url": f"{MOCK_URL}/",
+            "integration_service": 0,
+            "retry_limit": 100,
+            "log_level": 0,
+            "callback_url": f"{MOCK_URL}/callback",
+            "country": "uk",
+            "security_credentials": {
+                "outbound": {"credentials": [{"storage_key": "test1"}]},
+                "inbound": {"credentials": [{"storage_key": "test2"}]},
+            },
+        },
+    )
+
+    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test1", json={"data": {"data": {"value": "test3"}}})
+    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test2", json={"data": {"data": {"value": "test4"}}})
 
 
 class Expected:
@@ -53,13 +85,9 @@ class Expected:
     }
 
 
+@responses.activate
 def test_decrypt_credentials() -> None:
+    add_mock_routes()
     cooperative = Cooperative()
     credentials_result = cooperative.decrypt_credentials(Expected.encrypted_credentials)
     assert credentials_result == Expected.credentials
-
-
-def test_request_data() -> None:
-    cooperative = Cooperative()
-    request_data = cooperative.build_request_data(Expected.json_data)
-    assert request_data == Expected.request_data
