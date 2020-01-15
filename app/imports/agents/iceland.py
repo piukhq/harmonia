@@ -18,7 +18,7 @@ DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
 class Iceland(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SCHEME
     provider_slug = PROVIDER_SLUG
 
     field_transforms: t.Dict[str, t.Callable] = {
@@ -53,7 +53,7 @@ class Iceland(FileAgent):
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.SchemeTransaction:
-        return models.PaymentTransaction(
+        return models.SchemeTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["TransactionTimestamp"],
