@@ -9,6 +9,7 @@ from azure.core.exceptions import ResourceExistsError
 import pendulum
 
 from app.imports.agents import BaseAgent
+from app import reporting
 import settings
 
 
@@ -54,6 +55,7 @@ class BlobFileSource(FileSourceBase):
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
+        self.log = reporting.get_logger("blob-file-source")
         self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
 
     def archive(self, blob_name: str, blob_content: bytes, lease: BlobLeaseClient) -> None:
@@ -63,7 +65,11 @@ class BlobFileSource(FileSourceBase):
         except ResourceExistsError:
             pass  # this is fine
 
-        self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
+        try:
+            self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
+        except ResourceExistsError:
+            self.log.warning(f"Failed to archive {blob_name} as this blob already exists in the archive.")
+
         self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease=lease)
 
     def provide(self, callback: t.Callable) -> None:
