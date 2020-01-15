@@ -13,6 +13,7 @@ class Hermes:
         self.base_url = base_url
         self.session = requests_retry_session()
 
+    @staticmethod
     def _format_slug(slug: str) -> str:
         if settings.HERMES_SLUG_FORMAT_STRING is not None:
             slug = settings.HERMES_SLUG_FORMAT_STRING.format(slug)
