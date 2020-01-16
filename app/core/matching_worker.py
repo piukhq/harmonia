@@ -49,7 +49,7 @@ class MatchingWorker:
         merchant_identifiers = db.run_query(
             lambda: db.session.query(models.MerchantIdentifier).filter(
                 models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids)
-            )
+            ).all()
         )
 
         slugs = [merchant_identifier.payment_provider.slug for merchant_identifier in merchant_identifiers]
@@ -133,7 +133,7 @@ class MatchingWorker:
             lambda: db.session.query(models.PaymentTransaction).filter(
                 models.PaymentTransaction.merchant_identifier_ids.overlap(scheme_transaction.merchant_identifier_ids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
-            )
+            ).all()
         )
 
         if payment_transactions:

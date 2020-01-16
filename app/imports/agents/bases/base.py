@@ -23,7 +23,7 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
-        return q.filter(models.MerchantIdentifier.mid == mid)
+        return q.filter(models.MerchantIdentifier.mid == mid).all()
 
     merchant_identifiers = db.run_query(find_mid)
     return [mid.id for mid in merchant_identifiers]

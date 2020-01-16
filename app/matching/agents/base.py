@@ -25,7 +25,7 @@ class BaseMatchingAgent:
 
     def _get_scheme_transactions(self, **search_fields) -> t.List[models.SchemeTransaction]:
         search_fields["mid"] = self.payment_transaction.mid
-        return db.run_query(lambda: db.session.query(models.SchemeTransaction).filter(**search_fields))
+        return db.run_query(lambda: db.session.query(models.SchemeTransaction).filter(**search_fields).all())
 
     def _find_applicable_scheme_transactions(self):
         return db.run_query(
@@ -34,7 +34,7 @@ class BaseMatchingAgent:
                     self.payment_transaction.merchant_identifier_ids
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
-            )
+            ).all()
         )
 
     def _fine_match(self, scheme_transactions, fields):
