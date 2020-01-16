@@ -19,8 +19,9 @@ class Identifier:
 
         json = hermes.payment_card_user_info(loyalty_scheme_slug, matched_transaction.card_token)
 
-        if matched_transaction.card_token in json:
-            return json[matched_transaction.card_token]
+        token = matched_transaction.card_token
+        if token in json and json[token]["scheme_account_id"] is not None:
+            return json[token]
         else:
             raise SchemeAccountNotFound
 
