@@ -139,6 +139,6 @@ class MatchingWorker:
         )
 
         if payment_transactions:
-            self.log.debug(f"Found {payment_transactions.count()} potential matches. Enqueueing matching jobs.")
+            self.log.debug(f"Found {len(payment_transactions)} potential matches. Enqueueing matching jobs.")
             for payment_transaction in payment_transactions:
                 tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)

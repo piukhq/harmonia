@@ -25,7 +25,7 @@ class IdentifyRetryWorker:
             .all()
         )
 
-        self.log.debug(f"Found {unidentified_transactions.count()} unidentified matched transactions.")
+        self.log.debug(f"Found {len(unidentified_transactions)} unidentified matched transactions.")
 
         for transaction in unidentified_transactions:
             tasks.matching_queue.enqueue(tasks.identify_matched_transaction, transaction.id)
