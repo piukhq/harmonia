@@ -29,8 +29,7 @@ class BaseMatchingAgent:
 
     def _find_applicable_scheme_transactions(self):
         return db.run_query(
-            lambda: db.session.query(models.SchemeTransaction)
-            .filter(
+            lambda: db.session.query(models.SchemeTransaction).filter(
                 models.SchemeTransaction.merchant_identifier_ids.overlap(
                     self.payment_transaction.merchant_identifier_ids
                 ),
