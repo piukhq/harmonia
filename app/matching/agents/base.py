@@ -29,12 +29,14 @@ class BaseMatchingAgent:
 
     def _find_applicable_scheme_transactions(self):
         return db.run_query(
-            lambda: db.session.query(models.SchemeTransaction).filter(
+            lambda: db.session.query(models.SchemeTransaction)
+            .filter(
                 models.SchemeTransaction.merchant_identifier_ids.overlap(
                     self.payment_transaction.merchant_identifier_ids
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
-            ).all()
+            )
+            .all()
         )
 
     def _fine_match(self, scheme_transactions, fields):
