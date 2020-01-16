@@ -36,7 +36,6 @@ class BaseMatchingAgent:
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
             )
-            .all()
         )
 
     def _fine_match(self, scheme_transactions, fields):
