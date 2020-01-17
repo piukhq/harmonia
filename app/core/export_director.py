@@ -46,7 +46,9 @@ class ExportDirector:
         try:
             agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))
         except RegistryError:
-            log.debug(f"No export agent is registered for slug {pending_export.provider_slug}. Skipping {pending_export}")
+            log.debug(
+                f"No export agent is registered for slug {pending_export.provider_slug}. Skipping {pending_export}"
+            )
             return
 
         log.info(f"Received {pending_export}, delegating to {agent}.")
