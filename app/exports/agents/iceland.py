@@ -1,6 +1,7 @@
 import json
 import inspect
 import requests
+import typing as t
 from uuid import uuid4
 
 from hashids import Hashids
@@ -58,7 +59,7 @@ class Iceland(BatchExportAgent):
 
         self.api = IcelandAPI(self.merchant_config.merchant_url)
 
-    def help(self):
+    def help(self) -> str:
         return inspect.cleandoc(
             f"""
             This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
@@ -66,7 +67,7 @@ class Iceland(BatchExportAgent):
         )
 
     @staticmethod
-    def check_response(response):
+    def check_response(response: requests.Response):
         try:
             errors = response.json().get("error_codes")
             if errors:
@@ -80,12 +81,13 @@ class Iceland(BatchExportAgent):
                 "Received error response when posting transactions: {}".format(response.content)
             )
 
-    def format_transactions(self, transactions):
+    def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
+            user_identity: models.UserIdentity = transaction.user_identity
             formatted_transaction = {
-                "record_uid": hashids.encode(transaction.user_identity.scheme_account_id),
-                "merchant_scheme_id1": hashids.encode(transaction.user_identity.scheme_account_id),
+                "record_uid": hashids.encode(user_identity.scheme_account_id),
+                "merchant_scheme_id1": hashids.encode(user_identity.user_id),
                 "merchant_scheme_id2": transaction.merchant_identifier.mid,
                 "transaction_id": transaction.transaction_id,
             }
@@ -93,7 +95,7 @@ class Iceland(BatchExportAgent):
 
         return formatted
 
-    def format_request(self, request_data):
+    def make_secured_request(self, request_data: dict) -> dict:
         security_class = get_security_agent(
             self.merchant_config.data["security_credentials"]["outbound"]["service"],
             self.merchant_config.data["security_credentials"],
@@ -117,25 +119,32 @@ class Iceland(BatchExportAgent):
         session.commit()
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
-    def internal_requests(self, response, transactions, atlas_status):
-        for transaction in transactions:
-            self.save_data(transaction, response)
-            atlas.status_request(self.provider_slug, response, transaction, atlas_status)
+    def save_to_atlas(self, response: dict, transaction: models.MatchedTransaction, status: atlas.Status):
+        atlas.save_transaction(self.provider_slug, response, transaction, status)
 
     def export_all(self, once=True):
-        transactions_query_set = session.query(models.MatchedTransaction).filter_by(
-            status=models.MatchedTransactionStatus.PENDING
+        transactions_query_set = (
+            session.query(models.MatchedTransaction)
+            .filter(models.MatchedTransaction.status == models.MatchedTransactionStatus.PENDING)
+            .all()
         )
 
         formatted_transactions = self.format_transactions(transactions_query_set)
         request_data = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
 
-        request = self.format_request(request_data)
+        request = self.make_secured_request(request_data)
 
         try:
             response = self.api.merchant_request(request)
             self.check_response(response)
-            self.internal_requests(response.text, transactions_query_set, atlas.Status.BINK_ASSIGNED)
         except requests.exceptions.RequestException as error:
-            self.internal_requests(repr(error), transactions_query_set, atlas.Status.NOT_ASSIGNED)
+            response_text = repr(error)
+            atlas_status = atlas.Status.NOT_ASSIGNED
             self.log.error(f"Iceland export request failed with the following exception: {error}")
+        else:
+            response_text = response.text
+            atlas_status = atlas.Status.BINK_ASSIGNED
+
+        for transaction in transactions_query_set:
+            self.save_data(transaction, request)
+            self.save_to_atlas(response_text, transaction, atlas_status)

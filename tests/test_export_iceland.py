@@ -4,6 +4,7 @@ from app.exports.agents.iceland import Iceland
 import settings
 
 settings.SOTERIA_URL = "http://soteria"
+settings.ATLAS_URL = "http://atlas"
 settings.VAULT_URL = "http://vault"
 settings.VAULT_TOKEN = ""
 
@@ -73,13 +74,13 @@ class Expected:
     formatted_transaction = [
         {
             "record_uid": "voydgerxzp4k97w0pn0q2lo183j5mvjx",
-            "merchant_scheme_id1": "voydgerxzp4k97w0pn0q2lo183j5mvjx",
+            "merchant_scheme_id1": "vryp7xv4l2ejg36p0nmk1qd0z5o89rlp",
             "merchant_scheme_id2": 10,
             "transaction_id": 1,
         },
         {
             "record_uid": "voydgerxzp4k97w0pn0q2lo183j5mvjx",
-            "merchant_scheme_id1": "voydgerxzp4k97w0pn0q2lo183j5mvjx",
+            "merchant_scheme_id1": "vryp7xv4l2ejg36p0nmk1qd0z5o89rlp",
             "merchant_scheme_id2": 20,
             "transaction_id": 2,
         },
@@ -110,8 +111,9 @@ class ResponseNoContent:
 
 
 class UserIdentity:
-    def __init__(self, scheme_account_id):
+    def __init__(self, scheme_account_id, user_id):
         self.scheme_account_id = scheme_account_id
+        self.user_id = user_id
 
 
 class MerchantIdentifier:
@@ -120,16 +122,16 @@ class MerchantIdentifier:
 
 
 class MockTransaction:
-    def __init__(self, transaction_id, scheme_account_id, mid):
+    def __init__(self, transaction_id, scheme_account_id, user_id, mid):
         self.transaction_id = transaction_id
-        self.user_identity = UserIdentity(scheme_account_id)
+        self.user_identity = UserIdentity(scheme_account_id, user_id)
         self.merchant_identifier = MerchantIdentifier(mid)
 
 
 @responses.activate
 def test_format_transactions() -> None:
     add_mock_routes()
-    transactions = [MockTransaction(1, 2, 10), MockTransaction(2, 2, 20)]
+    transactions = [MockTransaction(1, 2, 3, 10), MockTransaction(2, 2, 3, 20)]
 
     iceland = Iceland()
     formatted_transaction = iceland.format_transactions(transactions)
