@@ -123,7 +123,9 @@ AES_KEY = "6gZW4ARFINh4DR1uIzn12l7Mh1UF982L"
 # Base URL for saving transaction export status.
 ATLAS_URL = getenv("TXM_ATLAS_URL", required=False)
 
-# Variables for Soteria setup:
+# Base URL for Merchant API configuration service.
 SOTERIA_URL = getenv("TXM_SOTERIA_URL", required=False)
+
+# Hashicorp Vault connection details
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)

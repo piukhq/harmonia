@@ -3,11 +3,12 @@ import inspect
 from app.exports.agents import BatchExportAgent
 from app.config import ConfigValue, KEY_PREFIX
 
-SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.batch-example.schedule"
+PROVIDER_SLUG = "batch-example"
+SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.schedule"
 
 
 class BatchExampleAgent(BatchExportAgent):
-    provider_slug = "batch-example"
+    provider_slug = PROVIDER_SLUG
 
     class Config:
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")

@@ -23,7 +23,7 @@ class FailedTransaction:
         """
         key = f"{scheme_slug}.{transaction_id}"
         key_hash = hashlib.sha256(key.encode()).hexdigest()
-        return "transaction:{}".format(key_hash)
+        return f"transaction:{key_hash}"
 
     def retry(self, scheme_slug: str, transaction_id: int) -> bool:
         """
