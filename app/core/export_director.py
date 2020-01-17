@@ -7,6 +7,7 @@ from app.exports.models import PendingExport
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.status import status_monitor
+from app.registry import RegistryError
 
 log = get_logger("export-director")
 
@@ -41,7 +42,12 @@ class ExportDirector:
 
     def handle_pending_export(self, pending_export_id: int) -> None:
         pending_export = db.run_query(lambda: db.session.query(PendingExport).get(pending_export_id))
-        agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))
+
+        try:
+            agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))
+        except RegistryError:
+            log.debug(f"No export agent is registered for slug {pending_export.provider_slug}. Skipping {pending_export}")
+            return
 
         log.info(f"Received {pending_export}, delegating to {agent}.")
         agent.handle_pending_export(pending_export)
