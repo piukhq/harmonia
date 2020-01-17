@@ -71,15 +71,13 @@ class Iceland(BatchExportAgent):
         try:
             errors = response.json().get("error_codes")
             if errors:
-                raise requests.RequestException("Error codes found in export response: {}".format(errors))
+                raise requests.RequestException(f"Error codes found in export response: {errors}"
 
         except (AttributeError, json.JSONDecodeError):
             if not response.content:
                 return
 
-            raise requests.RequestException(
-                "Received error response when posting transactions: {}".format(response.content)
-            )
+            raise requests.RequestException(f"Received error response when posting transactions: {response.text}")
 
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
