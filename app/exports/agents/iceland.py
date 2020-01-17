@@ -71,8 +71,7 @@ class Iceland(BatchExportAgent):
         try:
             errors = response.json().get("error_codes")
             if errors:
-                raise requests.RequestException(f"Error codes found in export response: {errors}"
-
+                raise requests.RequestException(f"Error codes found in export response: {errors}")
         except (AttributeError, json.JSONDecodeError):
             if not response.content:
                 return
