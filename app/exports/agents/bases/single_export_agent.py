@@ -3,12 +3,14 @@ from app.exports.agents import BaseAgent
 from app.models import PendingExport
 from app.status import status_monitor
 
+import settings
+
 
 class SingleExportAgent(BaseAgent):
     def run(self, *, once: bool = False):
         self.export_all()
 
-    def export(self, matched_transaction_id: int):
+    def export(self, export_data: dict):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -22,7 +24,11 @@ class SingleExportAgent(BaseAgent):
         status_monitor.checkin(self)
 
         self.log.info(f"Handling {pending_export}.")
-        self.export(pending_export.matched_transaction_id)
+        export_data = self.make_export_data(pending_export.matched_transaction_id)
+        if settings.EXPORT_TO_FILE:
+            self.save_export_data_to_file(export_data)
+            return
+        self.export(export_data)
 
         self.log.info(f"Removing pending export {pending_export}.")
 
