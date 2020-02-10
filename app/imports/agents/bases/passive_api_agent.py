@@ -24,7 +24,7 @@ class PassiveAPIAgent(BaseAgent):
 
         @api.route("/", strict_slashes=False, methods=["POST"])
         @api_utils.expects_json
-        def index() -> str:
+        def index() -> t.Tuple[dict, int]:
             """
             Import transactions
             ---
