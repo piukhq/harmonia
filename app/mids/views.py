@@ -3,7 +3,7 @@ import typing as t
 from functools import lru_cache
 
 from sqlalchemy.dialects.postgresql import insert
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 import werkzeug
 
 from app import models, db, reporting
@@ -76,9 +76,13 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None
         db.engine.execute(insert(models.MerchantIdentifier.__table__).values(mids).on_conflict_do_nothing())
         db.session.commit()
 
-    mids_table_before = db.run_query(lambda: db.session.query(models.MerchantIdentifier).count())
-    db.run_query(insert_mids)
-    mids_table_after = db.run_query(lambda: db.session.query(models.MerchantIdentifier).count())
+    mids_table_before = db.run_query(
+        lambda: db.session.query(models.MerchantIdentifier).count(), description="count MIDs before import"
+    )
+    db.run_query(insert_mids, description="import MIDs")
+    mids_table_after = db.run_query(
+        lambda: db.session.query(models.MerchantIdentifier).count(), description="count MIDs after import"
+    )
 
     return n_mids_in_file, mids_table_after - mids_table_before
 
@@ -119,4 +123,4 @@ def import_mids() -> ResponseType:
     get_loyalty_scheme.cache_clear()
     get_payment_provider.cache_clear()
 
-    return jsonify({"imported": imported, "failed": failed}), 200
+    return {"imported": imported, "failed": failed}, 200

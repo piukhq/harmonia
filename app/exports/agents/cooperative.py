@@ -77,7 +77,7 @@ class Cooperative(BatchExportAgent):
     def serialize_transactions(self, matched_transactions):
         result = []
         for transaction in matched_transactions:
-            credentials = self.decrypt_credentials(transaction.user_identity.credentials)
+            credentials = self.decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
             result.append(
                 {
                     "record_uid": str(uuid4()),
@@ -123,7 +123,7 @@ class Cooperative(BatchExportAgent):
             matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
             db.session.commit()
 
-        db.run_query(export_transaction)
+        db.run_query(export_transaction, description="create export transaction")
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
     def send_to_atlas(self, response, transactions_query):
@@ -155,7 +155,8 @@ class Cooperative(BatchExportAgent):
             matched_transactions = db.run_query(
                 lambda: db.session.query(models.MatchedTransaction)
                 .filter_by(status=models.MatchedTransactionStatus.PENDING)
-                .limit(int(self.Config.max_transactions_per_request))
+                .limit(int(self.Config.max_transactions_per_request)),
+                description="find a batch of pending matched transactions",
             )
 
             if not matched_transactions:

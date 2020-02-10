@@ -81,7 +81,7 @@ class Iceland(BatchExportAgent):
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
-            user_identity: models.UserIdentity = transaction.user_identity
+            user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
             formatted_transaction = {
                 "record_uid": hashids.encode(user_identity.scheme_account_id),
                 "merchant_scheme_id1": hashids.encode(user_identity.user_id),

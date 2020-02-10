@@ -1,5 +1,5 @@
 import pytest
-from redis import StrictRedis
+from redis import Redis
 
 from app.status import StatusMonitor
 import settings
@@ -15,7 +15,7 @@ def redis():
     redis.flushall()
 
 
-def test_checkins(redis: StrictRedis):
+def test_checkins(redis: Redis):
     monitor = StatusMonitor()
 
     class CheckinTest123:
@@ -28,7 +28,7 @@ def test_checkins(redis: StrictRedis):
     assert key == f"{settings.REDIS_KEY_PREFIX}:status:checkins:CheckinTest123"
 
 
-def test_health_report(redis: StrictRedis):
+def test_health_report(redis: Redis):
     monitor = StatusMonitor()
 
     class HealthReportTest123:

@@ -125,6 +125,8 @@ s/test
 
 ### End-to-End Matching Test
 
+_this is currently in the process of being replaced, do not rely on the instructions below for anything mission-critical!_
+
 The project includes a script that will run all the major components of the system in order. This shows a transaction going through the import->match->identify->export process, and is useful for testing the interactions between the various system modules.
 
 Before running the end-to-end script, you must have the Hermes API running on port 8000.

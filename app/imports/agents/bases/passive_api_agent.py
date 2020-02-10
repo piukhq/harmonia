@@ -1,7 +1,7 @@
 import inspect
 import typing as t
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 import marshmallow
 
 from app import utils
@@ -39,10 +39,10 @@ class PassiveAPIAgent(BaseAgent):
             try:
                 data = self.schema.load(request.json)
             except marshmallow.ValidationError as ex:
-                return jsonify({"ok": False, "errors": ex.messages})
+                return {"ok": False, "errors": ex.messages}, 400
             transactions_data = self.extract_transactions(data)
             self._import_transactions(transactions_data, source="POST /")
-            return jsonify({"ok": True})
+            return {"ok": True}, 200
 
         index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)
 

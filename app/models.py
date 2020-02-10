@@ -84,6 +84,9 @@ class PaymentTransaction(Base, ModelMixin):
     card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
 
+    user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
+    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
+
     extra_fields = s.Column(s.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
@@ -120,9 +123,6 @@ class MatchedTransaction(Base, ModelMixin):
     payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
     scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
-    user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
-    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="matched_transaction")
-
     extra_fields = s.Column(s.JSON)  # combination of the same field on the scheme and payment transaction models
 
 
@@ -135,4 +135,4 @@ class UserIdentity(Base, ModelMixin):
     user_id = s.Column(s.Integer, nullable=False)
     credentials = s.Column(s.Text, nullable=False)
 
-    matched_transaction = s.orm.relationship("MatchedTransaction", uselist=False, back_populates="user_identity")
+    payment_transaction = s.orm.relationship("PaymentTransaction", uselist=False, back_populates="user_identity")

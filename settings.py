@@ -7,11 +7,6 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.rq import RqIntegration
 import sentry_sdk
 
-from environment import read_env
-
-
-read_env()
-
 
 class ConfigVarRequiredError(Exception):
     pass
@@ -36,6 +31,9 @@ def boolconv(s: str) -> bool:
 # Applies to any logger obtained through `app.reporting.get_logger`.
 # https://docs.python.org/3/library/logging.html#logging-levels
 LOG_LEVEL = getattr(logging, getenv("TXM_LOG_LEVEL", default="debug").upper())
+
+# Whether or not to log all database queries. Useful for debugging, but very noisy.
+LOG_QUERIES = getenv("TXM_LOG_QUERIES", default="false", conv=boolconv)
 
 # Debug mode toggle. Running in debug mode disables a lot of error handling.
 DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)

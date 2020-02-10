@@ -13,7 +13,7 @@ class SchemeImportDirector:
             db.session.add(scheme_transaction)
             db.session.commit()
 
-        db.run_query(add_transaction)
+        db.run_query(add_transaction, description="create scheme transaction")
 
         tasks.matching_queue.enqueue(tasks.match_scheme_transaction, scheme_transaction.id)
 
@@ -28,8 +28,8 @@ class PaymentImportDirector:
             db.session.add(payment_transaction)
             db.session.commit()
 
-        db.run_query(add_transaction)
+        db.run_query(add_transaction, description="create payment transaction")
 
-        tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
+        tasks.matching_queue.enqueue(tasks.identify_payment_transaction, payment_transaction.id)
 
         log.info(f"Received, persisted, and enqueued {payment_transaction}.")

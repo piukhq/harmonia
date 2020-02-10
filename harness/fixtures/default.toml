@@ -1,0 +1,41 @@
+# base fixture data
+mid = "test-mid-123"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "bink-loyalty"
+
+[payment_provider]
+slug = "bink-payment"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 1099
+points = 5
+
+[[users.transactions]]
+date = 2020-06-01T12:31:00Z
+amount = 1399
+points = 6
+
+# second user
+[[users]]
+loyalty_id = "loyalty-456"
+token = "token-456"
+
+[users.credentials]
+card_number = "loyalty-456"
+
+[[users.transactions]]
+date = 2020-06-01T10:14:00Z
+amount = 699
+points = 3

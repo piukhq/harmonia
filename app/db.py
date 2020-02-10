@@ -1,7 +1,7 @@
 import typing as t
 
 import sqlalchemy as s
-from redis import StrictRedis
+from redis import Redis
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
@@ -25,8 +25,13 @@ log = get_logger("db")
 
 # based on the following stackoverflow answer:
 # https://stackoverflow.com/a/30004941
-def run_query(fn, *, attempts=2):
-    log.debug(f"Attempting query for function {fn} with {attempts} attempts")
+def run_query(fn, *, attempts=2, description=None):
+    if settings.LOG_QUERIES:
+        if description is None:
+            description = repr(fn)
+
+        log.debug(f'Attempting query for function "{description}" with {attempts} attempts')
+
     while attempts > 0:
         attempts -= 1
         try:
@@ -41,7 +46,10 @@ def run_query(fn, *, attempts=2):
 
 
 def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwargs) -> t.Tuple[Base, bool]:
-    instance = run_query(lambda: session.query(model).filter_by(**kwargs).one_or_none())
+    instance = run_query(
+        lambda: session.query(model).filter_by(**kwargs).one_or_none(),
+        description=f"find {model.__name__} object for get_or_create",
+    )
     if instance:
         return instance, False
     else:
@@ -55,7 +63,7 @@ def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwar
             session.commit()
             return instance
 
-        return run_query(add_instance), True
+        return run_query(add_instance, description=f"create {model.__name__} object for get_or_create"), True
 
 
 def auto_repr(cls):
@@ -93,7 +101,7 @@ class ModelMixin:
     updated_at = s.Column(s.DateTime, onupdate=postgres.utcnow())
 
 
-redis = StrictRedis(
+redis = Redis(
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
     db=settings.REDIS_DB,

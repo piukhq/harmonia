@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint
 
 from app import db, models
 from app.status import status_monitor, schemas
@@ -23,7 +23,7 @@ def get_status():
     errors = schema.validate(data)
     if errors:
         raise ValueError(errors)
-    return jsonify(data)
+    return data
 
 
 @api.route("/transaction/lookup/<transaction_id>")
@@ -31,23 +31,26 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
     import_transaction = db.run_query(
         lambda: db.session.query(models.ImportTransaction)
         .filter(models.ImportTransaction.transaction_id == transaction_id)
-        .first()
+        .first(),
+        description=f"find import transaction {transaction_id}",
     )
 
     if not import_transaction:
-        return jsonify({"error": f"Could not find an imported transaction with ID: {transaction_id}"}), 404
+        return {"error": f"Could not find an imported transaction with ID: {transaction_id}"}, 404
 
     scheme_transaction = db.run_query(
         lambda: db.session.query(models.SchemeTransaction)
         .filter(models.SchemeTransaction.transaction_id == import_transaction.transaction_id)
-        .first()
+        .first(),
+        description=f"find scheme transaction {transaction_id}",
     )
     payment_transaction = None
     if not scheme_transaction:
         payment_transaction = db.run_query(
             lambda: db.session.query(models.PaymentTransaction)
             .filter(models.PaymentTransaction.transaction_id == import_transaction.transaction_id)
-            .first()
+            .first(),
+            description=f"find payment transaction {transaction_id}",
         )
 
     def get_matched_transaction():
@@ -58,7 +61,7 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
             q = q.filter(models.MatchedTransaction.payment_transaction_id == payment_transaction.id)
         return q.first()
 
-    matched_transaction = db.run_query(get_matched_transaction)
+    matched_transaction = db.run_query(get_matched_transaction, description="find matched transaction")
 
     if matched_transaction:
         scheme_transaction = matched_transaction.scheme_transaction
@@ -66,7 +69,8 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
         export_transaction = db.run_query(
             lambda: db.session.query(models.ExportTransaction)
             .filter(models.ExportTransaction.matched_transaction_id == matched_transaction.id)
-            .first()
+            .first(),
+            description="find exported transactions",
         )
     else:
         export_transaction = None
@@ -85,4 +89,4 @@ def lookup_transaction(transaction_id: str) -> ResponseType:
         }
     )
 
-    return jsonify(data)
+    return data

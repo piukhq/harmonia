@@ -13,4 +13,7 @@ docker run -d -p61234:6379 --name txm-redis redis || true
 p 'giving postgres a chance to start'
 sleep 3
 
+p 'creating harmonia database'
+docker exec -it txm-postgres psql -U postgres -c 'create database harmonia;'
+
 s/migrate

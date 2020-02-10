@@ -29,7 +29,7 @@ class MatchingWorker:
             db.session.add(matched_transaction)
             db.session.commit()
 
-        db.run_query(add_transaction)
+        db.run_query(add_transaction, description="create matched transaction")
 
         self.log.info(f"Persisted matched transaction #{matched_transaction.id}.")
 
@@ -50,19 +50,20 @@ class MatchingWorker:
         merchant_identifiers = db.run_query(
             lambda: db.session.query(models.MerchantIdentifier)
             .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
-            .all()
+            .all(),
+            description="find payment transaction MIDs",
         )
 
-        slugs = [merchant_identifier.payment_provider.slug for merchant_identifier in merchant_identifiers]
+        slugs = {merchant_identifier.payment_provider.slug for merchant_identifier in merchant_identifiers}
 
-        slugs_differ = len(set(slugs)) > 1
-        if slugs_differ:
+        if len(slugs) > 1:
             raise ValueError(
                 f"{payment_transaction} contains multiple scheme slugs! This is likely caused by an error in the MIDs. "
-                f"Conflicting slugs: {set(slugs)}"
+                f"Conflicting slugs: {slugs}"
             )
 
-        slug = slugs[0]
+        slug = slugs.pop()
+
         try:
             agent = matching_agents.instantiate(slug, payment_transaction)
         except RegistryError:
@@ -71,16 +72,13 @@ class MatchingWorker:
 
         return self._try_match(agent, payment_transaction)
 
-    def _identify(self, matched_transaction: models.MatchedTransaction) -> None:
-        self._persist(matched_transaction)
-        tasks.matching_queue.enqueue(tasks.identify_matched_transaction, matched_transaction.id)
-
     def handle_payment_transaction(self, payment_transaction_id: int) -> None:
         """Runs the matching process for a single payment transaction."""
         status_monitor.checkin(self)
 
         payment_transaction = db.run_query(
-            lambda: db.session.query(models.PaymentTransaction).get(payment_transaction_id)
+            lambda: db.session.query(models.PaymentTransaction).get(payment_transaction_id),
+            description="find payment transaction",
         )
 
         if payment_transaction is None:
@@ -118,16 +116,19 @@ class MatchingWorker:
             scheme_transaction.status = models.TransactionStatus.MATCHED
             db.session.commit()
 
-        db.run_query(mark_transactions)
+        db.run_query(mark_transactions, description="mark scheme transaction as matched")
 
-        self.log.debug(f"Persisting & identifying payment transaction #{payment_transaction.id}.")
-        self._identify(match_result.matched_transaction)
+        self.log.debug(f"Persisting matched transaction.")
+        self._persist(match_result.matched_transaction)
 
     def handle_scheme_transaction(self, scheme_transaction_id: int) -> None:
         """Finds potential matching payment transactions and requeues a matching job for them."""
         status_monitor.checkin(self)
 
-        scheme_transaction = db.run_query(lambda: db.session.query(models.SchemeTransaction).get(scheme_transaction_id))
+        scheme_transaction = db.run_query(
+            lambda: db.session.query(models.SchemeTransaction).get(scheme_transaction_id),
+            description="find scheme transaction",
+        )
 
         if scheme_transaction is None:
             self.log.warning(f"Couldn't find a scheme transaction with ID {scheme_transaction_id}. Skipping.")
@@ -141,7 +142,8 @@ class MatchingWorker:
                 models.PaymentTransaction.merchant_identifier_ids.overlap(scheme_transaction.merchant_identifier_ids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
             )
-            .all()
+            .all(),
+            description="find pending payment transactions to match scheme transaction",
         )
 
         if payment_transactions:

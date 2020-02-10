@@ -28,7 +28,8 @@ def import_mids(mids_file: t.TextIO) -> None:
     @lru_cache(maxsize=256)
     def get_loyalty_scheme(slug: str) -> models.LoyaltyScheme:
         loyalty_scheme = db.run_query(
-            lambda: db.session.query(models.LoyaltyScheme).filter(models.LoyaltyScheme.slug == slug).first()
+            lambda: db.session.query(models.LoyaltyScheme).filter(models.LoyaltyScheme.slug == slug).first(),
+            description=f"find {slug} loyalty scheme",
         )
         if not loyalty_scheme:
             print(f"adding new loyalty scheme for {slug}")
@@ -38,13 +39,14 @@ def import_mids(mids_file: t.TextIO) -> None:
                 db.session.add(loyalty_scheme)
                 db.session.commit()
 
-            db.run_query(add_scheme)
+            db.run_query(add_scheme, description=f"create {slug} loyalty scheme")
         return loyalty_scheme
 
     @lru_cache(maxsize=256)
     def get_payment_provider(slug: str) -> models.PaymentProvider:
         payment_provider = db.run_query(
-            lambda: db.session.query(models.PaymentProvider).filter(models.PaymentProvider.slug == slug).first()
+            lambda: db.session.query(models.PaymentProvider).filter(models.PaymentProvider.slug == slug).first(),
+            description=f"find {slug} payment provider",
         )
         if not payment_provider:
             print(f"adding new payment provider for {slug}")
@@ -54,7 +56,7 @@ def import_mids(mids_file: t.TextIO) -> None:
                 db.session.add(payment_provider)
                 db.session.commit()
 
-            db.run_query(add_provider)
+            db.run_query(add_provider, description=f"create {slug} payment provider")
         return payment_provider
 
     MerchantIdentifier = namedtuple(
@@ -80,7 +82,10 @@ def import_mids(mids_file: t.TextIO) -> None:
             )
         )
     print("\nCommitting…")
-    db.run_query(lambda: db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions)))
+    db.run_query(
+        lambda: db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions)),
+        description="insert MIDs",
+    )
 
 
 if __name__ == "__main__":

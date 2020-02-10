@@ -1,3 +1,4 @@
+import datetime
 import decimal
 import json
 
@@ -10,9 +11,15 @@ def _default(val):
     elif isinstance(val, decimal.Decimal):
         return {"__type__": "decimal.Decimal", "repr": str(val)}
 
-    raise TypeError(
-        f"Custom serializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
-    )
+    if isinstance(val, datetime.datetime):
+        raise TypeError(
+            f"Custom serializer received a {type(val).__name__} object ({val})! "
+            "Please ensure all dates are Pendulum DateTime objects."
+        )
+    else:
+        raise TypeError(
+            f"Custom serializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
+        )
 
 
 def _object_hook(val):
