@@ -10,14 +10,18 @@ from app.service.atlas import Atlas
 TEST_ATLAS_URL = "http://atlas.test"
 
 
-class UserIdentity:
+class MockUserIdentity:
     user_id = 10
 
 
-class MockTransaction:
+class MockPaymentTransaction:
+    user_identity = MockUserIdentity()
+
+
+class MockMatchedTransaction:
     id = 1
     transaction_id = 125
-    user_identity = UserIdentity()
+    payment_transaction = MockPaymentTransaction()
     spend_amount = 1500
     transaction_date = pendulum.now()
 
@@ -48,7 +52,7 @@ def test_save_transaction(atlas: Atlas) -> None:
     }
     responses.add(responses.POST, url, json=body)
 
-    resp = atlas.save_transaction("test-slug", {"outcome": "Success"}, MockTransaction(), BINK_ASSIGNED)
+    resp = atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
     assert resp == body
 
 
@@ -59,7 +63,7 @@ def test_save_transaction_bad_500(atlas: Atlas) -> None:
     responses.add(responses.POST, url, json=body, status=500)
 
     with pytest.raises(requests.HTTPError) as ex:
-        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockTransaction(), BINK_ASSIGNED)
+        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
     assert ex.value.response.status_code == 500
 
 
@@ -70,5 +74,5 @@ def test_save_transaction_bad_400(atlas: Atlas) -> None:
     responses.add(responses.POST, url, json=body, status=400)
 
     with pytest.raises(requests.HTTPError) as ex:
-        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockTransaction(), BINK_ASSIGNED)
+        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
     assert ex.value.response.status_code == 400

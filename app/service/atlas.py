@@ -39,7 +39,7 @@ class Atlas:
             "transaction_id": transaction.transaction_id,
             "status": status.value,
             "transaction_date": transaction.transaction_date.to_datetime_string(),
-            "user_id": str(transaction.user_identity.user_id),
+            "user_id": str(transaction.payment_transaction.user_identity.user_id),
             "amount": transaction.spend_amount,
         }
         return self.post(endpoint, body, name="save transaction")

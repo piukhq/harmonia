@@ -25,7 +25,7 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.
 
         return q.filter(models.MerchantIdentifier.mid == mid).all()
 
-    merchant_identifiers = db.run_query(find_mid)
+    merchant_identifiers = db.run_query(find_mid, description=f"find {provider_slug} MID")
     return [mid.id for mid in merchant_identifiers]
 
 
@@ -82,7 +82,8 @@ class BaseAgent:
             for row in db.run_query(
                 lambda: db.session.query(models.ImportTransaction.transaction_id)
                 .filter(models.ImportTransaction.provider_slug == self.provider_slug)
-                .all()
+                .all(),
+                description=f"find duplicated {self.provider_slug} import transactions",
             )
             if row[0] in tids
         }

@@ -2,14 +2,15 @@ import typing as t
 
 from marshmallow import Schema, fields
 
-from app import models, feeds
+from app import feeds, models
 from app.imports.agents import PassiveAPIAgent
+from app.serialization import PendulumField
 
 
 class TransactionSchema(Schema):
     tid = fields.String(required=True, allow_none=False)
     mid = fields.String(required=True, allow_none=False)
-    date = fields.DateTime(required=True, allow_none=False)
+    date = PendulumField(required=True, allow_none=False)
     spend = fields.Integer(required=True, allow_none=False)
     token = fields.String(required=True, allow_none=False)
 

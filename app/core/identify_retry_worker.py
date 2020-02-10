@@ -20,12 +20,13 @@ class IdentifyRetryWorker:
 
     def tick(self) -> None:
         unidentified_transactions = db.run_query(
-            lambda: db.session.query(models.MatchedTransaction)
-            .filter(models.MatchedTransaction.user_identity_id.is_(None))
-            .all()
+            lambda: db.session.query(models.PaymentTransaction)
+            .filter(models.PaymentTransaction.user_identity_id.is_(None))
+            .all(),
+            description="find unidentified payment transactions",
         )
 
-        self.log.debug(f"Found {len(unidentified_transactions)} unidentified matched transactions.")
+        self.log.debug(f"Found {len(unidentified_transactions)} unidentified payment transactions.")
 
         for transaction in unidentified_transactions:
-            tasks.matching_queue.enqueue(tasks.identify_matched_transaction, transaction.id)
+            tasks.matching_queue.enqueue(tasks.identify_payment_transaction, transaction.id)

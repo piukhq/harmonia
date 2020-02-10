@@ -30,4 +30,4 @@ class SingleExportAgent(BaseAgent):
             db.session.delete(pending_export)
             db.session.commit()
 
-        db.run_query(delete_pending_export)
+        db.run_query(delete_pending_export, description="delete pending export")

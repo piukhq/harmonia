@@ -1,4 +1,4 @@
-from flask import request, jsonify, Blueprint
+from flask import request, Blueprint
 import marshmallow
 
 from app.config import config, schemas
@@ -17,14 +17,14 @@ def list_keys() -> ResponseType:
       responses:
         200:
           description: A list of config keys.
-          schema: KeyValuePairSchema
+          schema: ConfigKeysListSchema
     """
-    config_values = list({"key": k, "value": v} for k, v in config.all_keys())
+    config_keys = {"keys": list({"key": k, "value": v} for k, v in config.all_keys())}
 
-    schema = schemas.KeyValuePairSchema()
-    data = schema.dump(config_values, many=True)
+    schema = schemas.ConfigKeysListSchema()
+    data = schema.dump(config_keys)
 
-    return jsonify(data)
+    return data
 
 
 @api.route("/keys/<key>", methods=["PUT"])
@@ -48,12 +48,12 @@ def update_key(key: str) -> ResponseType:
     try:
         data = request_schema.load(request.json)
     except marshmallow.ValidationError as ex:
-        return jsonify(ex.messages), 400
+        return ex.messages, 400
 
     try:
         config.update(key, data["value"])
     except KeyError as e:
-        return jsonify({"error": str(e).strip('"')}), 400
+        return {"error": str(e).strip('"')}, 400
 
     response_schema = schemas.KeyValuePairSchema()
-    return jsonify(response_schema.dump({"key": key, "value": config.get(key)}))
+    return response_schema.dump({"key": key, "value": config.get(key)})

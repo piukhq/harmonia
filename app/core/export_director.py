@@ -18,7 +18,8 @@ class ExportDirector:
 
         log.debug(f"Recieved matched transaction #{matched_transaction_id}.")
         matched_transaction: MatchedTransaction = db.run_query(
-            lambda: db.session.query(MatchedTransaction).get(matched_transaction_id)
+            lambda: db.session.query(MatchedTransaction).get(matched_transaction_id),
+            description="find matched transaction",
         )
         loyalty_scheme = matched_transaction.merchant_identifier.loyalty_scheme
 
@@ -35,13 +36,15 @@ class ExportDirector:
             db.session.commit()
             return pending_export
 
-        pending_export = db.run_query(add_pending_export)
+        pending_export = db.run_query(add_pending_export, description="create pending export")
 
         log.info(f"Sending trigger for single export agents: {pending_export}.")
         tasks.export_queue.enqueue(tasks.export_single_transaction, pending_export.id)
 
     def handle_pending_export(self, pending_export_id: int) -> None:
-        pending_export = db.run_query(lambda: db.session.query(PendingExport).get(pending_export_id))
+        pending_export = db.run_query(
+            lambda: db.session.query(PendingExport).get(pending_export_id), description="find pending export"
+        )
 
         try:
             agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))

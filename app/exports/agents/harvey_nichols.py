@@ -73,7 +73,7 @@ class HarveyNichols(SingleExportAgent):
             matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
             session.commit()
 
-        run_query(export_transaction)
+        run_query(export_transaction, description="create export transaction")
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
     def internal_requests(
@@ -93,9 +93,13 @@ class HarveyNichols(SingleExportAgent):
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")
 
     def export(self, matched_transaction_id: int) -> bool:
-        transaction = run_query(lambda: session.query(models.MatchedTransaction).get(matched_transaction_id))
-        credentials = self.decrypt_credentials(transaction.user_identity.credentials)
-        scheme_account_id = transaction.user_identity.scheme_account_id
+        transaction = run_query(
+            lambda: session.query(models.MatchedTransaction).get(matched_transaction_id),
+            description="load matched transaction",
+        )
+        user_identity = transaction.payment_transaction.user_identity
+        credentials = self.decrypt_credentials(user_identity.credentials)
+        scheme_account_id = user_identity.scheme_account_id
         token = self.get_token(credentials, scheme_account_id)
 
         response = self.api.claim_transaction(token, credentials["card_number"], transaction.transaction_id)

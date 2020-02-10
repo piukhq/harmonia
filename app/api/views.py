@@ -9,9 +9,9 @@ api = flask.Blueprint("core_api", __name__, url_prefix=settings.URL_PREFIX)
 @api.route("/spec.<fmt>")
 def get_api_spec(fmt):
     if fmt not in ["json", "yaml"]:
-        return flask.jsonify({"error": "format must be json or yaml"}), 400
+        return {"error": "format must be json or yaml"}, 400
     if fmt == "json":
-        return flask.jsonify(spec.to_dict())
+        return spec.to_dict()
     else:
         return spec.to_yaml()
 

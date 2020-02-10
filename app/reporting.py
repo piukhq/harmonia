@@ -4,7 +4,7 @@ import settings
 
 
 LOG_LEVEL = getattr(settings, "LOG_LEVEL", logging.INFO)
-LOG_FORMAT = "%(asctime)s | %(name)24s | %(levelname)8s | %(message)s"
+LOG_FORMAT = "%(asctime)s | %(name)26s | %(levelname)8s | %(message)s"
 
 
 def get_logger(name: str) -> logging.Logger:

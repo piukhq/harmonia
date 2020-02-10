@@ -15,7 +15,7 @@ class BinkLoyalty(SingleExportAgent):
         export_data = {
             "tid": matched_transaction.transaction_id,
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",
-            "card_number": matched_transaction.user_identity.loyalty_id,
+            "card_number": matched_transaction.payment_transaction.user_identity.loyalty_id,
         }
         self.log.info(f"Export: {export_data}")
 
@@ -37,6 +37,6 @@ class BinkLoyalty(SingleExportAgent):
 
             db.session.commit()
 
-        db.run_query(add_transaction)
+        db.run_query(add_transaction, description="create export transaction")
 
         return True
