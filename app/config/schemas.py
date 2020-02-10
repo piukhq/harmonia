@@ -11,3 +11,8 @@ class UpdateKeyRequestSchema(Schema):
 class KeyValuePairSchema(Schema):
     key = fields.String(required=True)
     value = fields.String(required=True)
+
+
+@define_schema
+class ConfigKeysListSchema(Schema):
+    keys = fields.Nested(KeyValuePairSchema, many=True)

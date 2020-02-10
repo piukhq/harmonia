@@ -119,14 +119,14 @@ def api_client():
 def test_list_keys_api(redis, token0, api_client):
     resp = api_client.get(url_for("config_api.list_keys"))
     assert resp.status_code == 200, resp.json
-    assert resp.json == []
+    assert resp.json == {"keys": []}
 
     k = make_key("test-list-keys-api-0")
     redis.set(k, token0)
 
     resp = api_client.get(url_for("config_api.list_keys"))
     assert resp.status_code == 200, resp.json
-    assert resp.json == [{"key": k, "value": token0}]
+    assert resp.json == {"keys": [{"key": k, "value": token0}]}
 
 
 def test_update_key_api(redis, token0, token1, api_client):

@@ -121,17 +121,22 @@ class MerchantIdentifier:
         self.mid = mid
 
 
-class MockTransaction:
+class MockPaymentTransaction:
+    def __init__(self, user_identity):
+        self.user_identity = user_identity
+
+
+class MockMatchedTransaction:
     def __init__(self, transaction_id, scheme_account_id, user_id, mid):
         self.transaction_id = transaction_id
-        self.user_identity = UserIdentity(scheme_account_id, user_id)
+        self.payment_transaction = MockPaymentTransaction(UserIdentity(scheme_account_id, user_id))
         self.merchant_identifier = MerchantIdentifier(mid)
 
 
 @responses.activate
 def test_format_transactions() -> None:
     add_mock_routes()
-    transactions = [MockTransaction(1, 2, 3, 10), MockTransaction(2, 2, 3, 20)]
+    transactions = [MockMatchedTransaction(1, 2, 3, 10), MockMatchedTransaction(2, 2, 3, 20)]
 
     iceland = Iceland()
     formatted_transaction = iceland.format_transactions(transactions)
