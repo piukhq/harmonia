@@ -54,7 +54,7 @@ class MatchingWorker:
             description="find payment transaction MIDs",
         )
 
-        slugs = {merchant_identifier.payment_provider.slug for merchant_identifier in merchant_identifiers}
+        slugs = {merchant_identifier.loyalty_scheme.slug for merchant_identifier in merchant_identifiers}
 
         if len(slugs) > 1:
             raise ValueError(
