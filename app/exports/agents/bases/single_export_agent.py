@@ -26,7 +26,7 @@ class SingleExportAgent(BaseAgent):
         self.log.info(f"Handling {pending_export}.")
         export_data = self.make_export_data(pending_export.matched_transaction_id)
         if settings.EXPORT_TO_FILE:
-            self.save_export_data_to_file(export_data)
+            self._save_to_file(export_data)
             return
         self.export(export_data)
 
@@ -37,3 +37,6 @@ class SingleExportAgent(BaseAgent):
             db.session.commit()
 
         db.run_query(delete_pending_export, description="delete pending export")
+
+    def make_export_data(self, matched_transaction_id: int):
+        raise NotImplementedError("Override the make export data method in your export agent")
