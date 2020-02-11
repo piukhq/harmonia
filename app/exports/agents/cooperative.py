@@ -149,7 +149,7 @@ class Cooperative(BatchExportAgent):
         if failed_transactions:
             self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
-    def export_all(self, *, once=False):
+    def yield_export_data(self):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         while True:
             matched_transactions = db.run_query(
@@ -172,17 +172,26 @@ class Cooperative(BatchExportAgent):
                 "transactions": transactions,
             }
 
-            headers = self.get_security_headers(
-                body,
-                security_service=self.merchant_config.data["security_credentials"]["outbound"]["service"],
-                security_credentials=self.merchant_config.data["security_credentials"],
-            )
+            yield {"body": body, "matched_transactions": matched_transactions}
 
-            response = self.api.export_transactions(body, headers)
-            response.raise_for_status()
+    def send_export_data(self, export_data):
+        self.log.debug(f"Starting {self.provider_slug} batch export loop.")
 
-            for matched_transaction, transaction in zip(matched_transactions, transactions):
-                self.save_data(matched_transactions, transaction)
+        body = export_data["body"]
+        transactions = body["transactions"]
+        matched_transactions = export_data["matched_transactions"]
 
-            self.save_backup_file(response)
-            self.send_to_atlas(response, matched_transactions)
+        headers = self.get_security_headers(
+            body,
+            security_service=self.merchant_config.data["security_credentials"]["outbound"]["service"],
+            security_credentials=self.merchant_config.data["security_credentials"],
+        )
+
+        response = self.api.export_transactions(body, headers)
+        response.raise_for_status()
+
+        for matched_transaction, transaction in zip(matched_transactions, transactions):
+            self.save_data(matched_transactions, transaction)
+
+        self.save_backup_file(response)
+        self.send_to_atlas(response, matched_transactions)
