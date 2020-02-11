@@ -16,7 +16,7 @@ class BatchExportAgent(BaseAgent):
 
         scheduler.run()
 
-    def export(self, matched_transaction_id: int):
+    def export(self, export_data: dict):
         return
 
     def export_all(self, *, once: bool = False):
@@ -28,11 +28,7 @@ class BatchExportAgent(BaseAgent):
                 self.send_export_data(export_data)
 
     def yield_export_data(self):
-        raise NotImplementedError(
-            "Override the yield_export_data method in your agent."
-        )
+        raise NotImplementedError("Override the yield_export_data method in your agent.")
 
     def send_export_data(self, export_data: dict):
-        raise NotImplementedError(
-            "Override the send_export_data method in your agent."
-        )
+        raise NotImplementedError("Override the send_export_data method in your agent.")
