@@ -99,6 +99,7 @@ class HarveyNichols(SingleExportAgent):
         )
         credentials = self.decrypt_credentials(transaction.user_identity.credentials)
         scheme_account_id = transaction.user_identity.scheme_account_id
+
         return {
             "transaction": transaction,
             "credentials": credentials,
