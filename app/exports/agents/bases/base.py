@@ -3,7 +3,7 @@ from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
 
 import pendulum
-import os
+import json
 
 
 def _missing_property(obj, prop: str):
@@ -34,11 +34,6 @@ class BaseAgent:
     def run(self, *, once: bool = False):
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
-    def make_export_data(self, matched_transaction_id: int):
-        raise NotImplementedError(
-            "Override the make export data method in your export agent"
-        )
-
     def handle_pending_export(self, pending_export: models.PendingExport) -> None:
         raise NotImplementedError("This method should be overridden by specicialised base agents.")
 
@@ -52,16 +47,10 @@ class BaseAgent:
             "Override the export_all method in your agent to act as the entry point into the batch export process."
         )
 
-    def save_export_data_to_file(self, export_data: dict) -> None:
-
-        slug = export_data["transaction"].merchant_identifier.loyalty_scheme.slug
-
-        filename = f"export_data-{slug}-{pendulum.now().isoformat()}.json"
-        file_path = os.path.join("files/tmp/", filename)
-
-        export_file = open(file_path, "w+")
-        export_file.write(str(export_data))
-        export_file.close()
+    def _save_to_file(self, export_data: dict) -> None:
+        provider_slug = export_data["transaction"].merchant_identifier.loyalty_scheme.slug
+        file_name = f"{provider_slug}-export_data-{pendulum.now().isoformat()}.json"
+        file_content = json.dumps(str(export_data))
 
         blob_storage_client = BlobStorageClient()
-        blob_storage_client.azure_write(file_path, filename)
+        blob_storage_client.create_file("exports", provider_slug, file_name, file_content)
