@@ -119,7 +119,7 @@ class Iceland(BatchExportAgent):
     def save_to_atlas(self, response: dict, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
-    def export_all(self, once=True):
+    def yield_export_data(self):
         transactions_query_set = (
             session.query(models.MatchedTransaction)
             .filter(models.MatchedTransaction.status == models.MatchedTransactionStatus.PENDING)
@@ -127,9 +127,12 @@ class Iceland(BatchExportAgent):
         )
 
         formatted_transactions = self.format_transactions(transactions_query_set)
-        request_data = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
+        body = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
 
-        request = self.make_secured_request(request_data)
+        yield {"body": body, "transactions_query_set": transactions_query_set}
+
+    def send_export_data(self, export_data):
+        request = self.make_secured_request(export_data["body"])
 
         try:
             response = self.api.merchant_request(request)
@@ -142,6 +145,6 @@ class Iceland(BatchExportAgent):
             response_text = response.text
             atlas_status = atlas.Status.BINK_ASSIGNED
 
-        for transaction in transactions_query_set:
+        for transaction in export_data["transactions_query_set"]:
             self.save_data(transaction, request)
             self.save_to_atlas(response_text, transaction, atlas_status)
