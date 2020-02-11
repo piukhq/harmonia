@@ -127,3 +127,6 @@ SOTERIA_URL = getenv("TXM_SOTERIA_URL", required=False)
 # Hashicorp Vault connection details
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
+
+# Export data to file mode for export agents.
+EXPORT_TO_FILE = getenv("TXM_EXPORT_TO_FILE", required=False)
