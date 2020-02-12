@@ -14,6 +14,7 @@ from app.service.cooperative import CooperativeAPI
 from app.encryption import AESCipher
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
+from app.exports.agents.bases.base import AgentExportData
 
 
 PROVIDER_SLUG = "cooperative"
@@ -126,9 +127,8 @@ class Cooperative(BatchExportAgent):
         db.run_query(export_transaction, description="create export transaction")
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
-    def send_to_atlas(self, response, transactions_query):
+    def send_to_atlas(self, response, transactions):
         failed_transactions = []
-
         atlas_status_mapping = {
             "processed": atlas.Status.BINK_ASSIGNED,
             "alreadyprocessed": atlas.Status.MERCHANT_ASSIGNED,
@@ -136,16 +136,15 @@ class Cooperative(BatchExportAgent):
             "alreadyassigned": atlas.Status.MERCHANT_ASSIGNED,
             "unfound": atlas.Status.NOT_ASSIGNED,
         }
-
+        transaction_id_dict = {t.transaction_id: t for t in transactions}
         for transaction_response in response.json():
             transaction_status = str(list(transaction_response.keys())[0])
-            transaction = transactions_query.filter_by(transaction_id=transaction_response[transaction_status]).one()
+            transaction = transaction_id_dict[transaction_response[transaction_status]]
             atlas_status = atlas_status_mapping[transaction_status.lower()]
             try:
                 atlas.save_transaction(self.provider_slug, transaction_response, transaction, atlas_status)
             except Exception:
                 failed_transactions.append(transaction_response)
-
         if failed_transactions:
             self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
@@ -167,19 +166,17 @@ class Cooperative(BatchExportAgent):
 
             transactions = self.serialize_transactions(matched_transactions)
 
-            body = {
-                "message_uid": str(uuid4()),
-                "transactions": transactions,
-            }
+            yield AgentExportData(
+                body={"message_uid": str(uuid4()), "transactions": transactions},
+                transactions=matched_transactions
+            )
 
-            yield {"body": body, "matched_transactions": matched_transactions}
-
-    def send_export_data(self, export_data):
+    def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
 
-        body = export_data["body"]
+        body = export_data.body
         transactions = body["transactions"]
-        matched_transactions = export_data["matched_transactions"]
+        matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(
             body,
@@ -191,7 +188,7 @@ class Cooperative(BatchExportAgent):
         response.raise_for_status()
 
         for matched_transaction, transaction in zip(matched_transactions, transactions):
-            self.save_data(matched_transactions, transaction)
+            self.save_data(matched_transaction, transaction)
 
         self.save_backup_file(response)
         self.send_to_atlas(response, matched_transactions)
