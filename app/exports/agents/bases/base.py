@@ -57,9 +57,8 @@ class BaseAgent:
         )
 
     def _save_to_file(self, export_data: AgentExportData) -> None:
-        provider_slug = export_data.transactions[0].merchant_identifier.loyalty_scheme.slug
-        file_name = f"{provider_slug}-export_data-{pendulum.now().isoformat()}.json"
+        file_name = f"{self.provider_slug}-export_data-{pendulum.now().isoformat()}.json"
         file_content = json.dumps(export_data.body)
 
         blob_storage_client = BlobStorageClient()
-        blob_storage_client.create_file("exports", provider_slug, file_name, file_content)
+        blob_storage_client.create_file("exports", self.provider_slug, file_name, file_content)

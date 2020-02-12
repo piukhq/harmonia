@@ -23,8 +23,7 @@ class BatchExportAgent(BaseAgent):
     def export_all(self, *, once: bool = False):
         for export_data in self.yield_export_data():
             if settings.EXPORT_TO_FILE:
-                self._save_to_file(export_data["body"])
-                return
+                self._save_to_file(export_data)
             else:
                 self.send_export_data(export_data)
 

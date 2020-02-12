@@ -28,8 +28,8 @@ class SingleExportAgent(BaseAgent):
         export_data = self.make_export_data(pending_export.matched_transaction_id)
         if settings.EXPORT_TO_FILE:
             self._save_to_file(export_data)
-            return
-        self.export(export_data)
+        else:
+            self.export(export_data)
 
         self.log.info(f"Removing pending export {pending_export}.")
 
