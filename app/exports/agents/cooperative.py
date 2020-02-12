@@ -167,8 +167,7 @@ class Cooperative(BatchExportAgent):
             transactions = self.serialize_transactions(matched_transactions)
 
             yield AgentExportData(
-                body={"message_uid": str(uuid4()), "transactions": transactions},
-                transactions=matched_transactions
+                body={"message_uid": str(uuid4()), "transactions": transactions}, transactions=matched_transactions
             )
 
     def send_export_data(self, export_data: AgentExportData):

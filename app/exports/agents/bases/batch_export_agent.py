@@ -1,4 +1,5 @@
 from app.exports.agents import BaseAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.scheduler import CronScheduler
 
 import settings
@@ -30,5 +31,5 @@ class BatchExportAgent(BaseAgent):
     def yield_export_data(self):
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
-    def send_export_data(self, export_data: dict):
+    def send_export_data(self, export_data: AgentExportData):
         raise NotImplementedError("Override the send_export_data method in your agent.")

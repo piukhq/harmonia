@@ -131,7 +131,7 @@ class Iceland(BatchExportAgent):
 
         yield AgentExportData(
             body={"message_uid": str(uuid4()), "transactions": formatted_transactions},
-            transactions=transactions_query_set
+            transactions=transactions_query_set,
         )
 
     def send_export_data(self, export_data: AgentExportData):

@@ -102,8 +102,7 @@ class HarveyNichols(SingleExportAgent):
         scheme_account_id = transaction.user_identity.scheme_account_id
 
         return AgentExportData(
-            body={"credentials": credentials, "scheme_account_id": scheme_account_id},
-            transactions=[transaction]
+            body={"credentials": credentials, "scheme_account_id": scheme_account_id}, transactions=[transaction]
         )
 
     def export(self, export_data: AgentExportData) -> bool:
