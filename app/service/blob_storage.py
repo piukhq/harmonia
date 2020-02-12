@@ -6,7 +6,7 @@ from azure.storage.blob import BlobServiceClient
 
 class BlobStorageClient:
     @staticmethod
-    def create_file(container_name, folder_name, file_name, file_content):
+    def create_file(container_name: str, folder_name: str, file_name: str, file_content: dict) -> None:
         blob_service = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
 
         file_path = os.path.join(folder_name, file_name)

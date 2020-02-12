@@ -18,9 +18,7 @@ class BinkLoyalty(SingleExportAgent):
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",
             "card_number": matched_transaction.payment_transaction.user_identity.loyalty_id,
         }
-        return AgentExportData(
-            body=body, transactions=[matched_transaction]
-        )
+        return AgentExportData(body=body, transactions=[matched_transaction])
 
     def export(self, export_data: AgentExportData) -> bool:
         body = export_data.body
