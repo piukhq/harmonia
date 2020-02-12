@@ -1,5 +1,6 @@
 from app import db
 from app.exports.agents import BaseAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.models import PendingExport
 from app.status import status_monitor
 
@@ -10,7 +11,7 @@ class SingleExportAgent(BaseAgent):
     def run(self, *, once: bool = False):
         self.export_all()
 
-    def export(self, export_data: dict):
+    def export(self, export_data: AgentExportData):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )

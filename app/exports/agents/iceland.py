@@ -117,7 +117,7 @@ class Iceland(BatchExportAgent):
         session.commit()
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
-    def save_to_atlas(self, response: dict, transaction: models.MatchedTransaction, status: atlas.Status):
+    def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
     def yield_export_data(self):

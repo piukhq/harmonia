@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.exports.agents.bases.base import AgentExportData
 from app import models, db
 
 
@@ -17,13 +18,15 @@ class BinkLoyalty(SingleExportAgent):
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",
             "card_number": matched_transaction.payment_transaction.user_identity.loyalty_id,
         }
-        return {"body": body, "matched_transaction": matched_transaction}
+        return AgentExportData(
+            body=body, transactions=[matched_transaction]
+        )
 
-    def export(self, export_data: dict) -> bool:
-        export_data = export_data["body"]
-        matched_transaction = export_data["matched_transaction"]
+    def export(self, export_data: AgentExportData) -> bool:
+        body = export_data.body
+        matched_transaction = export_data.transactions[0]
 
-        self.log.info(f"Export: {export_data}")
+        self.log.info(f"Export: {body}")
 
         self.log.info(f"Marking {matched_transaction} as exported.")
         matched_transaction.status = models.MatchedTransactionStatus.EXPORTED

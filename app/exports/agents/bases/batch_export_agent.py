@@ -17,7 +17,7 @@ class BatchExportAgent(BaseAgent):
 
         scheduler.run()
 
-    def export(self, export_data: dict):
+    def export(self, export_data: AgentExportData):
         return
 
     def export_all(self, *, once: bool = False):
