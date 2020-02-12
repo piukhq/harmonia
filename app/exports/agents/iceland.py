@@ -13,6 +13,7 @@ from app.db import session
 from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.service.iceland import IcelandAPI
 import settings
 
@@ -127,12 +128,14 @@ class Iceland(BatchExportAgent):
         )
 
         formatted_transactions = self.format_transactions(transactions_query_set)
-        body = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
 
-        yield {"body": body, "transactions_query_set": transactions_query_set}
+        yield AgentExportData(
+            body={"message_uid": str(uuid4()), "transactions": formatted_transactions},
+            transactions=transactions_query_set
+        )
 
-    def send_export_data(self, export_data):
-        request = self.make_secured_request(export_data["body"])
+    def send_export_data(self, export_data: AgentExportData):
+        request = self.make_secured_request(export_data.body)
 
         try:
             response = self.api.merchant_request(request)
@@ -145,6 +148,6 @@ class Iceland(BatchExportAgent):
             response_text = response.text
             atlas_status = atlas.Status.BINK_ASSIGNED
 
-        for transaction in export_data["transactions_query_set"]:
+        for transaction in export_data.transactions:
             self.save_data(transaction, request)
             self.save_to_atlas(response_text, transaction, atlas_status)
