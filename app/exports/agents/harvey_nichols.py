@@ -9,6 +9,7 @@ from app.encryption import AESCipher
 from app.failed_transaction import FailedTransaction
 from app.service.harvey_nichols import HarveyNicholsAPI
 from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.config import KEY_PREFIX, ConfigValue
 import settings
 
@@ -100,17 +101,16 @@ class HarveyNichols(SingleExportAgent):
         credentials = self.decrypt_credentials(transaction.user_identity.credentials)
         scheme_account_id = transaction.user_identity.scheme_account_id
 
-        return {
-            "transaction": transaction,
-            "credentials": credentials,
-            "scheme_account_id": scheme_account_id,
-            "matched_transaction_id": matched_transaction_id,
-        }
+        return AgentExportData(
+            body={"credentials": credentials, "scheme_account_id": scheme_account_id},
+            transactions=[transaction]
+        )
 
-    def export(self, export_data: dict) -> bool:
-        transaction = export_data["transaction"]
-        credentials = export_data["credentials"]
-        scheme_account_id = export_data["scheme_account_id"]
+    def export(self, export_data: AgentExportData) -> bool:
+
+        transaction = export_data.transactions[0]
+        credentials = export_data.body["credentials"]
+        scheme_account_id = export_data.body["scheme_account_id"]
 
         token = self.get_token(credentials, scheme_account_id)
 
@@ -124,6 +124,6 @@ class HarveyNichols(SingleExportAgent):
             "card_number": credentials["card_number"],
             "transaction_id": transaction.transaction_id,
         }
-        self.internal_requests(response, transaction, audit_data, export_data["matched_transaction_id"])
+        self.internal_requests(response, transaction, audit_data, transaction.id)
 
         return True
