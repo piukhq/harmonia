@@ -13,6 +13,7 @@ from app.db import session
 from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.service.iceland import IcelandAPI
 import settings
 
@@ -116,10 +117,10 @@ class Iceland(BatchExportAgent):
         session.commit()
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
-    def save_to_atlas(self, response: dict, transaction: models.MatchedTransaction, status: atlas.Status):
+    def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
-    def export_all(self, once=True):
+    def yield_export_data(self):
         transactions_query_set = (
             session.query(models.MatchedTransaction)
             .filter(models.MatchedTransaction.status == models.MatchedTransactionStatus.PENDING)
@@ -127,9 +128,14 @@ class Iceland(BatchExportAgent):
         )
 
         formatted_transactions = self.format_transactions(transactions_query_set)
-        request_data = {"message_uid": str(uuid4()), "transactions": formatted_transactions}
 
-        request = self.make_secured_request(request_data)
+        yield AgentExportData(
+            body={"message_uid": str(uuid4()), "transactions": formatted_transactions},
+            transactions=transactions_query_set,
+        )
+
+    def send_export_data(self, export_data: AgentExportData):
+        request = self.make_secured_request(export_data.body)
 
         try:
             response = self.api.merchant_request(request)
@@ -142,6 +148,6 @@ class Iceland(BatchExportAgent):
             response_text = response.text
             atlas_status = atlas.Status.BINK_ASSIGNED
 
-        for transaction in transactions_query_set:
+        for transaction in export_data.transactions:
             self.save_data(transaction, request)
             self.save_to_atlas(response_text, transaction, atlas_status)

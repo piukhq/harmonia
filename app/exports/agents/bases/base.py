@@ -1,5 +1,18 @@
 from app import models
 from app.reporting import get_logger
+from app.service.blob_storage import BlobStorageClient
+from app.models import MatchedTransaction
+from dataclasses import dataclass
+
+import typing as t
+import pendulum
+import json
+
+
+@dataclass
+class AgentExportData:
+    body: dict
+    transactions: t.List[MatchedTransaction]
 
 
 def _missing_property(obj, prop: str):
@@ -33,7 +46,7 @@ class BaseAgent:
     def handle_pending_export(self, pending_export: models.PendingExport) -> None:
         raise NotImplementedError("This method should be overridden by specicialised base agents.")
 
-    def export(self, matched_transaction_id: int):
+    def export(self, export_data: AgentExportData):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -42,3 +55,10 @@ class BaseAgent:
         raise NotImplementedError(
             "Override the export_all method in your agent to act as the entry point into the batch export process."
         )
+
+    def _save_to_file(self, export_data: AgentExportData) -> None:
+        file_name = f"{self.provider_slug}-export_data-{pendulum.now().isoformat()}.json"
+        file_content = json.dumps(export_data.body)
+
+        blob_storage_client = BlobStorageClient()
+        blob_storage_client.create_file("exports", self.provider_slug, file_name, file_content)

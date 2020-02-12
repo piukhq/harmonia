@@ -30,7 +30,7 @@ class Atlas:
         return response.json()
 
     def save_transaction(
-        self, provider_slug: str, response: dict, transaction: models.MatchedTransaction, status: "Atlas.Status"
+        self, provider_slug: str, response: str, transaction: models.MatchedTransaction, status: "Atlas.Status"
     ) -> dict:
         endpoint = f"{self.base_url}/transaction/save"
         body = {

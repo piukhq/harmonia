@@ -9,6 +9,7 @@ from app.encryption import AESCipher
 from app.failed_transaction import FailedTransaction
 from app.service.harvey_nichols import HarveyNicholsAPI
 from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.exports.agents.bases.base import AgentExportData
 from app.config import KEY_PREFIX, ConfigValue
 import settings
 
@@ -92,14 +93,24 @@ class HarveyNichols(SingleExportAgent):
                 atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.NOT_ASSIGNED)
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")
 
-    def export(self, matched_transaction_id: int) -> bool:
+    def make_export_data(self, matched_transaction_id):
         transaction = run_query(
             lambda: session.query(models.MatchedTransaction).get(matched_transaction_id),
             description="load matched transaction",
         )
-        user_identity = transaction.payment_transaction.user_identity
-        credentials = self.decrypt_credentials(user_identity.credentials)
-        scheme_account_id = user_identity.scheme_account_id
+        credentials = self.decrypt_credentials(transaction.user_identity.credentials)
+        scheme_account_id = transaction.user_identity.scheme_account_id
+
+        return AgentExportData(
+            body={"credentials": credentials, "scheme_account_id": scheme_account_id}, transactions=[transaction]
+        )
+
+    def export(self, export_data: AgentExportData) -> bool:
+
+        transaction = export_data.transactions[0]
+        credentials = export_data.body["credentials"]
+        scheme_account_id = export_data.body["scheme_account_id"]
+
         token = self.get_token(credentials, scheme_account_id)
 
         response = self.api.claim_transaction(token, credentials["card_number"], transaction.transaction_id)
@@ -112,6 +123,6 @@ class HarveyNichols(SingleExportAgent):
             "card_number": credentials["card_number"],
             "transaction_id": transaction.transaction_id,
         }
-        self.internal_requests(response, transaction, audit_data, matched_transaction_id)
+        self.internal_requests(response, transaction, audit_data, transaction.id)
 
         return True
