@@ -140,7 +140,7 @@ cp harness/fixtures/default.toml my-fixture.toml
 edit my-fixture.toml with the changes you want to make
 ...
 
-s/test-end-to-end my-fixture.toml
+s/test-end-to-end --fixture-file my-fixture.toml
 ```
 
 After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.ss
