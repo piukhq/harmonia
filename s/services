@@ -4,11 +4,11 @@ source s/_common
 
 s/rmservices
 
-p 'postgres'
-docker run -d -p51234:5432 --name txm-postgres postgres || true
+p 'creating postgres'
+docker run -d -p51234:5432 --name txm-postgres postgres
 
-p 'redis'
-docker run -d -p61234:6379 --name txm-redis redis || true
+p 'creating redis'
+docker run -d -p61234:6379 --name txm-redis redis
 
 p 'giving postgres a chance to start'
 sleep 3

@@ -43,18 +43,18 @@
         },
         "azure-core": {
             "hashes": [
-                "sha256:b8ccbd901d085048e4e3e72627b066923c5bd3780e4c43cf9cf9948aee9bdf9e",
-                "sha256:e2cd99f0c0aef12c168d498cb5bc47a3a45c8ab08112183e3ec97e4dcb33ceb9"
+                "sha256:8bdb12b8e937c5bdf495faadf7741ea1958436e2d24c9c5ca7bd7a5ca7a9e42f",
+                "sha256:bcfc4502c4cfbdcbe82301119439f52542fa4a42dfc1dadd647bba8b01819823"
             ],
-            "version": "==1.2.1"
+            "version": "==1.2.2"
         },
         "azure-storage-blob": {
             "hashes": [
-                "sha256:b628e2f8a8470a52895e96c43c3321542be3246c61ff9ed4f3856fe87a04a406",
-                "sha256:f6f39a2c297c0ed5db2fbf480ac73a00c1ace94a364d203d2e00081371c27ada"
+                "sha256:200c7045f765c2b79c3b13715e0058ed956286e79270cf6c5b6285083dbc55b9",
+                "sha256:aa3cf220cf1f1eabea1f36fe59475b9ee6b7163cd05bac164678539d1b7eaea9"
             ],
             "index": "pypi",
-            "version": "==12.1.0"
+            "version": "==12.2.0"
         },
         "blinker": {
             "hashes": [

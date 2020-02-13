@@ -5,4 +5,4 @@ source s/_common
 s/services
 
 p 'running end-to-end test harness'
-pipenv run python -m harness.run
+pipenv run python -m harness.run "$@"

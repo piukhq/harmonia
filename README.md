@@ -4,21 +4,21 @@
 
 Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodite.
 
-## Table of Contents
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Prerequisites](#prerequisites)
 - [Dependencies](#dependencies)
 - [Project Setup](#project-setup)
-    - [Database Schema](#database-schema)
-    - [Development API Server](#development-api-server)
-    - [Unit Tests](#unit-tests)
-    - [End-to-End Matching Test](#end-to-end-matching-test)
-        - [PostgreSQL](#postgresql)
-        - [Redis](#redis)
+  - [MacOS Dependencies](#macos-dependencies)
+  - [Virtual Environment](#virtual-environment)
+  - [Database Schema Migration](#database-schema-migration)
+  - [Development API Server](#development-api-server)
+  - [Unit Tests](#unit-tests)
+  - [End-to-End Matching Test](#end-to-end-matching-test)
+    - [Inspecting PostgreSQL](#inspecting-postgresql)
+    - [Inspecting Redis](#inspecting-redis)
 - [Migrations](#migrations)
 - [Deployment](#deployment)
 
@@ -26,21 +26,21 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 
 ## Prerequisites
 
-* [pipenv](https://docs.pipenv.org)
+- [pipenv](https://docs.pipenv.org)
 
 ## Dependencies
 
 The following is a list of the important dependencies used in the project. You do not need to install these manually. See [project setup](#project-setup) for installation instructions.
 
-* [SQLAlchemy](https://www.sqlalchemy.org) - Object-relational mapping library. Used for interacting with PostgreSQL.
-* [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
-* [Flask](http://flask.pocoo.org) - API framework.
-* [Sentry SDK](https://docs.sentry.io/quickstart?platform=python) - Client for the Sentry error reporting platform. Includes Flask integration.
-* [Click](http://click.pocoo.org/6) - Used for building the management CLI for each part of the system.
-* [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration and task queues.
-* [APScheduler](https://apscheduler.readthedocs.io/en/latest) - Used for scheduling various time-based parts of the system.
-* [Marshmallow](https://marshmallow.readthedocs.io/en/latest) - (De)serialization library for converting between JSON payloads and database objects.
-* [RQ](https://python-rq.org) - Redis-based task queue. Most transaction matching processes run as RQ jobs.
+- [SQLAlchemy](https://www.sqlalchemy.org) - Object-relational mapping library. Used for interacting with PostgreSQL.
+- [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
+- [Flask](http://flask.pocoo.org) - API framework.
+- [Sentry SDK](https://docs.sentry.io/quickstart?platform=python) - Client for the Sentry error reporting platform. Includes Flask integration.
+- [Click](http://click.pocoo.org/6) - Used for building the management CLI for each part of the system.
+- [Redis](https://redis-py.readthedocs.io/en/latest) - Key-value store used for storing system configuration and task queues.
+- [APScheduler](https://apscheduler.readthedocs.io/en/latest) - Used for scheduling various time-based parts of the system.
+- [Marshmallow](https://marshmallow.readthedocs.io/en/latest) - (De)serialization library for converting between JSON payloads and database objects.
+- [RQ](https://python-rq.org) - Redis-based task queue. Most transaction matching processes run as RQ jobs.
 
 ## Project Setup
 
@@ -83,7 +83,7 @@ To quickly create docker containers for the required services:
 s/services
 ```
 
-### Database Schema
+### Database Schema Migration
 
 If you used the `s/services` script then you can skip this step.
 
@@ -107,7 +107,7 @@ s/api
 
 You may see the following output in the flask server logs:
 
-```
+```bash
 Tip: There are .env files present. Do "pip install python-dotenv" to use them.
 ```
 
@@ -125,81 +125,30 @@ s/test
 
 ### End-to-End Matching Test
 
-_this is currently in the process of being replaced, do not rely on the instructions below for anything mission-critical!_
-
-The project includes a script that will run all the major components of the system in order. This shows a transaction going through the import->match->identify->export process, and is useful for testing the interactions between the various system modules.
-
-Before running the end-to-end script, you must have the Hermes API running on port 8000.
-
-Example of a valid Hermes setup from scratch:
+You can test matching by running the end-to-end test harness.
 
 ```bash
-git clone git@git.bink.com:Olympus/hermes.git ~/hermes
-cd ~/hermes
-pipenv install --dev
-docker run -d -p 5432:5432 --name postgres postgres:latest
-echo -e "HERMES_DATABASE_HOST=localhost\nHERMES_DATABASE_NAME=postgres" > .env
-pipenv run ./manage.py migrate
-pipenv run ./manage.py runserver
+s/test-end-to-end
 ```
 
-After setting Hermes up, modify `s/quick_work` and set the variables `HERMES_PATH` and `HERMES_PY` to the correct values.
-
-Note: As part of running the end-to-end test, we need to add a payment card account to Hermes. Usually this relies on Metis being available to enrol the card. You can set this up locally along with Pelops as a mock API for Metis to use instead of Spreedly, however for simplicity's sake I recommend just removing the code in Hermes that makes the call to Metis. A potential mitigation for this issue would be to update Hermes so that it does not call Metis when it's running in LOCAL mode.
-
-Here is a diff that removes the metis calls from Hermes at the time of writing:
-
-```diff
-diff --git a/payment_card/views.py b/payment_card/views.py
-index e9cbc54..946067c 100644
---- a/payment_card/views.py
-+++ b/payment_card/views.py
-@@ -15,7 +15,7 @@ from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView
- from rest_framework.response import Response
- from rest_framework.views import APIView
-
--from payment_card import metis, serializers
-+from payment_card import serializers
- from payment_card.forms import CSVUploadForm
- from payment_card.models import PaymentCard, PaymentCardAccount, PaymentCardAccountImage, ProviderStatusMapping
- from payment_card.serializers import PaymentCardClientSerializer
-@@ -171,7 +171,6 @@ class ListCreatePaymentCardAccount(APIView):
-                 return ListCreatePaymentCardAccount.supercede_old_card(account, old_account, user)
-         account.save()
-         PaymentCardAccountEntry.objects.create(user=user, payment_card_account=account)
--        metis.enrol_new_payment_card(account)
-         return account
-
-     @staticmethod
-@@ -190,7 +189,6 @@ class ListCreatePaymentCardAccount(APIView):
-         if old_account.is_deleted:
-             account.save()
-             PaymentCardAccountEntry.objects.create(user=user, payment_card_account=account)
--            metis.enrol_existing_payment_card(account)
-         else:
-             account.status = old_account.status
-             account.save()
-```
-
-To run the end-to-end script:
+By default this will test a few transactions going through the system with the `bink-loyalty` loyalty scheme and the `bink-payment` payment provider. If you want to change the parameters used for the test, you can create a TOML file containing the fixture.
 
 ```bash
-s/quick_work
+cp harness/fixtures/default.toml my-fixture.toml
+
+...
+edit my-fixture.toml with the changes you want to make
+...
+
+s/test-end-to-end my-fixture.toml
 ```
 
-This will destroy any existing docker containers with the name `txm-postgres` or `txm-redis`. It will then create new instances of these services, migrate the database, and run each stage of the transaction import, matching, and export process.
+After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.ss
 
-The `quick_work` script expects the Harmonia API to be running at `http://127.0.0.1:5000`. You can use `s/api` to set this up.
-
-When everything is finished, the PostgreSQL and Redis containers will be left as-is. You can inspect the state of these systems to see the side-effects of running the matching system.
-
-#### PostgreSQL
+#### Inspecting PostgreSQL
 
 ```bash
-docker exec -it txm-postgres psql -U postgres
-
-# this is not required, however it helps when viewing very wide tables
-\x on
+s/psql
 
 select * from payment_provider;
 select * from loyalty_scheme;
@@ -211,7 +160,7 @@ select * from matched_transaction;
 select * from export_transaction;
 ```
 
-#### Redis
+#### Inspecting Redis
 
 ```bash
 docker exec -it txm-redis redis-cli
