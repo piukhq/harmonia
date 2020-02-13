@@ -121,6 +121,8 @@ class MatchingWorker:
         self.log.debug(f"Persisting matched transaction.")
         self._persist(match_result.matched_transaction)
 
+        tasks.export_queue.enqueue(tasks.export_matched_transaction, match_result.matched_transaction.id)
+
     def handle_scheme_transaction(self, scheme_transaction_id: int) -> None:
         """Finds potential matching payment transactions and requeues a matching job for them."""
         status_monitor.checkin(self)
