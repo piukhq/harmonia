@@ -49,6 +49,8 @@ class Identifier:
                 scheme_account_id=user_info["scheme_account_id"],
                 user_id=user_info["user_id"],
                 credentials=user_info["credentials"],
+                first_six=user_info["card_information"]["first_six"],
+                last_four=user_info["card_information"]["last_four"],
             )
 
             payment_transaction.user_identity = user_identity

@@ -41,9 +41,6 @@ class BaseMatchingAgent:
             description="find pending scheme transactions for matching",
         )
 
-    def _fine_match(self, scheme_transactions, fields):
-        return scheme_transactions.filter_by(**fields)
-
     def _make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
         matching_merchant_identifier_ids = list(
             set(self.payment_transaction.merchant_identifier_ids).intersection(
@@ -80,6 +77,12 @@ class BaseMatchingAgent:
         }
 
     def match(self) -> t.Optional[MatchResult]:
+        if self.payment_transaction.user_identity is None:
+            self.log.warning(
+                f"Payment transaction {self.payment_transaction} has no user identity, so it cannot be matched."
+            )
+            return None
+
         self.log.info(f"Matching {self.payment_transaction}.")
         scheme_transactions = self._find_applicable_scheme_transactions()
         return self.do_match(scheme_transactions)

@@ -1,18 +1,15 @@
-import json
-
 from user_auth_token.core import UserTokenStore
 
-from app import models
-from app.db import session, run_query
-from app.service.atlas import Atlas, atlas
-from app.encryption import AESCipher
-from app.failed_transaction import FailedTransaction
-from app.service.harvey_nichols import HarveyNicholsAPI
-from app.exports.agents.bases.single_export_agent import SingleExportAgent
-from app.exports.agents.bases.base import AgentExportData
-from app.config import KEY_PREFIX, ConfigValue
 import settings
-
+from app import models
+from app.config import KEY_PREFIX, ConfigValue
+from app.db import run_query, session
+from app.encryption import decrypt_credentials
+from app.exports.agents.bases.base import AgentExportData
+from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.failed_transaction import FailedTransaction
+from app.service.atlas import Atlas, atlas
+from app.service.harvey_nichols import HarveyNicholsAPI
 
 PROVIDER_SLUG = "harvey-nichols"
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
@@ -28,11 +25,6 @@ class HarveyNichols(SingleExportAgent):
     def __init__(self):
         super().__init__()
         self.api = HarveyNicholsAPI(self.Config.base_url)
-
-    @staticmethod
-    def decrypt_credentials(credentials: str) -> dict:
-        aes = AESCipher(settings.AES_KEY.encode())
-        return json.loads(aes.decrypt(credentials.replace(" ", "+")))
 
     def get_new_token(self, credentials, scheme_account_id):
         url = f"{self.Config.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/SignOn"
@@ -98,7 +90,7 @@ class HarveyNichols(SingleExportAgent):
             lambda: session.query(models.MatchedTransaction).get(matched_transaction_id),
             description="load matched transaction",
         )
-        credentials = self.decrypt_credentials(transaction.user_identity.credentials)
+        credentials = decrypt_credentials(transaction.user_identity.credentials)
         scheme_account_id = transaction.user_identity.scheme_account_id
 
         return AgentExportData(

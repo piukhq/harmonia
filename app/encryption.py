@@ -1,7 +1,11 @@
 import base64
 import hashlib
+import json
+
 from Crypto import Random
 from Crypto.Cipher import AES
+
+import settings
 
 
 class AESCipher(object):
@@ -26,8 +30,19 @@ class AESCipher(object):
         return self._unpad(cipher.decrypt(enc[AES.block_size :])).decode("utf-8")
 
     def _pad(self, s):
-        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
+        length = self.bs - (len(s) % self.bs)
+        return s + bytes([length]) * length
 
     @staticmethod
     def _unpad(s):
         return s[: -ord(s[len(s) - 1 :])]
+
+
+def decrypt_credentials(credentials: str) -> dict:
+    aes = AESCipher(settings.AES_KEY.encode())
+    return json.loads(aes.decrypt(credentials.replace(" ", "+")))
+
+
+def encrypt_credentials(credentials: dict) -> str:
+    aes = AESCipher(settings.AES_KEY.encode())
+    return aes.encrypt(json.dumps(credentials)).decode("utf-8")
