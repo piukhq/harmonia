@@ -96,8 +96,9 @@ class HarveyNichols(SingleExportAgent):
             )
             raise db.NoResultFound
 
-        credentials = decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
-        scheme_account_id = transaction.user_identity.scheme_account_id
+        user_identity = transaction.payment_transaction.user_identity
+        credentials = decrypt_credentials(user_identity.credentials)
+        scheme_account_id = user_identity.scheme_account_id
 
         return AgentExportData(
             body={"credentials": credentials, "scheme_account_id": scheme_account_id}, transactions=[transaction]
