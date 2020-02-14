@@ -90,7 +90,7 @@ class HarveyNichols(SingleExportAgent):
             lambda: session.query(models.MatchedTransaction).get(matched_transaction_id),
             description="load matched transaction",
         )
-        credentials = decrypt_credentials(transaction.user_identity.credentials)
+        credentials = decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
         scheme_account_id = transaction.user_identity.scheme_account_id
 
         return AgentExportData(
