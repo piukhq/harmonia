@@ -11,7 +11,7 @@ from soteria.security import get_security_agent
 from app import models, db
 from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
-from app.encryption import AESCipher
+from app.encryption import decrypt_credentials
 from app.config import ConfigValue, KEY_PREFIX
 from app.exports.agents import BatchExportAgent
 from app.exports.agents.bases.base import AgentExportData
@@ -60,12 +60,6 @@ class Cooperative(BatchExportAgent):
         )
 
     @staticmethod
-    def decrypt_credentials(credentials):
-        aes = AESCipher(settings.AES_KEY.encode())
-
-        return json.loads(aes.decrypt(credentials.replace(" ", "+")))
-
-    @staticmethod
     def save_backup_file(response):
         if response.json():
             filename = f"archive-coop-resp-{str(datetime.datetime.now().timestamp())}.json"
@@ -78,7 +72,7 @@ class Cooperative(BatchExportAgent):
     def serialize_transactions(self, matched_transactions):
         result = []
         for transaction in matched_transactions:
-            credentials = self.decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
+            credentials = decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
             result.append(
                 {
                     "record_uid": str(uuid4()),

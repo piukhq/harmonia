@@ -66,8 +66,12 @@ class MatchingWorker:
 
         try:
             agent = matching_agents.instantiate(slug, payment_transaction)
-        except RegistryError:
-            self.log.debug(f"No matching agent is registed for slug {slug}. Skipping match of {payment_transaction}")
+        except RegistryError as ex:
+            if settings.DEBUG:
+                raise ex
+            self.log.debug(
+                f"Failed to instantiate matching agent for slug {slug} (ex). Skipping match of {payment_transaction}"
+            )
             return None
 
         return self._try_match(agent, payment_transaction)
@@ -114,6 +118,7 @@ class MatchingWorker:
 
             scheme_transaction = db.session.query(models.SchemeTransaction).get(match_result.scheme_transaction_id)
             scheme_transaction.status = models.TransactionStatus.MATCHED
+
             db.session.commit()
 
         db.run_query(mark_transactions, description="mark scheme transaction as matched")
@@ -143,6 +148,7 @@ class MatchingWorker:
             .filter(
                 models.PaymentTransaction.merchant_identifier_ids.overlap(scheme_transaction.merchant_identifier_ids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
+                models.PaymentTransaction.user_identity_id.isnot(None),
             )
             .all(),
             description="find pending payment transactions to match scheme transaction",

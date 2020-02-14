@@ -65,7 +65,7 @@ class SchemeTransaction(Base, ModelMixin):
     points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
 
-    extra_fields = s.Column(s.JSON)  # any extra data used for exports
+    extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="scheme_transaction")
 
@@ -87,7 +87,7 @@ class PaymentTransaction(Base, ModelMixin):
     user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
     user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
 
-    extra_fields = s.Column(s.JSON)  # any extra data used for exports
+    extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
 
@@ -123,7 +123,7 @@ class MatchedTransaction(Base, ModelMixin):
     payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
     scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
-    extra_fields = s.Column(s.JSON)  # combination of the same field on the scheme and payment transaction models
+    extra_fields = s.Column(psql.JSON)  # combination of the same field on the scheme and payment transaction models
 
 
 @auto_repr
@@ -134,5 +134,7 @@ class UserIdentity(Base, ModelMixin):
     scheme_account_id = s.Column(s.Integer, nullable=False)
     user_id = s.Column(s.Integer, nullable=False)
     credentials = s.Column(s.Text, nullable=False)
+    first_six = s.Column(s.Text, nullable=False)
+    last_four = s.Column(s.Text, nullable=False)
 
     payment_transaction = s.orm.relationship("PaymentTransaction", uselist=False, back_populates="user_identity")

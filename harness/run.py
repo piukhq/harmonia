@@ -5,17 +5,28 @@ from enum import Enum
 import click
 import toml
 from flask import Flask
-from marshmallow import ValidationError, fields
+from marshmallow import ValidationError, fields, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 import settings
-from app import db, models
-from app.imports.agents.bases.active_api_agent import ActiveAPIAgent
-from app.imports.agents.bases.file_agent import FileAgent
-from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
+from app import db, models, encryption
+from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
+
+
+class ImportAgentKind(Enum):
+    PASSIVE_API = "Passive API"
+    ACTIVE_API = "Active API"
+    FILE = "File"
+
+
+_import_agent_kind = {
+    PassiveAPIAgent: ImportAgentKind.PASSIVE_API,
+    ActiveAPIAgent: ImportAgentKind.ACTIVE_API,
+    FileAgent: ImportAgentKind.FILE,
+}
 
 
 class IdentityDateTimeField(fields.DateTime):
@@ -26,7 +37,7 @@ class IdentityDateTimeField(fields.DateTime):
 
 
 class FixtureProviderSchema(Schema):
-    slug = fields.String(required=True, allow_none=False)
+    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
 
 
 class FixtureUserTransactionSchema(Schema):
@@ -36,8 +47,10 @@ class FixtureUserTransactionSchema(Schema):
 
 
 class FixtureUserSchema(Schema):
-    token = fields.String(required=True, allow_none=False)
-    loyalty_id = fields.String(required=True, allow_none=False)
+    token = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    loyalty_id = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    first_six = fields.String(required=True, allow_none=False, validate=validate.Length(equal=6))
+    last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     credentials = fields.Dict(required=True, allow_none=False)
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
 
@@ -51,26 +64,16 @@ class FixtureSchema(Schema):
     users = fields.Nested(FixtureUserSchema, many=True)
 
 
-class ImportAgentKind(Enum):
-    PASSIVE_API = "Passive API"
-    ACTIVE_API = "Active API"
-    FILE = "File"
+def get_import_agent_kind(agent: BaseAgent) -> ImportAgentKind:
+    for agent_type, kind in _import_agent_kind.items():
+        if isinstance(agent, agent_type):
+            return kind
 
-
-_import_agent_kind = {
-    "bink-loyalty": ImportAgentKind.PASSIVE_API,
-    "bink-payment": ImportAgentKind.PASSIVE_API,
-}
-
-
-def get_import_agent_kind(slug: str) -> ImportAgentKind:
-    try:
-        return _import_agent_kind[slug]
-    except KeyError:
-        click.echo(
-            f"Import agent {slug} is not currently supported. "
-            "Please add an entry into the `_import_agent_kind` dictionary in `harness/run.py` for this agent."
-        )
+    click.echo(
+        f"The type of import agent {agent.provider_slug} is not currently supported. "
+        "Please add an entry into the `_import_agent_kind` dictionary in `harness/run.py` for this agent type."
+    )
+    raise click.Abort
 
 
 def payment_card_user_info_fn(fixture: dict) -> t.Callable:
@@ -83,18 +86,14 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
         for idx, user in enumerate(fixture["users"]):
             if user["token"] != payment_token:
                 continue
-            """
-            loyalty_id=user_info["loyalty_id"],
-            scheme_account_id=user_info["scheme_account_id"],
-            user_id=user_info["user_id"],
-            credentials=user_info["credentials"],
-            """
+
             return {
                 payment_token: {
                     "loyalty_id": user["loyalty_id"],
                     "scheme_account_id": idx,
                     "user_id": idx,
-                    "credentials": "",
+                    "credentials": user["credentials"],
+                    "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
                 }
             }
 
@@ -102,14 +101,19 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
 
 
 def load_fixture(fixture_file: t.IO[str]) -> dict:
-    fixture = toml.load(fixture_file)
+    content = toml.load(fixture_file)
 
     try:
-        return FixtureSchema().load(fixture)
+        fixture = FixtureSchema().load(content)
     except ValidationError as ex:
         click.secho("Failed to load fixture", fg="red", bold=True)
         cpprint(ex.messages)
         raise click.Abort
+
+    for user in fixture["users"]:
+        user["credentials"] = encryption.encrypt_credentials(user["credentials"])
+
+    return fixture
 
 
 def create_merchant_identifier(fixture: dict):
@@ -158,7 +162,6 @@ def run_passive_api_import_agent(agent: PassiveAPIAgent, fixture: dict):
 
         if 200 <= resp.status_code <= 299:
             cpprint(resp.json)
-            click.secho("Success", fg="green", bold=True)
         else:
             click.echo(resp.status)
             cpprint(resp.json)
@@ -166,18 +169,23 @@ def run_passive_api_import_agent(agent: PassiveAPIAgent, fixture: dict):
 
 
 def run_active_api_import_agent(agent: ActiveAPIAgent, fixture: dict):
-    raise NotImplementedError()
+    raise NotImplementedError("Active API import agents are not implemented yet.")
 
 
 def run_file_import_agent(agent: FileAgent, fixture: dict):
-    raise NotImplementedError()
+    provider = import_data_providers.instantiate(agent.provider_slug)
+    data = provider.provide(fixture)
+    click.secho(
+        f"Importing {agent.provider_slug} transaction data", fg="cyan", bold=True,
+    )
+    agent._do_import(data, "end-to-end test file")
 
 
 def run_import_agent(slug: str, fixture: dict):
     from app.imports.agents.registry import import_agents
 
-    kind = get_import_agent_kind(slug)
     agent = import_agents.instantiate(slug)
+    kind = get_import_agent_kind(agent)
 
     return {
         ImportAgentKind.PASSIVE_API: run_passive_api_import_agent,
@@ -197,7 +205,6 @@ def run_rq_worker(queue_name: str):
 
     click.secho(f"Running {queue_name} worker", fg="cyan", bold=True)
     worker.work(burst=True, logging_level="WARNING")
-    click.secho("Success", fg="green", bold=True)
 
 
 def run_transaction_matching(fixture: dict):
