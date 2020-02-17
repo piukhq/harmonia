@@ -1,9 +1,8 @@
 from user_auth_token.core import UserTokenStore
 
 import settings
-from app import models
+from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
-from app.db import run_query, session
 from app.encryption import decrypt_credentials
 from app.exports.agents.bases.base import AgentExportData
 from app.exports.agents.bases.single_export_agent import SingleExportAgent
@@ -54,7 +53,7 @@ class HarveyNichols(SingleExportAgent):
 
     def save_data(self, matched_transaction: models.MatchedTransaction, audit_data: dict) -> None:
         def export_transaction():
-            session.add(
+            db.session.add(
                 models.ExportTransaction(
                     matched_transaction_id=matched_transaction.id,
                     transaction_id=matched_transaction.transaction_id,
@@ -64,9 +63,9 @@ class HarveyNichols(SingleExportAgent):
                 )
             )
             matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
-            session.commit()
+            db.session.commit()
 
-        run_query(export_transaction, description="create export transaction")
+        db.run_query(export_transaction, description="create export transaction")
         self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
 
     def internal_requests(
@@ -86,10 +85,17 @@ class HarveyNichols(SingleExportAgent):
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")
 
     def make_export_data(self, matched_transaction_id):
-        transaction = run_query(
-            lambda: session.query(models.MatchedTransaction).get(matched_transaction_id),
+        transaction = db.run_query(
+            lambda: db.session.query(models.MatchedTransaction).get(matched_transaction_id),
             description="load matched transaction",
         )
+
+        if transaction is None:
+            self.log.warning(
+                f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted."
+            )
+            raise db.NoResultFound
+
         credentials = decrypt_credentials(transaction.payment_transaction.user_identity.credentials)
         scheme_account_id = transaction.user_identity.scheme_account_id
 
@@ -98,7 +104,6 @@ class HarveyNichols(SingleExportAgent):
         )
 
     def export(self, export_data: AgentExportData) -> bool:
-
         transaction = export_data.transactions[0]
         credentials = export_data.body["credentials"]
         scheme_account_id = export_data.body["scheme_account_id"]
