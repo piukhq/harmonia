@@ -12,7 +12,9 @@ class BinkLoyalty(SingleExportAgent):
         matched_transaction = db.session.query(models.MatchedTransaction).get(matched_transaction_id)
 
         if matched_transaction is None:
-            self.log.warning(f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted.")
+            self.log.warning(
+                f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted."
+            )
             raise db.NoResultFound
 
         self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
