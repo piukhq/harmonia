@@ -5,7 +5,7 @@ source s/_common
 s/rmservices
 
 p 'creating postgres'
-docker run -d -p51234:5432 --name txm-postgres postgres
+docker run -d -p51234:5432 --name txm-postgres -e POSTGRES_PASSWORD=password postgres
 
 p 'creating redis'
 docker run -d -p61234:6379 --name txm-redis redis

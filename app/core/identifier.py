@@ -72,17 +72,22 @@ class Identifier:
 
         if payment_transaction.user_identity is not None:
             log.warning(
-                "Skipping identification of payment transaction "
-                f"#{payment_transaction_id} as it already has an "
-                "associated user identity."
+                f"Skipping identification of {payment_transaction} as it already has an associated user identity."
             )
             return
 
         try:
             user_info = self.payment_card_user_info(payment_transaction)
+        except SchemeAccountNotFound:
+            log.debug(f"Hermes was unable to find a scheme amount matching {payment_transaction}")
+            return
         except requests.RequestException:
             event_id = sentry_sdk.capture_exception()
             log.debug(f"Failed to get user info from Hermes. Sentry event ID: {event_id}")
+            return
+
+        if "card_information" not in user_info:
+            log.debug(f"Hermes identified {payment_transaction} but could return no payment card information")
             return
 
         self.persist_user_identity(payment_transaction, user_info)
