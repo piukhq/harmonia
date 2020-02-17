@@ -25,11 +25,18 @@ class SingleExportAgent(BaseAgent):
         status_monitor.checkin(self)
 
         self.log.info(f"Handling {pending_export}.")
-        export_data = self.make_export_data(pending_export.matched_transaction_id)
-        if settings.EXPORT_TO_FILE:
-            self._save_to_file(export_data)
+
+        try:
+            export_data = self.make_export_data(pending_export.matched_transaction_id)
+        except db.NoResultFound:
+            self.log.warning(
+                f"The export agent failed to load its matched transaction. {pending_export} will be discarded."
+            )
         else:
-            self.export(export_data)
+            if settings.EXPORT_TO_FILE:
+                self._save_to_file(export_data)
+            else:
+                self.export(export_data)
 
         self.log.info(f"Removing pending export {pending_export}.")
 

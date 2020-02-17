@@ -21,6 +21,11 @@ class ExportDirector:
             lambda: db.session.query(MatchedTransaction).get(matched_transaction_id),
             description="find matched transaction",
         )
+
+        if matched_transaction is None:
+            log.warning(f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted.")
+            return
+
         loyalty_scheme = matched_transaction.merchant_identifier.loyalty_scheme
 
         log.debug(
@@ -45,6 +50,10 @@ class ExportDirector:
         pending_export = db.run_query(
             lambda: db.session.query(PendingExport).get(pending_export_id), description="find pending export"
         )
+
+        if pending_export is None:
+            log.warning(f"Failed to load pending export #{pending_export_id} - record may have been deleted.")
+            return
 
         try:
             agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))

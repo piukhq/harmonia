@@ -86,7 +86,9 @@ class MatchingWorker:
         )
 
         if payment_transaction is None:
-            self.log.warning(f"Couldn't find a payment transaction with ID {payment_transaction_id}. Skipping.")
+            self.log.warning(
+                f"Failed to load payment transaction #{payment_transaction_id} - record may have been deleted."
+            )
             return
 
         self.log.debug(f"Received payment transaction #{payment_transaction.id}. Attempting to match…")

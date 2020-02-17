@@ -10,6 +10,13 @@ class BinkLoyalty(SingleExportAgent):
 
     def make_export_data(self, matched_transaction_id):
         matched_transaction = db.session.query(models.MatchedTransaction).get(matched_transaction_id)
+
+        if matched_transaction is None:
+            self.log.warning(
+                f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted."
+            )
+            raise db.NoResultFound
+
         self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
 
         value = Decimal(matched_transaction.spend_amount) / Decimal(matched_transaction.spend_multiplier)

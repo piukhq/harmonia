@@ -70,6 +70,10 @@ class Identifier:
             description="find payment transaction",
         )
 
+        if payment_transaction is None:
+            log.warning(f"Failed to load payment transaction #{payment_transaction_id} - record may have been deleted.")
+            return
+
         if payment_transaction.user_identity is not None:
             log.warning(
                 f"Skipping identification of {payment_transaction} as it already has an associated user identity."
