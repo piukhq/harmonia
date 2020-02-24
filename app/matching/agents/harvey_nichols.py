@@ -1,6 +1,7 @@
 import typing as t
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy import or_
 
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
@@ -12,8 +13,11 @@ class HarveyNichols(BaseMatchingAgent):
         user_identity = self.payment_transaction.user_identity
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
-            models.SchemeTransaction.extra_fields["card"]["first_6"].astext == user_identity.first_six,
             models.SchemeTransaction.extra_fields["card"]["last_4"].astext == user_identity.last_four,
+            or_(
+                models.SchemeTransaction.extra_fields["card"]["first_6"].astext == user_identity.first_six,
+                models.SchemeTransaction.extra_fields["card"]["first_6"].astext == "000000",
+            ),
         )
 
         try:
