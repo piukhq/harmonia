@@ -45,4 +45,4 @@ def decrypt_credentials(credentials: str) -> dict:
 
 def encrypt_credentials(credentials: dict) -> str:
     aes = AESCipher(settings.AES_KEY.encode())
-    return aes.encrypt(json.dumps(credentials)).decode("utf-8")
+    return aes.encrypt(json.dumps(credentials).encode()).decode("utf-8")
