@@ -101,20 +101,31 @@ class HarveyNichols(SingleExportAgent):
         scheme_account_id = user_identity.scheme_account_id
 
         return AgentExportData(
-            body={"credentials": credentials, "scheme_account_id": scheme_account_id}, transactions=[transaction]
+            body={
+                "CustomerClaimTransactionRequest": {
+                    "token": "token",
+                    "customerNumber": credentials["card_number"],
+                    "id": transaction.transaction_id
+                }
+            },
+            transactions=[transaction],
+            extra_data={
+                "credentials": credentials,
+                "scheme_account_id": scheme_account_id
+            }
         )
 
     def export(self, export_data: AgentExportData) -> bool:
         transaction = export_data.transactions[0]
-        credentials = export_data.body["credentials"]
-        scheme_account_id = export_data.body["scheme_account_id"]
+        credentials = export_data.extra_data["credentials"]
+        scheme_account_id = export_data.extra_data["scheme_account_id"]
 
         token = self.get_token(credentials, scheme_account_id)
 
-        response = self.api.claim_transaction(token, credentials["card_number"], transaction.transaction_id)
+        response = self.api.claim_transaction(token, export_data.body)
         if response["outcome"] == "AuthFailed":
             token = self.get_new_token(credentials, scheme_account_id)
-            response = self.api.claim_transaction(token, credentials["card_number"], transaction.transaction_id)
+            response = self.api.claim_transaction(token, export_data.body)
 
         audit_data = {
             "token": token,
