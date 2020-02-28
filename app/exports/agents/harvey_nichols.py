@@ -105,14 +105,11 @@ class HarveyNichols(SingleExportAgent):
                 "CustomerClaimTransactionRequest": {
                     "token": "token",
                     "customerNumber": credentials["card_number"],
-                    "id": transaction.transaction_id
+                    "id": transaction.transaction_id,
                 }
             },
             transactions=[transaction],
-            extra_data={
-                "credentials": credentials,
-                "scheme_account_id": scheme_account_id
-            }
+            extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
         )
 
     def export(self, export_data: AgentExportData) -> bool:
