@@ -18,9 +18,7 @@ class HarveyNicholsAPI:
         response.raise_for_status()
         return response.json()
 
-    def claim_transaction(self, token: str, card_number: str, transaction_id: str) -> dict:
+    def claim_transaction(self, token: str, body: dict) -> dict:
         endpoint = f"{self.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
-        body = {
-            "CustomerClaimTransactionRequest": {"token": token, "customerNumber": card_number, "id": transaction_id}
-        }
+        body["CustomerClaimTransactionRequest"]["token"] = token
         return self.post(endpoint, body, name="claim_transaction")["CustomerClaimTransactionResponse"]

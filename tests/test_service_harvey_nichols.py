@@ -19,7 +19,8 @@ def test_merchant_request(harvey_nichols: HarveyNicholsAPI) -> None:
     body = {"CustomerClaimTransactionResponse": {"outcome": "Success"}}
     responses.add(responses.POST, url, json=body)
 
-    resp = harvey_nichols.claim_transaction("", "", "")
+    body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
+    resp = harvey_nichols.claim_transaction("token", body_request)
     expected_resp = {"outcome": "Success"}
     assert resp == expected_resp
 
@@ -31,7 +32,8 @@ def test_merchant_request_bad_500(harvey_nichols: HarveyNicholsAPI) -> None:
     responses.add(responses.POST, url, json=body, status=500)
 
     with pytest.raises(requests.HTTPError) as ex:
-        harvey_nichols.claim_transaction("", "", "")
+        body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
+        harvey_nichols.claim_transaction("token", body_request)
     assert ex.value.response.status_code == 500
 
 
@@ -42,5 +44,6 @@ def test_merchant_request_bad_400(harvey_nichols: HarveyNicholsAPI) -> None:
     responses.add(responses.POST, url, json=body, status=400)
 
     with pytest.raises(requests.HTTPError) as ex:
-        harvey_nichols.claim_transaction("", "", "")
+        body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
+        harvey_nichols.claim_transaction("token", body_request)
     assert ex.value.response.status_code == 400

@@ -13,6 +13,7 @@ import json
 class AgentExportData:
     body: dict
     transactions: t.List[MatchedTransaction]
+    extra_data: dict
 
 
 def _missing_property(obj, prop: str):
