@@ -1,6 +1,6 @@
 from app.api.app import define_schema
 from marshmallow import Schema, fields
-from marshmallow_sqlalchemy import ModelSchema
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 
 @define_schema
@@ -28,7 +28,11 @@ class StatusReportSchema(Schema):
 
 
 @define_schema
-class ImportTransactionSchema(ModelSchema):
+class ImportTransactionSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        load_instance = True
+        include_relationships = True
+
     id = fields.Integer(required=True, allow_none=False)
     identified = fields.Boolean(required=True, allow_none=False)
     provider_slug = fields.String(required=True, allow_none=False)
@@ -37,7 +41,11 @@ class ImportTransactionSchema(ModelSchema):
 
 
 @define_schema
-class SchemeTransactionSchema(ModelSchema):
+class SchemeTransactionSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        load_instance = True
+        include_relationships = True
+
     id = fields.Integer(required=True, allow_none=False)
     transaction_date = fields.DateTime(required=True, allow_none=False)
     spend_amount = fields.Integer(required=True, allow_none=False)
@@ -46,7 +54,11 @@ class SchemeTransactionSchema(ModelSchema):
 
 
 @define_schema
-class PaymentTransactionSchema(ModelSchema):
+class PaymentTransactionSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        load_instance = True
+        include_relationships = True
+
     id = fields.Integer(required=True, allow_none=False)
     transaction_date = fields.DateTime(required=True, allow_none=False)
     spend_amount = fields.Integer(required=True, allow_none=False)
@@ -55,7 +67,11 @@ class PaymentTransactionSchema(ModelSchema):
 
 
 @define_schema
-class MatchedTransactionSchema(ModelSchema):
+class MatchedTransactionSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        load_instance = True
+        include_relationships = True
+
     id = fields.Integer(required=True, allow_none=False)
     transaction_date = fields.DateTime(required=True, allow_none=False)
     spend_amount = fields.Integer(required=True, allow_none=False)
@@ -65,7 +81,11 @@ class MatchedTransactionSchema(ModelSchema):
 
 
 @define_schema
-class ExportTransactionSchema(ModelSchema):
+class ExportTransactionSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        load_instance = True
+        include_relationships = True
+
     id = fields.Integer(required=True, allow_none=False)
     provider_slug = fields.String(required=True, allow_none=False)
     destination = fields.String(required=True, allow_none=False)

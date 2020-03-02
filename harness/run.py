@@ -220,6 +220,7 @@ def run_transaction_matching(fixture: dict):
 @click.command()
 @click.option(
     "--fixture-file",
+    "-f",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True),
     default="harness/fixtures/default.toml",
     show_default=True,

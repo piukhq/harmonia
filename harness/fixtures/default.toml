@@ -13,6 +13,8 @@ slug = "bink-payment"
 [[users]]
 loyalty_id = "loyalty-123"
 token = "token-123"
+first_six = "123456"
+last_four = "7890"
 
 [users.credentials]
 card_number = "loyalty-123"
@@ -31,6 +33,8 @@ points = 6
 [[users]]
 loyalty_id = "loyalty-456"
 token = "token-456"
+first_six = "098765"
+last_four = "4321"
 
 [users.credentials]
 card_number = "loyalty-456"

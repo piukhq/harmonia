@@ -129,4 +129,4 @@ VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
 
 # Export data to file mode for export agents.
-EXPORT_TO_FILE = getenv("TXM_EXPORT_TO_FILE", required=False)
+EXPORT_TO_FILE = getenv("TXM_EXPORT_TO_FILE", default="true", conv=boolconv)
