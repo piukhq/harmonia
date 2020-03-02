@@ -1,6 +1,7 @@
 import typing as t
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 import click
 import toml
@@ -13,6 +14,7 @@ import settings
 from app import db, models, encryption
 from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent
 from app.service.hermes import hermes
+from harness.providers.base import BaseImportDataProvider
 from harness.providers.registry import import_data_providers
 
 
@@ -217,6 +219,30 @@ def run_transaction_matching(fixture: dict):
     run_rq_worker("matching")
 
 
+def dump_provider_data(fixture: dict, slug: str):
+    provider = import_data_providers.instantiate(slug)
+    data = provider.provide(fixture)
+
+    fmt_slug = click.style(slug, fg="cyan", bold=True)
+
+    if not isinstance(data, bytes):
+        click.echo(f"Skipping {fmt_slug} as provided data was not bytes")
+        return
+
+    path = Path("dump") / slug
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fmt_path = click.style(slug, fg="cyan", bold=True)
+    click.echo(f"Dumping {fmt_slug} file to {fmt_path}")
+    with path.open("wb") as f:
+        f.write(data)
+
+
+def do_file_dump(fixture: dict):
+    dump_provider_data(fixture, fixture["loyalty_scheme"]["slug"])
+    dump_provider_data(fixture, fixture["payment_provider"]["slug"])
+
+
 @click.command()
 @click.option(
     "--fixture-file",
@@ -225,8 +251,14 @@ def run_transaction_matching(fixture: dict):
     default="harness/fixtures/default.toml",
     show_default=True,
 )
-def main(fixture_file: t.IO[str]):
+@click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
+def main(fixture_file: t.IO[str], dump_files: bool):
     fixture = load_fixture(fixture_file)
+
+    if dump_files:
+        do_file_dump(fixture)
+        return
+
     patch_hermes_service(fixture)
     create_merchant_identifier(fixture)
     run_transaction_matching(fixture)
