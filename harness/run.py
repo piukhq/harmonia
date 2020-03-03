@@ -14,7 +14,6 @@ import settings
 from app import db, models, encryption
 from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent
 from app.service.hermes import hermes
-from harness.providers.base import BaseImportDataProvider
 from harness.providers.registry import import_data_providers
 
 
