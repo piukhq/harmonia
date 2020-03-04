@@ -1,5 +1,6 @@
 import typing as t
 import inspect
+from pathlib import Path
 
 import gnupg
 import pendulum
@@ -7,6 +8,7 @@ import pendulum
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
+from app.core import keyring
 from app import models
 
 PROVIDER_SLUG = "visa"
@@ -83,8 +85,25 @@ class Visa(FileAgent):
             idx += width
         return data
 
+    @staticmethod
+    def _download_keyring(path: Path):
+        path.mkdir(parents=True, exist_ok=False)
+        manager = keyring.KeyringManager()
+        for name, data in manager.get_keyring(PROVIDER_SLUG):
+            ring_file = path / name
+            with ring_file.open("wb") as f:
+                f.write(data)
+
+    @staticmethod
+    def _get_gpg_home():
+        homedir = Path("keyring")
+        if not homedir.exists():
+            Visa._download_keyring(homedir)
+        return homedir
+
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
-        gpg = gnupg.GPG(gnupghome="keyring")
+        gpg_home = self._get_gpg_home()
+        gpg = gnupg.GPG(gnupghome=gpg_home)
         result = gpg.decrypt(data)
         if not result.ok:
             raise self.ImportError(f"Decryption failed: {result.status}")
