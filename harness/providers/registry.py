@@ -8,3 +8,4 @@ import_data_providers.add("bink-payment", "harness.providers.bink_payment.BinkPa
 import_data_providers.add("harvey-nichols", "harness.providers.harvey_nichols.HarveyNichols")
 import_data_providers.add("iceland-bonus-card", "harness.providers.iceland.Iceland")
 import_data_providers.add("amex", "harness.providers.amex.Amex")
+import_data_providers.add("mastercard", "harness.providers.mastercard.Mastercard")
