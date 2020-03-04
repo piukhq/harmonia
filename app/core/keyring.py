@@ -21,7 +21,7 @@ class KeyringManager:
     def _keyring_path(slug: str):
         return f"secret/keyrings/{slug}"
 
-    def get_keyring(self, slug: str) -> t.Iterator[t.Tuple[str, t.IO]]:
+    def get_keyring(self, slug: str) -> t.Iterator[t.Tuple[str, bytes]]:
         path = self._keyring_path(slug)
         keyring_data = self.client.read(path)
         if keyring_data is None:

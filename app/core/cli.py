@@ -100,12 +100,13 @@ def keyring():
 @click.argument("slug")
 @click.option(
     "--path",
+    "path_str",
     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True, readable=False),
     default="keyring",
     show_default=True,
 )
-def read(slug: str, path: str):
-    path = Path(path)
+def read(slug: str, path_str: str):
+    path = Path(path_str)
     path.mkdir(parents=True, exist_ok=True)
 
     fmt_slug = click.style(slug, fg="cyan", bold=True)
@@ -127,9 +128,9 @@ def read(slug: str, path: str):
 
 @keyring.command()
 @click.argument("slug")
-@click.option("--path", default="keyring", show_default=True)
-def write(slug: str, path: str):
-    path = Path(path)
+@click.option("--path", "path_str", default="keyring", show_default=True)
+def write(slug: str, path_str: str):
+    path = Path(path_str)
 
     fmt_slug = click.style(slug, fg="cyan", bold=True)
     fmt_path = click.style(path.name, fg="cyan", bold=True)
