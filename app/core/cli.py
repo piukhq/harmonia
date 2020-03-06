@@ -1,15 +1,16 @@
+import csv
+import typing as t
 from collections import namedtuple
 from functools import lru_cache
-from pathlib import Path
-import typing as t
-import csv
+from pprint import pprint
 
 import click
+import gnupg
 
-from app.core.identify_retry_worker import IdentifyRetryWorker
-from app.core import keyring as kr
-from app import models, db
 import settings
+from app import db, models
+from app.core import key_manager
+from app.core.identify_retry_worker import IdentifyRetryWorker
 
 
 @click.group()
@@ -92,57 +93,60 @@ def import_mids(mids_file: t.TextIO) -> None:
 
 
 @cli.group()
-def keyring():
+def keys():
     pass
 
 
-@keyring.command()
+@keys.command()
 @click.argument("slug")
-@click.option(
-    "--path",
-    "path_str",
-    type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True, readable=False),
-    default="keyring",
-    show_default=True,
-)
-def read(slug: str, path_str: str):
-    path = Path(path_str)
-    path.mkdir(parents=True, exist_ok=True)
-
+@click.argument("key", type=click.File("wb"))
+def read(slug: str, key: t.IO[bytes]):
+    """Download the SLUG key from the vault into DIRECTORY"""
     fmt_slug = click.style(slug, fg="cyan", bold=True)
-    fmt_path = click.style(path.name, fg="cyan", bold=True)
-    click.echo(f"Reading {fmt_slug} keyring into {fmt_path}")
+    fmt_path = click.style(key.name, fg="cyan", bold=True)
+    click.echo(f"Downloading {fmt_slug} key into {fmt_path}")
 
-    manager = kr.KeyringManager()
+    manager = key_manager.KeyManager()
     try:
-        for name, data in manager.get_keyring(slug):
-            ring_file = path / name
-            fmt_path = click.style(ring_file.name, fg="cyan", bold=True)
-            click.echo(f"Writing {fmt_path}...")
-            with ring_file.open("wb") as f:
-                f.write(data)
-    except kr.KeyringDoesNotExistError as ex:
+        key_data = manager.read_key(slug)
+    except key_manager.KeyDoesNotExistError as ex:
         fmt_err = click.style(str(ex), fg="red", bold=True)
-        click.echo(f"Keyring manager raised an error: {fmt_err}")
+        click.echo(f"Key manager raised an error: {fmt_err}")
+
+    key.write(key_data)
 
 
-@keyring.command()
+@keys.command()
 @click.argument("slug")
-@click.option("--path", "path_str", default="keyring", show_default=True)
-def write(slug: str, path_str: str):
-    path = Path(path_str)
-
+@click.argument("key", type=click.File("rb"))
+def write(slug: str, key: t.IO[bytes]):
+    """Upload KEY to the vault as SLUG"""
     fmt_slug = click.style(slug, fg="cyan", bold=True)
-    fmt_path = click.style(path.name, fg="cyan", bold=True)
-    click.echo(f"Writing {fmt_slug} keyring from {fmt_path}")
+    fmt_path = click.style(key.name, fg="cyan", bold=True)
+    click.echo(f"Uploading {fmt_path} to vault as {fmt_slug}.")
 
-    manager = kr.KeyringManager()
-    ring_files = [(path / ring_type).open("rb") for ring_type in kr.RING_TYPES]
+    manager = key_manager.KeyManager()
+    manager.write_key(slug, key.read())
 
-    manager.create_keyring(slug, pubring=ring_files[0], secring=ring_files[1], trustdb=ring_files[2])
 
-    for ring_file in ring_files:
-        ring_file.close()
+@keys.command()
+@click.argument("email")
+@click.argument("passphrase")
+def gen(email: str, passphrase: str):
+    """Generate a new keypair for EMAIL and dump the secret key to stdout"""
+    gpg = gnupg.GPG(**settings.GPG_ARGS)
+    input_data = gpg.gen_key_input(name_email=email, passphrase=passphrase)
+    key = gpg.gen_key(input_data)
+    priv_key_asc = gpg.export_keys(key.fingerprint, secret=True, passphrase=passphrase)
+    click.echo(priv_key_asc)
+
+
+@keys.command()
+def list():
+    """List all keys in the keychain"""
+    gpg = gnupg.GPG(**settings.GPG_ARGS)
+    for key in gpg.list_keys():
+        print(f"[{key['keyid']}] {key['uids'][0]}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
+import os
+import shutil
 import typing as t
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+import gnupg
 import click
 import toml
 from flask import Flask
@@ -12,6 +15,7 @@ from prettyprinter import cpprint
 
 import settings
 from app import db, models, encryption
+from app.core import key_manager
 from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
@@ -134,6 +138,20 @@ def patch_hermes_service(fixture: dict):
     hermes.payment_card_user_info = payment_card_user_info_fn(fixture)
 
 
+def setup_keyring():
+    gpg_home = Path(settings.GPG_ARGS["gnupghome"])
+    if gpg_home.exists():
+        shutil.rmtree(gpg_home)
+    gpg_home.mkdir(parents=True)
+
+    gpg = gnupg.GPG(**settings.GPG_ARGS)
+    input_data = gpg.gen_key_input(name_email="harmonia@bink.dev")
+    key = gpg.gen_key(input_data)
+    priv_key_data = gpg.export_keys(key.fingerprint, secret=True, armor=False)
+    manager = key_manager.KeyManager()
+    manager.write_key("visa", priv_key_data)
+
+
 def make_import_data(slug: str, fixture: dict) -> dict:
     provider = import_data_providers.instantiate(slug)
     return provider.provide(fixture)
@@ -253,6 +271,8 @@ def do_file_dump(fixture: dict):
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
 def main(fixture_file: t.IO[str], dump_files: bool):
     fixture = load_fixture(fixture_file)
+
+    setup_keyring()
 
     if dump_files:
         do_file_dump(fixture)

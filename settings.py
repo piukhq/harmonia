@@ -127,6 +127,13 @@ SOTERIA_URL = getenv("TXM_SOTERIA_URL", required=False)
 # Hashicorp Vault connection details
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
+VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
 
 # Export data to file mode for export agents.
 EXPORT_TO_FILE = getenv("TXM_EXPORT_TO_FILE", default="true", conv=boolconv)
+
+# Arguments to pass to gnupg.GPG(...)
+GPG_ARGS = {
+    "gpgbinary": getenv("TXM_GPG1_BINARY", default="gpg1"),
+    "gnupghome": getenv("TXM_GPG_HOME", default="keyring"),
+}

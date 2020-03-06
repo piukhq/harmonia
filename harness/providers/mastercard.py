@@ -14,7 +14,7 @@ ALPHANUM = string.ascii_letters + string.digits
 WidthField = t.Tuple[t.Any, int]
 
 
-def join(*args: t.Iterable[WidthField]) -> str:
+def join(*args: WidthField) -> str:
     return "".join(str(value).ljust(length) for value, length in args)
 
 

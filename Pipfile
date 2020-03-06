@@ -39,3 +39,5 @@ black = "==19.10b0"
 gunicorn = "*"
 prettyprinter = "*"
 toml = "*"
+ptpython = "*"
+isort = {extras = ["pipfile"],version = "*"}

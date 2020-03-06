@@ -1,15 +1,16 @@
-import typing as t
 import inspect
+import typing as t
 from pathlib import Path
 
 import gnupg
 import pendulum
 
+from app import models
 from app.config import KEY_PREFIX, ConfigValue
+from app.core import key_manager
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
-from app.core import keyring
-from app import models
+import settings
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -86,27 +87,28 @@ class Visa(FileAgent):
         return data
 
     @staticmethod
-    def _download_keyring(path: Path):
-        path.mkdir(parents=True, exist_ok=False)
-        manager = keyring.KeyringManager()
-        for name, data in manager.get_keyring(PROVIDER_SLUG):
-            ring_file = path / name
-            with ring_file.open("wb") as f:
-                f.write(data)
+    def _download_key(path: Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        manager = key_manager.KeyManager()
+        key_data = manager.read_key(PROVIDER_SLUG)
+        with path.open("wb") as f:
+            f.write(key_data)
 
     @staticmethod
-    def _get_gpg_home():
-        homedir = Path("keyring")
-        if not homedir.exists():
-            Visa._download_keyring(homedir)
-        return homedir
+    def _get_key():
+        key_path = Path(settings.GPG_ARGS["gnupghome"]) / PROVIDER_SLUG
+        if not key_path.exists():
+            Visa._download_key(key_path)
+        with key_path.open("rb") as f:
+            return f.read()
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
-        gpg_home = self._get_gpg_home()
-        gpg = gnupg.GPG(gnupghome=gpg_home)
+        key = self._get_key()
+        gpg = gnupg.GPG(**settings.GPG_ARGS)
+        gpg.import_keys(key)
         result = gpg.decrypt(data)
         if not result.ok:
-            raise self.ImportError(f"Decryption failed: {result.status}")
+            raise self.ImportError(f"Decryption failed: {result.stderr}")
         lines = str(result).split("\n")
         for line in lines:
             if not line.startswith("1601"):

@@ -143,7 +143,9 @@ edit my-fixture.toml with the changes you want to make
 s/test-end-to-end -f my-fixture.toml
 ```
 
-After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.ss
+*Note: If you want to test with a Visa import file, you will need to have gpg1 installed on your system.*
+
+After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.
 
 #### Inspecting PostgreSQL
 
