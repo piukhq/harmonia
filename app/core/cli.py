@@ -2,7 +2,6 @@ import csv
 import typing as t
 from collections import namedtuple
 from functools import lru_cache
-from pprint import pprint
 
 import click
 import gnupg
