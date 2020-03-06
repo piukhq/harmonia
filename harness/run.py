@@ -21,6 +21,10 @@ from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
 
 
+# payment provider slugs that will trigger a keyring being set up
+KEYRING_REQUIRED = ["visa"]
+
+
 class ImportAgentKind(Enum):
     PASSIVE_API = "Passive API"
     ACTIVE_API = "Active API"
@@ -272,7 +276,8 @@ def do_file_dump(fixture: dict):
 def main(fixture_file: t.IO[str], dump_files: bool):
     fixture = load_fixture(fixture_file)
 
-    setup_keyring()
+    if fixture["payment_provider"]["slug"] in KEYRING_REQUIRED:
+        setup_keyring()
 
     if dump_files:
         do_file_dump(fixture)
