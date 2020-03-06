@@ -1,7 +1,10 @@
+import shutil
 import typing as t
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
+import gnupg
 import click
 import toml
 from flask import Flask
@@ -11,9 +14,14 @@ from prettyprinter import cpprint
 
 import settings
 from app import db, models, encryption
+from app.core import key_manager
 from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
+
+
+# payment provider slugs that will trigger a keyring being set up
+KEYRING_REQUIRED = ["visa"]
 
 
 class ImportAgentKind(Enum):
@@ -133,6 +141,20 @@ def patch_hermes_service(fixture: dict):
     hermes.payment_card_user_info = payment_card_user_info_fn(fixture)
 
 
+def setup_keyring():
+    gpg_home = Path(settings.GPG_ARGS["gnupghome"])
+    if gpg_home.exists():
+        shutil.rmtree(gpg_home)
+    gpg_home.mkdir(parents=True)
+
+    gpg = gnupg.GPG(**settings.GPG_ARGS)
+    input_data = gpg.gen_key_input(name_email="harmonia@bink.dev")
+    key = gpg.gen_key(input_data)
+    priv_key_data = gpg.export_keys(key.fingerprint, secret=True, armor=False)
+    manager = key_manager.KeyManager()
+    manager.write_key("visa", priv_key_data)
+
+
 def make_import_data(slug: str, fixture: dict) -> dict:
     provider = import_data_providers.instantiate(slug)
     return provider.provide(fixture)
@@ -217,6 +239,30 @@ def run_transaction_matching(fixture: dict):
     run_rq_worker("matching")
 
 
+def dump_provider_data(fixture: dict, slug: str):
+    provider = import_data_providers.instantiate(slug)
+    data = provider.provide(fixture)
+
+    fmt_slug = click.style(slug, fg="cyan", bold=True)
+
+    if not isinstance(data, bytes):
+        click.echo(f"Skipping {fmt_slug} as provided data was not bytes")
+        return
+
+    path = Path("dump") / slug
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fmt_path = click.style(slug, fg="cyan", bold=True)
+    click.echo(f"Dumping {fmt_slug} file to {fmt_path}")
+    with path.open("wb") as f:
+        f.write(data)
+
+
+def do_file_dump(fixture: dict):
+    dump_provider_data(fixture, fixture["loyalty_scheme"]["slug"])
+    dump_provider_data(fixture, fixture["payment_provider"]["slug"])
+
+
 @click.command()
 @click.option(
     "--fixture-file",
@@ -225,8 +271,17 @@ def run_transaction_matching(fixture: dict):
     default="harness/fixtures/default.toml",
     show_default=True,
 )
-def main(fixture_file: t.IO[str]):
+@click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
+def main(fixture_file: t.IO[str], dump_files: bool):
     fixture = load_fixture(fixture_file)
+
+    if fixture["payment_provider"]["slug"] in KEYRING_REQUIRED:
+        setup_keyring()
+
+    if dump_files:
+        do_file_dump(fixture)
+        return
+
     patch_hermes_service(fixture)
     create_merchant_identifier(fixture)
     run_transaction_matching(fixture)

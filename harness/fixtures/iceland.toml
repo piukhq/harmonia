@@ -1,0 +1,40 @@
+# base fixture data
+mid = "52545152"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "iceland-bonus-card"
+
+[payment_provider]
+slug = "bink-payment"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "1234"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 1099
+points = 5
+
+# second user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "400001"
+last_four = "0001"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+[[users.transactions]]
+date = 2020-01-11T12:41:21Z
+amount = 1176
+points = 0

@@ -26,6 +26,7 @@ marshmallow-sqlalchemy = "*"
 sentry-sdk = {extras = ["flask"],version = "*"}
 user_auth_token = {git = "ssh://git@git.bink.com/libs/user-token-store.git"}
 soteria = {git = "ssh://git@git.bink.com/Olympus/soteria.git"}
+hvac = "*"
 
 [dev-packages]
 alembic = "*"
@@ -38,3 +39,5 @@ black = "==19.10b0"
 gunicorn = "*"
 prettyprinter = "*"
 toml = "*"
+ptpython = "*"
+isort = {extras = ["pipfile"],version = "*"}

@@ -143,7 +143,21 @@ edit my-fixture.toml with the changes you want to make
 s/test-end-to-end -f my-fixture.toml
 ```
 
-After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.ss
+#### Testing Visa
+
+If you want to test with a Visa import file, you will need to have gpg1 installed on your system. You will also need to be running Hashicorp Vault on port 8200.
+
+Example:
+
+```bash
+brew install gpg1
+docker run -d --name vault -p 8200:8200 vault
+docker logs vault  # look for the vault token near the beginning of the logs
+echo 'VAULT_TOKEN=your_vault_token_goes_here >> .env'
+s/test-end-to-end -f my-visa-fixture.toml
+```
+
+After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.
 
 #### Inspecting PostgreSQL
 
