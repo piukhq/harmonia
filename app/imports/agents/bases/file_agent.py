@@ -33,7 +33,7 @@ class LocalFileSource(FileSourceBase):
         subpath = filepath.relative_to(self.path)
         archive_path = settings.LOCAL_IMPORT_BASE_PATH / Path("archives") / pendulum.today().to_date_string() / subpath
         archive_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(filepath, archive_path)
+        shutil.move(str(filepath), archive_path)
 
     def provide(self, callback: t.Callable) -> None:
         for filepath in (p for p in self.path.iterdir() if p.is_file() and not p.name.startswith(".")):

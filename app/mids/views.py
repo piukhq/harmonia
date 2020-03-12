@@ -37,7 +37,7 @@ def get_payment_provider(slug):
     return payment_provider
 
 
-def create_mid_from_values(payment_provider_slug, mid, loyalty_scheme_slug, location, postcode) -> dict:
+def create_merchant_identifier_fields(payment_provider_slug, mid, loyalty_scheme_slug, location, postcode) -> dict:
     loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug)
     payment_provider = get_payment_provider(payment_provider_slug)
 
@@ -50,12 +50,12 @@ def create_mid_from_values(payment_provider_slug, mid, loyalty_scheme_slug, loca
     )
 
 
-def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None:
+def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> t.Tuple[int, int]:
     reader = csv.reader((line.decode() for line in file_storage), dialect=CSVDialect())
 
     log.debug("Processing MIDs...")
 
-    mids = []
+    merchant_identifiers_fields = []
     for line, row in enumerate(reader):
         try:
             payment_provider_slug, mid, loyalty_scheme_slug, loyalty_scheme_name, location, postcode, action = row
@@ -65,15 +65,19 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> None
         if action.lower() != "a":
             continue
 
-        mid = create_mid_from_values(payment_provider_slug, mid, loyalty_scheme_slug, location, postcode)
-        mids.append(mid)
+        merchant_identifier_fields = create_merchant_identifier_fields(
+            payment_provider_slug, mid, loyalty_scheme_slug, location, postcode
+        )
+        merchant_identifiers_fields.append(merchant_identifier_fields)
 
-    n_mids_in_file = len(mids)
+    n_mids_in_file = len(merchant_identifiers_fields)
 
     log.debug(f'Importing {n_mids_in_file} MIDs from "{file_storage.name}"')
 
     def insert_mids():
-        db.engine.execute(insert(models.MerchantIdentifier.__table__).values(mids).on_conflict_do_nothing())
+        db.engine.execute(
+            insert(models.MerchantIdentifier.__table__).values(merchant_identifiers_fields).on_conflict_do_nothing()
+        )
         db.session.commit()
 
     mids_table_before = db.run_query(
@@ -98,8 +102,8 @@ def import_mids() -> ResponseType:
             200:
                 description: "Import was successful"
     """
-    imported: t.List[str] = []
-    failed: t.List[t.Dict[str, str]] = []
+    imported: t.List[dict] = []
+    failed: t.List[dict] = []
 
     def fail(filepath: str, reason: str) -> None:
         failed.append({"file": filepath, "reason": reason})

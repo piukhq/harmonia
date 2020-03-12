@@ -43,8 +43,8 @@ class ExportDirector:
 
         pending_export = db.run_query(add_pending_export, description="create pending export")
 
-        log.info(f"Sending trigger for single export agents: {pending_export}.")
-        tasks.export_queue.enqueue(tasks.export_single_transaction, pending_export.id)
+        log.info(f"Sending trigger for singular export agents: {pending_export}.")
+        tasks.export_queue.enqueue(tasks.export_singular_transaction, pending_export.id)
 
     def handle_pending_export(self, pending_export_id: int) -> None:
         pending_export = db.run_query(

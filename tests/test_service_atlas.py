@@ -1,10 +1,14 @@
-import pytest
-
-import responses
-import requests
 import pendulum
+import pytest
+import requests
+import responses
+
+import settings
 
 from app.service.atlas import Atlas
+
+# this allows the atlas service to work normally.
+settings.SIMULATE_EXPORTS = False
 
 
 TEST_ATLAS_URL = "http://atlas.test"

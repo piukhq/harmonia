@@ -64,7 +64,7 @@ def export_matched_transaction(matched_transaction_id: int) -> None:
     director.handle_matched_transaction(matched_transaction_id)
 
 
-def export_single_transaction(pending_export_id: int) -> None:
+def export_singular_transaction(pending_export_id: int) -> None:
     log.debug(f"Task started: handle pending export #{pending_export_id}")
     director = export_director.ExportDirector()
     director.handle_pending_export(pending_export_id)

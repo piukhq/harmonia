@@ -41,6 +41,29 @@ class BaseMatchingAgent:
             description="find pending scheme transactions for matching",
         )
 
+    def _make_spotted_transaction_fields(self):
+        merchant_identifier_ids = self.payment_transaction.merchant_identifier_ids
+
+        if len(merchant_identifier_ids) > 1:
+            self.log.warning(
+                f"More than one MID is present on {self.payment_transaction}! "
+                f"MIDs: {merchant_identifier_ids}. "
+                "The first MID will be assumed to be the correct one."
+            )
+
+        return {
+            "merchant_identifier_id": merchant_identifier_ids[0],
+            "transaction_id": self.payment_transaction.transaction_id,
+            "transaction_date": self.payment_transaction.transaction_date,
+            "spend_amount": self.payment_transaction.spend_amount,
+            "spend_multiplier": self.payment_transaction.spend_multiplier,
+            "spend_currency": self.payment_transaction.spend_currency,
+            "card_token": self.payment_transaction.card_token,
+            "payment_transaction_id": self.payment_transaction.id,
+            "scheme_transaction_id": None,
+            "extra_fields": self.payment_transaction.extra_fields,
+        }
+
     def _make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
         matching_merchant_identifier_ids = list(
             set(self.payment_transaction.merchant_identifier_ids).intersection(
@@ -50,7 +73,7 @@ class BaseMatchingAgent:
 
         if len(matching_merchant_identifier_ids) > 1:
             self.log.warning(
-                f"More than one MIDs are common to {self.payment_transaction} and {scheme_transaction}! "
+                f"More than one MID is common to {self.payment_transaction} and {scheme_transaction}! "
                 f"Matching MIDs: {matching_merchant_identifier_ids}. "
                 "The first MID will be assumed to be the correct one."
             )
