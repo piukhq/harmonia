@@ -9,9 +9,12 @@ import pendulum
 import json
 
 
+AgentExportDataOutput = t.Union[str, t.Dict, t.List]
+
+
 @dataclass
 class AgentExportData:
-    body: dict
+    outputs: t.List[t.Tuple[str, AgentExportDataOutput]]
     transactions: t.List[MatchedTransaction]
     extra_data: dict
 
@@ -57,9 +60,18 @@ class BaseAgent:
             "Override the export_all method in your agent to act as the entry point into the batch export process."
         )
 
-    def _save_to_file(self, export_data: AgentExportData) -> None:
-        file_name = f"{self.provider_slug}-export_data-{pendulum.now().isoformat()}.json"
-        file_content = json.dumps(export_data.body)
-
+    def _save_to_blob(self, export_data: AgentExportData) -> None:
+        self.log.info(
+            f"Saving {self.provider_slug} export data to blob storage with {len(export_data.outputs)} outputs."
+        )
+        blob_name_prefix = f"{self.provider_slug}/export-{pendulum.now().isoformat()}/"
         blob_storage_client = BlobStorageClient()
-        blob_storage_client.create_file("exports", self.provider_slug, file_name, file_content)
+
+        for name, output in export_data.outputs:
+            if isinstance(output, str):
+                content = output
+            else:
+                content = json.dumps(output)
+
+            blob_name = f"{blob_name_prefix}{name}"
+            blob_storage_client.create_blob("exports", blob_name, content)

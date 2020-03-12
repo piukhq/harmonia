@@ -22,3 +22,11 @@ class ExportTransaction(Base, ModelMixin):
     provider_slug = s.Column(s.String(50), nullable=False)
     destination = s.Column(s.String(500), nullable=True)
     data = s.Column(s.JSON)
+
+
+@auto_repr
+class FileSequenceNumber(Base, ModelMixin):
+    __tablename__ = "file_sequence_number"
+
+    provider_slug = s.Column(s.String(50), nullable=False, index=True)
+    next_value = s.Column(s.Integer, nullable=False)

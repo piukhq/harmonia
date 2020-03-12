@@ -32,8 +32,19 @@ def boolconv(s: str) -> bool:
 # https://docs.python.org/3/library/logging.html#logging-levels
 LOG_LEVEL = getattr(logging, getenv("TXM_LOG_LEVEL", default="debug").upper())
 
-# Whether or not to log all database queries. Useful for debugging, but very noisy.
-LOG_QUERIES = getenv("TXM_LOG_QUERIES", default="false", conv=boolconv)
+# If enabled, logs will be emitted as JSON objects.
+# If debug mode is enabled, this emits formatted & highlighted python objects instead.
+LOG_JSON = getenv("TXM_LOG_JSON", default="true", conv=boolconv)
+
+# Global query tracing level.
+# 0 = No query tracing.
+# 1 = Trace query descriptions from `db.run_query`.
+# 2 = Dump full query SQL. This is very noisy, only useful for the most granular of debugging tasks.
+QUERY_TRACE_LEVEL = getenv("TXM_QUERY_TRACE_LEVEL", default="0", conv=int)
+
+# These are set automatically based on the above.
+TRACE_QUERY_DESCRIPTIONS = QUERY_TRACE_LEVEL > 0
+TRACE_QUERY_SQL = QUERY_TRACE_LEVEL > 1
 
 # Debug mode toggle. Running in debug mode disables a lot of error handling.
 DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)
@@ -89,7 +100,7 @@ if SENTRY_DSN is not None:
 JSON_SERIALIZER = "txmatch+json"
 
 # Base URL for the Hermes API
-HERMES_URL = getenv("TXM_HERMES_URL")
+HERMES_URL = getenv("TXM_HERMES_URL", required=False)
 
 # If set, format the scheme slug with this string before sending to Hermes.
 # This allows things such as adding `-mock` to the end of a scheme slug in dev.
@@ -104,9 +115,14 @@ if not BLOB_STORAGE_DSN:
 else:
     LOCAL_IMPORT_BASE_PATH = None
 
+# If set, export agents will not send data to external services:
+# No transactions will be sent to merchant APIs.
+# No requests will be sent to Atlas.
+SIMULATE_EXPORTS = getenv("TXM_SIMULATE_EXPORTS", default="true", conv=boolconv)
+
 # This dictionary is passed to `Flask.config.from_mapping`.
 FLASK = dict(
-    SECRET_KEY=(b"{\xca\xb9\xf6F&\xe5\x9f\xaeq\xbb\xa0\x8a\x94\xce\xb2\xb7\x19\x8e\xaeY\xdb\xe6#\x8azF\x85y0w\x01")
+    SECRET_KEY=b"{\xca\xb9\xf6F&\xe5\x9f\xaeq\xbb\xa0\x8a\x94\xce\xb2\xb7\x19\x8e\xaeY\xdb\xe6#\x8azF\x85y0w\x01"
 )
 
 # The prefix used on every API endpoint in the project.
@@ -128,9 +144,6 @@ SOTERIA_URL = getenv("TXM_SOTERIA_URL", required=False)
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
 VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
-
-# Export data to file mode for export agents.
-EXPORT_TO_FILE = getenv("TXM_EXPORT_TO_FILE", default="true", conv=boolconv)
 
 # Arguments to pass to gnupg.GPG(...)
 GPG_ARGS = {

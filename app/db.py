@@ -11,11 +11,15 @@ from app import postgres, encoding
 from app.reporting import get_logger
 import settings
 
-# add echo=True to enable verbose query logging
-engine = s.create_engine(settings.POSTGRES_DSN, json_serializer=encoding.dumps, json_deserializer=encoding.loads)
+engine = s.create_engine(
+    settings.POSTGRES_DSN,
+    json_serializer=encoding.dumps,
+    json_deserializer=encoding.loads,
+    echo=settings.TRACE_QUERY_SQL,
+)
 
 Session = sessionmaker(bind=engine)
-session = Session()
+session: s.orm.Session = Session()
 
 Base = declarative_base()  # type: t.Any
 
@@ -26,7 +30,7 @@ log = get_logger("db")
 # based on the following stackoverflow answer:
 # https://stackoverflow.com/a/30004941
 def run_query(fn, *, attempts=2, description=None):
-    if settings.LOG_QUERIES:
+    if settings.TRACE_QUERY_DESCRIPTIONS:
         if description is None:
             description = repr(fn)
 

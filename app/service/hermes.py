@@ -10,6 +10,9 @@ log = get_logger("hermes")
 
 class Hermes:
     def __init__(self, base_url: str) -> None:
+        if not settings.HERMES_URL:
+            raise settings.ConfigVarRequiredError("Use of the Hermes service class requires that HERMES_URL is set.")
+
         self.base_url = base_url
         self.session = requests_retry_session()
 

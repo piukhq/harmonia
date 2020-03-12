@@ -4,8 +4,7 @@ import settings
 from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
-from app.exports.agents.bases.base import AgentExportData
-from app.exports.agents.bases.single_export_agent import SingleExportAgent
+from app.exports.agents import SingularExportAgent, AgentExportData
 from app.failed_transaction import FailedTransaction
 from app.service.atlas import Atlas, atlas
 from app.service.harvey_nichols import HarveyNicholsAPI
@@ -14,7 +13,7 @@ PROVIDER_SLUG = "harvey-nichols"
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
 
-class HarveyNichols(SingleExportAgent):
+class HarveyNichols(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
     token_store = UserTokenStore(settings.REDIS_URL)
 
@@ -101,28 +100,33 @@ class HarveyNichols(SingleExportAgent):
         scheme_account_id = user_identity.scheme_account_id
 
         return AgentExportData(
-            body={
-                "CustomerClaimTransactionRequest": {
-                    "token": "token",
-                    "customerNumber": credentials["card_number"],
-                    "id": transaction.transaction_id,
-                }
-            },
+            outputs=[
+                (
+                    "export.json",
+                    {
+                        "CustomerClaimTransactionRequest": {
+                            "token": "token",
+                            "customerNumber": credentials["card_number"],
+                            "id": transaction.transaction_id,
+                        }
+                    },
+                )
+            ],
             transactions=[transaction],
             extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
         )
 
     def export(self, export_data: AgentExportData) -> bool:
+        _, body = export_data.outputs.pop()
         transaction = export_data.transactions[0]
         credentials = export_data.extra_data["credentials"]
         scheme_account_id = export_data.extra_data["scheme_account_id"]
 
         token = self.get_token(credentials, scheme_account_id)
-
-        response = self.api.claim_transaction(token, export_data.body)
+        response = self.api.claim_transaction(token, body)
         if response["outcome"] == "AuthFailed":
             token = self.get_new_token(credentials, scheme_account_id)
-            response = self.api.claim_transaction(token, export_data.body)
+            response = self.api.claim_transaction(token, body)
 
         audit_data = {
             "token": token,

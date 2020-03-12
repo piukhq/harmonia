@@ -41,6 +41,7 @@ The following is a list of the important dependencies used in the project. You d
 - [APScheduler](https://apscheduler.readthedocs.io/en/latest) - Used for scheduling various time-based parts of the system.
 - [Marshmallow](https://marshmallow.readthedocs.io/en/latest) - (De)serialization library for converting between JSON payloads and database objects.
 - [RQ](https://python-rq.org) - Redis-based task queue. Most transaction matching processes run as RQ jobs.
+- [lxml](https://lxml.de/) - XML processing library used for receipt file handling.
 
 ## Project Setup
 

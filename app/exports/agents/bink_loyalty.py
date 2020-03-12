@@ -1,11 +1,10 @@
 from decimal import Decimal
 
-from app.exports.agents.bases.single_export_agent import SingleExportAgent
-from app.exports.agents.bases.base import AgentExportData
+from app.exports.agents import SingularExportAgent, AgentExportData
 from app import models, db
 
 
-class BinkLoyalty(SingleExportAgent):
+class BinkLoyalty(SingularExportAgent):
     provider_slug = "bink-loyalty"
 
     def make_export_data(self, matched_transaction_id):
@@ -25,10 +24,10 @@ class BinkLoyalty(SingleExportAgent):
             "value": f"{matched_transaction.spend_currency} {value.quantize(Decimal('0.01'))}",
             "card_number": matched_transaction.payment_transaction.user_identity.loyalty_id,
         }
-        return AgentExportData(body=body, transactions=[matched_transaction])
+        return AgentExportData(outputs=[("export.json", body)], transactions=[matched_transaction])
 
     def export(self, export_data: AgentExportData) -> bool:
-        body = export_data.body
+        _, body = export_data.outputs.pop()
         matched_transaction = export_data.transactions[0]
 
         self.log.info(f"Export: {body}")

@@ -3,6 +3,7 @@ import json
 import inspect
 import settings
 import datetime
+import typing as t
 from uuid import uuid4
 
 from soteria.configuration import Configuration
@@ -13,8 +14,7 @@ from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
 from app.encryption import decrypt_credentials
 from app.config import ConfigValue, KEY_PREFIX
-from app.exports.agents import BatchExportAgent
-from app.exports.agents.bases.base import AgentExportData
+from app.exports.agents import BatchExportAgent, AgentExportData
 
 
 PROVIDER_SLUG = "cooperative"
@@ -161,14 +161,14 @@ class Cooperative(BatchExportAgent):
             transactions = self.serialize_transactions(matched_transactions)
 
             yield AgentExportData(
-                body={"message_uid": str(uuid4()), "transactions": transactions}, transactions=matched_transactions
+                outputs=[("export.json", {"message_uid": str(uuid4()), "transactions": transactions})],
+                transactions=matched_transactions,
             )
 
     def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
-
-        body = export_data.body
-        transactions = body["transactions"]
+        _, body = export_data.outputs.pop()
+        transactions = t.cast(dict, body)["transactions"]
         matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(

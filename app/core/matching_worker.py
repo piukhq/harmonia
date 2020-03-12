@@ -69,7 +69,7 @@ class MatchingWorker:
         except RegistryError as ex:
             if settings.DEBUG:
                 raise ex
-            self.log.debug(
+            self.log.warning(
                 f"Failed to instantiate matching agent for slug {slug} (ex). Skipping match of {payment_transaction}"
             )
             return None
@@ -118,8 +118,10 @@ class MatchingWorker:
         def mark_transactions():
             payment_transaction.status = models.TransactionStatus.MATCHED
 
-            scheme_transaction = db.session.query(models.SchemeTransaction).get(match_result.scheme_transaction_id)
-            scheme_transaction.status = models.TransactionStatus.MATCHED
+            # spotted transactions don't have a matching scheme transaction
+            if match_result.scheme_transaction_id is not None:
+                scheme_transaction = db.session.query(models.SchemeTransaction).get(match_result.scheme_transaction_id)
+                scheme_transaction.status = models.TransactionStatus.MATCHED
 
             db.session.commit()
 

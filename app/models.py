@@ -7,7 +7,7 @@ from app.db import Base, ModelMixin, auto_repr, auto_str
 
 # import other module's models here to be recognised by alembic.
 from app.imports.models import ImportTransaction  # noqa
-from app.exports.models import PendingExport, ExportTransaction  # noqa
+from app.exports.models import PendingExport, ExportTransaction, FileSequenceNumber  # noqa
 
 
 @auto_repr
@@ -124,6 +124,8 @@ class MatchedTransaction(Base, ModelMixin):
     scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
     extra_fields = s.Column(psql.JSON)  # combination of the same field on the scheme and payment transaction models
+
+    pending_exports = s.orm.relationship("PendingExport", backref="matched_transaction")
 
 
 @auto_repr

@@ -12,8 +12,7 @@ from app import models
 from app.db import session
 from app.service.atlas import atlas
 from app.config import ConfigValue, KEY_PREFIX
-from app.exports.agents import BatchExportAgent
-from app.exports.agents.bases.base import AgentExportData
+from app.exports.agents import BatchExportAgent, AgentExportData
 from app.service.iceland import IcelandAPI
 import settings
 
@@ -93,15 +92,12 @@ class Iceland(BatchExportAgent):
 
         return formatted
 
-    def make_secured_request(self, request_data: dict) -> dict:
+    def make_secured_request(self, body: str) -> dict:
         security_class = get_security_agent(
             self.merchant_config.data["security_credentials"]["outbound"]["service"],
             self.merchant_config.data["security_credentials"],
         )
-        json_data = json.dumps(request_data)
-        request = security_class.encode(json_data)
-
-        return request
+        return security_class.encode(body)
 
     def save_data(self, matched_transaction, export_data):
         session.add(
@@ -130,12 +126,15 @@ class Iceland(BatchExportAgent):
         formatted_transactions = self.format_transactions(transactions_query_set)
 
         yield AgentExportData(
-            body={"message_uid": str(uuid4()), "transactions": formatted_transactions},
+            outputs=[
+                ("export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}))
+            ],
             transactions=transactions_query_set,
         )
 
     def send_export_data(self, export_data: AgentExportData):
-        request = self.make_secured_request(export_data.body)
+        _, body = export_data.outputs.pop()
+        request = self.make_secured_request(t.cast(str, body))
 
         try:
             response = self.api.merchant_request(request)

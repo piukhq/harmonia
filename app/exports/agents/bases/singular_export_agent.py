@@ -7,7 +7,7 @@ from app.status import status_monitor
 import settings
 
 
-class SingleExportAgent(BaseAgent):
+class SingularExportAgent(BaseAgent):
     def run(self, *, once: bool = False):
         self.export_all()
 
@@ -18,7 +18,7 @@ class SingleExportAgent(BaseAgent):
 
     def export_all(self):
         raise NotImplementedError(
-            f"{type(self).__name__} is a single export agent and as such does not support batch exports."
+            f"{type(self).__name__} is a singular export agent and as such does not support batch exports."
         )
 
     def handle_pending_export(self, pending_export: PendingExport) -> None:
@@ -33,8 +33,8 @@ class SingleExportAgent(BaseAgent):
                 f"The export agent failed to load its matched transaction. {pending_export} will be discarded."
             )
         else:
-            if settings.EXPORT_TO_FILE:
-                self._save_to_file(export_data)
+            if settings.SIMULATE_EXPORTS:
+                self._save_to_blob(export_data)
             else:
                 self.export(export_data)
 
@@ -46,5 +46,5 @@ class SingleExportAgent(BaseAgent):
 
         db.run_query(delete_pending_export, description="delete pending export")
 
-    def make_export_data(self, matched_transaction_id: int):
+    def make_export_data(self, matched_transaction_id: int) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

@@ -32,6 +32,11 @@ class Atlas:
     def save_transaction(
         self, provider_slug: str, response: str, transaction: models.MatchedTransaction, status: "Atlas.Status"
     ) -> dict:
+        if settings.SIMULATE_EXPORTS:
+            log.warning(f"Not saving {provider_slug} transaction because SIMULATE_EXPORTS is enabled.")
+            log.debug(f'Simulated request: {transaction} with response: "{response}" would be saved as {status}')
+            return {}
+
         endpoint = f"{self.base_url}/transaction/save"
         body = {
             "scheme_provider": provider_slug,
