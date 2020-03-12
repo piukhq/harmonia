@@ -7,6 +7,8 @@ RUN apk --no-cache add --virtual build-deps \
       build-base \
       postgresql-dev \
       libffi-dev \
+      libxml2-dev \
+      libxslt-dev \
       openssh \
       git && \
     apk --no-cache add \
