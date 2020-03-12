@@ -33,7 +33,7 @@ def boolconv(s: str) -> bool:
 LOG_LEVEL = getattr(logging, getenv("TXM_LOG_LEVEL", default="debug").upper())
 
 # If enabled, logs will be emitted as JSON objects.
-# If debug mode is enabled, this emits formatted & highlighted python objects instead.
+# If DEVELOPMENT mode is enabled, this emits formatted & highlighted python objects instead.
 LOG_JSON = getenv("TXM_LOG_JSON", default="true", conv=boolconv)
 
 # Global query tracing level.
@@ -48,6 +48,9 @@ TRACE_QUERY_SQL = QUERY_TRACE_LEVEL > 1
 
 # Debug mode toggle. Running in debug mode disables a lot of error handling.
 DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)
+
+# Development mode toggle. Adds extra functionality for local development work.
+DEVELOPMENT = getenv("TXM_DEVELOPMENT", default="false", conv=boolconv)
 
 # Canonical name of the environment we're running in.
 # e.g. dev, staging, production

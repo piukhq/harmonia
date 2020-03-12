@@ -8,7 +8,7 @@ LOG_FORMAT = "%(asctime)s | %(levelname)8s | %(name)s\n%(message)s"  # only used
 
 class JSONFormatter(logging.Formatter):
     def __init__(self):
-        if settings.DEBUG is True:
+        if settings.DEVELOPMENT is True:
             from prettyprinter import cpprint
 
             self._cpprint = cpprint
