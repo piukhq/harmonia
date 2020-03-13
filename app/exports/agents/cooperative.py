@@ -1,21 +1,21 @@
-import os
-import json
-import inspect
-import settings
 import datetime
+import inspect
+import json
+import os
 import typing as t
 from uuid import uuid4
 
 from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
-from app import models, db
+import settings
+from app import db, models
+from app.config import KEY_PREFIX, ConfigValue
+from app.encryption import decrypt_credentials
+from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
+from app.sequences import batch
 from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
-from app.encryption import decrypt_credentials
-from app.config import ConfigValue, KEY_PREFIX
-from app.exports.agents import BatchExportAgent, AgentExportData
-
 
 PROVIDER_SLUG = "cooperative"
 SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.schedule"
@@ -31,6 +31,11 @@ class Cooperative(BatchExportAgent):
 
     def __init__(self):
         super().__init__()
+
+        if settings.ATLAS_URL is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires the Atlas URL to be set."
+            )
 
         if settings.SOTERIA_URL is None:
             raise settings.ConfigVarRequiredError(
@@ -142,27 +147,18 @@ class Cooperative(BatchExportAgent):
         if failed_transactions:
             self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
-    def yield_export_data(self):
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
-        while True:
-            matched_transactions = db.run_query(
-                lambda: db.session.query(models.MatchedTransaction)
-                .filter_by(status=models.MatchedTransactionStatus.PENDING)
-                .limit(int(self.Config.max_transactions_per_request)),
-                description="find a batch of pending matched transactions",
-            )
-
-            if not matched_transactions:
-                self.log.debug("No remaining transactions to export, breaking out of export loop.")
-                break
-            else:
-                self.log.debug(f"Found a batch of {len(matched_transactions)} transactions to export.")
-
-            transactions = self.serialize_transactions(matched_transactions)
-
+        batch_size = int(self.Config.max_transactions_per_request)
+        for transaction_batch in batch(transactions, batch_size):
+            self.log.debug(f"Found a batch of {len(transaction_batch)} transactions to export.")
+            transactions = self.serialize_transactions(transaction_batch)
             yield AgentExportData(
-                outputs=[("export.json", {"message_uid": str(uuid4()), "transactions": transactions})],
-                transactions=matched_transactions,
+                outputs=[
+                    AgentExportDataOutput("export.json", {"message_uid": str(uuid4()), "transactions": transactions})
+                ],
+                transactions=transaction_batch,
+                extra_data={},
             )
 
     def send_export_data(self, export_data: AgentExportData):

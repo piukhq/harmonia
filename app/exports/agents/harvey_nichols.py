@@ -1,10 +1,10 @@
 from user_auth_token.core import UserTokenStore
 
 import settings
-from app import models, db
+from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
-from app.exports.agents import SingularExportAgent, AgentExportData
+from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
 from app.failed_transaction import FailedTransaction
 from app.service.atlas import Atlas, atlas
 from app.service.harvey_nichols import HarveyNicholsAPI
@@ -83,7 +83,7 @@ class HarveyNichols(SingularExportAgent):
                 atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.NOT_ASSIGNED)
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")
 
-    def make_export_data(self, matched_transaction_id):
+    def make_export_data(self, matched_transaction_id: int) -> AgentExportData:
         transaction = db.run_query(
             lambda: db.session.query(models.MatchedTransaction).get(matched_transaction_id),
             description="load matched transaction",
@@ -101,7 +101,7 @@ class HarveyNichols(SingularExportAgent):
 
         return AgentExportData(
             outputs=[
-                (
+                AgentExportDataOutput(
                     "export.json",
                     {
                         "CustomerClaimTransactionRequest": {
@@ -116,7 +116,7 @@ class HarveyNichols(SingularExportAgent):
             extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
         )
 
-    def export(self, export_data: AgentExportData) -> bool:
+    def export(self, export_data: AgentExportData):
         _, body = export_data.outputs.pop()
         transaction = export_data.transactions[0]
         credentials = export_data.extra_data["credentials"]
@@ -134,5 +134,3 @@ class HarveyNichols(SingularExportAgent):
             "transaction_id": transaction.transaction_id,
         }
         self.internal_requests(response, transaction, audit_data, transaction.id)
-
-        return True

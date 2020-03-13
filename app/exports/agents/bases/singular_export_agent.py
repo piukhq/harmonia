@@ -1,10 +1,9 @@
+import settings
 from app import db
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.models import PendingExport
 from app.status import status_monitor
-
-import settings
 
 
 class SingularExportAgent(BaseAgent):
@@ -21,7 +20,7 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such does not support batch exports."
         )
 
-    def handle_pending_export(self, pending_export: PendingExport) -> None:
+    def handle_pending_export(self, pending_export: PendingExport):
         status_monitor.checkin(self)
 
         self.log.info(f"Handling {pending_export}.")
@@ -37,6 +36,7 @@ class SingularExportAgent(BaseAgent):
                 self._save_to_blob(export_data)
             else:
                 self.export(export_data)
+            self._save_export_transactions(export_data)
 
         self.log.info(f"Removing pending export {pending_export}.")
 

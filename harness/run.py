@@ -14,6 +14,7 @@ from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 import settings
+
 from app import db, models, encryption
 from app.core import key_manager
 from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent, import_agents
@@ -22,6 +23,12 @@ from app.registry import RegistryError
 
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
+
+
+# most of the export agents need this to be set to something.
+settings.SOTERIA_URL = ""
+settings.ATLAS_URL = ""
+settings.VAULT_URL = ""
 
 
 # payment provider slugs that will trigger a keyring being set up
@@ -208,7 +215,7 @@ def patch_hermes_service(fixture: dict):
 
 
 def patch_soteria_service():
-    class MockSoteriaConfiguration:
+    class MockSoteriaConfiguration(soteria.configuration.Configuration):
         TRANSACTION_MATCHING_HANDLER = "mock-handler"
 
         security_credentials = {
@@ -225,6 +232,9 @@ def patch_soteria_service():
             click.echo(f"{type(self).__name__} was instantiated!")
             click.echo(f"args: {args}")
             click.echo(f"kwargs: {kwargs}")
+
+        def get_security_credentials(self, key_items):
+            return self.security_credentials
 
     soteria.configuration.Configuration = MockSoteriaConfiguration
 

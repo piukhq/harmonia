@@ -1,8 +1,11 @@
-from app.exports.agents import BaseAgent, AgentExportData
-from app.scheduler import CronScheduler
-from app import db
+import typing as t
+
+from sqlalchemy.orm import Load, joinedload
 
 import settings
+from app import db, models
+from app.exports.agents import AgentExportData, BaseAgent
+from app.scheduler import CronScheduler
 
 
 class BatchExportAgent(BaseAgent):
@@ -26,9 +29,23 @@ class BatchExportAgent(BaseAgent):
         pass
 
     def export_all(self, *, once: bool = False):
-        self.log.debug("Exporting all transactions.")
-        breakpoint()
-        for export_data in self.yield_export_data():
+        pending_exports_q = (
+            db.session.query(models.PendingExport)
+            .options(
+                joinedload(models.PendingExport.matched_transaction, innerjoin=True)
+                .joinedload(models.MatchedTransaction.payment_transaction, innerjoin=True)
+                .joinedload(models.PaymentTransaction.user_identity, innerjoin=True),
+                Load(models.PendingExport).raiseload("*"),
+            )
+            .filter(models.PendingExport.provider_slug == self.provider_slug)
+        )
+
+        pending_exports = pending_exports_q.all()
+        transactions = [pe.matched_transaction for pe in pending_exports]
+
+        self.log.debug(f"Exporting {len(pending_exports)} transactions.")
+
+        for export_data in self.yield_export_data(transactions):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
@@ -39,7 +56,13 @@ class BatchExportAgent(BaseAgent):
                 description="create export transactions from export data",
             )
 
-    def yield_export_data(self):
+        def delete_pending_exports():
+            pending_exports_q.delete()
+            db.session.commit()
+
+        db.run_query(delete_pending_exports, description="delete pending exports")
+
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]):
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
     def send_export_data(self, export_data: AgentExportData):
