@@ -14,7 +14,7 @@ from sqlalchemy.orm import Load, joinedload
 
 import settings
 from app import db, models, config
-from app.exports.agents import AgentExportData, BatchExportAgent
+from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
 from app.service.sftp import SFTP
@@ -54,6 +54,7 @@ class ExportFileSet(t.NamedTuple):
 
 class BurgerKing(BatchExportAgent):
     provider_slug = PROVIDER_SLUG
+    saved_output_index = 2  # save rewards CSV to export_transaction table
 
     class Config:
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/receipts")
@@ -146,7 +147,7 @@ class BurgerKing(BatchExportAgent):
         return fileset, atlas_calls
 
     def yield_export_data(self) -> t.Iterable[AgentExportData]:
-        pending_exports = (
+        pending_exports_q = (
             db.session.query(models.PendingExport)
             .options(
                 joinedload(models.PendingExport.matched_transaction, innerjoin=True)
@@ -155,8 +156,9 @@ class BurgerKing(BatchExportAgent):
                 Load(models.PendingExport).raiseload("*"),
             )
             .filter(models.PendingExport.provider_slug == self.provider_slug)
-            .all()
         )
+
+        pending_exports = pending_exports_q.all()
 
         transactions = [pe.matched_transaction for pe in pending_exports]
         fileset, atlas_calls = self._create_fileset(transactions)
@@ -165,14 +167,20 @@ class BurgerKing(BatchExportAgent):
         # the order of these outputs is used to upload to SFTP in sequence.
         yield AgentExportData(
             outputs=[
-                (f"receipt_{ts}.base64", fileset.receipt_data),
-                (f"receipt_{ts}.chk", str(fileset.transaction_count)),
-                (f"rewards_{ts}.csv", fileset.reward_data),
-                (f"rewards_{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"receipt_{ts}.base64", fileset.receipt_data),
+                AgentExportDataOutput(f"receipt_{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"rewards_{ts}.csv", fileset.reward_data),
+                AgentExportDataOutput(f"rewards_{ts}.chk", str(fileset.transaction_count)),
             ],
-            transactions=[],
+            transactions=transactions,
             extra_data={},
         )
+
+        def delete_pending_exports():
+            pending_exports_q.delete()
+            db.session.commit()
+
+        db.run_query(delete_pending_exports, description="delete pending exports")
 
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
