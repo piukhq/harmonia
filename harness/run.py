@@ -309,12 +309,14 @@ def run_import_agent(slug: str, fixture: dict):
         return
 
     kind = get_import_agent_kind(agent)
-
-    return {
-        ImportAgentKind.PASSIVE_API: run_passive_api_import_agent,
-        ImportAgentKind.ACTIVE_API: run_active_api_import_agent,
-        ImportAgentKind.FILE: run_file_import_agent,
-    }[kind](agent, fixture)
+    if kind == ImportAgentKind.PASSIVE_API:
+        run_passive_api_import_agent(t.cast(PassiveAPIAgent, agent), fixture)
+    elif kind == ImportAgentKind.ACTIVE_API:
+        run_active_api_import_agent(t.cast(ActiveAPIAgent, agent), fixture)
+    elif kind == ImportAgentKind.FILE:
+        run_file_import_agent(t.cast(FileAgent, agent), fixture)
+    else:
+        raise ValueError(f"Unsupported import agent kind: {kind}")
 
 
 def run_rq_worker(queue_name: str):
