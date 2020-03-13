@@ -1,21 +1,20 @@
-import json
 import inspect
-import requests
+import json
 import typing as t
 from uuid import uuid4
 
+import requests
 from hashids import Hashids
 from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
-from app import models
-from app.db import session
-from app.service.atlas import atlas
-from app.config import ConfigValue, KEY_PREFIX
-from app.exports.agents import BatchExportAgent, AgentExportData
-from app.service.iceland import IcelandAPI
 import settings
-
+from app import models
+from app.config import KEY_PREFIX, ConfigValue
+from app.db import session
+from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
+from app.service.atlas import atlas
+from app.service.iceland import IcelandAPI
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
@@ -56,8 +55,6 @@ class Iceland(BatchExportAgent):
             settings.VAULT_TOKEN,
             settings.SOTERIA_URL,
         )
-
-        self.api = IcelandAPI(self.merchant_config.merchant_url)
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -116,28 +113,27 @@ class Iceland(BatchExportAgent):
     def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
-    def yield_export_data(self):
-        transactions_query_set = (
-            session.query(models.MatchedTransaction)
-            .filter(models.MatchedTransaction.status == models.MatchedTransactionStatus.PENDING)
-            .all()
-        )
-
-        formatted_transactions = self.format_transactions(transactions_query_set)
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]) -> t.Iterable[AgentExportData]:
+        formatted_transactions = self.format_transactions(transactions)
 
         yield AgentExportData(
             outputs=[
-                ("export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}))
+                AgentExportDataOutput(
+                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions})
+                )
             ],
-            transactions=transactions_query_set,
+            transactions=transactions,
+            extra_data={},
         )
 
     def send_export_data(self, export_data: AgentExportData):
         _, body = export_data.outputs.pop()
         request = self.make_secured_request(t.cast(str, body))
 
+        api = IcelandAPI(self.merchant_config.merchant_url)
+
         try:
-            response = self.api.merchant_request(request)
+            response = api.merchant_request(request)
             self.check_response(response)
         except requests.exceptions.RequestException as error:
             response_text = repr(error)

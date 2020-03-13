@@ -10,10 +10,9 @@ import pendulum
 from lxml import etree
 from soteria.configuration import Configuration
 from soteria.encryption import PGP
-from sqlalchemy.orm import Load, joinedload
 
 import settings
-from app import db, models, config
+from app import config, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
@@ -62,6 +61,21 @@ class BurgerKing(BatchExportAgent):
 
     def __init__(self):
         super().__init__()
+
+        if settings.ATLAS_URL is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires the Atlas URL to be set."
+            )
+
+        if settings.SOTERIA_URL is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires the Soteria URL to be set."
+            )
+
+        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
+            raise settings.ConfigVarRequiredError(
+                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
+            )
 
         config = Configuration(
             self.provider_slug,
@@ -146,21 +160,7 @@ class BurgerKing(BatchExportAgent):
         self.sequencer.set_next_value(sequence_number + fileset.transaction_count)
         return fileset, atlas_calls
 
-    def yield_export_data(self) -> t.Iterable[AgentExportData]:
-        pending_exports_q = (
-            db.session.query(models.PendingExport)
-            .options(
-                joinedload(models.PendingExport.matched_transaction, innerjoin=True)
-                .joinedload(models.MatchedTransaction.payment_transaction, innerjoin=True)
-                .joinedload(models.PaymentTransaction.user_identity, innerjoin=True),
-                Load(models.PendingExport).raiseload("*"),
-            )
-            .filter(models.PendingExport.provider_slug == self.provider_slug)
-        )
-
-        pending_exports = pending_exports_q.all()
-
-        transactions = [pe.matched_transaction for pe in pending_exports]
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]) -> t.Iterable[AgentExportData]:
         fileset, atlas_calls = self._create_fileset(transactions)
         ts = pendulum.now().int_timestamp
 
@@ -175,12 +175,6 @@ class BurgerKing(BatchExportAgent):
             transactions=transactions,
             extra_data={},
         )
-
-        def delete_pending_exports():
-            pending_exports_q.delete()
-            db.session.commit()
-
-        db.run_query(delete_pending_exports, description="delete pending exports")
 
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
