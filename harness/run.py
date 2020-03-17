@@ -29,6 +29,7 @@ from harness.providers.registry import import_data_providers
 settings.SOTERIA_URL = ""
 settings.ATLAS_URL = ""
 settings.VAULT_URL = ""
+settings.VAULT_TOKEN = ""
 
 
 # payment provider slugs that will trigger a keyring being set up
