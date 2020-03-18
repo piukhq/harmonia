@@ -51,7 +51,7 @@ class LocalFileSource(FileSourceBase):
 
 
 class BlobFileSource(FileSourceBase):
-    container_name = "imports"
+    container_name = "import"
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
