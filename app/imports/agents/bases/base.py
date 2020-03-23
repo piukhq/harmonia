@@ -1,9 +1,10 @@
 import typing as t
 from functools import lru_cache
 
-import settings
+import redis.lock
 
-from app import models, tasks, db
+import settings
+from app import db, models, tasks
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
 from app.reporting import get_logger
@@ -60,15 +61,15 @@ class BaseAgent:
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
-        raise NotImplementedError
+        raise NotImplementedError("Override to_queue_transaction in your agent.")
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        raise NotImplementedError
+        raise NotImplementedError("Override get_transaction_id in your agent.")
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        raise NotImplementedError
+        raise NotImplementedError("Override get_mids in your agent.")
 
     def _find_new_transactions(self, provider_transactions: t.List[dict]) -> t.Tuple[t.List[dict], t.List[dict]]:
         """Splits provider_transactions into two lists containing new and duplicate transactions.
@@ -127,43 +128,46 @@ class BaseAgent:
 
             # attempt to lock this transaction id.
             lock_key = f"{settings.REDIS_KEY_PREFIX}:import-lock:{self.provider_slug}:{tid}"
-            lock = db.redis.lock(lock_key, timeout=300)
+            lock: redis.lock.Lock = db.redis.lock(lock_key, timeout=300)
             if not lock.acquire(blocking=False):
                 self.log.warning(f"Transaction {lock_key} is already locked. Skipping.")
                 continue
 
-            mids = self.get_mids(tx_data)
+            try:
+                mids = self.get_mids(tx_data)
 
-            merchant_identifier_ids = []
-            for mid in mids:
-                try:
-                    merchant_identifier_ids.extend(self._identify_mid(mid))
-                except MissingMID:
-                    pass
+                merchant_identifier_ids = []
+                for mid in mids:
+                    try:
+                        merchant_identifier_ids.extend(self._identify_mid(mid))
+                    except MissingMID:
+                        pass
 
-            identified = len(merchant_identifier_ids) > 0
+                identified = len(merchant_identifier_ids) > 0
 
-            if not identified:
-                self.log.debug(f"No MIDs were found for transaction {tid}")
+                if not identified:
+                    self.log.debug(f"No MIDs were found for transaction {tid}")
 
-            insertions.append(
-                dict(
-                    transaction_id=tid,
-                    provider_slug=self.provider_slug,
-                    identified=identified,
-                    data=tx_data,
-                    source=source,
+                insertions.append(
+                    dict(
+                        transaction_id=tid,
+                        provider_slug=self.provider_slug,
+                        identified=identified,
+                        data=tx_data,
+                        source=source,
+                    )
                 )
-            )
 
-            if identified:
-                queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
+                if identified:
+                    queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
 
-                import_task = {
-                    ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
-                    ImportFeedTypes.PAYMENT: tasks.import_payment_transaction,
-                }[self.feed_type]
-                tasks.import_queue.enqueue(import_task, queue_tx)
+                    import_task = {
+                        ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
+                        ImportFeedTypes.PAYMENT: tasks.import_payment_transaction,
+                    }[self.feed_type]
+                    tasks.import_queue.enqueue(import_task, queue_tx)
+            finally:
+                lock.release()
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
