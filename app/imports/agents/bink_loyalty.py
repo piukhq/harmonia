@@ -17,7 +17,7 @@ class TransactionSchema(Schema):
 
 class BinkLoyalty(PassiveAPIAgent):
     provider_slug = "bink-loyalty"
-    feed_type = feeds.ImportFeedTypes.SCHEME
+    feed_type = feeds.ImportFeedTypes.MERCHANT
     schema = TransactionSchema()
 
     def help(self) -> str:

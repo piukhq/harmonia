@@ -162,8 +162,9 @@ class BaseAgent:
                     queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
 
                     import_task = {
-                        ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
-                        ImportFeedTypes.PAYMENT: tasks.import_payment_transaction,
+                        ImportFeedTypes.MERCHANT: tasks.import_scheme_transaction,
+                        ImportFeedTypes.AUTH: tasks.import_auth_payment_transaction,
+                        ImportFeedTypes.SETTLED: tasks.import_settled_payment_transaction,
                     }[self.feed_type]
                     tasks.import_queue.enqueue(import_task, queue_tx)
             finally:

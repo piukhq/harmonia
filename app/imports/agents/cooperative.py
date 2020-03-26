@@ -14,7 +14,7 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 
 class Cooperative(FileAgent):
-    feed_type = ImportFeedTypes.SCHEME
+    feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     class Config:

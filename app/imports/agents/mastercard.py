@@ -2,6 +2,7 @@ import inspect
 import typing as t
 from decimal import Decimal
 from uuid import uuid4
+from hashlib import sha256
 
 import pendulum
 
@@ -16,8 +17,12 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATE_FORMAT = "YYYYMMDD"
 
 
+def _make_settlement_key(third_party_id: str):
+    return sha256(f"mastercard.{third_party_id}".encode()).hexdigest()
+
+
 class MastercardSettled(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
 
     field_widths = [
@@ -110,9 +115,7 @@ class MastercardSettled(FileAgent):
 
 class MastercardAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
-
-    # TODO: this needs to change to be an AUTH feed
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.AUTH
 
     @staticmethod
     def to_queue_transaction(
@@ -121,6 +124,7 @@ class MastercardAuth(QueueAgent):
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
+            settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=pendulum.parse(data["time"]),
             spend_amount=int(Decimal(data["amount"]) * 100),
             spend_multiplier=100,

@@ -19,7 +19,7 @@ DATE_FORMAT = "YYYYMMDD"
 
 
 class Visa(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
     file_open_mode = "rb"
 
