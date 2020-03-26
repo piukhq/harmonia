@@ -1,13 +1,14 @@
-import typing as t
 import inspect
+import typing as t
 from decimal import Decimal
+from uuid import uuid4
 
 import pendulum
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent
+from app.imports.agents import FileAgent, QueueAgent
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -15,7 +16,7 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATE_FORMAT = "YYYYMMDD"
 
 
-class Mastercard(FileAgent):
+class MastercardSettled(FileAgent):
     feed_type = ImportFeedTypes.PAYMENT
     provider_slug = PROVIDER_SLUG
 
@@ -105,3 +106,34 @@ class Mastercard(FileAgent):
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
         return [data["merchant_id"]]
+
+
+class MastercardAuth(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+
+    # TODO: this needs to change to be an AUTH feed
+    feed_type = ImportFeedTypes.PAYMENT
+
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
+    ) -> models.PaymentTransaction:
+        return models.PaymentTransaction(
+            merchant_identifier_ids=merchant_identifier_ids,
+            transaction_id=transaction_id,
+            transaction_date=pendulum.parse(data["time"]),
+            spend_amount=int(Decimal(data["amount"]) * 100),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            card_token=data["payment_card_token"],
+            extra_fields={"third_party_id": data["third_party_id"]},
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        # TODO: is this alright?
+        return str(uuid4())
+
+    @staticmethod
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["mid"]]
