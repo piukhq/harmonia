@@ -2,5 +2,6 @@ from enum import Enum
 
 
 class ImportFeedTypes(Enum):
-    SCHEME = 0
-    PAYMENT = 1
+    MERCHANT = 0
+    AUTH = 1
+    SETTLED = 2

@@ -94,4 +94,5 @@ class BaseAgent:
                     data=export_data.outputs[self.saved_output_index].data,
                 )
             )
+            transaction.status = models.MatchedTransactionStatus.EXPORTED
         db.session.commit()

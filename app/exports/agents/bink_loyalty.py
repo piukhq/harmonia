@@ -34,11 +34,6 @@ class BinkLoyalty(SingularExportAgent):
 
         self.log.info(f"Export: {body}")
 
-        self.log.info(f"Marking {matched_transaction} as exported.")
-        matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
-
-        self.log.info("Creating export transaction.")
-
         def add_transaction():
             db.session.add(
                 models.ExportTransaction(

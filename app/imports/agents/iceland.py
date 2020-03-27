@@ -18,7 +18,7 @@ DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
 class Iceland(FileAgent):
-    feed_type = ImportFeedTypes.SCHEME
+    feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     field_transforms: t.Dict[str, t.Callable] = {

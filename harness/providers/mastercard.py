@@ -1,6 +1,6 @@
 import typing as t
 import string
-from random import randint, sample
+from random import randint
 
 import pendulum
 
@@ -18,7 +18,7 @@ def join(*args: WidthField) -> str:
     return "".join(str(value).ljust(length) for value, length in args)
 
 
-class Mastercard(BaseImportDataProvider):
+class MastercardSettled(BaseImportDataProvider):
     def provide(self, fixture: dict) -> bytes:
         now = pendulum.now()
         lines = []
@@ -47,7 +47,7 @@ class Mastercard(BaseImportDataProvider):
                     (str(randint(0, 10 ** 8)).rjust(9, "0"), 9),  # location ID
                     (str(randint(0, 10 ** 5)).rjust(6, "0"), 6),  # issuer ICA code
                     ("0000", 4),  # transaction time
-                    ("".join(sample(ALPHANUM, 9)), 9),  # banknet ref number
+                    (transaction["settlement_key"][:9], 9),  # banknet ref number
                     (user["token"], 30),  # bank customer number
                     (str(randint(0, 10 ** 5)).rjust(6, "0"), 6),  # aggregate merchant ID
                 )
@@ -67,3 +67,19 @@ class Mastercard(BaseImportDataProvider):
         )
 
         return "\n".join(lines).encode()
+
+
+class MastercardAuth(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> t.List[dict]:
+        return [
+            {
+                "third_party_id": transaction["settlement_key"][:9],
+                "time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
+                "amount": transaction["amount"] / 100,
+                "currency_code": "GBP",
+                "payment_card_token": user["token"],
+                "mid": fixture["mid"],
+            }
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]

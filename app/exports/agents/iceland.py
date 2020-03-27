@@ -11,7 +11,6 @@ from soteria.security import get_security_agent
 import settings
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
-from app.db import session
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
@@ -96,20 +95,6 @@ class Iceland(BatchExportAgent):
         )
         return security_class.encode(body)
 
-    def save_data(self, matched_transaction, export_data):
-        session.add(
-            models.ExportTransaction(
-                matched_transaction_id=matched_transaction.id,
-                transaction_id=matched_transaction.transaction_id,
-                provider_slug=self.provider_slug,
-                destination="",
-                data=export_data,
-            )
-        )
-        matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
-        session.commit()
-        self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
-
     def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
@@ -144,5 +129,4 @@ class Iceland(BatchExportAgent):
             atlas_status = atlas.Status.BINK_ASSIGNED
 
         for transaction in export_data.transactions:
-            self.save_data(transaction, request)
             self.save_to_atlas(response_text, transaction, atlas_status)

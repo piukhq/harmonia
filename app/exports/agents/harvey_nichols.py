@@ -50,30 +50,12 @@ class HarveyNichols(SingularExportAgent):
             token = self.get_new_token(credentials, scheme_account_id)
         return token
 
-    def save_data(self, matched_transaction: models.MatchedTransaction, audit_data: dict) -> None:
-        def export_transaction():
-            db.session.add(
-                models.ExportTransaction(
-                    matched_transaction_id=matched_transaction.id,
-                    transaction_id=matched_transaction.transaction_id,
-                    provider_slug=self.provider_slug,
-                    destination="",
-                    data=audit_data,
-                )
-            )
-            matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
-            db.session.commit()
-
-        db.run_query(export_transaction, description="create export transaction")
-        self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
-
     def internal_requests(
         self, response: dict, transaction: models.MatchedTransaction, audit_data: dict, matched_transaction_id: int
     ) -> None:
         response_outcome = response["outcome"].lower()
         if response_outcome == "success":
             atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.BINK_ASSIGNED)
-            self.save_data(transaction, audit_data)
         elif response_outcome in ["alreadyclaimed", "alreadyassigned"]:
             atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.MERCHANT_ASSIGNED)
             self.log.debug(f"Matched transaction {matched_transaction_id} is already assigned to a different customer.")

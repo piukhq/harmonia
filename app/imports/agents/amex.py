@@ -17,7 +17,7 @@ DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
 
 
 class Amex(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
 
     file_fields = [

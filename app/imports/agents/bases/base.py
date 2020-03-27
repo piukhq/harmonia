@@ -17,9 +17,9 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.
     def find_mid():
         q = db.session.query(models.MerchantIdentifier)
 
-        if feed_type == ImportFeedTypes.SCHEME:
+        if feed_type == ImportFeedTypes.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
-        elif feed_type == ImportFeedTypes.PAYMENT:
+        elif feed_type in (ImportFeedTypes.SETTLED, ImportFeedTypes.AUTH):
             q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
@@ -162,8 +162,9 @@ class BaseAgent:
                     queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
 
                     import_task = {
-                        ImportFeedTypes.SCHEME: tasks.import_scheme_transaction,
-                        ImportFeedTypes.PAYMENT: tasks.import_payment_transaction,
+                        ImportFeedTypes.MERCHANT: tasks.import_scheme_transaction,
+                        ImportFeedTypes.AUTH: tasks.import_auth_payment_transaction,
+                        ImportFeedTypes.SETTLED: tasks.import_settled_payment_transaction,
                     }[self.feed_type]
                     tasks.import_queue.enqueue(import_task, queue_tx)
             finally:

@@ -2,6 +2,7 @@ import inspect
 import typing as t
 from decimal import Decimal
 from uuid import uuid4
+from hashlib import sha256
 
 import pendulum
 
@@ -11,13 +12,18 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
 
 PROVIDER_SLUG = "mastercard"
-PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
+QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 
 DATE_FORMAT = "YYYYMMDD"
 
 
+def _make_settlement_key(third_party_id: str):
+    return sha256(f"mastercard.{third_party_id}".encode()).hexdigest()
+
+
 class MastercardSettled(FileAgent):
-    feed_type = ImportFeedTypes.PAYMENT
+    feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
 
     field_widths = [
@@ -79,6 +85,7 @@ class MastercardSettled(FileAgent):
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
+            settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
             transaction_date=data["transaction_date"],
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -110,9 +117,10 @@ class MastercardSettled(FileAgent):
 
 class MastercardAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
+    feed_type = ImportFeedTypes.AUTH
 
-    # TODO: this needs to change to be an AUTH feed
-    feed_type = ImportFeedTypes.PAYMENT
+    class Config:
+        queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
 
     @staticmethod
     def to_queue_transaction(
@@ -121,6 +129,7 @@ class MastercardAuth(QueueAgent):
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
+            settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=pendulum.parse(data["time"]),
             spend_amount=int(Decimal(data["amount"]) * 100),
             spend_multiplier=100,

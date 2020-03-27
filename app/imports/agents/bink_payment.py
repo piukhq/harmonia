@@ -17,7 +17,7 @@ class TransactionSchema(Schema):
 
 class BinkPayment(PassiveAPIAgent):
     provider_slug = "bink-payment"
-    feed_type = feeds.ImportFeedTypes.PAYMENT
+    feed_type = feeds.ImportFeedTypes.SETTLED
     schema = TransactionSchema()
 
     def help(self) -> str:

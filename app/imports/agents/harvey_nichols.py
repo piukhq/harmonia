@@ -125,7 +125,7 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 
 
 class HarveyNichols(FileAgent):
-    feed_type = ImportFeedTypes.SCHEME
+    feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     class Config:
