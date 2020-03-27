@@ -9,7 +9,7 @@ from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
-from app import db, models
+from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
@@ -109,23 +109,6 @@ class Cooperative(BatchExportAgent):
             "X-API-KEY": security_credentials["outbound"]["credentials"][0]["value"]["api_key"],
         }
 
-    def save_data(self, matched_transaction: models.MatchedTransaction, export_data: dict):
-        def export_transaction():
-            db.session.add(
-                models.ExportTransaction(
-                    matched_transaction_id=matched_transaction.id,
-                    transaction_id=matched_transaction.transaction_id,
-                    provider_slug=self.provider_slug,
-                    destination="",
-                    data=export_data,
-                )
-            )
-            matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
-            db.session.commit()
-
-        db.run_query(export_transaction, description="create export transaction")
-        self.log.debug(f"The status of the transaction has been changed to: {matched_transaction.status}")
-
     def send_to_atlas(self, response, transactions):
         failed_transactions = []
         atlas_status_mapping = {
@@ -164,7 +147,6 @@ class Cooperative(BatchExportAgent):
     def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         _, body = export_data.outputs.pop()
-        transactions = t.cast(dict, body)["transactions"]
         matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(
@@ -175,9 +157,6 @@ class Cooperative(BatchExportAgent):
 
         response = self.api.export_transactions(body, headers)
         response.raise_for_status()
-
-        for matched_transaction, transaction in zip(matched_transactions, transactions):
-            self.save_data(matched_transaction, transaction)
 
         self.save_backup_file(response)
         self.send_to_atlas(response, matched_transactions)

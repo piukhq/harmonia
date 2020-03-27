@@ -37,13 +37,13 @@ def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> N
 def import_auth_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
     log.debug(f"Task started: import auth payment transaction {payment_transaction}")
     director = import_director.PaymentImportDirector()
-    director.handle_settled_payment_transaction(payment_transaction)
+    director.handle_auth_payment_transaction(payment_transaction)
 
 
 def import_settled_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
     log.debug(f"Task started: import settled payment transaction {payment_transaction}")
     director = import_director.PaymentImportDirector()
-    director.handle_auth_payment_transaction(payment_transaction)
+    director.handle_settled_payment_transaction(payment_transaction)
 
 
 def identify_payment_transaction(payment_transaction_id: int) -> None:

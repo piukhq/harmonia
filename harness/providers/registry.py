@@ -8,5 +8,6 @@ import_data_providers.add("bink-payment", "harness.providers.bink_payment.BinkPa
 import_data_providers.add("harvey-nichols", "harness.providers.harvey_nichols.HarveyNichols")
 import_data_providers.add("iceland-bonus-card", "harness.providers.iceland.Iceland")
 import_data_providers.add("amex", "harness.providers.amex.Amex")
-import_data_providers.add("mastercard", "harness.providers.mastercard.Mastercard")
+import_data_providers.add("mastercard-settled", "harness.providers.mastercard.MastercardSettled")
+import_data_providers.add("mastercard-auth", "harness.providers.mastercard.MastercardAuth")
 import_data_providers.add("visa", "harness.providers.visa.Visa")

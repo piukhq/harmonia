@@ -26,7 +26,7 @@ class QueueAgent(BaseAgent):
             self.log.info(f"Connected to RabbitMQ, consuming {queue_name}")
             consumer.run()
 
-    def do_import(self, body: dict):
+    def _do_import(self, body: dict):
         queue_name = self.Config.queue_name  # type: ignore
         self._import_transactions([body], source=f"AMQP: {queue_name}")
 
@@ -42,5 +42,5 @@ class Consumer(kombu.mixins.ConsumerMixin):
 
     def on_message(self, body: dict, message: kombu.Message):
         self.agent.log.info(f"Received transaction: {body}")
-        self.agent.do_import(body)
+        self.agent._do_import(body)
         message.ack()

@@ -1,29 +1,27 @@
+import json
 import shutil
 import typing as t
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-import gnupg
 import click
-import toml
+import gnupg
 import soteria.configuration
+import toml
 from flask import Flask
 from marshmallow import ValidationError, fields, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 import settings
-
-from app import db, models, encryption
+from app import db, encryption, models
 from app.core import key_manager
-from app.imports.agents import BaseAgent, ActiveAPIAgent, PassiveAPIAgent, FileAgent, import_agents
 from app.exports.agents import BatchExportAgent, export_agents
+from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
 from app.registry import RegistryError
-
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
-
 
 # most of the export agents need this to be set to something.
 settings.SOTERIA_URL = ""
@@ -100,12 +98,14 @@ class ImportAgentKind(Enum):
     PASSIVE_API = "Passive API"
     ACTIVE_API = "Active API"
     FILE = "File"
+    QUEUE = "Queue"
 
 
 _import_agent_kind = {
     PassiveAPIAgent: ImportAgentKind.PASSIVE_API,
     ActiveAPIAgent: ImportAgentKind.ACTIVE_API,
     FileAgent: ImportAgentKind.FILE,
+    QueueAgent: ImportAgentKind.QUEUE,
 }
 
 
@@ -124,6 +124,7 @@ class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
     points = fields.Integer(required=True, allow_none=False, strict=True)
+    settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
 
 
 class FixtureUserSchema(Schema):
@@ -141,6 +142,7 @@ class FixtureSchema(Schema):
     postcode = fields.String(required=True, allow_none=False)
     loyalty_scheme = fields.Nested(FixtureProviderSchema)
     payment_provider = fields.Nested(FixtureProviderSchema)
+    agents = fields.Nested(FixtureProviderSchema, many=True)
     users = fields.Nested(FixtureUserSchema, many=True)
 
 
@@ -254,7 +256,10 @@ def setup_keyring():
     manager.write_key("visa", priv_key_data)
 
 
-def make_import_data(slug: str, fixture: dict) -> dict:
+ImportDataType = t.Union[bytes, t.List[dict]]
+
+
+def make_import_data(slug: str, fixture: dict) -> ImportDataType:
     provider = import_data_providers.instantiate(slug)
     return provider.provide(fixture)
 
@@ -266,16 +271,14 @@ def make_test_client(agent: PassiveAPIAgent):
     return app.test_client()
 
 
-def run_passive_api_import_agent(agent: PassiveAPIAgent, fixture: dict):
-    import_data_list = make_import_data(agent.provider_slug, fixture)
+def run_passive_api_import_agent(agent_slug: str, agent: PassiveAPIAgent, fixture: dict):
+    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture))
     client = make_test_client(agent)
-    url = f"{settings.URL_PREFIX}/import/{agent.provider_slug}/"
+    url = f"{settings.URL_PREFIX}/import/{agent_slug}/"
 
     for import_data in import_data_list:
         click.secho(
-            f"Importing {agent.provider_slug} transaction #{agent.get_transaction_id(import_data)}",
-            fg="cyan",
-            bold=True,
+            f"Importing {agent_slug} transaction #{agent.get_transaction_id(import_data)}", fg="cyan", bold=True,
         )
         click.echo(f"POST {url}")
         cpprint(import_data)
@@ -289,17 +292,27 @@ def run_passive_api_import_agent(agent: PassiveAPIAgent, fixture: dict):
             click.secho("Failed", fg="red", bold=True)
 
 
-def run_active_api_import_agent(agent: ActiveAPIAgent, fixture: dict):
+def run_active_api_import_agent(agent_slug: str, agent: ActiveAPIAgent, fixture: dict):
     raise NotImplementedError("Active API import agents are not implemented yet.")
 
 
-def run_file_import_agent(agent: FileAgent, fixture: dict):
-    provider = import_data_providers.instantiate(agent.provider_slug)
-    data = provider.provide(fixture)
+def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
+    data = t.cast(bytes, make_import_data(agent_slug, fixture))
+
     click.secho(
-        f"Importing {agent.provider_slug} transaction data", fg="cyan", bold=True,
+        f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
     )
     agent._do_import(data, "end-to-end test file")
+
+
+def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
+    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture))
+
+    click.secho(
+        f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
+    )
+    for transaction in import_data_list:
+        agent._do_import(transaction)
 
 
 def run_import_agent(slug: str, fixture: dict):
@@ -311,11 +324,13 @@ def run_import_agent(slug: str, fixture: dict):
 
     kind = get_import_agent_kind(agent)
     if kind == ImportAgentKind.PASSIVE_API:
-        run_passive_api_import_agent(t.cast(PassiveAPIAgent, agent), fixture)
+        run_passive_api_import_agent(slug, t.cast(PassiveAPIAgent, agent), fixture)
     elif kind == ImportAgentKind.ACTIVE_API:
-        run_active_api_import_agent(t.cast(ActiveAPIAgent, agent), fixture)
+        run_active_api_import_agent(slug, t.cast(ActiveAPIAgent, agent), fixture)
     elif kind == ImportAgentKind.FILE:
-        run_file_import_agent(t.cast(FileAgent, agent), fixture)
+        run_file_import_agent(slug, t.cast(FileAgent, agent), fixture)
+    elif kind == ImportAgentKind.QUEUE:
+        run_queue_import_agent(slug, t.cast(QueueAgent, agent), fixture)
     else:
         raise ValueError(f"Unsupported import agent kind: {kind}")
 
@@ -343,11 +358,8 @@ def maybe_run_batch_export_agent(fixture: dict):
 
 
 def run_transaction_matching(fixture: dict):
-    loyalty_scheme_slug = fixture["loyalty_scheme"]["slug"]
-    payment_provider_slug = fixture["payment_provider"]["slug"]
-
-    run_import_agent(loyalty_scheme_slug, fixture)
-    run_import_agent(payment_provider_slug, fixture)
+    for agent in fixture["agents"]:
+        run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
     run_rq_worker("matching")
     run_rq_worker("export")
@@ -363,22 +375,21 @@ def dump_provider_data(fixture: dict, slug: str):
 
     fmt_slug = click.style(slug, fg="cyan", bold=True)
 
-    if not isinstance(data, bytes):
-        click.echo(f"Skipping {fmt_slug} as provided data was not bytes")
-        return
-
     path = Path("dump") / slug
     path.parent.mkdir(parents=True, exist_ok=True)
 
     fmt_path = click.style(slug, fg="cyan", bold=True)
     click.echo(f"Dumping {fmt_slug} file to {fmt_path}")
     with path.open("wb") as f:
-        f.write(data)
+        if isinstance(data, bytes):
+            f.write(data)
+        else:
+            f.write(json.dumps(data, indent=4, sort_keys=True).encode())
 
 
 def do_file_dump(fixture: dict):
-    dump_provider_data(fixture, fixture["loyalty_scheme"]["slug"])
-    dump_provider_data(fixture, fixture["payment_provider"]["slug"])
+    for agent in fixture["agents"]:
+        dump_provider_data(fixture, agent["slug"])
 
 
 @click.command()
@@ -393,7 +404,7 @@ def do_file_dump(fixture: dict):
 def main(fixture_file: t.IO[str], dump_files: bool):
     fixture = load_fixture(fixture_file)
 
-    if fixture["payment_provider"]["slug"] in KEYRING_REQUIRED:
+    if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
         setup_keyring()
 
     if dump_files:

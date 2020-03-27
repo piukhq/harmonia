@@ -12,7 +12,8 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
 
 PROVIDER_SLUG = "mastercard"
-PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
+QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -84,6 +85,7 @@ class MastercardSettled(FileAgent):
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
+            settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
             transaction_date=data["transaction_date"],
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -116,6 +118,9 @@ class MastercardSettled(FileAgent):
 class MastercardAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
+
+    class Config:
+        queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
 
     @staticmethod
     def to_queue_transaction(

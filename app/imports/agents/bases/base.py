@@ -17,9 +17,9 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.
     def find_mid():
         q = db.session.query(models.MerchantIdentifier)
 
-        if feed_type == ImportFeedTypes.SCHEME:
+        if feed_type == ImportFeedTypes.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
-        elif feed_type == ImportFeedTypes.PAYMENT:
+        elif feed_type in (ImportFeedTypes.SETTLED, ImportFeedTypes.AUTH):
             q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
