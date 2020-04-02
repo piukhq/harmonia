@@ -8,19 +8,21 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Prerequisites](#prerequisites)
-- [Dependencies](#dependencies)
-- [Project Setup](#project-setup)
-  - [MacOS Dependencies](#macos-dependencies)
-  - [Virtual Environment](#virtual-environment)
-  - [Database Schema Migration](#database-schema-migration)
-  - [Development API Server](#development-api-server)
-  - [Unit Tests](#unit-tests)
-  - [End-to-End Matching Test](#end-to-end-matching-test)
-    - [Inspecting PostgreSQL](#inspecting-postgresql)
-    - [Inspecting Redis](#inspecting-redis)
-- [Migrations](#migrations)
-- [Deployment](#deployment)
+- [Harmonia](#harmonia)
+  - [Prerequisites](#prerequisites)
+  - [Dependencies](#dependencies)
+  - [Project Setup](#project-setup)
+    - [MacOS Dependencies](#macos-dependencies)
+    - [Virtual Environment](#virtual-environment)
+    - [Database Schema Migration](#database-schema-migration)
+    - [Development API Server](#development-api-server)
+    - [Unit Tests](#unit-tests)
+    - [End-to-End Matching Test](#end-to-end-matching-test)
+      - [Testing Visa](#testing-visa)
+      - [Inspecting PostgreSQL](#inspecting-postgresql)
+      - [Inspecting Redis](#inspecting-redis)
+  - [Migrations](#migrations)
+  - [Deployment](#deployment)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
