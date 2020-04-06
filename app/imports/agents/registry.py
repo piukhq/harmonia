@@ -4,6 +4,7 @@ from app.imports.agents import BaseAgent
 import_agents = Registry[BaseAgent]()
 import_agents.add("amex", "app.imports.agents.amex.Amex")
 import_agents.add("visa", "app.imports.agents.visa.Visa")
+import_agents.add("visa-auth", "app.imports.agents.visa.VisaAuth")
 import_agents.add("mastercard-settled", "app.imports.agents.mastercard.MastercardSettled")
 import_agents.add("mastercard-auth", "app.imports.agents.mastercard.MastercardAuth")
 import_agents.add("cooperative", "app.imports.agents.cooperative.Cooperative")
