@@ -1,6 +1,8 @@
 import inspect
 import typing as t
 from pathlib import Path
+from hashlib import sha256
+from decimal import Decimal
 
 import gnupg
 import pendulum
@@ -17,6 +19,16 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 
 DATE_FORMAT = "YYYYMMDD"
+
+
+def _make_settlement_key(key_id: str):
+    return sha256(f"mastercard.{key_id}".encode()).hexdigest()
+
+
+def get_key_value(data: dict, key: str):
+    for d in data["messageElementsCollection"]["messageElement"]:
+        if d['key'] == key:
+            return d['value']
 
 
 class Visa(FileAgent):
@@ -152,23 +164,25 @@ class VisaAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return data["transaction_id"]
+        return get_key_value(data, "Transaction.VipTransactionId")
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        return [data["card_acceptor_id"]]
+        return [get_key_value(data, "Transaction.VisaMerchantId")]
 
     @staticmethod
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.PaymentTransaction:
+        ext_user_id = data["externalUserId"]
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
-            transaction_date=data["transaction_date"],
-            spend_amount=data["transaction_amount"],
+            transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            spend_amount=int(Decimal(get_key_value(data, "Transaction.TransactionAmount")) * 100),
             spend_multiplier=100,
-            spend_currency=data["country_currency_code"],
-            card_token=data["external_card_holder_id"],
-            extra_fields={k: data[k] for k in ("merchant_description_name", "merchant_city")},
+            spend_currency="GBP",
+            card_token=ext_user_id,
+            settlement_key=_make_settlement_key(ext_user_id),
+            extra_fields={k: data[k] for k in ("messageId",)},
         )

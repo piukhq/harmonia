@@ -7,6 +7,7 @@ import pendulum
 
 from harness.providers.base import BaseImportDataProvider
 import settings
+from uuid import uuid4
 
 # field with a fixed length
 WidthField = t.Tuple[t.Any, int]
@@ -22,6 +23,10 @@ def format_date(date: datetime) -> str:
 
 def format_time(date: datetime) -> str:
     return pendulum.instance(date).format("hhmm")
+
+
+def get_transaction_id() -> str:
+    return str(uuid4())
 
 
 class Visa(BaseImportDataProvider):
@@ -108,3 +113,83 @@ class Visa(BaseImportDataProvider):
         data = "\n".join(lines)
         enc = gpg.encrypt(data, "harmonia@bink.dev", armor=False)
         return enc.data
+
+
+class VisaAuth(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> t.List[dict]:
+        return [
+            {
+                "cardId": transaction["settlement_key"][:9],
+                "externalUserId": user["token"],
+                "messageElementsCollection":{
+                    "messageElement": [{
+                            "key": "User.PromoCode",
+                            "value": "10012002"
+                        },
+                        {
+                            "key": "Transaction.VipTransactionId",
+                            "value": get_transaction_id()
+                        },
+                        {
+                            "key": "Transaction.TimeStampYYMMDD",
+                            "value": pendulum.instance(transaction["date"]).format("YYYY-MM-DDThh:mm:ss")
+                        },
+                        {
+                            "key": "Transaction.TransactionAmount",
+                            "value": transaction["amount"] / 100
+                        },
+                        {
+                            "key": "Transaction.CurrencyCodeNumeric",
+                            "value": "840"
+                        },
+                        {
+                            "key": "Transaction.BillingAmount",
+                            "value": transaction["amount"] / 100
+                        },
+                        {
+                            "key": "Transaction.BillingCurrencyCode",
+                            "value": "840"
+                        },
+                        {
+                            "key": "Transaction.USDAmount",
+                            "value": transaction["amount"] / 100
+                        },
+                        {
+                            "key": "Transaction.MerchantCardAcceptorId",
+                            "value": "32423 ABC"
+                        },
+                        {
+                            "key": "Transaction.MerchantAcquirerBin",
+                            "value": "3423432"
+                        },
+                        {
+                            "key": "Transaction.VisaMerchantId",
+                            "value": fixture["mid"]
+                        },
+                        {
+                            "key": "Transaction.VisaMerchantName",
+                            "value": "Bink Shop"
+                        },
+                        {
+                            "key": "Transaction.VisaStoreId",
+                            "value": fixture["mid"]
+                        },
+                        {
+                            "key": "Transaction.VisaStoreName",
+                            "value": "Bink Shop"
+                        }
+                    ]
+                },
+                "messageId": "12345678",
+                "messageName": "AuthMessageTest",
+                "userDefinedFieldsCollection": {
+                    "userDefinedField": [{
+                        "key": "RandomPropertyName",
+                        "value": "value"
+                    }]
+                },
+                "userProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4"
+            }
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]
