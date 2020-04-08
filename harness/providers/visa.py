@@ -121,74 +121,31 @@ class VisaAuth(BaseImportDataProvider):
             {
                 "cardId": transaction["settlement_key"][:9],
                 "externalUserId": user["token"],
-                "messageElementsCollection":{
-                    "messageElement": [{
-                            "key": "User.PromoCode",
-                            "value": "10012002"
-                        },
-                        {
-                            "key": "Transaction.VipTransactionId",
-                            "value": get_transaction_id()
-                        },
+                "messageElementsCollection": {
+                    "messageElement": [
+                        {"key": "User.PromoCode", "value": "10012002"},
+                        {"key": "Transaction.VipTransactionId", "value": get_transaction_id()},
                         {
                             "key": "Transaction.TimeStampYYMMDD",
-                            "value": pendulum.instance(transaction["date"]).format("YYYY-MM-DDThh:mm:ss")
+                            "value": pendulum.instance(transaction["date"]).format("YYYY-MM-DDThh:mm:ss"),
                         },
-                        {
-                            "key": "Transaction.TransactionAmount",
-                            "value": transaction["amount"] / 100
-                        },
-                        {
-                            "key": "Transaction.CurrencyCodeNumeric",
-                            "value": "840"
-                        },
-                        {
-                            "key": "Transaction.BillingAmount",
-                            "value": transaction["amount"] / 100
-                        },
-                        {
-                            "key": "Transaction.BillingCurrencyCode",
-                            "value": "840"
-                        },
-                        {
-                            "key": "Transaction.USDAmount",
-                            "value": transaction["amount"] / 100
-                        },
-                        {
-                            "key": "Transaction.MerchantCardAcceptorId",
-                            "value": "32423 ABC"
-                        },
-                        {
-                            "key": "Transaction.MerchantAcquirerBin",
-                            "value": "3423432"
-                        },
-                        {
-                            "key": "Transaction.VisaMerchantId",
-                            "value": fixture["mid"]
-                        },
-                        {
-                            "key": "Transaction.VisaMerchantName",
-                            "value": "Bink Shop"
-                        },
-                        {
-                            "key": "Transaction.VisaStoreId",
-                            "value": fixture["mid"]
-                        },
-                        {
-                            "key": "Transaction.VisaStoreName",
-                            "value": "Bink Shop"
-                        }
+                        {"key": "Transaction.TransactionAmount", "value": transaction["amount"] / 100},
+                        {"key": "Transaction.CurrencyCodeNumeric", "value": "840"},
+                        {"key": "Transaction.BillingAmount", "value": transaction["amount"] / 100},
+                        {"key": "Transaction.BillingCurrencyCode", "value": "840"},
+                        {"key": "Transaction.USDAmount", "value": transaction["amount"] / 100},
+                        {"key": "Transaction.MerchantCardAcceptorId", "value": "32423 ABC"},
+                        {"key": "Transaction.MerchantAcquirerBin", "value": "3423432"},
+                        {"key": "Transaction.VisaMerchantId", "value": fixture["mid"]},
+                        {"key": "Transaction.VisaMerchantName", "value": "Bink Shop"},
+                        {"key": "Transaction.VisaStoreId", "value": fixture["mid"]},
+                        {"key": "Transaction.VisaStoreName", "value": "Bink Shop"},
                     ]
                 },
                 "messageId": "12345678",
                 "messageName": "AuthMessageTest",
-                "userDefinedFieldsCollection": {
-                    "userDefinedField": [{
-                        "key": "RandomPropertyName",
-                        "value": "value"
-                    }]
-                },
-                "userProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4"
+                "userDefinedFieldsCollection": {"userDefinedField": [{"key": "RandomPropertyName", "value": "value"}]},
+                "userProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
             }
             for user in fixture["users"]
             for transaction in user["transactions"]

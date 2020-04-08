@@ -27,8 +27,8 @@ def _make_settlement_key(key_id: str):
 
 def get_key_value(data: dict, key: str):
     for d in data["messageElementsCollection"]["messageElement"]:
-        if d['key'] == key:
-            return d['value']
+        if d["key"] == key:
+            return d["value"]
 
 
 class Visa(FileAgent):
