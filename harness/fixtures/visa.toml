@@ -1,0 +1,32 @@
+# Visa auth and settlement fixture data
+mid = "test-mid-123"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "bink-loyalty"
+
+[payment_provider]
+slug = "visa"
+
+[[agents]]
+slug = "bink-loyalty"
+
+[[agents]]
+slug = "visa-auth"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 1099
+points = 5
+settlement_key = "settlement-123"
