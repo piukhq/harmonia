@@ -1,6 +1,6 @@
 from rq import Queue
 
-from app import models, db, reporting
+from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
 
 
@@ -18,9 +18,15 @@ class LoggedQueue(Queue):
             **kwargs,
         )
 
+        self.queue_limit = config.ConfigValue(f"{config.KEY_PREFIX}:queue:{self.name}:limit", default="5000")
+
     def enqueue(self, f, *args, **kwargs):
         log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
         return super().enqueue(f, *args, **kwargs)
+
+    def has_capacity(self) -> bool:
+        limit = int(self.queue_limit)
+        return self.count() < limit
 
 
 import_queue = LoggedQueue(name="import", connection=db.redis)

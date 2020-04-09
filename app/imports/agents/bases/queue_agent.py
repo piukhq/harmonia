@@ -2,8 +2,9 @@ import typing as t
 
 import kombu.mixins
 
-from app.imports.agents import BaseAgent
 import settings
+from app import tasks
+from app.imports.agents import BaseAgent
 
 
 class QueueAgent(BaseAgent):

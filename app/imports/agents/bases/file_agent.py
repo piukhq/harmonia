@@ -9,7 +9,7 @@ from azure.core.exceptions import ResourceExistsError, HttpResponseError
 import pendulum
 
 from app.imports.agents import BaseAgent
-from app import reporting
+from app import reporting, tasks
 import settings
 
 
@@ -120,6 +120,11 @@ class FileAgent(BaseAgent):
         self.log.info("Starting import loop.")
 
         while True:
+            if not tasks.import_queue.has_capacity():
+                self.log.info("Import queue is at capacity. Suspending for 60 seconds.")
+                time.sleep(60)
+                continue  # retry
+
             filesource.provide(self._do_import)
             if once is True:
                 self.log.info("Quitting early as we were told to run once.")
