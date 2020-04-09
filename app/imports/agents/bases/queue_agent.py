@@ -3,7 +3,6 @@ import typing as t
 import kombu.mixins
 
 import settings
-from app import tasks
 from app.imports.agents import BaseAgent
 
 
