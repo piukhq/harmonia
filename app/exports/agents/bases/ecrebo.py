@@ -18,6 +18,18 @@ from app.service.atlas import atlas
 from app.service.sftp import SFTP
 
 
+class classproperty:
+    def __init__(self, method=None):
+        self.fget = method
+
+    def __get__(self, instance, cls=None):
+        return self.fget(cls)
+
+    def getter(self, method):
+        self.fget = method
+        return self
+
+
 class ExportFileSet(t.NamedTuple):
     receipt_data: str
     reward_data: str
@@ -26,6 +38,15 @@ class ExportFileSet(t.NamedTuple):
 
 class Ecrebo(BatchExportAgent):
     saved_output_index = 2  # save rewards CSV to export_transaction table
+
+    class Config:
+        @classproperty
+        def reward_upload_path(self):
+            raise NotImplementedError(f"{self.__name__} is missing a required property: reward_upload_path")
+
+        @classproperty
+        def receipt_upload_path(self):
+            raise NotImplementedError(f"{self.__name__} is missing a required property: receipt_upload_path")
 
     def __init__(self):
         super().__init__()
@@ -66,6 +87,10 @@ class Ecrebo(BatchExportAgent):
     @property
     def reciept_xml_template(self):
         raise NotImplementedError(f"{type(self).__name__} is missing a required property: reciept_xml_template")
+
+    # @property
+    # def Config(self):
+    #     raise NotImplementedError(f"{type(self).__name__} is missing a required property: Config")
 
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
