@@ -20,7 +20,7 @@ DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
 
 
 def _make_settlement_key(key_id: str):
-    return sha256(f"mastercard.{key_id}".encode()).hexdigest()
+    return sha256(f"amex.{key_id}".encode()).hexdigest()
 
 
 class Amex(FileAgent):
