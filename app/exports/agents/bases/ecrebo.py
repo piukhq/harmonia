@@ -84,10 +84,6 @@ class Ecrebo(BatchExportAgent):
     def reciept_xml_template(self):
         raise NotImplementedError(f"{type(self).__name__} is missing a required property: reciept_xml_template")
 
-    # @property
-    # def Config(self):
-    #     raise NotImplementedError(f"{type(self).__name__} is missing a required property: Config")
-
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
         return "BKBNK{}".format(transaction_number)
