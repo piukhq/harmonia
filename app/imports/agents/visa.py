@@ -9,6 +9,7 @@ import pendulum
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
+from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
 import settings
@@ -178,7 +179,7 @@ class VisaAuth(QueueAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
-            spend_amount=get_key_value(data, "Transaction.TransactionAmount") * 100,
+            spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
@@ -211,7 +212,7 @@ class VisaSettlement(QueueAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
-            spend_amount=get_key_value(data, "Transaction.SettlementAmount") * 100,
+            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,

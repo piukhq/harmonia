@@ -3,11 +3,11 @@ import inspect
 import csv
 import io
 from decimal import Decimal
-
 import pendulum
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
+from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
 
@@ -23,7 +23,7 @@ class Iceland(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "TransactionCardSchemeId": int,
-        "TransactionAmountValue": lambda x: int(Decimal(x) * 100),
+        "TransactionAmountValue": lambda x: to_pennies(x),
         "TransactionCashbackValue": Decimal,
         "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
     }

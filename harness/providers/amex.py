@@ -1,12 +1,18 @@
+import typing as t
 from uuid import uuid4
 
 import pendulum
 
 from harness.providers.base import BaseImportDataProvider
+from app.currency import to_pounds
 
 
 def pipe(*args):
     return "|".join(args)
+
+
+def get_transaction_id() -> str:
+    return str(uuid4())
 
 
 class Amex(BaseImportDataProvider):
@@ -54,3 +60,19 @@ class Amex(BaseImportDataProvider):
         )
 
         return "\n".join(lines).encode()
+
+
+class AmexAuth(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> t.List[dict]:
+        return [
+            {
+                "transaction_id": get_transaction_id(),
+                "offer_id": transaction["settlement_key"],
+                "transaction_time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
+                "transaction_amount": to_pounds(transaction["amount"]),
+                "cm_alias": user["token"],
+                "merchant_number": fixture["mid"],
+            }
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]
