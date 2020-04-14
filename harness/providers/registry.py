@@ -12,3 +12,4 @@ import_data_providers.add("mastercard-settled", "harness.providers.mastercard.Ma
 import_data_providers.add("mastercard-auth", "harness.providers.mastercard.MastercardAuth")
 import_data_providers.add("visa", "harness.providers.visa.Visa")
 import_data_providers.add("visa-auth", "harness.providers.visa.VisaAuth")
+import_data_providers.add("visa-settlement", "harness.providers.visa.VisaSettlement")
