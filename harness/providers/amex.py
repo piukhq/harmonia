@@ -67,7 +67,7 @@ class AmexAuth(BaseImportDataProvider):
         return [
             {
                 "transaction_id": get_transaction_id(),
-                "offer_id": transaction["settlement_key"][:9],
+                "offer_id": transaction["settlement_key"],
                 "transaction_time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
                 "transaction_amount": to_pounds(transaction["amount"]),
                 "cm_alias": user["token"],
