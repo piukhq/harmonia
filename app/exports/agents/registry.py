@@ -7,3 +7,4 @@ export_agents.add("harvey-nichols", "app.exports.agents.harvey_nichols.HarveyNic
 export_agents.add("cooperative", "app.exports.agents.cooperative.Cooperative")
 export_agents.add("iceland-bonus-card", "app.exports.agents.iceland.Iceland")
 export_agents.add("burger-king-rewards", "app.exports.agents.burger_king.BurgerKing")
+export_agents.add("fatface", "app.exports.agents.fatface.FatFace")
