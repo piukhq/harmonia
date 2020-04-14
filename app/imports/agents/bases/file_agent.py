@@ -1,5 +1,6 @@
 from pathlib import Path
 import typing as t
+import datetime
 import logging
 import shutil
 import time
@@ -7,9 +8,10 @@ import time
 from azure.storage.blob import BlobServiceClient, BlobLeaseClient
 from azure.core.exceptions import ResourceExistsError, HttpResponseError
 import pendulum
+import humanize
 
 from app.imports.agents import BaseAgent
-from app import reporting, tasks
+from app import reporting, tasks, retry
 import settings
 
 
@@ -119,11 +121,16 @@ class FileAgent(BaseAgent):
 
         self.log.info("Starting import loop.")
 
+        attempts = 0
         while True:
             if not tasks.import_queue.has_capacity():
-                self.log.info("Import queue is at capacity. Suspending for 60 seconds.")
-                time.sleep(60)
+                attempts += 1
+                delay_seconds = retry.exponential_delay(attempts, 15 * 60)
+                humanize_delta = humanize.naturaldelta(datetime.timedelta(seconds=delay_seconds))
+                self.log.info(f"Import queue is at capacity. Suspending for {humanize_delta}.")
+                time.sleep(delay_seconds)
                 continue  # retry
+            attempts = 0  # reset attempt counter for next time
 
             filesource.provide(self._do_import)
             if once is True:
