@@ -2,7 +2,6 @@ import inspect
 import typing as t
 from pathlib import Path
 from hashlib import sha256
-from decimal import Decimal
 
 import gnupg
 import pendulum
@@ -23,13 +22,13 @@ DATE_FORMAT = "YYYYMMDD"
 
 
 def _make_settlement_key(key_id: str):
-    return sha256(f"mastercard.{key_id}".encode()).hexdigest()
+    return sha256(f"visa.{key_id}".encode()).hexdigest()
 
 
 def get_key_value(data: dict, key: str):
-    for d in data["messageElementsCollection"]["messageElement"]:
-        if d["key"] == key:
-            return d["value"]
+    for d in data["MessageElementsCollection"]:
+        if d["Key"] == key:
+            return d["Value"]
 
 
 class Visa(FileAgent):
@@ -175,7 +174,7 @@ class VisaAuth(QueueAgent):
     def to_queue_transaction(
         data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
     ) -> models.PaymentTransaction:
-        ext_user_id = data["externalUserId"]
+        ext_user_id = data["ExternalUserId"]
         return models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
@@ -185,5 +184,38 @@ class VisaAuth(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(ext_user_id),
-            extra_fields={k: data[k] for k in ("messageId",)},
+            extra_fields={k: data[k] for k in ("MessageId",)},
+        )
+
+
+class VisaSettlement(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = ImportFeedTypes.AUTH
+
+    class Config:
+        queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-settlement")
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        return get_key_value(data, "Transaction.VipTransactionId")
+
+    @staticmethod
+    def get_mids(data: dict) -> t.List[str]:
+        return [get_key_value(data, "Transaction.VisaMerchantId")]
+
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
+    ) -> models.PaymentTransaction:
+        ext_user_id = data["ExternalUserId"]
+        return models.PaymentTransaction(
+            merchant_identifier_ids=merchant_identifier_ids,
+            transaction_id=transaction_id,
+            transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            spend_amount=get_key_value(data, "Transaction.SettlementAmount") * 100,
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=ext_user_id,
+            settlement_key=_make_settlement_key(ext_user_id),
+            extra_fields={k: data[k] for k in ("MessageId",)},
         )

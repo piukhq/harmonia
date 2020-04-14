@@ -18,8 +18,10 @@ RUN apk --no-cache add --virtual build-deps \
     echo $DEPLOY_KEY | base64 -d > /root/.ssh/id_rsa && \
     chmod 0600 /root/.ssh/id_rsa && \
     ssh-keyscan git.bink.com > /root/.ssh/known_hosts && \
-    pip install pipenv gunicorn alembic && \
+    pip install pipenv poetry gunicorn alembic && \
+    pip install pendulum --no-build-isolation && \
     pipenv install --deploy --system --ignore-pipfile && \
     pip uninstall --yes pipenv && \
     apk --no-cache del build-deps && \
     rm -rf /root/.cache
+

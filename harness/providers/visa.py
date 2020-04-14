@@ -120,33 +120,85 @@ class VisaAuth(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
         return [
             {
-                "cardId": transaction["settlement_key"][:9],
-                "externalUserId": user["token"],
-                "messageElementsCollection": {
-                    "messageElement": [
-                        {"key": "User.PromoCode", "value": "10012002"},
-                        {"key": "Transaction.VipTransactionId", "value": get_transaction_id()},
-                        {
-                            "key": "Transaction.TimeStampYYMMDD",
-                            "value": pendulum.instance(transaction["date"]).format("YYYY-MM-DDThh:mm:ss"),
-                        },
-                        {"key": "Transaction.TransactionAmount", "value": to_pounds(transaction["amount"])},
-                        {"key": "Transaction.CurrencyCodeNumeric", "value": "840"},
-                        {"key": "Transaction.BillingAmount", "value": transaction["amount"] / 100},
-                        {"key": "Transaction.BillingCurrencyCode", "value": "840"},
-                        {"key": "Transaction.USDAmount", "value": transaction["amount"] / 100},
-                        {"key": "Transaction.MerchantCardAcceptorId", "value": "32423 ABC"},
-                        {"key": "Transaction.MerchantAcquirerBin", "value": "3423432"},
-                        {"key": "Transaction.VisaMerchantId", "value": fixture["mid"]},
-                        {"key": "Transaction.VisaMerchantName", "value": "Bink Shop"},
-                        {"key": "Transaction.VisaStoreId", "value": fixture["mid"]},
-                        {"key": "Transaction.VisaStoreName", "value": "Bink Shop"},
-                    ]
-                },
-                "messageId": "12345678",
-                "messageName": "AuthMessageTest",
-                "userDefinedFieldsCollection": {"userDefinedField": [{"key": "RandomPropertyName", "value": "value"}]},
-                "userProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
+                "CardId": transaction["settlement_key"][:9],
+                "ExternalUserId": user["token"],
+                "MessageElementsCollection": [
+                    {"Key": "Transaction.BillingAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.TimeStampYYMMDD", "Value": pendulum.instance(transaction["date"]).isoformat()},
+                    {"Key": "Transaction.MerchantCardAcceptorId", "Value": "32423 ABC"},
+                    {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
+                    {"Key": "Transaction.TransactionAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
+                    {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
+                    {"Key": "Transaction.VisaMerchantId", "Value": fixture["mid"]},
+                    {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
+                    {"Key": "Transaction.VisaStoreId", "Value": fixture["mid"]},
+                    {"Key": "Transaction.SettlementDate", "Value": ""},
+                    {"Key": "Transaction.SettlementAmount", "Value": 0},
+                    {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 0},
+                    {"Key": "Transaction.SettlementBillingAmount", "Value": 0},
+                    {"Key": "Transaction.SettlementBillingCurrency", "Value": ""},
+                    {"Key": "Transaction.SettlementUSDAmount", "Value": 0},
+                    {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
+                    {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
+                    {"Key": "Transaction.USDAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.MerchantLocalPurchaseDate ", "Value": "2019-12-19"},
+                    {"Key": "Transaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
+                    {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "MYSTORE"},
+                    {"Key": "Transaction.MerchantDateTimeGMT ", "Value": "2019-12-19T23:40:00"},
+                    {"Key": "Transaction.AuthCode", "Value": "800533"},
+                    {"Key": "Transaction.PanLastFour", "Value": "2345"},
+                ],
+                "MessageId": "12345678",
+                "MessageName": "AuthMessageTest",
+                "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "AUTH"}],
+                "UserProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
+            }
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]
+
+
+class VisaSettlement(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> t.List[dict]:
+        return [
+            {
+                "CardId": transaction["settlement_key"][:9],
+                "ExternalUserId": user["token"],
+                "MessageElementsCollection": [
+                    {"Key": "Transaction.BillingAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.TimeStampYYMMDD", "Value": pendulum.instance(transaction["date"]).isoformat()},
+                    {"Key": "Transaction.MerchantCardAcceptorId", "Value": "32423 ABC"},
+                    {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
+                    {"Key": "Transaction.TransactionAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
+                    {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
+                    {"Key": "Transaction.VisaMerchantId", "Value": fixture["mid"]},
+                    {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
+                    {"Key": "Transaction.VisaStoreId", "Value": fixture["mid"]},
+                    {"Key": "Transaction.SettlementDate", "Value": pendulum.now().isoformat()},
+                    {"Key": "Transaction.SettlementAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 826},
+                    {"Key": "Transaction.SettlementBillingAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.SettlementBillingCurrency", "Value": "GBP"},
+                    {"Key": "Transaction.SettlementUSDAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
+                    {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
+                    {"Key": "Transaction.USDAmount", "Value": transaction["amount"] / 100},
+                    {"Key": "Transaction.MerchantLocalPurchaseDate ", "Value": "2019-12-19"},
+                    {"Key": "Transaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
+                    {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "MYSTORE"},
+                    {
+                        "Key": "Transaction.MerchantDateTimeGMT ",
+                        "Value": pendulum.instance(transaction["date"]).isoformat(),
+                    },
+                    {"Key": "Transaction.AuthCode", "Value": "800533"},
+                    {"Key": "Transaction.PanLastFour", "Value": "2345"},
+                ],
+                "MessageId": "12345678",
+                "MessageName": "SettlementMessageTest",
+                "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "SETTLE"}],
+                "UserProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
             }
             for user in fixture["users"]
             for transaction in user["transactions"]
