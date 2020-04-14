@@ -6,6 +6,7 @@ from random import sample
 import pendulum
 
 from harness.providers.base import BaseImportDataProvider
+from app.currency import to_pounds
 
 
 def _get_card_scheme_id(slug: str) -> int:
@@ -23,7 +24,7 @@ class Iceland(BaseImportDataProvider):
                 fixture["payment_provider"]["slug"].title(),
                 fixture["mid"],
                 pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
-                transaction["amount"] / 100,
+                to_pounds(transaction["amount"]),
                 "GBP",
                 ".00",
                 "GBP",

@@ -40,7 +40,7 @@ class MastercardSettled(BaseImportDataProvider):
                     ("D", 1),  # data record
                     (str(randint(0, 10 ** 12)).rjust(13, "0"), 13),  # tx sequence number
                     ("", 19),  # bank account number
-                    (str(transaction["amount"] / 100).rjust(13, "0"), 13),
+                    (str(to_pounds(transaction["amount"])).rjust(13, "0"), 13),
                     (pendulum.instance(transaction["date"]).format("YYYYMMDD"), 8),
                     (fixture["loyalty_scheme"]["slug"].upper(), 60),
                     (fixture["mid"], 22),

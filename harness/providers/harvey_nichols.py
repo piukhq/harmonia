@@ -2,6 +2,7 @@ import json
 from uuid import uuid4
 
 from harness.providers.base import BaseImportDataProvider
+from app.currency import to_pounds
 
 
 class HarveyNichols(BaseImportDataProvider):
@@ -16,7 +17,7 @@ class HarveyNichols(BaseImportDataProvider):
                         "expiry": "0",
                         "scheme": "AMEX",
                     },
-                    "amount": {"value": transaction["amount"] / 100, "unit": "GBP"},
+                    "amount": {"value": to_pounds(transaction["amount"]), "unit": "GBP"},
                     "store_id": "0001017   005682",
                     "timestamp": transaction["date"].isoformat(),
                     "id": str(uuid4()),

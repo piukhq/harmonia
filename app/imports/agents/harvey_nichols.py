@@ -5,7 +5,7 @@ import json
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
-from decimal import Decimal
+from app.currency import to_pennies
 from app import models
 
 
@@ -151,7 +151,7 @@ class HarveyNichols(FileAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=data["timestamp"],
-            spend_amount=int(Decimal(data["amount"]["value"]) * 100),
+            spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},

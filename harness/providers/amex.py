@@ -1,6 +1,5 @@
 import typing as t
 from uuid import uuid4
-from decimal import Decimal
 
 import pendulum
 
