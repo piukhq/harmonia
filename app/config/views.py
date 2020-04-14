@@ -1,17 +1,15 @@
-from flask import request, jsonify, Blueprint
+from flask import request, Blueprint
+import marshmallow
 
 from app.config import config, schemas
-from app.api.utils import expects_json
+from app.api.utils import expects_json, ResponseType
+import settings
+
+api = Blueprint("config_api", __name__, url_prefix=f"{settings.URL_PREFIX}/config")
 
 
-api = Blueprint(
-    'config_api',
-    __name__,
-    url_prefix='/api/config')
-
-
-@api.route('/keys')
-def list_keys():
+@api.route("/keys")
+def list_keys() -> ResponseType:
     """List config keys
     ---
     get:
@@ -19,22 +17,19 @@ def list_keys():
       responses:
         200:
           description: A list of config keys.
-          schema: KeyValuePairSchema
+          schema: ConfigKeysListSchema
     """
-    config_values = list({
-        'key': k,
-        'value': v,
-    } for k, v in config.all_keys())
+    config_keys = {"keys": list({"key": k, "value": v} for k, v in config.all_keys())}
 
-    schema = schemas.KeyValuePairSchema()
-    data, _ = schema.dump(config_values, many=True)
+    schema = schemas.ConfigKeysListSchema()
+    data = schema.dump(config_keys)
 
-    return jsonify(data)
+    return data
 
 
-@api.route('/keys/<key>', methods=['PUT'])
+@api.route("/keys/<key>", methods=["PUT"])
 @expects_json
-def update_key(key):
+def update_key(key: str) -> ResponseType:
     """Update a config key
     ---
     put:
@@ -48,23 +43,17 @@ def update_key(key):
           description: The updated key and value.
           schema: KeyValuePairSchema
     """
-    schema = schemas.UpdateKeyRequestSchema()
-
-    data, errors = schema.load(request.json)
-
-    if errors:
-        return jsonify(errors), 400
+    request_schema = schemas.UpdateKeyRequestSchema()
 
     try:
-        config.update(key, data['value'])
+        data = request_schema.load(request.json)
+    except marshmallow.ValidationError as ex:
+        return ex.messages, 400
+
+    try:
+        config.update(key, data["value"])
     except KeyError as e:
-        return jsonify({'error': str(e).strip('"')}), 400
+        return {"error": str(e).strip('"')}, 400
 
-    schema = schemas.KeyValuePairSchema()
-
-    data, _ = schema.dump({
-        'key': key,
-        'value': config.get(key),
-    })
-
-    return jsonify(data)
+    response_schema = schemas.KeyValuePairSchema()
+    return response_schema.dump({"key": key, "value": config.get(key)})

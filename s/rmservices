@@ -1,0 +1,6 @@
+#! /bin/bash
+
+source s/_common
+
+p 'removing services'
+docker rm -f txm-postgres txm-redis || true

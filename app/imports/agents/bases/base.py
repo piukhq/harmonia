@@ -1,108 +1,174 @@
-import inspect
 import typing as t
+from functools import lru_cache
 
-from sqlalchemy.exc import IntegrityError
-import marshmallow
+import redis.lock
 
-from app.imports import models
-from app.db import Session
+import settings
+from app import db, models, tasks
+from app.feeds import ImportFeedTypes
+from app.imports.exceptions import MissingMID
 from app.reporting import get_logger
-from app.queues import import_queue
-
-session = Session()
-
-log = get_logger('agnt')
+from app.status import status_monitor
+from app.utils import missing_property
 
 
-class ImportTransactionAlreadyExistsError(Exception):
-    pass
+@lru_cache(maxsize=2048)
+def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.List[int]:
+    def find_mid():
+        q = db.session.query(models.MerchantIdentifier)
 
+        if feed_type == ImportFeedTypes.MERCHANT:
+            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
+        elif feed_type in (ImportFeedTypes.SETTLED, ImportFeedTypes.AUTH):
+            q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
+        else:
+            raise ValueError(f"Unsupported feed type: {feed_type}")
 
-def _no_schema_class(obj):
-    raise ValueError(f"{obj.__class__.__name__} needs to add a `schema_class` class variable!")
+        return q.filter(models.MerchantIdentifier.mid == mid).all()
+
+    merchant_identifiers = db.run_query(find_mid, description=f"find {provider_slug} MID")
+    return [mid.id for mid in merchant_identifiers]
 
 
 class BaseAgent:
-    schema_class = _no_schema_class
-    provider_slug = 'PROVIDER_NOT_SET'
+    class ImportError(Exception):
+        pass
+
+    def __init__(self) -> None:
+        self.log = get_logger(f"import-agent.{self.provider_slug}")
+
+    @property
+    def provider_slug(self) -> str:
+        return missing_property(self, "provider_slug")
+
+    @property
+    def feed_type(self) -> ImportFeedTypes:
+        return missing_property(self, "feed_type")
 
     def help(self) -> str:
-        return inspect.cleandoc(
-            """
-            This is a new import agent.
-            Implement all the required methods (see agent base classes) and
-            override this help method to provide specific information.
-            """)
+        return (
+            "This is a new import agent.\n"
+            "Implement all the required methods (see agent base classes) "
+            "and override this help method to provide specific information."
+        )
 
-    def run(self, *, immediate: bool = False, debug: bool = True) -> None:
-        raise NotImplementedError(inspect.cleandoc(
-            """
-            Override the run method in your agent to act as the main entry point
-            into the import process.
-            """))
+    def run(self, *, once: bool = False):
+        raise NotImplementedError(
+            "Override the run method in your agent to act as the main entry point into the import process."
+        )
 
-    def get_schema(self) -> marshmallow.Schema:
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
+    ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
+        raise NotImplementedError("Override to_queue_transaction in your agent.")
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        raise NotImplementedError("Override get_transaction_id in your agent.")
+
+    @staticmethod
+    def get_mids(data: dict) -> t.List[str]:
+        raise NotImplementedError("Override get_mids in your agent.")
+
+    def _find_new_transactions(self, provider_transactions: t.List[dict]) -> t.Tuple[t.List[dict], t.List[dict]]:
+        """Splits provider_transactions into two lists containing new and duplicate transactions.
+        Returns a tuple (new, duplicate)"""
+
+        tids = {self.get_transaction_id(t) for t in provider_transactions}
+
+        # we filter for duplicates in python rather than a SQL "in" clause because it's faster.
+        duplicate_ids = {
+            row[0]
+            for row in db.run_query(
+                lambda: db.session.query(models.ImportTransaction.transaction_id)
+                .filter(models.ImportTransaction.provider_slug == self.provider_slug)
+                .all(),
+                description=f"find duplicated {self.provider_slug} import transactions",
+            )
+            if row[0] in tids
+        }
+
+        # Use list of duplicate transaction IDs to partition provider_transactions.
+        # seen_tids is used to filter out file duplicates that aren't in the DB yet.
+        seen_tids: t.Set[str] = set()
+        new: t.List[dict] = []
+        duplicate: t.List[dict] = []
+        for tx in provider_transactions:
+            tid = self.get_transaction_id(tx)
+            if tid in duplicate_ids or tid in seen_tids:
+                duplicate.append(tx)
+            else:
+                seen_tids.add(tid)
+                new.append(tx)
+
+        self.log.debug(f"Found {len(new)} new and {len(duplicate)} duplicate transactions in import set.")
+
+        return new, duplicate
+
+    def _identify_mid(self, mid: str) -> t.List[int]:
+        mids = identify_mid(mid, self.feed_type, self.provider_slug)
+        if not mids:
+            raise MissingMID
+        return mids
+
+    def _import_transactions(self, provider_transactions: t.List[dict], *, source: str) -> None:
         """
-        Returns an instance of the schema class that should be used to load/dump
-        scheme transactions for this merchant's transactions data.
-        """
-        return self.schema_class()
-
-    def _create_import_transaction(self, data: t.Dict[str, t.Any]):
-        """
-        Creates an ImportTransaction in the database for the given data.
-        Raises an ImportTransactionAlreadyExistsError if the transaction is not
-        unique.
-        """
-        schema = self.get_schema()
-        log.debug(f"Creating import transaction with {schema} for {data}")
-        import_transaction = models.ImportTransaction(
-            transaction_id=schema.get_transaction_id(data),
-            provider_slug=self.provider_slug,
-            data=data)
-
-        session.add(import_transaction)
-
-        try:
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            log.warning(
-                'Imported transaction appears to be a duplicate. '
-                'Raising an ImportTransactionAlreadyExistsError to signify this.')
-            raise ImportTransactionAlreadyExistsError
-
-    def _import_transactions(self, transactions_data: t.List[t.Dict[str, t.Any]]) -> None:
-        """
-        Imports the given list of transaction data elements using the agent's
-        schema.
+        Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
         transaction data to be matched.
         """
-        name = self.__class__.__name__
-        schema = self.get_schema()
-        transactions, errors = schema.load(transactions_data, many=True)
+        status_monitor.checkin(self)
 
-        if errors:
-            log.error(f"Import translation for {name} failed: {errors}")
-            return
-        elif transactions is None:
-            log.error(
-                f"Import translation for {name} failed: schema.load returned None. Confirm that the schema_class for "
-                f"{name} is correct.")
-            return
-        else:
-            log.info(f"Import translation successful for {name}: {len(transactions)} transactions loaded.")
+        new, duplicate = self._find_new_transactions(provider_transactions)
 
-        transactions_to_enqueue = []
-        for transaction in transactions:
+        insertions = []
+        for tx_data in new:
+            tid = self.get_transaction_id(tx_data)
+
+            # attempt to lock this transaction id.
+            lock_key = f"{settings.REDIS_KEY_PREFIX}:import-lock:{self.provider_slug}:{tid}"
+            lock: redis.lock.Lock = db.redis.lock(lock_key, timeout=300)
+            if not lock.acquire(blocking=False):
+                self.log.warning(f"Transaction {lock_key} is already locked. Skipping.")
+                continue
+
             try:
-                self._create_import_transaction(transaction)
-            except ImportTransactionAlreadyExistsError:
-                log.info('Not pushing transaction to the import queue as it appears to already exist.')
-            else:
-                transactions_to_enqueue.append(transaction)
+                mids = self.get_mids(tx_data)
 
-        scheme_transactions = [schema.to_scheme_transaction(tx) for tx in transactions_to_enqueue]
-        import_queue.push(scheme_transactions, many=True)
-        log.info(f"{len(scheme_transactions)} transactions pushed to import queue.")
+                merchant_identifier_ids = []
+                for mid in mids:
+                    try:
+                        merchant_identifier_ids.extend(self._identify_mid(mid))
+                    except MissingMID:
+                        pass
+
+                identified = len(merchant_identifier_ids) > 0
+
+                if not identified:
+                    self.log.debug(f"No MIDs were found for transaction {tid}")
+
+                insertions.append(
+                    dict(
+                        transaction_id=tid,
+                        provider_slug=self.provider_slug,
+                        identified=identified,
+                        data=tx_data,
+                        source=source,
+                    )
+                )
+
+                if identified:
+                    queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
+
+                    import_task = {
+                        ImportFeedTypes.MERCHANT: tasks.import_scheme_transaction,
+                        ImportFeedTypes.AUTH: tasks.import_auth_payment_transaction,
+                        ImportFeedTypes.SETTLED: tasks.import_settled_payment_transaction,
+                    }[self.feed_type]
+                    tasks.import_queue.enqueue(import_task, queue_tx)
+            finally:
+                lock.release()
+
+        if insertions:
+            db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))

@@ -1,12 +1,113 @@
+import typing as t
+
+from app import models, tasks, db
 from app.reporting import get_logger
-from app.queues import import_queue
+from app.status import status_monitor
+
+log = get_logger("import-director")
 
 
-log = get_logger('ipdr')
+class SchemeImportDirector:
+    def handle_scheme_transaction(self, scheme_transaction: models.SchemeTransaction) -> None:
+        status_monitor.checkin(self)
+
+        def add_transaction():
+            db.session.add(scheme_transaction)
+            db.session.commit()
+
+        db.run_query(add_transaction, description="create scheme transaction")
+
+        tasks.matching_queue.enqueue(tasks.match_scheme_transaction, scheme_transaction.id)
+
+        log.info(f"Received, persisted, and enqueued {scheme_transaction}.")
 
 
-class ImportDirector:
-    def enter_loop(self):
-        def handle_transaction(transaction):
-            log.info(f"Received {transaction}! This would be imported, matched, et cetera.")
-        import_queue.pull(handle_transaction)
+class PaymentImportDirector:
+    class InvalidAuthTransaction(Exception):
+        pass
+
+    @staticmethod
+    def _get_matching_transaction(*, settlement_key: str) -> t.Optional[models.PaymentTransaction]:
+        return db.run_query(
+            lambda: db.session.query(models.PaymentTransaction)
+            .filter(models.PaymentTransaction.settlement_key == settlement_key)
+            .one_or_none(),
+            description="find matching payment transaction",
+        )
+
+    @staticmethod
+    def _override_auth_transaction(
+        auth_transaction: models.PaymentTransaction, settled_transaction: models.PaymentTransaction
+    ):
+        log.info(
+            f"Overriding auth transaction {auth_transaction} "
+            f"with fields from matching settled transaction: {settled_transaction}"
+        )
+
+        def update_transaction():
+            # TODO: what other fields need to be updated?
+            auth_transaction.spend_amount = settled_transaction.spend_amount
+            auth_transaction.transaction_id = settled_transaction.transaction_id
+            db.session.commit()
+
+        db.run_query(update_transaction, description="override auth transaction fields")
+
+    def handle_auth_payment_transaction(self, auth_transaction: models.PaymentTransaction) -> None:
+        status_monitor.checkin(self)
+
+        if auth_transaction.settlement_key is None:
+            raise self.InvalidAuthTransaction(
+                f"Auth transaction {auth_transaction} has no settlement key! "
+                "This field should be set by the import agent."
+            )
+
+        settled_transaction = self._get_matching_transaction(settlement_key=auth_transaction.settlement_key)
+        if settled_transaction:
+            log.info(
+                f"Skipping import of auth transaction {auth_transaction} "
+                f"as a settled transaction was found: {settled_transaction}"
+            )
+            return
+
+        log.debug(f"No settled transaction was found for auth transaction {auth_transaction}.")
+
+        def add_transaction():
+            db.session.add(auth_transaction)
+            db.session.commit()
+
+        db.run_query(add_transaction, description="create auth payment transaction")
+
+        tasks.matching_queue.enqueue(tasks.identify_payment_transaction, auth_transaction.id)
+
+        log.info(f"Received, persisted, and enqueued matching job for auth transaction {auth_transaction}.")
+
+    def handle_settled_payment_transaction(self, settled_transaction: models.PaymentTransaction) -> None:
+        status_monitor.checkin(self)
+
+        if settled_transaction.settlement_key is not None:
+            auth_transaction = self._get_matching_transaction(settlement_key=settled_transaction.settlement_key)
+        else:
+            auth_transaction = None
+
+        if auth_transaction:
+            if auth_transaction.status == models.TransactionStatus.PENDING:
+                self._override_auth_transaction(auth_transaction, settled_transaction)
+                log.info(f"Re-queuing matching job for {auth_transaction}")
+                tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.id)
+            else:
+                log.info(
+                    f"Skipping import of settled transaction {settled_transaction} "
+                    f"as a matched auth transaction was found: {auth_transaction}"
+                )
+                return
+        else:
+            log.debug(f"No auth transaction was found for settled transaction {settled_transaction}.")
+
+            def add_transaction():
+                db.session.add(settled_transaction)
+                db.session.commit()
+
+            db.run_query(add_transaction, description="create settled transaction")
+            tasks.matching_queue.enqueue(tasks.identify_payment_transaction, settled_transaction.id)
+
+        log.info(f"Received, persisted, and enqueued settled transaction {settled_transaction}.")

@@ -1,24 +1,26 @@
-import setuptools
+from setuptools import setup, find_packages
 
-with open('README.md', 'r') as fh:
+from app.version import __version__
+
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setuptools.setup(
-    name='harmonia',
-    version='0.1',
-    author='Chris Latham',
-    author_email='cl@bink.com',
-    description='Transaction Matching',
+setup(
+    name="harmonia",
+    version=__version__,
+    author="Chris Latham",
+    author_email="cl@bink.com",
+    description="Transaction Matching",
+    packages=["."] + find_packages(),
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='https://git.bink.com/olympus/harmonia',
-    classifiers=(
-        'Programming Language :: Python :: 3',
-    ),
+    long_description_content_type="text/markdown",
+    url="https://git.bink.com/olympus/harmonia",
+    classifiers=("Programming Language :: Python :: 3",),
     entry_points={
-        'console_scripts': (
-            'txmatch_import = app.imports.cli:cli',
-            'txmatch_core = app.core.cli:cli',
-        ),
+        "console_scripts": (
+            "tximport = app.imports.cli:cli",
+            "txexport = app.exports.cli:cli",
+            "txcore = app.core.cli:cli",
+        )
     },
 )

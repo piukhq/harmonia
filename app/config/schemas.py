@@ -1,4 +1,4 @@
-from app.api import define_schema
+from app.api.app import define_schema
 from marshmallow import Schema, fields
 
 
@@ -11,3 +11,8 @@ class UpdateKeyRequestSchema(Schema):
 class KeyValuePairSchema(Schema):
     key = fields.String(required=True)
     value = fields.String(required=True)
+
+
+@define_schema
+class ConfigKeysListSchema(Schema):
+    keys = fields.Nested(KeyValuePairSchema, many=True)

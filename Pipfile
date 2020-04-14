@@ -4,33 +4,44 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+harmonia = {editable = true,path = "."}
 sqlalchemy = "*"
-"psycopg2-binary" = "*"
 flask = "*"
-influxdb = "*"
-raven = {extras = ["flask"]}
 flask-cors = "*"
 click = "*"
-colorama = "*"
 redis = "*"
 apscheduler = "*"
 humanize = "*"
 apispec = "*"
 marshmallow = "*"
-marshmallow-sqlalchemy = "*"
-kombu = "*"
 inotify = "*"
+pendulum = "*"
+apispec-webframeworks = "*"
+rq = "*"
+psycopg2 = "*"
+pycryptodome = "*"
+python-gnupg = "*"
+azure-storage-blob = "*"
+marshmallow-sqlalchemy = "*"
+sentry-sdk = {extras = ["flask"],version = "*"}
+user_auth_token = {git = "ssh://git@git.bink.com/libs/user-token-store.git"}
+soteria = {git = "ssh://git@git.bink.com/Olympus/soteria.git"}
+hvac = "*"
+lxml = "*"
+paramiko = "*"
+kombu = "*"
 
 [dev-packages]
 alembic = "*"
-jedi = "*"
-importmagic = "*"
-"autopep8" = "*"
-yapf = "*"
-"flake8" = "*"
 pytest = "*"
 pytest-cov = "*"
 mypy = "*"
-
-[requires]
-python_version = "3.6"
+responses = "*"
+flake8 = "*"
+black = "==19.10b0"
+gunicorn = "*"
+prettyprinter = "*"
+toml = "*"
+ptpython = "*"
+isort = {extras = ["pipfile"],version = "*"}
+rope = "*"

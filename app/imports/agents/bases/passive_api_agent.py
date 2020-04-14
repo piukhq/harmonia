@@ -1,45 +1,71 @@
 import inspect
+import typing as t
 
-from flask import Flask, jsonify, request
+from flask import Blueprint, request
+import marshmallow
 
-from .base import BaseAgent, log
+from app import utils
+from app.api import utils as api_utils
+from app.imports.agents import BaseAgent
+import settings
 
 
 class PassiveAPIAgent(BaseAgent):
-    def create_app(self, *, debug=False) -> Flask:
-        env = 'development' if debug else 'production'
-        app = Flask(__name__)
-        app.config['DEBUG'] = debug
-        app.config['ENV'] = env
+    @property
+    def schema(self):
+        return utils.missing_property(self, "schema")
 
-        @app.route('/')
-        def index() -> str:
-            if request.json is None:
-                return jsonify({'ok': False, 'reason': 'A JSON body is expected.'})
-            self._import_transactions([request.json])
-            return jsonify({'ok': True})
+    def get_blueprint(self) -> Blueprint:
+        api = Blueprint(
+            f"{self.provider_slug} transaction import API",
+            __name__,
+            url_prefix=f"{settings.URL_PREFIX}/import/{self.provider_slug}",
+        )
 
-        return app
+        @api.route("/", strict_slashes=False, methods=["POST"])
+        @api_utils.expects_json
+        def index() -> t.Tuple[dict, int]:
+            """
+            Import transactions
+            ---
+            post:
+                description: Import {} transactions
+                responses:
+                    200:
+                        description: Imported {} successfully
+                    400:
+                        description: Import failed
+            """
+            try:
+                data = self.schema.load(request.json)
+            except marshmallow.ValidationError as ex:
+                return {"ok": False, "errors": ex.messages}, 400
+            transactions_data = self.extract_transactions(data)
+            self._import_transactions(transactions_data, source="POST /")
+            return {"ok": True}, 200
 
-    def run(self, *, immediate: bool = False, debug: bool = True) -> None:
-        if debug is True:
-            app = self.create_app(debug=True)
-            app.run()
-        else:
-            log.warning(
-                'This agent should only be run this way for local testing and development. '
-                'A production deployment should utilise a server such as uWSGI or Gunicorn. '
-                f"The WSGI callable is `{self.__module__}.app`. "
-                'Run with --debug if you actually want to use this CLI.')
+        index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)
 
-    def _help(self, module, wsgi_file):
+        return api
+
+    def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
+        return [request_json]
+
+    def run(self, *, once: bool = False) -> None:
+        self.log.warning(
+            "This agent cannot be run this way. "
+            "For local testing, use the flask development server. "
+            "A production deployment should utilise a server such as Gunicorn. "
+        )
+
+    def _help(self, module):
         return inspect.cleandoc(
             f"""
-            This is a test agent based on the PassiveAPIAgent base class.
-            It can be run through the txmatch_import CLI for local testing and development if the --debug flag is given.
+            This is an agent based on the PassiveAPIAgent base class.
+            It can be run with the flask development server for local testing and development.
 
-            For a production deployment, a WSGI compatible server such as uWSGI or Gunicorn should be used.
-            Examples:
-            * uWSGI: uwsgi --http 127.0.0.1:8080 --wsgi-file {wsgi_file} --callable app
-            * Gunicorn: gunicorn -b 127.0.0.1:8080 {module}:app
-            """)
+            For a production deployment, a WSGI server such as Gunicorn should be used.
+
+            Endpoint: {settings.URL_PREFIX}/{self.provider_slug}/
+            """
+        )

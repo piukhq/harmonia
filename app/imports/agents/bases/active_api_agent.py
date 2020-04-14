@@ -1,65 +1,29 @@
-from time import sleep
-
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
 import requests
+import marshmallow
 
-from app.imports.agents.bases.base import BaseAgent, log
-from app.status import status_monitor
+from app.imports.agents import BaseAgent
+from app.scheduler import CronScheduler
 
 
 class ActiveAPIAgent(BaseAgent):
-    @staticmethod
-    def _get_trigger(schedule):
-        try:
-            return CronTrigger.from_crontab(schedule)
-        except ValueError:
-            log.error(
-                (f"Schedule '{schedule}' is not in a recognised format! "
-                 f"Reverting to default of '* * * * *'."))
-            return CronTrigger.from_crontab('* * * * *')
+    def run(self, *, once: bool = False):
+        scheduler = CronScheduler(
+            schedule_fn=lambda: self.Config.schedule, callback=self.do_import, logger=self.log  # type: ignore
+        )
 
-    def run(self, immediate=False, debug=False):
-        self.debug = debug
-
-        if immediate:
-            self.tick()
+        if once is True:
+            scheduler.tick()
             return
 
-        scheduler = BackgroundScheduler()
-
-        schedule = self.Config.schedule
-        job = scheduler.add_job(
-            self.tick,
-            trigger=self._get_trigger(schedule))
-        scheduler.start()
-
-        try:
-            while scheduler.running:
-                new_schedule = self.Config.schedule
-                if new_schedule != schedule:
-                    log.debug(f"Schedule has been changed from {schedule} to {new_schedule}! Rescheduling...")
-                    schedule = new_schedule
-                    job.reschedule(self._get_trigger(schedule))
-                sleep(5)
-        except KeyboardInterrupt:
-            log.debug('Shutting down...')
-            scheduler.shutdown()
-            log.debug('Done!')
-
-    def tick(self):
-        status_monitor.scheduled_task_checkin(self.__class__.__name__)
-
-        try:
-            self.do_import()
-        except Exception as e:
-            if self.debug:
-                raise
-            else:
-                log.error(e)
+        scheduler.run()
 
     def do_import(self):
         resp = requests.get(self.url)
         resp.raise_for_status()
-        transactions_data = resp.json()
-        self._import_transactions(transactions_data)
+
+        try:
+            transactions_data = self.schema.load(resp.json(), many=True)
+        except marshmallow.ValidationError as ex:
+            self.log.error(f"Failed to load transactions data from API response: {ex.messages}")
+        else:
+            self._import_transactions(transactions_data, source=self.url)

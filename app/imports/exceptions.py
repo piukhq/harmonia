@@ -1,0 +1,2 @@
+class MissingMID(Exception):
+    pass

@@ -1,5 +1,27 @@
-from python:3.6
-workdir /app
-add . .
-run pip install uwsgi pipenv && pipenv install --deploy --system
-cmd ["uwsgi","--http",":5000","--wsgi-file","app/api.py","--callable","app","--master"]
+FROM python:3.8-alpine
+ENV TZ=UTC
+WORKDIR /app
+ADD . .
+ARG DEPLOY_KEY
+RUN apk --no-cache add --virtual build-deps \
+      build-base \
+      postgresql-dev \
+      libffi-dev \
+      libxml2-dev \
+      libxslt-dev \
+      openssh \
+      git && \
+    apk --no-cache add \
+      libpq \
+      gnupg && \
+    mkdir -p /root/.ssh && \
+    echo $DEPLOY_KEY | base64 -d > /root/.ssh/id_rsa && \
+    chmod 0600 /root/.ssh/id_rsa && \
+    ssh-keyscan git.bink.com > /root/.ssh/known_hosts && \
+    pip install pipenv poetry gunicorn alembic && \
+    pip install pendulum --no-build-isolation && \
+    pipenv install --deploy --system --ignore-pipfile && \
+    pip uninstall --yes pipenv && \
+    apk --no-cache del build-deps && \
+    rm -rf /root/.cache
+
