@@ -1,11 +1,13 @@
 from setuptools import setup, find_packages
 
+from app.version import __version__
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
     name="harmonia",
-    version="0.1",
+    version=__version__,
     author="Chris Latham",
     author_email="cl@bink.com",
     description="Transaction Matching",
