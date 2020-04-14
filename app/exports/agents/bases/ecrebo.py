@@ -25,10 +25,6 @@ class classproperty:
     def __get__(self, instance, cls=None):
         return self.fget(cls)
 
-    def getter(self, method):
-        self.fget = method
-        return self
-
 
 class ExportFileSet(t.NamedTuple):
     receipt_data: str
