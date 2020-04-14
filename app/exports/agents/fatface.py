@@ -8,7 +8,7 @@ PROVIDER_SLUG = "fatface"
 
 RECEIPT_XML_TEMPLATE = string.Template(
     """<?xml version="1.0" encoding="UTF-8"?>
-<POSLog xmlns="http://www.nrf-arts.org/IXRetail/namespace/" 
+<POSLog xmlns="http://www.nrf-arts.org/IXRetail/namespace/"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" MajorVersion="6" MinorVersion="0" FixVersion="0">
     <Transaction>
         <BusinessUnit>
