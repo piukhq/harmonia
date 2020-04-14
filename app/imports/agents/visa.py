@@ -212,7 +212,7 @@ class VisaSettlement(QueueAgent):
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
-            spend_amount=to_pennies(data, "Transaction.SettlementAmount"),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
