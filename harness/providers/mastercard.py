@@ -5,7 +5,7 @@ from random import randint
 import pendulum
 
 from harness.providers.base import BaseImportDataProvider
-
+from app.currency import to_pounds
 
 ALPHANUM = string.ascii_letters + string.digits
 
@@ -75,7 +75,7 @@ class MastercardAuth(BaseImportDataProvider):
             {
                 "third_party_id": transaction["settlement_key"][:9],
                 "time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
-                "amount": transaction["amount"] / 100,
+                "amount": to_pounds(transaction["amount"]),
                 "currency_code": "GBP",
                 "payment_card_token": user["token"],
                 "mid": fixture["mid"],

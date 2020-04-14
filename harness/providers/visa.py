@@ -1,13 +1,14 @@
-from datetime import datetime
+import settings
 import typing as t
+from datetime import datetime
 from random import randint
+from uuid import uuid4
 
 import gnupg
 import pendulum
 
 from harness.providers.base import BaseImportDataProvider
-import settings
-from uuid import uuid4
+from app.currency import to_pounds
 
 # field with a fixed length
 WidthField = t.Tuple[t.Any, int]
@@ -129,7 +130,7 @@ class VisaAuth(BaseImportDataProvider):
                             "key": "Transaction.TimeStampYYMMDD",
                             "value": pendulum.instance(transaction["date"]).format("YYYY-MM-DDThh:mm:ss"),
                         },
-                        {"key": "Transaction.TransactionAmount", "value": transaction["amount"] / 100},
+                        {"key": "Transaction.TransactionAmount", "value": to_pounds(transaction["amount"])},
                         {"key": "Transaction.CurrencyCodeNumeric", "value": "840"},
                         {"key": "Transaction.BillingAmount", "value": transaction["amount"] / 100},
                         {"key": "Transaction.BillingCurrencyCode", "value": "840"},

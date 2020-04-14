@@ -10,6 +10,7 @@ from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
+from app.currency import to_pennies
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
@@ -43,7 +44,7 @@ class MastercardSettled(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "transaction_amount": lambda x: int(Decimal(x) * 100),
+        "transaction_amount": lambda x: to_pennies(x),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_time": int,
     }
@@ -131,7 +132,7 @@ class MastercardAuth(QueueAgent):
             transaction_id=transaction_id,
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=pendulum.parse(data["time"]),
-            spend_amount=int(Decimal(data["amount"]) * 100),
+            spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             card_token=data["payment_card_token"],

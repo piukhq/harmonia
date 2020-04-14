@@ -1,19 +1,27 @@
 import typing as t
 import inspect
 from decimal import Decimal
+from hashlib import sha256
+from uuid import uuid4
 
 import pendulum
 
 from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent
+from app.imports.agents import FileAgent, QueueAgent
+from app.currency import to_pennies
 
 PROVIDER_SLUG = "amex"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
+
+
+def _make_settlement_key(key_id: str):
+    return sha256(f"mastercard.{key_id}".encode()).hexdigest()
 
 
 class Amex(FileAgent):
@@ -35,7 +43,7 @@ class Amex(FileAgent):
     field_transforms: t.Dict[str, t.Callable] = {
         "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
-        "transaction_amount": lambda x: int(Decimal(x) * 100),
+        "transaction_amount": lambda x: to_pennies(x),
     }
 
     class Config:
@@ -79,6 +87,39 @@ class Amex(FileAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
+
+    @staticmethod
+    def get_mids(data: dict) -> t.List[str]:
+        return [data["merchant_number"]]
+
+
+class AmexAuth(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = ImportFeedTypes.AUTH
+
+    class Config:
+        queue_name = ConfigValue(QUEUE_NAME_KEY, "amex-auth")
+
+    @staticmethod
+    def to_queue_transaction(
+        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
+    ) -> models.PaymentTransaction:
+        return models.PaymentTransaction(
+            merchant_identifier_ids=merchant_identifier_ids,
+            transaction_id=transaction_id,
+            settlement_key=_make_settlement_key(data["cm_alias"]),
+            transaction_date=pendulum.parse(data["transaction_time"]),
+            spend_amount=to_pennies(data["transaction_amount"]),
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=data["cm_alias"],
+            extra_fields={"offer_id": data["offer_id"]},
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        # TODO: is this alright?
+        return str(uuid4())
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
