@@ -39,11 +39,11 @@ class BaseAgent:
 
     @property
     def provider_slug(self) -> str:
-        return missing_property(self, "provider_slug")
+        return missing_property(type(self), "provider_slug")
 
     @property
     def feed_type(self) -> ImportFeedTypes:
-        return missing_property(self, "feed_type")
+        return missing_property(type(self), "feed_type")
 
     def help(self) -> str:
         return (

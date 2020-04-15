@@ -32,7 +32,7 @@ RECEIPT_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.receipt_upload_pa
 
 class BurgerKing(Ecrebo):
     provider_slug = PROVIDER_SLUG
-    reciept_xml_template = RECEIPT_XML_TEMPLATE
+    receipt_xml_template = RECEIPT_XML_TEMPLATE
 
     class Config:
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/receipts")

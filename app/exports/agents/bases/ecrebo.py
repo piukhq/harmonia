@@ -12,18 +12,11 @@ from soteria.encryption import PGP
 
 import settings
 from app import models
+from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
 from app.service.sftp import SFTP
-
-
-class classproperty:
-    def __init__(self, method=None):
-        self.fget = method
-
-    def __get__(self, instance, cls=None):
-        return self.fget(cls)
 
 
 class ExportFileSet(t.NamedTuple):
@@ -38,11 +31,11 @@ class Ecrebo(BatchExportAgent):
     class Config:
         @classproperty
         def reward_upload_path(self):
-            raise NotImplementedError(f"{self.__name__} is missing a required property: reward_upload_path")
+            missing_property(self, "reward_upload_path")
 
         @classproperty
         def receipt_upload_path(self):
-            raise NotImplementedError(f"{self.__name__} is missing a required property: receipt_upload_path")
+            missing_property(self, "receipt_upload_path")
 
     def __init__(self):
         super().__init__()
@@ -81,8 +74,8 @@ class Ecrebo(BatchExportAgent):
         self.sequencer = Sequencer(self.provider_slug)
 
     @property
-    def reciept_xml_template(self):
-        raise NotImplementedError(f"{type(self).__name__} is missing a required property: reciept_xml_template")
+    def receipt_xml_template(self):
+        missing_property(type(self), "receipt_xml_template")
 
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
@@ -99,7 +92,7 @@ class Ecrebo(BatchExportAgent):
             transaction_amount = Decimal(transaction.spend_amount * 5) / Decimal(100)
             sequence_number += 1
 
-            xml_string = self.reciept_xml_template.substitute(
+            xml_string = self.receipt_xml_template.substitute(
                 MID=transaction.merchant_identifier.mid,
                 TRANSACTION_ID=transaction_id,
                 TRANSACTION_DATE=date,
