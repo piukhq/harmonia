@@ -34,7 +34,7 @@ class LoggedQueue(Queue):
             limit = int(self.Config.queue_limit)
         else:
             limit = 5000
-        return self.count() < limit
+        return self.count < limit
 
 
 import_queue = LoggedQueue(name="import", connection=db.redis)
