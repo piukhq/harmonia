@@ -1,3 +1,5 @@
+import typing as t
+
 from rq import Queue
 
 from app import models, db, reporting, config
@@ -8,6 +10,9 @@ log = reporting.get_logger("tasks")
 
 
 class LoggedQueue(Queue):
+    class Config:
+        queue_limit: t.Optional[str] = ""  # this is replaced in __init__
+
     def __init__(self, name="default", default_timeout=None, connection=None, is_async=True, job_class=None, **kwargs):
         super().__init__(
             name=name,
@@ -18,14 +23,17 @@ class LoggedQueue(Queue):
             **kwargs,
         )
 
-        self.queue_limit = config.ConfigValue(f"{config.KEY_PREFIX}:queue:{self.name}:limit", default="5000")
+        self.Config.queue_limit = config.ConfigValue(f"{config.KEY_PREFIX}:queue:{self.name}:limit", default="5000")
 
     def enqueue(self, f, *args, **kwargs):
         log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
         return super().enqueue(f, *args, **kwargs)
 
     def has_capacity(self) -> bool:
-        limit = int(self.queue_limit)
+        if self.Config.queue_limit:  # queue limit is defined as optional above
+            limit = int(self.Config.queue_limit)
+        else:
+            limit = 5000
         return self.count() < limit
 
 
