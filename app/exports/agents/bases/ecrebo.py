@@ -31,11 +31,11 @@ class Ecrebo(BatchExportAgent):
     class Config:
         @classproperty
         def reward_upload_path(self):
-            missing_property(self, "reward_upload_path")
+            return missing_property(self, "reward_upload_path")
 
         @classproperty
         def receipt_upload_path(self):
-            missing_property(self, "receipt_upload_path")
+            return missing_property(self, "receipt_upload_path")
 
     def __init__(self):
         super().__init__()
@@ -75,7 +75,7 @@ class Ecrebo(BatchExportAgent):
 
     @property
     def receipt_xml_template(self):
-        missing_property(type(self), "receipt_xml_template")
+        return missing_property(type(self), "receipt_xml_template")
 
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
