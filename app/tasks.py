@@ -1,6 +1,6 @@
 import typing as t
 
-from rq import Queue
+import rq
 
 from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
@@ -9,7 +9,7 @@ from app.core import import_director, matching_worker, export_director, identifi
 log = reporting.get_logger("tasks")
 
 
-class LoggedQueue(Queue):
+class LoggedQueue(rq.Queue):
     class Config:
         queue_limit: t.Optional[str] = ""  # this is replaced in __init__
 
@@ -37,9 +37,18 @@ class LoggedQueue(Queue):
         return self.count < limit
 
 
-import_queue = LoggedQueue(name="import", connection=db.redis)
-matching_queue = LoggedQueue(name="matching", connection=db.redis)
-export_queue = LoggedQueue(name="export", connection=db.redis)
+def run_worker(queue_names: t.List[str], *, burst: bool = False):
+    if not queue_names:
+        log.warning("No queues were passed to tasks.run_worker, exiting early.")
+        return  # no queues, nothing to do
+    queues = [LoggedQueue(name, connection=db.redis_raw) for name in queue_names]
+    worker = rq.Worker(queues, connection=db.redis_raw)
+    worker.work(burst=burst)
+
+
+import_queue = LoggedQueue(name="import", connection=db.redis_raw)
+matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
+export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
 def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> None:

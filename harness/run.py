@@ -15,7 +15,7 @@ from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 import settings
-from app import db, encryption, models
+from app import db, encryption, models, tasks
 from app.core import key_manager
 from app.exports.agents import BatchExportAgent, export_agents
 from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
@@ -336,16 +336,7 @@ def run_import_agent(slug: str, fixture: dict):
 
 
 def run_rq_worker(queue_name: str):
-    from rq import Queue, Worker
-    from redis import Redis
-    import rq_worker_settings as config
-
-    redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=config.REDIS_DB, password=config.REDIS_PASSWORD)
-    queue = Queue(queue_name, connection=redis)
-    worker = Worker([queue], connection=redis, name="end-to-end test matching worker")
-
-    click.secho(f"Running {queue_name} worker", fg="cyan", bold=True)
-    worker.work(burst=True, logging_level="WARNING")
+    tasks.run_worker([queue_name], burst=True)
 
 
 def maybe_run_batch_export_agent(fixture: dict):
