@@ -153,10 +153,10 @@ class Ecrebo(BatchExportAgent):
         # the order of these outputs is used to upload to SFTP in sequence.
         yield AgentExportData(
             outputs=[
-                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}_{ts}.base64", fileset.receipt_data),
-                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}_{ts}.chk", str(fileset.transaction_count)),
-                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}_{ts}.csv", fileset.reward_data),
-                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}_{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}{ts}.base64", fileset.receipt_data),
+                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}{ts}.csv", fileset.reward_data),
+                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}{ts}.chk", str(fileset.transaction_count)),
             ],
             transactions=transactions,
             extra_data={},
