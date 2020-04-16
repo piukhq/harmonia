@@ -94,6 +94,7 @@ def import_mids(mids_file: t.TextIO) -> None:
 @cli.command()
 def worker():
     import rq_worker_settings
+
     tasks.run_worker(rq_worker_settings.QUEUES)
 
 
