@@ -15,7 +15,7 @@ from app.exports.models import PendingExport, ExportTransaction, FileSequenceNum
 class LoyaltyScheme(Base, ModelMixin):
     __tablename__ = "loyalty_scheme"
 
-    slug = s.Column(s.String(50), nullable=False)  # hermes scheme slug
+    slug = s.Column(s.String(50), index=True, unique=True, nullable=False)  # hermes scheme slug
 
     merchant_identifiers = s.orm.relationship("MerchantIdentifier", backref="loyalty_scheme")
 
@@ -25,7 +25,7 @@ class LoyaltyScheme(Base, ModelMixin):
 class PaymentProvider(Base, ModelMixin):
     __tablename__ = "payment_provider"
 
-    slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
+    slug = s.Column(s.String(50), index=True, unique=True, nullable=False)  # hermes payment card slug
 
     merchant_identifiers = s.orm.relationship("MerchantIdentifier", backref="payment_provider")
 

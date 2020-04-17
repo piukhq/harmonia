@@ -57,6 +57,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> t.Tu
 
     merchant_identifiers_fields = []
     for line, row in enumerate(reader):
+        row = [value.strip() for value in row]
         try:
             payment_provider_slug, mid, loyalty_scheme_slug, loyalty_scheme_name, location, postcode, action = row
         except ValueError as ex:
