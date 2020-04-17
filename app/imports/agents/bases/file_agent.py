@@ -11,7 +11,7 @@ import pendulum
 import humanize
 
 from app.imports.agents import BaseAgent
-from app import reporting, tasks, retry
+from app import reporting, tasks, retry, db
 import settings
 
 
@@ -109,7 +109,10 @@ class FileAgent(BaseAgent):
     def _do_import(self, data: bytes, source: str) -> None:
         self.log.info(f"Importing {source}")
         transactions_data = list(self.yield_transactions_data(data))
-        self._import_transactions(transactions_data, source=source)
+
+        # TODO: this is less than ideal, should be keep a session open?
+        with db.session_scope() as session:
+            self._import_transactions(transactions_data, session=session, source=source)
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError

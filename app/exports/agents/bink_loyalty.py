@@ -7,17 +7,7 @@ from app.exports.agents import SingularExportAgent, AgentExportData, AgentExport
 class BinkLoyalty(SingularExportAgent):
     provider_slug = "bink-loyalty"
 
-    def make_export_data(self, matched_transaction_id) -> AgentExportData:
-        matched_transaction = db.session.query(models.MatchedTransaction).get(matched_transaction_id)
-
-        if matched_transaction is None:
-            self.log.warning(
-                f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted."
-            )
-            raise db.NoResultFound
-
-        self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
-
+    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         value = Decimal(matched_transaction.spend_amount) / Decimal(matched_transaction.spend_multiplier)
         body = {
             "tid": matched_transaction.transaction_id,
@@ -28,14 +18,14 @@ class BinkLoyalty(SingularExportAgent):
             outputs=[AgentExportDataOutput("export.json", body)], transactions=[matched_transaction], extra_data={}
         )
 
-    def export(self, export_data: AgentExportData):
+    def export(self, export_data: AgentExportData, *, session: db.Session):
         _, body = export_data.outputs.pop()
         matched_transaction = export_data.transactions[0]
 
         self.log.info(f"Export: {body}")
 
         def add_transaction():
-            db.session.add(
+            session.add(
                 models.ExportTransaction(
                     matched_transaction_id=matched_transaction.id,
                     transaction_id=matched_transaction.transaction_id,
@@ -45,6 +35,6 @@ class BinkLoyalty(SingularExportAgent):
                 )
             )
 
-            db.session.commit()
+            session.commit()
 
-        db.run_query(add_transaction, description="create export transaction")
+        db.run_query(add_transaction, session=session, description="create export transaction")
