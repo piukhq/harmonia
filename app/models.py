@@ -36,7 +36,7 @@ class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = "merchant_identifier"
     __table_args__ = (s.UniqueConstraint("mid", "payment_provider_id", name="_mid_provider_mi_uc"),)
 
-    mid = s.Column(s.String(50), nullable=False, index=True)
+    mid = s.Column(s.String(50), nullable=False)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
     payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
     location = s.Column(s.String(250), nullable=False)

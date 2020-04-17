@@ -110,9 +110,19 @@ redis = Redis(
     port=settings.REDIS_PORT,
     db=settings.REDIS_DB,
     password=settings.REDIS_PASS,
-    socket_timeout=1,
     socket_connect_timeout=3,
     socket_keepalive=True,
     retry_on_timeout=False,
     decode_responses=True,
+)
+
+# Same as above but does not decode responses. Used as the RQ connection.
+redis_raw = Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
+    password=settings.REDIS_PASS,
+    socket_connect_timeout=3,
+    socket_keepalive=True,
+    retry_on_timeout=False,
 )

@@ -1,13 +1,18 @@
-from rq import Queue
+import typing as t
 
-from app import models, db, reporting
+import rq
+
+from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
 
 
 log = reporting.get_logger("tasks")
 
 
-class LoggedQueue(Queue):
+class LoggedQueue(rq.Queue):
+    class Config:
+        queue_limit: t.Optional[str] = ""  # this is replaced in __init__
+
     def __init__(self, name="default", default_timeout=None, connection=None, is_async=True, job_class=None, **kwargs):
         super().__init__(
             name=name,
@@ -18,14 +23,32 @@ class LoggedQueue(Queue):
             **kwargs,
         )
 
+        self.Config.queue_limit = config.ConfigValue(f"{config.KEY_PREFIX}:queue:{self.name}:limit", default="5000")
+
     def enqueue(self, f, *args, **kwargs):
         log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
         return super().enqueue(f, *args, **kwargs)
 
+    def has_capacity(self) -> bool:
+        if self.Config.queue_limit:  # queue limit is defined as optional above
+            limit = int(self.Config.queue_limit)
+        else:
+            limit = 5000
+        return self.count < limit
 
-import_queue = LoggedQueue(name="import", connection=db.redis)
-matching_queue = LoggedQueue(name="matching", connection=db.redis)
-export_queue = LoggedQueue(name="export", connection=db.redis)
+
+def run_worker(queue_names: t.List[str], *, burst: bool = False):
+    if not queue_names:
+        log.warning("No queues were passed to tasks.run_worker, exiting early.")
+        return  # no queues, nothing to do
+    queues = [LoggedQueue(name, connection=db.redis_raw) for name in queue_names]
+    worker = rq.Worker(queues, connection=db.redis_raw)
+    worker.work(burst=burst)
+
+
+import_queue = LoggedQueue(name="import", connection=db.redis_raw)
+matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
+export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
 def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> None:

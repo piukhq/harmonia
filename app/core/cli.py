@@ -7,7 +7,7 @@ import click
 import gnupg
 
 import settings
-from app import db, models
+from app import db, models, tasks
 from app.core import key_manager
 from app.core.identify_retry_worker import IdentifyRetryWorker
 
@@ -89,6 +89,13 @@ def import_mids(mids_file: t.TextIO) -> None:
         lambda: db.engine.execute(models.MerchantIdentifier.__table__.insert().values(insertions)),
         description="insert MIDs",
     )
+
+
+@cli.command()
+def worker():
+    import rq_worker_settings
+
+    tasks.run_worker(rq_worker_settings.QUEUES)
 
 
 @cli.group()
