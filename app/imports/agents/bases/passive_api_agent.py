@@ -13,7 +13,7 @@ import settings
 class PassiveAPIAgent(BaseAgent):
     @property
     def schema(self):
-        return utils.missing_property(self, "schema")
+        return utils.missing_property(type(self), "schema")
 
     def get_blueprint(self) -> Blueprint:
         api = Blueprint(

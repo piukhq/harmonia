@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pendulum
 
 from app import models, db
+from app.utils import missing_property
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
@@ -22,10 +23,6 @@ class AgentExportData:
     extra_data: dict
 
 
-def _missing_property(obj, prop: str):
-    raise NotImplementedError(f"{type(obj).__name__} is missing a required property: {prop}")
-
-
 class BaseAgent:
     # Can be overridden by child classes to set which output should be saved into the export_transaction table.
     saved_output_index = 0
@@ -35,7 +32,7 @@ class BaseAgent:
 
     @property
     def provider_slug(self) -> str:
-        return _missing_property(self, "provider_slug")
+        return missing_property(type(self), "provider_slug")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(provider_slug={self.provider_slug})"
