@@ -16,7 +16,6 @@ import settings
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
-QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -160,6 +159,7 @@ class VisaAuth(QueueAgent):
     feed_type = ImportFeedTypes.AUTH
 
     class Config:
+        QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
 
     @staticmethod
@@ -193,6 +193,7 @@ class VisaSettlement(QueueAgent):
     feed_type = ImportFeedTypes.AUTH
 
     class Config:
+        QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-settlement")
 
     @staticmethod
