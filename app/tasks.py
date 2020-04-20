@@ -54,46 +54,62 @@ export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> None:
     log.debug(f"Task started: import scheme transaction {scheme_transaction}")
     director = import_director.SchemeImportDirector()
-    director.handle_scheme_transaction(scheme_transaction)
+
+    with db.session_scope() as session:
+        director.handle_scheme_transaction(scheme_transaction, session=session)
 
 
 def import_auth_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
     log.debug(f"Task started: import auth payment transaction {payment_transaction}")
     director = import_director.PaymentImportDirector()
-    director.handle_auth_payment_transaction(payment_transaction)
+
+    with db.session_scope() as session:
+        director.handle_auth_payment_transaction(payment_transaction, session=session)
 
 
 def import_settled_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
     log.debug(f"Task started: import settled payment transaction {payment_transaction}")
     director = import_director.PaymentImportDirector()
-    director.handle_settled_payment_transaction(payment_transaction)
+
+    with db.session_scope() as session:
+        director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
 def identify_payment_transaction(payment_transaction_id: int) -> None:
     log.debug(f"Task started: identify payment transaction #{payment_transaction_id}")
     tx_identifier = identifier.Identifier()
-    tx_identifier.identify_payment_transaction(payment_transaction_id)
+
+    with db.session_scope() as session:
+        tx_identifier.identify_payment_transaction(payment_transaction_id, session=session)
 
 
 def match_payment_transaction(payment_transaction_id: int) -> None:
     log.debug(f"Task started: match payment transaction #{payment_transaction_id}")
     worker = matching_worker.MatchingWorker()
-    worker.handle_payment_transaction(payment_transaction_id)
+
+    with db.session_scope() as session:
+        worker.handle_payment_transaction(payment_transaction_id, session=session)
 
 
 def match_scheme_transaction(scheme_transaction_id: int) -> None:
     log.debug(f"Task started: match scheme transaction #{scheme_transaction_id}")
     worker = matching_worker.MatchingWorker()
-    worker.handle_scheme_transaction(scheme_transaction_id)
+
+    with db.session_scope() as session:
+        worker.handle_scheme_transaction(scheme_transaction_id, session=session)
 
 
 def export_matched_transaction(matched_transaction_id: int) -> None:
     log.debug(f"Task started: export matched transaction #{matched_transaction_id}")
     director = export_director.ExportDirector()
-    director.handle_matched_transaction(matched_transaction_id)
+
+    with db.session_scope() as session:
+        director.handle_matched_transaction(matched_transaction_id, session=session)
 
 
 def export_singular_transaction(pending_export_id: int) -> None:
     log.debug(f"Task started: handle pending export #{pending_export_id}")
     director = export_director.ExportDirector()
-    director.handle_pending_export(pending_export_id)
+
+    with db.session_scope() as session:
+        director.handle_pending_export(pending_export_id, session=session)

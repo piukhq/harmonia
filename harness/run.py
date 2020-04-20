@@ -200,11 +200,14 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
     return fixture
 
 
-def create_merchant_identifier(fixture: dict):
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=fixture["loyalty_scheme"]["slug"])
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=fixture["payment_provider"]["slug"])
+def create_merchant_identifier(fixture: dict, session: db.Session):
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, session=session, slug=fixture["loyalty_scheme"]["slug"])
+    payment_provider, _ = db.get_or_create(
+        models.PaymentProvider, session=session, slug=fixture["payment_provider"]["slug"]
+    )
     db.get_or_create(
         models.MerchantIdentifier,
+        session=session,
         mid=fixture["mid"],
         loyalty_scheme=loyalty_scheme,
         payment_provider=payment_provider,
@@ -404,7 +407,10 @@ def main(fixture_file: t.IO[str], dump_files: bool):
 
     patch_hermes_service(fixture)
     patch_soteria_service()
-    create_merchant_identifier(fixture)
+
+    with db.session_scope() as session:
+        create_merchant_identifier(fixture, session)
+
     run_transaction_matching(fixture)
 
 

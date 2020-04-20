@@ -4,7 +4,7 @@ import typing as t
 from flask import Blueprint, request
 import marshmallow
 
-from app import utils
+from app import utils, db
 from app.api import utils as api_utils
 from app.imports.agents import BaseAgent
 import settings
@@ -36,12 +36,15 @@ class PassiveAPIAgent(BaseAgent):
                     400:
                         description: Import failed
             """
+
             try:
                 data = self.schema.load(request.json)
             except marshmallow.ValidationError as ex:
                 return {"ok": False, "errors": ex.messages}, 400
             transactions_data = self.extract_transactions(data)
-            self._import_transactions(transactions_data, source="POST /")
+
+            with db.session_scope() as session:
+                self._import_transactions(transactions_data, session=session, source="POST /")
             return {"ok": True}, 200
 
         index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)

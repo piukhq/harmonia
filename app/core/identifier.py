@@ -14,12 +14,14 @@ class SchemeAccountNotFound(Exception):
 
 
 class Identifier:
-    def payment_card_user_info(self, payment_transaction: models.PaymentTransaction) -> dict:
+    def payment_card_user_info(self, payment_transaction: models.PaymentTransaction, *, session: db.Session) -> dict:
         # TODO: this query exists in app/core/matching_worker.py:50 as well, should we combine?
         merchant_identifiers = db.run_query(
-            lambda: db.session.query(models.MerchantIdentifier)
+            lambda: session.query(models.MerchantIdentifier)
             .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
             .all(),
+            session=session,
+            read_only=True,
             description="find payment transaction MIDs",
         )
 
@@ -42,7 +44,9 @@ class Identifier:
         else:
             raise SchemeAccountNotFound
 
-    def persist_user_identity(self, payment_transaction: models.PaymentTransaction, user_info: dict) -> None:
+    def persist_user_identity(
+        self, payment_transaction: models.PaymentTransaction, user_info: dict, *, session: db.Session
+    ) -> None:
         def add_user_identity():
             user_identity = models.UserIdentity(
                 loyalty_id=user_info["loyalty_id"],
@@ -55,18 +59,20 @@ class Identifier:
 
             payment_transaction.user_identity = user_identity
 
-            db.session.add(user_identity)
-            db.session.commit()
+            session.add(user_identity)
+            session.commit()
             return user_identity
 
-        user_identity = db.run_query(add_user_identity, description="create user identity")
+        user_identity = db.run_query(add_user_identity, session=session, description="create user identity")
         log.debug(f"Persisted {user_identity}.")
 
-    def identify_payment_transaction(self, payment_transaction_id: int) -> None:
+    def identify_payment_transaction(self, payment_transaction_id: int, *, session: db.Session) -> None:
         log.debug(f"Attempting identification of payment transaction #{payment_transaction_id}")
 
         payment_transaction = db.run_query(
-            lambda: db.session.query(models.PaymentTransaction).get(payment_transaction_id),
+            lambda: session.query(models.PaymentTransaction).get(payment_transaction_id),
+            session=session,
+            read_only=True,
             description="find payment transaction",
         )
 
@@ -81,7 +87,7 @@ class Identifier:
             return
 
         try:
-            user_info = self.payment_card_user_info(payment_transaction)
+            user_info = self.payment_card_user_info(payment_transaction, session=session)
         except SchemeAccountNotFound:
             log.debug(f"Hermes was unable to find a scheme amount matching {payment_transaction}")
             return
@@ -94,7 +100,7 @@ class Identifier:
             log.debug(f"Hermes identified {payment_transaction} but could return no payment card information")
             return
 
-        self.persist_user_identity(payment_transaction, user_info)
+        self.persist_user_identity(payment_transaction, user_info, session=session)
 
         log.debug("Identification complete. Enqueueing matching task.")
 

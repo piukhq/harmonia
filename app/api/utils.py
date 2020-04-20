@@ -3,6 +3,8 @@ from functools import wraps
 
 import flask
 
+from app import db
+
 ResponseType = t.Tuple[t.Dict, int]
 
 
@@ -21,3 +23,14 @@ def expects_json(f: t.Callable) -> t.Callable:
         return f(*args, **kwargs)
 
     return ensure_json_is_present
+
+
+def view_session(f: t.Callable) -> t.Callable:
+    """A flask view decorator that creates a database session for use by the wrapped view."""
+
+    @wraps(f)
+    def create_view_session(*args, **kwargs):
+        with db.session_scope() as session:
+            return f(*args, session=session, **kwargs)
+
+    return create_view_session

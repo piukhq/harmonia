@@ -3,6 +3,7 @@ import typing as t
 import kombu.mixins
 
 import settings
+from app import db
 from app.imports.agents import BaseAgent
 
 
@@ -28,7 +29,10 @@ class QueueAgent(BaseAgent):
 
     def _do_import(self, body: dict):
         queue_name = self.Config.queue_name  # type: ignore
-        self._import_transactions([body], source=f"AMQP: {queue_name}")
+
+        # TODO: this is less than ideal - should we keep a session open?
+        with db.session_scope() as session:
+            self._import_transactions([body], source=f"AMQP: {queue_name}", session=session)
 
 
 class Consumer(kombu.mixins.ConsumerMixin):

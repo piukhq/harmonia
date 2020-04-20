@@ -13,12 +13,14 @@ log = get_logger("export-director")
 
 
 class ExportDirector:
-    def handle_matched_transaction(self, matched_transaction_id: int) -> None:
+    def handle_matched_transaction(self, matched_transaction_id: int, *, session: db.Session) -> None:
         status_monitor.checkin(self)
 
         log.debug(f"Recieved matched transaction #{matched_transaction_id}.")
         matched_transaction: MatchedTransaction = db.run_query(
-            lambda: db.session.query(MatchedTransaction).get(matched_transaction_id),
+            lambda: session.query(MatchedTransaction).get(matched_transaction_id),
+            session=session,
+            read_only=True,
             description="find matched transaction",
         )
 
@@ -37,18 +39,21 @@ class ExportDirector:
             pending_export = PendingExport(
                 provider_slug=loyalty_scheme.slug, matched_transaction_id=matched_transaction_id
             )
-            db.session.add(pending_export)
-            db.session.commit()
+            session.add(pending_export)
+            session.commit()
             return pending_export
 
-        pending_export = db.run_query(add_pending_export, description="create pending export")
+        pending_export = db.run_query(add_pending_export, session=session, description="create pending export")
 
         log.info(f"Sending trigger for singular export agents: {pending_export}.")
         tasks.export_queue.enqueue(tasks.export_singular_transaction, pending_export.id)
 
-    def handle_pending_export(self, pending_export_id: int) -> None:
+    def handle_pending_export(self, pending_export_id: int, *, session: db.Session) -> None:
         pending_export = db.run_query(
-            lambda: db.session.query(PendingExport).get(pending_export_id), description="find pending export"
+            lambda: session.query(PendingExport).get(pending_export_id),
+            session=session,
+            read_only=True,
+            description="find pending export",
         )
 
         if pending_export is None:
@@ -64,4 +69,4 @@ class ExportDirector:
             return
 
         log.info(f"Received {pending_export}, delegating to {agent}.")
-        agent.handle_pending_export(pending_export)
+        agent.handle_pending_export(pending_export, session=session)

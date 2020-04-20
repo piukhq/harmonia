@@ -13,9 +13,9 @@ from app.utils import missing_property
 
 
 @lru_cache(maxsize=2048)
-def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.List[int]:
+def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str, *, session: db.Session) -> t.List[int]:
     def find_mid():
-        q = db.session.query(models.MerchantIdentifier)
+        q = session.query(models.MerchantIdentifier)
 
         if feed_type == ImportFeedTypes.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
@@ -26,7 +26,9 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str) -> t.
 
         return q.filter(models.MerchantIdentifier.mid == mid).all()
 
-    merchant_identifiers = db.run_query(find_mid, description=f"find {provider_slug} MID")
+    merchant_identifiers = db.run_query(
+        find_mid, session=session, read_only=True, description=f"find {provider_slug} MID"
+    )
     return [mid.id for mid in merchant_identifiers]
 
 
@@ -71,7 +73,9 @@ class BaseAgent:
     def get_mids(data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
 
-    def _find_new_transactions(self, provider_transactions: t.List[dict]) -> t.Tuple[t.List[dict], t.List[dict]]:
+    def _find_new_transactions(
+        self, provider_transactions: t.List[dict], *, session: db.Session
+    ) -> t.Tuple[t.List[dict], t.List[dict]]:
         """Splits provider_transactions into two lists containing new and duplicate transactions.
         Returns a tuple (new, duplicate)"""
 
@@ -81,9 +85,11 @@ class BaseAgent:
         duplicate_ids = {
             row[0]
             for row in db.run_query(
-                lambda: db.session.query(models.ImportTransaction.transaction_id)
+                lambda: session.query(models.ImportTransaction.transaction_id)
                 .filter(models.ImportTransaction.provider_slug == self.provider_slug)
                 .all(),
+                session=session,
+                read_only=True,
                 description=f"find duplicated {self.provider_slug} import transactions",
             )
             if row[0] in tids
@@ -106,13 +112,13 @@ class BaseAgent:
 
         return new, duplicate
 
-    def _identify_mid(self, mid: str) -> t.List[int]:
-        mids = identify_mid(mid, self.feed_type, self.provider_slug)
+    def _identify_mid(self, mid: str, *, session: db.Session) -> t.List[int]:
+        mids = identify_mid(mid, self.feed_type, self.provider_slug, session=session)
         if not mids:
             raise MissingMID
         return mids
 
-    def _import_transactions(self, provider_transactions: t.List[dict], *, source: str) -> None:
+    def _import_transactions(self, provider_transactions: t.List[dict], *, session: db.Session, source: str) -> None:
         """
         Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
@@ -120,7 +126,7 @@ class BaseAgent:
         """
         status_monitor.checkin(self)
 
-        new, duplicate = self._find_new_transactions(provider_transactions)
+        new, duplicate = self._find_new_transactions(provider_transactions, session=session)
 
         insertions = []
         for tx_data in new:
@@ -139,7 +145,7 @@ class BaseAgent:
                 merchant_identifier_ids = []
                 for mid in mids:
                     try:
-                        merchant_identifier_ids.extend(self._identify_mid(mid))
+                        merchant_identifier_ids.extend(self._identify_mid(mid, session=session))
                     except MissingMID:
                         pass
 

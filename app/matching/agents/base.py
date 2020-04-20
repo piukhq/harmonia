@@ -23,21 +23,25 @@ class BaseMatchingAgent:
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def _get_scheme_transactions(self, **search_fields) -> t.List[models.SchemeTransaction]:
+    def _get_scheme_transactions(self, *, session: db.Session, **search_fields) -> t.List[models.SchemeTransaction]:
         search_fields["mid"] = self.payment_transaction.mid
         return db.run_query(
-            lambda: db.session.query(models.SchemeTransaction).filter(**search_fields).all(),
+            lambda: session.query(models.SchemeTransaction).filter(**search_fields).all(),
+            session=session,
+            read_only=True,
             description="find matching scheme transactions",
         )
 
-    def _find_applicable_scheme_transactions(self):
+    def _find_applicable_scheme_transactions(self, *, session: db.Session):
         return db.run_query(
-            lambda: db.session.query(models.SchemeTransaction).filter(
+            lambda: session.query(models.SchemeTransaction).filter(
                 models.SchemeTransaction.merchant_identifier_ids.overlap(
                     self.payment_transaction.merchant_identifier_ids
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
             ),
+            read_only=True,
+            session=session,
             description="find pending scheme transactions for matching",
         )
 
@@ -99,7 +103,7 @@ class BaseMatchingAgent:
             "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
         }
 
-    def match(self) -> t.Optional[MatchResult]:
+    def match(self, *, session: db.Session) -> t.Optional[MatchResult]:
         if self.payment_transaction.user_identity is None:
             self.log.warning(
                 f"Payment transaction {self.payment_transaction} has no user identity, so it cannot be matched."
@@ -107,7 +111,7 @@ class BaseMatchingAgent:
             return None
 
         self.log.info(f"Matching {self.payment_transaction}.")
-        scheme_transactions = self._find_applicable_scheme_transactions()
+        scheme_transactions = self._find_applicable_scheme_transactions(session=session)
         return self.do_match(scheme_transactions)
 
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
