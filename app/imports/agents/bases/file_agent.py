@@ -85,7 +85,7 @@ class BlobFileSource(FileSourceBase):
             blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
 
             try:
-                lease = blob_client.acquire_lease(lease_duration=60)
+                lease = blob_client.acquire_lease(lease_duration=600)
             except HttpResponseError:
                 self.log.debug(f"Skipping blob {blob.name} as we could not acquire a lease.")
                 continue
