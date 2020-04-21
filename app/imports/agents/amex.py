@@ -5,10 +5,10 @@ from uuid import uuid4
 
 import pendulum
 
-from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
+from app.imports.agents.bases import base
 from app.currency import to_pennies
 
 PROVIDER_SLUG = "amex"
@@ -67,12 +67,9 @@ class Amex(FileAgent):
             yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
+        return base.PaymentTransaction(
+            settlement_key="",
             transaction_date=data["purchase_date"],
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -100,14 +97,11 @@ class AmexAuth(QueueAgent):
         queue_name = ConfigValue(QUEUE_NAME_KEY, "amex-auth")
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
+        return base.PaymentTransaction(
             settlement_key=_make_settlement_key(data["cm_alias"]),
             transaction_date=pendulum.parse(data["transaction_time"]),
+            provider_slug=PROVIDER_SLUG,
             spend_amount=to_pennies(float(data["transaction_amount"])),
             spend_multiplier=100,
             spend_currency="GBP",

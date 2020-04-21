@@ -2,8 +2,9 @@ import typing as t
 
 from marshmallow import Schema, fields
 
-from app import models, feeds
+from app import feeds
 from app.imports.agents import PassiveAPIAgent
+from app.imports.agents.bases import base
 from app.serialization import PendulumField
 
 
@@ -24,13 +25,10 @@ class BinkLoyalty(PassiveAPIAgent):
         return self._help(__name__)
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
-        return models.SchemeTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_queue_transaction(data: dict) -> base.SchemeTransaction:
+        return base.SchemeTransaction(
             transaction_date=data["date"],
+            payment_provider_slug="bink-payment",
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",

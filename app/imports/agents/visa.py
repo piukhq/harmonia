@@ -6,12 +6,12 @@ from hashlib import sha256
 import gnupg
 import pendulum
 
-from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent
+from app.imports.agents.bases import base
 import settings
 
 PROVIDER_SLUG = "visa"
@@ -139,12 +139,9 @@ class Visa(FileAgent):
         return [data["card_acceptor_id"]]
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
+        return base.PaymentTransaction(
+            settlement_key="",
             transaction_date=data["transaction_date"],
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -171,13 +168,9 @@ class VisaAuth(QueueAgent):
         return [get_key_value(data, "Transaction.VisaMerchantId")]
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
+    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
         ext_user_id = data["ExternalUserId"]
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+        return base.PaymentTransaction(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
@@ -205,14 +198,11 @@ class VisaSettlement(QueueAgent):
         return [get_key_value(data, "Transaction.VisaMerchantId")]
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
+    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
         ext_user_id = data["ExternalUserId"]
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+        return base.PaymentTransaction(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            provider_slug=PROVIDER_SLUG,
             spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
