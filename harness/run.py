@@ -348,7 +348,9 @@ def maybe_run_batch_export_agent(fixture: dict):
         click.secho(f"Skipping batch export run as {agent} is not a batch export agent.", fg="cyan", bold=True)
         return
     click.secho(f"Running {agent} batch export.", fg="cyan", bold=True)
-    agent.export_all()
+
+    with db.session_scope() as session:
+        agent.export_all(session=session)
 
 
 def run_transaction_matching(fixture: dict):

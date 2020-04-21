@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.pool import NullPool
 
 from app import postgres, encoding
 from app.reporting import get_logger
@@ -16,6 +17,7 @@ import settings
 
 engine = s.create_engine(
     settings.POSTGRES_DSN,
+    poolclass=NullPool,
     json_serializer=encoding.dumps,
     json_deserializer=encoding.loads,
     echo=settings.TRACE_QUERY_SQL,
