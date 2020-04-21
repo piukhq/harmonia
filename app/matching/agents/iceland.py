@@ -111,7 +111,7 @@ class Iceland(BaseMatchingAgent):
 
         return match, multiple_returned
 
-    def _filter(self, scheme_transactions: t.Iterable[models.SchemeTransaction]):
+    def _filter(self, scheme_transactions: t.Sequence[models.SchemeTransaction]):
         """Recursively filters the transactions based on how many fallback filter functions are available"""
         matched_transaction_count = len(scheme_transactions)
 
@@ -119,18 +119,18 @@ class Iceland(BaseMatchingAgent):
             if self.filter_level >= len(self.fallback_filter_functions):
                 return None
 
-            scheme_transactions = self.fallback_filter_functions[self.filter_level](
+            filtered_transactions = self.fallback_filter_functions[self.filter_level](
                 scheme_transactions
             )
             self.filter_level += 1
-            return self._filter(scheme_transactions)
+            return self._filter(filtered_transactions)
         elif matched_transaction_count < 1:
             return None
         else:
-            return scheme_transactions[0]
+            return filtered_transactions[0]
 
     def _filter_by_time(
-        self, scheme_transactions: t.Iterable[models.SchemeTransaction]
+        self, scheme_transactions: t.Sequence[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
         transaction_datetime = pendulum.instance(
             self.payment_transaction.transaction_date

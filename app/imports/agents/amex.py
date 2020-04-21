@@ -71,6 +71,7 @@ class Amex(FileAgent):
         return base.PaymentTransaction(
             settlement_key="",
             transaction_date=data["purchase_date"],
+            provider_slug=PROVIDER_SLUG,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",

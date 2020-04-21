@@ -20,6 +20,8 @@ SchemeTransaction = namedtuple(
         "spend_amount",
         "spend_multiplier",
         "spend_currency",
+        "points_amount",
+        "points_multiplier",
         "extra_fields",
     ]
 )

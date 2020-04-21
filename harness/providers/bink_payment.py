@@ -5,6 +5,8 @@ from harness.providers.base import BaseImportDataProvider
 
 
 class BinkPayment(BaseImportDataProvider):
+    slug = "bink-payment"
+
     def provide(self, fixture: dict) -> t.List[dict]:
         transactions = []
 
@@ -19,5 +21,16 @@ class BinkPayment(BaseImportDataProvider):
                         "tid": str(uuid4()),
                     }
                 )
+
+        for transaction in fixture.get(self.slug, []):
+            transactions.append(
+                {
+                    "date": transaction["date"].isoformat(),
+                    "mid": fixture["mid"],
+                    "token": user["token"],
+                    "spend": transaction["amount"],
+                    "tid": str(uuid4()),
+                }
+            )
 
         return transactions

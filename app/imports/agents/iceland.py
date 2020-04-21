@@ -73,6 +73,8 @@ class Iceland(FileAgent):
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
+            points_amount="",
+            points_multiplier="",
             extra_fields={
                 k: data[k]
                 for k in (
