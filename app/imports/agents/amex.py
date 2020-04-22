@@ -108,7 +108,7 @@ class AmexAuth(QueueAgent):
             transaction_id=transaction_id,
             settlement_key=_make_settlement_key(data["cm_alias"]),
             transaction_date=pendulum.parse(data["transaction_time"]),
-            spend_amount=to_pennies(data["transaction_amount"]),
+            spend_amount=to_pennies(float(data["transaction_amount"])),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
