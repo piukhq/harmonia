@@ -43,7 +43,7 @@ class MastercardSettled(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "transaction_amount": lambda x: to_pennies(x),
+        "transaction_amount": lambda x: to_pennies(float(x)),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_time": int,
     }

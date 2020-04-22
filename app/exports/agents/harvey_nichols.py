@@ -65,19 +65,8 @@ class HarveyNichols(SingularExportAgent):
                 atlas.save_transaction(self.provider_slug, response, transaction, Atlas.Status.NOT_ASSIGNED)
                 self.log.debug(f"Matched transaction {matched_transaction_id} was not assigned.")
 
-    def make_export_data(self, matched_transaction_id: int) -> AgentExportData:
-        transaction = db.run_query(
-            lambda: db.session.query(models.MatchedTransaction).get(matched_transaction_id),
-            description="load matched transaction",
-        )
-
-        if transaction is None:
-            self.log.warning(
-                f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted."
-            )
-            raise db.NoResultFound
-
-        user_identity = transaction.payment_transaction.user_identity
+    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
+        user_identity = matched_transaction.payment_transaction.user_identity
         credentials = decrypt_credentials(user_identity.credentials)
         scheme_account_id = user_identity.scheme_account_id
 
@@ -89,16 +78,16 @@ class HarveyNichols(SingularExportAgent):
                         "CustomerClaimTransactionRequest": {
                             "token": "token",
                             "customerNumber": credentials["card_number"],
-                            "id": transaction.transaction_id,
+                            "id": matched_transaction.transaction_id,
                         }
                     },
                 )
             ],
-            transactions=[transaction],
+            transactions=[matched_transaction],
             extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
         )
 
-    def export(self, export_data: AgentExportData):
+    def export(self, export_data: AgentExportData, *, session: db.Session):
         _, body = export_data.outputs.pop()
         transaction = export_data.transactions[0]
         credentials = export_data.extra_data["credentials"]

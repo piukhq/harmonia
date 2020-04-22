@@ -3,4 +3,4 @@
 source s/_common
 
 p 'opening a psql shell'
-PGPASSWORD=password psql -h localhost -p 51234 -U postgres -d harmonia -w -P pager=off -x
+psql -h localhost -p 51234 -U postgres -d harmonia -w -P pager=off -x

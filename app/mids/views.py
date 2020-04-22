@@ -7,6 +7,7 @@ from flask import Blueprint, request
 import werkzeug
 
 from app import models, db, reporting
+from app.api.utils import view_session
 import settings
 
 
@@ -50,13 +51,14 @@ def create_merchant_identifier_fields(payment_provider_slug, mid, loyalty_scheme
     )
 
 
-def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> t.Tuple[int, int]:
+def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session) -> t.Tuple[int, int]:
     reader = csv.reader((line.decode() for line in file_storage), dialect=CSVDialect())
 
     log.debug("Processing MIDs...")
 
     merchant_identifiers_fields = []
     for line, row in enumerate(reader):
+        row = [value.strip() for value in row]
         try:
             payment_provider_slug, mid, loyalty_scheme_slug, loyalty_scheme_name, location, postcode, action = row
         except ValueError as ex:
@@ -78,21 +80,28 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage) -> t.Tu
         db.engine.execute(
             insert(models.MerchantIdentifier.__table__).values(merchant_identifiers_fields).on_conflict_do_nothing()
         )
-        db.session.commit()
+        session.commit()
 
     mids_table_before = db.run_query(
-        lambda: db.session.query(models.MerchantIdentifier).count(), description="count MIDs before import"
+        lambda: session.query(models.MerchantIdentifier).count(),
+        session=session,
+        read_only=True,
+        description="count MIDs before import",
     )
-    db.run_query(insert_mids, description="import MIDs")
+    db.run_query(insert_mids, session=session, description="import MIDs")
     mids_table_after = db.run_query(
-        lambda: db.session.query(models.MerchantIdentifier).count(), description="count MIDs after import"
+        lambda: session.query(models.MerchantIdentifier).count(),
+        session=session,
+        read_only=True,
+        description="count MIDs after import",
     )
 
     return n_mids_in_file, mids_table_after - mids_table_before
 
 
 @api.route("/", methods=["POST"])
-def import_mids() -> ResponseType:
+@view_session
+def import_mids(*, session: db.Session) -> ResponseType:
     """
     Import MIDs
     ---
@@ -114,7 +123,7 @@ def import_mids() -> ResponseType:
             fail(filepath, f"Expected file content type text/csv, got {file_storage.content_type}")
             continue
         try:
-            n_mids_in_file, n_mids_imported = add_mids_from_csv(file_storage)
+            n_mids_in_file, n_mids_imported = add_mids_from_csv(file_storage, session=session)
         except Exception as ex:
             error_message = f"{type(ex).__name__}: {ex}"
             if len(error_message) > 250:

@@ -25,12 +25,12 @@ class BatchExportAgent(BaseAgent):
     def handle_pending_export(self, pending_export):
         self.log.debug(f"Ignoring {pending_export} for singular export.")
 
-    def export(self, export_data: AgentExportData):
+    def export(self, export_data: AgentExportData, *, session: db.Session):
         pass
 
-    def export_all(self, *, once: bool = False):
+    def export_all(self, *, session: db.Session, once: bool = False):
         pending_exports_q = (
-            db.session.query(models.PendingExport)
+            session.query(models.PendingExport)
             .options(
                 joinedload(models.PendingExport.matched_transaction, innerjoin=True)
                 .joinedload(models.MatchedTransaction.payment_transaction, innerjoin=True)
@@ -52,15 +52,16 @@ class BatchExportAgent(BaseAgent):
                 self.send_export_data(export_data)
 
             db.run_query(
-                lambda: self._save_export_transactions(export_data),
+                lambda: self._save_export_transactions(export_data, session=session),
+                session=session,
                 description="create export transactions from export data",
             )
 
         def delete_pending_exports():
             pending_exports_q.delete()
-            db.session.commit()
+            session.commit()
 
-        db.run_query(delete_pending_exports, description="delete pending exports")
+        db.run_query(delete_pending_exports, session=session, description="delete pending exports")
 
     def yield_export_data(self, transactions: t.List[models.MatchedTransaction]):
         raise NotImplementedError("Override the yield_export_data method in your agent.")

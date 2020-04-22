@@ -52,10 +52,6 @@ DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)
 # Development mode toggle. Adds extra functionality for local development work.
 DEVELOPMENT = getenv("TXM_DEVELOPMENT", default="false", conv=boolconv)
 
-# Canonical name of the environment we're running in.
-# e.g. dev, staging, production
-ENVIRONMENT_ID = getenv("TXM_ENVIRONMENT_ID", default="unknown").lower()
-
 # Connection details for Postgres.
 # Postgres is used as the main database for the transaction matching system.
 POSTGRES_HOST = getenv("TXM_POSTGRES_HOST")
@@ -103,8 +99,11 @@ RABBITMQ_DSN = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITM
 # https://docs.sentry.io/quickstart/#about-the-dsn
 SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 
+# Environment identifier to file issues under in Sentry.
+SENTRY_ENV = getenv("TXM_SENTRY_ENV", default="unset").lower()
+
 if SENTRY_DSN is not None:
-    sentry_sdk.init(dsn=SENTRY_DSN, environment=ENVIRONMENT_ID, integrations=[FlaskIntegration(), RqIntegration()])
+    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENV, integrations=[FlaskIntegration(), RqIntegration()])
 
 # JSON encoding with custom extensions.
 # Used in queue messages, postgres JSON field storage, et cetera.

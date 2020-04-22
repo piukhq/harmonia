@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pendulum
 
 from app import models, db
+from app.utils import missing_property
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
@@ -22,10 +23,6 @@ class AgentExportData:
     extra_data: dict
 
 
-def _missing_property(obj, prop: str):
-    raise NotImplementedError(f"{type(obj).__name__} is missing a required property: {prop}")
-
-
 class BaseAgent:
     # Can be overridden by child classes to set which output should be saved into the export_transaction table.
     saved_output_index = 0
@@ -35,7 +32,7 @@ class BaseAgent:
 
     @property
     def provider_slug(self) -> str:
-        return _missing_property(self, "provider_slug")
+        return missing_property(type(self), "provider_slug")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(provider_slug={self.provider_slug})"
@@ -53,15 +50,15 @@ class BaseAgent:
     def run(self, *, once: bool = False):
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
-    def handle_pending_export(self, pending_export: models.PendingExport) -> None:
+    def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
         raise NotImplementedError("This method should be overridden by specicialised base agents.")
 
-    def export(self, export_data: AgentExportData):
+    def export(self, export_data: AgentExportData, *, session: db.Session):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
 
-    def export_all(self):
+    def export_all(self, *, session: db.Session):
         raise NotImplementedError(
             "Override the export_all method in your agent to act as the entry point into the batch export process."
         )
@@ -82,17 +79,21 @@ class BaseAgent:
             blob_name = f"{blob_name_prefix}{name}"
             blob_storage_client.create_blob("exports", blob_name, content)
 
-    def _save_export_transactions(self, export_data: AgentExportData):
+    def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
-        for transaction in export_data.transactions:
-            db.session.add(
-                models.ExportTransaction(
-                    matched_transaction_id=transaction.id,
-                    transaction_id=transaction.transaction_id,
-                    provider_slug=self.provider_slug,
-                    destination=export_data.outputs[self.saved_output_index].key,
-                    data=export_data.outputs[self.saved_output_index].data,
+
+        def add_transactions():
+            for transaction in export_data.transactions:
+                session.add(
+                    models.ExportTransaction(
+                        matched_transaction_id=transaction.id,
+                        transaction_id=transaction.transaction_id,
+                        provider_slug=self.provider_slug,
+                        destination=export_data.outputs[self.saved_output_index].key,
+                        data=export_data.outputs[self.saved_output_index].data,
+                    )
                 )
-            )
-            transaction.status = models.MatchedTransactionStatus.EXPORTED
-        db.session.commit()
+                transaction.status = models.MatchedTransactionStatus.EXPORTED
+            session.commit()
+
+        db.run_query(add_transactions, session=session, description="save export transactions")

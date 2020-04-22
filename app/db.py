@@ -1,11 +1,15 @@
 import typing as t
+from uuid import uuid4
+from contextlib import contextmanager
 
 import sqlalchemy as s
+from sqlalchemy.orm import Session
 from redis import Redis
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.pool import NullPool
 
 from app import postgres, encoding
 from app.reporting import get_logger
@@ -13,28 +17,48 @@ import settings
 
 engine = s.create_engine(
     settings.POSTGRES_DSN,
+    poolclass=NullPool,
     json_serializer=encoding.dumps,
     json_deserializer=encoding.loads,
     echo=settings.TRACE_QUERY_SQL,
 )
 
-Session = sessionmaker(bind=engine)
-session: s.orm.Session = Session()
-
+SessionMaker = sessionmaker(bind=engine)
 Base = declarative_base()  # type: t.Any
-
 
 log = get_logger("db")
 
 
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = SessionMaker()
+    sid = str(uuid4())
+    log.debug(f"Session {sid} created.")
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        log.warning(f"Session {sid} rolled back.")
+        raise
+    finally:
+        session.close()
+        log.debug(f"Session {sid} closed.")
+
+
 # based on the following stackoverflow answer:
 # https://stackoverflow.com/a/30004941
-def run_query(fn, *, attempts=2, description=None):
+def run_query(fn, *, session: Session, attempts: int = 2, read_only: bool = False, description: t.Optional[str] = None):
     if settings.TRACE_QUERY_DESCRIPTIONS:
         if description is None:
             description = repr(fn)
 
-        log.debug(f'Attempting query for function "{description}" with {attempts} attempts')
+        if read_only:
+            query_type_str = "read"
+        else:
+            query_type_str = "read/write"
+        log.debug(f'Attempting {query_type_str} query for function "{description}" with {attempts} attempts')
 
     while attempts > 0:
         attempts -= 1
@@ -42,16 +66,21 @@ def run_query(fn, *, attempts=2, description=None):
             return fn()
         except DBAPIError as ex:
             log.debug(f"Attempt failed: {type(ex).__name__} {ex}")
-            session.rollback()
+            if not read_only:
+                session.rollback()
             if attempts > 0 and ex.connection_invalidated:
                 log.warning(f"Database query {fn} failed with {type(ex).__name__}. {attempts} attempt(s) remaining.")
             else:
                 raise
 
 
-def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwargs) -> t.Tuple[Base, bool]:
+def get_or_create(
+    model: t.Type[Base], *, session: Session, defaults: t.Optional[dict] = None, **kwargs
+) -> t.Tuple[Base, bool]:
     instance = run_query(
         lambda: session.query(model).filter_by(**kwargs).one_or_none(),
+        session=session,
+        read_only=True,
         description=f"find {model.__name__} object for get_or_create",
     )
     if instance:
@@ -67,7 +96,10 @@ def get_or_create(model: t.Type[Base], defaults: t.Optional[dict] = None, **kwar
             session.commit()
             return instance
 
-        return run_query(add_instance, description=f"create {model.__name__} object for get_or_create"), True
+        return (
+            run_query(add_instance, session=session, description=f"create {model.__name__} object for get_or_create"),
+            True,
+        )
 
 
 def auto_repr(cls):

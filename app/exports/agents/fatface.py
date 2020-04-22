@@ -3,7 +3,7 @@ import string
 from app import config
 from app.exports.agents.bases.ecrebo import Ecrebo
 
-PROVIDER_SLUG = "burger-king-rewards"
+PROVIDER_SLUG = "fatface"
 
 
 RECEIPT_XML_TEMPLATE = string.Template(
@@ -12,8 +12,8 @@ RECEIPT_XML_TEMPLATE = string.Template(
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" MajorVersion="6" MinorVersion="0" FixVersion="0">
     <Transaction>
         <BusinessUnit>
-            <UnitID Name="Burger King">$MID</UnitID>
-            <Website>www.burgerking.co.uk</Website>
+            <UnitID Name="Fat Face">$MID</UnitID>
+            <Website>www.fatface.com</Website>
         </BusinessUnit>
        <ReceiptNumber>$TRANSACTION_ID</ReceiptNumber>
       <POSLogDateTime TypeCode="Transaction">$TRANSACTION_DATE</POSLogDateTime>
@@ -30,10 +30,10 @@ REWARD_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path
 RECEIPT_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.receipt_upload_path"
 
 
-class BurgerKing(Ecrebo):
+class FatFace(Ecrebo):
     provider_slug = PROVIDER_SLUG
     receipt_xml_template = RECEIPT_XML_TEMPLATE
-    receipt_file_suffix = "BK"
+    receipt_file_suffix = "FF"
 
     class Config:
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/receipts")

@@ -18,11 +18,13 @@ class IdentifyRetryWorker:
     def get_schedule(self) -> str:
         return self.Config.schedule
 
-    def tick(self) -> None:
+    def tick(self, *, session: db.Session) -> None:
         unidentified_transactions = db.run_query(
-            lambda: db.session.query(models.PaymentTransaction)
+            lambda: session.query(models.PaymentTransaction)
             .filter(models.PaymentTransaction.user_identity_id.is_(None))
             .all(),
+            session=session,
+            read_only=True,
             description="find unidentified payment transactions",
         )
 
