@@ -42,7 +42,7 @@ class Amex(FileAgent):
     field_transforms: t.Dict[str, t.Callable] = {
         "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
-        "transaction_amount": lambda x: to_pennies(x),
+        "transaction_amount": lambda x: to_pennies(float(x)),
     }
 
     class Config:
