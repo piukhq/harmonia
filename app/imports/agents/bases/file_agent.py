@@ -74,7 +74,7 @@ class BlobFileSource(FileSourceBase):
 
         self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease=lease)
 
-    def provide(self, callback: t.Callable) -> None:
+    def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         try:
             self._bbs.create_container(self.container_name)
         except ResourceExistsError:
@@ -86,6 +86,7 @@ class BlobFileSource(FileSourceBase):
 
             try:
                 lease = blob_client.acquire_lease(lease_duration=60)
+                lease_time = pendulum.now()
             except HttpResponseError:
                 self.log.debug(f"Skipping blob {blob.name} as we could not acquire a lease.")
                 continue
@@ -95,7 +96,10 @@ class BlobFileSource(FileSourceBase):
             self.log.debug(f"Invoking callback for blob {blob.name}.")
 
             try:
-                callback(data=content, source=f"{self.container_name}/{blob.name}")
+                for _ in callback(data=content, source=f"{self.container_name}/{blob.name}"):
+                    lease_length = pendulum.now().diff(lease_time).in_seconds()
+                    if lease_length > 30:
+                        lease.renew()
             except Exception as ex:
                 if settings.DEBUG:
                     raise
@@ -106,9 +110,13 @@ class BlobFileSource(FileSourceBase):
 
 
 class FileAgent(BaseAgent):
-    def _do_import(self, data: bytes, source: str) -> None:
+    def _do_import(self, data: bytes, source: str) -> t.Iterable[None]:
         self.log.info(f"Importing {source}")
-        transactions_data = list(self.yield_transactions_data(data))
+
+        transactions_data = []
+        for transaction in self.yield_transactions_data(data):
+            transactions_data.append(transaction)
+            yield
 
         # TODO: this is less than ideal, should be keep a session open?
         with db.session_scope() as session:
