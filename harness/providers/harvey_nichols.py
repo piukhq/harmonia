@@ -28,7 +28,7 @@ class HarveyNichols(BaseImportDataProvider):
     def _build_transaction(transaction: dict, fixture: dict, first_six: str, last_four: str) -> dict:
         return {
             "alt_id": "",
-            "card": {"first_6": first_six, "last_4": last_four, "expiry": "0", "scheme": "AMEX",},
+            "card": {"first_6": first_six, "last_4": last_four, "expiry": "0", "scheme": "AMEX"},
             "amount": {"value": to_pounds(transaction["amount"]), "unit": "GBP"},
             "store_id": "0001017   005682",
             "timestamp": transaction["date"].isoformat(),
