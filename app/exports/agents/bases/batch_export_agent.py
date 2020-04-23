@@ -22,7 +22,7 @@ class BatchExportAgent(BaseAgent):
         self.log.debug(f"Beginning schedule {scheduler}.")
         scheduler.run()
 
-    def handle_pending_export(self, pending_export):
+    def handle_pending_export(self, pending_export, *, session: db.Session):
         self.log.debug(f"Ignoring {pending_export} for singular export.")
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
@@ -45,7 +45,7 @@ class BatchExportAgent(BaseAgent):
 
         self.log.debug(f"Exporting {len(pending_exports)} transactions.")
 
-        for export_data in self.yield_export_data(transactions):
+        for export_data in self.yield_export_data(transactions, session=session):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
@@ -63,7 +63,7 @@ class BatchExportAgent(BaseAgent):
 
         db.run_query(delete_pending_exports, session=session, description="delete pending exports")
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]):
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
     def send_export_data(self, export_data: AgentExportData):

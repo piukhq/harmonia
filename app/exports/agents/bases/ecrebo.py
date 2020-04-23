@@ -11,7 +11,7 @@ from soteria.configuration import Configuration
 from soteria.encryption import PGP
 
 import settings
-from app import models
+from app import models, db
 from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
@@ -134,20 +134,24 @@ class Ecrebo(BatchExportAgent):
                 )
         return buf.getvalue(), atlas_calls
 
-    def _create_fileset(self, transactions: t.List[models.MatchedTransaction]) -> t.Tuple[ExportFileSet, t.List[dict]]:
+    def _create_fileset(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Tuple[ExportFileSet, t.List[dict]]:
         transactions = [tx for tx in transactions if tx.spend_amount > 0]
-        sequence_number = self.sequencer.next_value()
+        sequence_number = self.sequencer.next_value(session=session)
         reward_data, atlas_calls = self._create_reward_data(transactions, sequence_number)
         fileset = ExportFileSet(
             receipt_data=self._create_receipt_data(transactions, sequence_number),
             reward_data=reward_data,
             transaction_count=len(transactions),
         )
-        self.sequencer.set_next_value(sequence_number + fileset.transaction_count)
+        self.sequencer.set_next_value(sequence_number + fileset.transaction_count, session=session)
         return fileset, atlas_calls
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]) -> t.Iterable[AgentExportData]:
-        fileset, atlas_calls = self._create_fileset(transactions)
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
+        fileset, atlas_calls = self._create_fileset(transactions, session=session)
         ts = pendulum.now().int_timestamp
 
         # the order of these outputs is used to upload to SFTP in sequence.
