@@ -20,12 +20,6 @@ class LoyaltyScheme(Base, ModelMixin):
     merchant_identifiers = s.orm.relationship("MerchantIdentifier", backref="loyalty_scheme")
 
 
-class PaymentProviderSlug(str, Enum):
-    AMEX = "amex"
-    VISA = "visa"
-    MASTERCARD = "mastercard"
-
-
 @auto_repr
 @auto_str("id", "slug")
 class PaymentProvider(Base, ModelMixin):

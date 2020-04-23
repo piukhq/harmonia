@@ -14,6 +14,7 @@ class TransactionSchema(Schema):
     date = PendulumField(required=True, allow_none=False)
     spend = fields.Integer(required=True, allow_none=False)
     points = fields.Integer(required=True, allow_none=False)
+    payment_provider_slug = fields.String(required=True, allow_none=False)
 
 
 class BinkLoyalty(PassiveAPIAgent):
@@ -28,7 +29,7 @@ class BinkLoyalty(PassiveAPIAgent):
     def to_queue_transaction(data: dict) -> base.SchemeTransaction:
         return base.SchemeTransaction(
             transaction_date=data["date"],
-            payment_provider_slug="bink-payment",
+            payment_provider_slug=data["payment_provider_slug"],
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",

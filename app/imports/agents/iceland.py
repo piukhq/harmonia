@@ -11,7 +11,7 @@ from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent
 from app.imports.agents.bases import base
-from app.models import PaymentProviderSlug
+from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -73,8 +73,8 @@ class Iceland(FileAgent):
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
-            points_amount="",
-            points_multiplier="",
+            points_amount=None,
+            points_multiplier=None,
             extra_fields={
                 k: data[k]
                 for k in (

@@ -14,6 +14,7 @@ class TransactionSchema(Schema):
     date = PendulumField(required=True, allow_none=False)
     spend = fields.Integer(required=True, allow_none=False)
     token = fields.String(required=True, allow_none=False)
+    settlement_key = fields.String(required=True, allow_none=False)
 
 
 class BinkPayment(PassiveAPIAgent):
@@ -27,7 +28,7 @@ class BinkPayment(PassiveAPIAgent):
     @staticmethod
     def to_queue_transaction(data: dict) -> base.PaymentTransaction:
         return base.PaymentTransaction(
-            settlement_key="",
+            settlement_key=data["settlement_key"],
             provider_slug=BinkPayment.provider_slug,
             transaction_date=data["date"],
             spend_amount=data["spend"],

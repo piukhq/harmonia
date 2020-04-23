@@ -116,10 +116,6 @@ class IdentityDateTimeField(fields.DateTime):
         return super()._deserialize(value, attr, data, **kwargs)
 
 
-class FixtureProviderSchema(Schema):
-    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
-
-
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
@@ -136,12 +132,37 @@ class FixtureUserSchema(Schema):
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
 
 
+class FixtureLoyaltyTransactionSchema(FixtureUserTransactionSchema):
+    first_six = fields.String(required=True, allow_none=False, validate=validate.Length(equal=6))
+    last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
+    settlement_key = fields.String(required=False, allow_none=True, validate=validate.Length(min=1))
+
+
+class FixturePaymentTransactionSchema(FixtureUserTransactionSchema):
+    token = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    user_id = fields.Integer(required=True, allow_none=False)
+
+
+class FixtureProviderSchema(Schema):
+    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+
+
+class FixtureLoyaltyProviderSchema(FixtureProviderSchema):
+    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    transactions = fields.Nested(FixtureLoyaltyTransactionSchema, many=True)
+
+
+class FixturePaymentProviderSchema(FixtureProviderSchema):
+    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    transactions = fields.Nested(FixturePaymentTransactionSchema, many=True)
+
+
 class FixtureSchema(Schema):
     mid = fields.String(required=True, allow_none=False)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
-    loyalty_scheme = fields.Nested(FixtureProviderSchema)
-    payment_provider = fields.Nested(FixtureProviderSchema)
+    loyalty_scheme = fields.Nested(FixtureLoyaltyProviderSchema)
+    payment_provider = fields.Nested(FixturePaymentProviderSchema)
     agents = fields.Nested(FixtureProviderSchema, many=True)
     users = fields.Nested(FixtureUserSchema, many=True)
 
@@ -165,6 +186,11 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
             f"for {loyalty_scheme_slug}/{payment_token}"
         )
 
+        # transaction_tokens = [
+        #     transaction["token"] for transaction
+        #     in fixture["payment_provider"].get("transactions", [])
+        # ]
+
         for idx, user in enumerate(fixture["users"]):
             if user["token"] != payment_token:
                 continue
@@ -177,6 +203,19 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
                     "credentials": user["credentials"],
                     "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
                 }
+            }
+
+        for transaction in fixture["payment_provider"].get("transactions", []):
+            if transaction["token"] != payment_token:
+                continue
+
+            user = fixture["users"][transaction["user_id"]]
+            return {
+                "loyalty_id": user["loyalty_id"],
+                "scheme_account_id": transaction["user_id"],
+                "user_id": transaction["user_id"],
+                "credentials": user["credentials"],
+                "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
             }
 
         return None
@@ -203,7 +242,9 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
 def create_merchant_identifier(fixture: dict, session: db.Session):
     loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, session=session, slug=fixture["loyalty_scheme"]["slug"])
     payment_provider, _ = db.get_or_create(
-        models.PaymentProvider, session=session, slug=fixture["payment_provider"]["slug"]
+        models.PaymentProvider,
+        session=session,
+        slug=hermes.get_payment_provider_slug(fixture["payment_provider"]["slug"]),
     )
     db.get_or_create(
         models.MerchantIdentifier,

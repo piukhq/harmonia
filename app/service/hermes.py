@@ -1,3 +1,4 @@
+from enum import Enum
 from urllib.parse import urljoin
 
 from app.core.requests_retry import requests_retry_session
@@ -6,6 +7,12 @@ import settings
 
 
 log = get_logger("hermes")
+
+
+class PaymentProviderSlug(str, Enum):
+    AMEX = "amex"
+    VISA = "visa"
+    MASTERCARD = "mastercard"
 
 
 class Hermes:
@@ -21,6 +28,18 @@ class Hermes:
         if settings.HERMES_SLUG_FORMAT_STRING is not None:
             slug = settings.HERMES_SLUG_FORMAT_STRING.format(slug)
         return slug
+
+    @staticmethod
+    def get_payment_provider_slug(slug: str) -> str:
+        try:
+            return {
+                "mastercard-settled": PaymentProviderSlug.MASTERCARD,
+                "mastercard-auth": PaymentProviderSlug.MASTERCARD,
+                "visa": PaymentProviderSlug.VISA,
+                "amex": PaymentProviderSlug.AMEX
+            }[slug]
+        except KeyError:
+            return slug
 
     def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
         log.debug(f"Posting {name} request with parameters: {body}.")

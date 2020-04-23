@@ -1,4 +1,5 @@
 import typing as t
+from datetime import datetime
 
 import pendulum
 import sqlalchemy
@@ -7,7 +8,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
-from app.models import PaymentProviderSlug
+from app.service.hermes import PaymentProviderSlug
 
 
 class Iceland(BaseMatchingAgent):
@@ -20,7 +21,7 @@ class Iceland(BaseMatchingAgent):
             self._filter_by_card_number,
         )
 
-        self.time_tolerance = 10  # time tolerance for filtering between time range, in seconds.
+        self.time_tolerance = 60  # time tolerance for filtering between time range, in seconds.
 
     def do_match(
         self, scheme_transactions: sqlalchemy.orm.query.Query
@@ -62,20 +63,20 @@ class Iceland(BaseMatchingAgent):
         )
 
     def mastercard_matcher(
-        self, scheme_transactions: sqlalchemy.orm.query.Query, payment_scheme_slug: str
+        self, scheme_transactions: sqlalchemy.orm.query.Query
     ) -> t.Optional[MatchResult]:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             cast(models.SchemeTransaction.transaction_date, Date)
             == cast(self.payment_transaction.transaction_date, Date),
-            payment_scheme_slug == self.payment_transaction.provider_slug
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug
         )
 
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
         if multiple_returned:
             self.filter_level = 0
-            match = self._filter(scheme_transactions)
+            match = self._filter(scheme_transactions.all())
 
         if not match:
             self.log.warning(
@@ -127,13 +128,18 @@ class Iceland(BaseMatchingAgent):
         elif matched_transaction_count < 1:
             return None
         else:
-            return filtered_transactions[0]
+            return scheme_transactions[0]
 
     def _filter_by_time(
         self, scheme_transactions: t.Sequence[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
+        transaction_date = self.payment_transaction.transaction_date.date()
+        transaction_time = datetime.strptime(
+            str(self.payment_transaction.extra_fields["transaction_time"]), "%H%M"
+        ).time()
+
         transaction_datetime = pendulum.instance(
-            self.payment_transaction.transaction_date
+            datetime.combine(transaction_date, transaction_time)
         )
 
         min_time = transaction_datetime.subtract(seconds=self.time_tolerance)
@@ -155,8 +161,8 @@ class Iceland(BaseMatchingAgent):
         matched_transactions = [
             transaction for transaction in scheme_transactions
             if (
-                transaction.extra_fields["TransactionCardFirst6"].astext == user_identity.first_six
-                and transaction.extra_fields["TransactionCardLast4"].astext == user_identity.last_four
+                transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
+                and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four
             )
         ]
         return matched_transactions

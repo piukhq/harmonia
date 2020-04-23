@@ -143,6 +143,7 @@ class Visa(FileAgent):
         return base.PaymentTransaction(
             settlement_key="",
             transaction_date=data["transaction_date"],
+            provider_slug=PROVIDER_SLUG,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency=data["country_currency_code"],
@@ -172,6 +173,7 @@ class VisaAuth(QueueAgent):
         ext_user_id = data["ExternalUserId"]
         return base.PaymentTransaction(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            provider_slug=PROVIDER_SLUG,
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",

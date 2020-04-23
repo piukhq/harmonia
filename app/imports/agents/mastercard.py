@@ -83,6 +83,7 @@ class MastercardSettled(FileAgent):
         return base.PaymentTransaction(
             settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
             transaction_date=data["transaction_date"],
+            provider_slug=PROVIDER_SLUG,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",
