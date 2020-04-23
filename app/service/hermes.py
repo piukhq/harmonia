@@ -36,7 +36,7 @@ class Hermes:
                 "mastercard-settled": PaymentProviderSlug.MASTERCARD,
                 "mastercard-auth": PaymentProviderSlug.MASTERCARD,
                 "visa": PaymentProviderSlug.VISA,
-                "amex": PaymentProviderSlug.AMEX
+                "amex": PaymentProviderSlug.AMEX,
             }[slug]
         except KeyError:
             return slug

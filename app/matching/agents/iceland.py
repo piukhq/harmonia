@@ -12,7 +12,6 @@ from app.service.hermes import PaymentProviderSlug
 
 
 class Iceland(BaseMatchingAgent):
-
     def __init__(self, payment_transaction: models.PaymentTransaction) -> None:
         super().__init__(payment_transaction)
 
@@ -23,30 +22,26 @@ class Iceland(BaseMatchingAgent):
 
         self.time_tolerance = 60  # time tolerance for filtering between time range, in seconds.
 
-    def do_match(
-        self, scheme_transactions: sqlalchemy.orm.query.Query
-    ) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions: sqlalchemy.orm.query.Query) -> t.Optional[MatchResult]:
         try:
             matcher = {
                 PaymentProviderSlug.AMEX: self._base_matcher,
                 PaymentProviderSlug.VISA: self._base_matcher,
-                PaymentProviderSlug.MASTERCARD: self.mastercard_matcher
+                PaymentProviderSlug.MASTERCARD: self.mastercard_matcher,
             }[self.payment_transaction.provider_slug]
         except KeyError:
             matcher = self._base_matcher
 
         return matcher(scheme_transactions)
 
-    def _base_matcher(
-        self, scheme_transactions: sqlalchemy.orm.query.Query
-    ) -> t.Optional[MatchResult]:
+    def _base_matcher(self, scheme_transactions: sqlalchemy.orm.query.Query) -> t.Optional[MatchResult]:
         """A generic matcher to match on spend_amount, date, and provider_slug fields
         """
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             cast(models.SchemeTransaction.transaction_date, Date)
             == cast(self.payment_transaction.transaction_date, Date),
-            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
 
         match, multiple_returned = self._check_for_match(scheme_transactions)
@@ -56,20 +51,17 @@ class Iceland(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self._make_matched_transaction_fields(match),
-                matching_type=models.MatchingType.LOYALTY,
+                **self._make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY,
             ),
             scheme_transaction_id=match.id,
         )
 
-    def mastercard_matcher(
-        self, scheme_transactions: sqlalchemy.orm.query.Query
-    ) -> t.Optional[MatchResult]:
+    def mastercard_matcher(self, scheme_transactions: sqlalchemy.orm.query.Query) -> t.Optional[MatchResult]:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             cast(models.SchemeTransaction.transaction_date, Date)
             == cast(self.payment_transaction.transaction_date, Date),
-            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
 
         match, multiple_returned = self._check_for_match(scheme_transactions)
@@ -87,8 +79,7 @@ class Iceland(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self._make_matched_transaction_fields(match),
-                matching_type=models.MatchingType.LOYALTY,
+                **self._make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY,
             ),
             scheme_transaction_id=match.id,
         )
@@ -120,9 +111,7 @@ class Iceland(BaseMatchingAgent):
             if self.filter_level >= len(self.fallback_filter_functions):
                 return None
 
-            filtered_transactions = self.fallback_filter_functions[self.filter_level](
-                scheme_transactions
-            )
+            filtered_transactions = self.fallback_filter_functions[self.filter_level](scheme_transactions)
             self.filter_level += 1
             return self._filter(filtered_transactions)
         elif matched_transaction_count < 1:
@@ -138,9 +127,7 @@ class Iceland(BaseMatchingAgent):
             str(self.payment_transaction.extra_fields["transaction_time"]), "%H%M"
         ).time()
 
-        transaction_datetime = pendulum.instance(
-            datetime.combine(transaction_date, transaction_time)
-        )
+        transaction_datetime = pendulum.instance(datetime.combine(transaction_date, transaction_time))
 
         min_time = transaction_datetime.subtract(seconds=self.time_tolerance)
         max_time = transaction_datetime.add(seconds=self.time_tolerance)
@@ -159,7 +146,8 @@ class Iceland(BaseMatchingAgent):
         user_identity = self.payment_transaction.user_identity
 
         matched_transactions = [
-            transaction for transaction in scheme_transactions
+            transaction
+            for transaction in scheme_transactions
             if (
                 transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
                 and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four

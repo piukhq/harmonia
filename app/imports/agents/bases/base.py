@@ -23,7 +23,7 @@ SchemeTransaction = namedtuple(
         "points_amount",
         "points_multiplier",
         "extra_fields",
-    ]
+    ],
 )
 
 PaymentTransaction = namedtuple(
@@ -37,7 +37,7 @@ PaymentTransaction = namedtuple(
         "spend_currency",
         "card_token",
         "extra_fields",
-    ]
+    ],
 )
 
 
@@ -201,10 +201,7 @@ class BaseAgent:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
 
     def _build_queue_transaction(
-        self,
-        transaction_data: dict,
-        merchant_identifier_ids: t.List[int],
-        transaction_id: str,
+        self, transaction_data: dict, merchant_identifier_ids: t.List[int], transaction_id: str,
     ) -> None:
         """
         Creates a transaction instance depending on the feed type and enqueues the transaction.
@@ -214,22 +211,20 @@ class BaseAgent:
         import_data = {
             ImportFeedTypes.MERCHANT: {
                 "transaction_type": models.SchemeTransaction,
-                "import_task": tasks.import_scheme_transaction
+                "import_task": tasks.import_scheme_transaction,
             },
             ImportFeedTypes.AUTH: {
                 "transaction_type": models.PaymentTransaction,
-                "import_task": tasks.import_auth_payment_transaction
+                "import_task": tasks.import_auth_payment_transaction,
             },
             ImportFeedTypes.SETTLED: {
                 "transaction_type": models.PaymentTransaction,
-                "import_task": tasks.import_settled_payment_transaction
+                "import_task": tasks.import_settled_payment_transaction,
             },
         }[self.feed_type]
 
         queue_tx = import_data["transaction_type"](
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
-            **transaction._asdict()
+            merchant_identifier_ids=merchant_identifier_ids, transaction_id=transaction_id, **transaction._asdict()
         )
 
         tasks.import_queue.enqueue(import_data["import_task"], queue_tx)

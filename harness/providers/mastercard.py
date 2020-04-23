@@ -84,16 +84,20 @@ class MastercardAuth(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
         transactions = []
 
-        transactions.append([
-            self._build_transaction(transaction, fixture, user["token"])
-            for user in fixture["users"]
-            for transaction in user["transactions"]
-        ])
+        transactions.append(
+            [
+                self._build_transaction(transaction, fixture, user["token"])
+                for user in fixture["users"]
+                for transaction in user["transactions"]
+            ]
+        )
 
-        transactions.append([
-            self._build_transaction(transaction, fixture, transaction["token"])
-            for transaction in fixture["payment_provider"].get("transactions", [])
-        ])
+        transactions.append(
+            [
+                self._build_transaction(transaction, fixture, transaction["token"])
+                for transaction in fixture["payment_provider"].get("transactions", [])
+            ]
+        )
         return transactions
 
     @staticmethod
