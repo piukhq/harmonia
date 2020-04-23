@@ -148,12 +148,10 @@ class FixtureProviderSchema(Schema):
 
 
 class FixtureLoyaltyProviderSchema(FixtureProviderSchema):
-    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     transactions = fields.Nested(FixtureLoyaltyTransactionSchema, many=True)
 
 
 class FixturePaymentProviderSchema(FixtureProviderSchema):
-    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     transactions = fields.Nested(FixturePaymentTransactionSchema, many=True)
 
 
