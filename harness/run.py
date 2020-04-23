@@ -204,11 +204,13 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
 
             user = fixture["users"][transaction["user_id"]]
             return {
-                "loyalty_id": user["loyalty_id"],
-                "scheme_account_id": transaction["user_id"],
-                "user_id": transaction["user_id"],
-                "credentials": user["credentials"],
-                "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
+                payment_token: {
+                    "loyalty_id": user["loyalty_id"],
+                    "scheme_account_id": transaction["user_id"],
+                    "user_id": transaction["user_id"],
+                    "credentials": user["credentials"],
+                    "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
+                }
             }
 
         return None
