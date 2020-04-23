@@ -69,7 +69,7 @@ class Iceland(FileAgent):
     def to_queue_transaction(data: dict) -> base.SchemeTransaction:
         return base.SchemeTransaction(
             transaction_date=data["TransactionTimestamp"],
-            payment_provider_slug=Iceland._get_payment_scheme_provider(data["TransactionCardScheme"]),
+            payment_provider_slug=Iceland._get_payment_provider(data["TransactionCardScheme"]),
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
@@ -99,7 +99,7 @@ class Iceland(FileAgent):
         return [data["TransactionStore_Id"]]
 
     @staticmethod
-    def _get_payment_scheme_provider(scheme_name: str) -> str:
+    def _get_payment_provider(scheme_name: str) -> str:
         """
         Returns the payment scheme slug from the mapping of slugs to strings of possible scheme names in Iceland
         transaction files.
