@@ -186,11 +186,6 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
             f"for {loyalty_scheme_slug}/{payment_token}"
         )
 
-        # transaction_tokens = [
-        #     transaction["token"] for transaction
-        #     in fixture["payment_provider"].get("transactions", [])
-        # ]
-
         for idx, user in enumerate(fixture["users"]):
             if user["token"] != payment_token:
                 continue
