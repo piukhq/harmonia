@@ -27,20 +27,22 @@ class CSVDialect(csv.Dialect):
 
 
 @lru_cache(128)
-def get_loyalty_scheme(slug):
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=slug)
+def get_loyalty_scheme(slug, *, session: db.Session):
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, session=session, slug=slug)
     return loyalty_scheme
 
 
 @lru_cache(128)
-def get_payment_provider(slug):
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=slug)
+def get_payment_provider(slug, *, session: db.Session):
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, session=session, slug=slug)
     return payment_provider
 
 
-def create_merchant_identifier_fields(payment_provider_slug, mid, loyalty_scheme_slug, location, postcode) -> dict:
-    loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug)
-    payment_provider = get_payment_provider(payment_provider_slug)
+def create_merchant_identifier_fields(
+    payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, *, session: db.Session
+) -> dict:
+    loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug, session=session)
+    payment_provider = get_payment_provider(payment_provider_slug, session=session)
 
     return dict(
         mid=mid,
@@ -68,7 +70,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
             continue
 
         merchant_identifier_fields = create_merchant_identifier_fields(
-            payment_provider_slug, mid, loyalty_scheme_slug, location, postcode
+            payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, session=session
         )
         merchant_identifiers_fields.append(merchant_identifier_fields)
 
