@@ -9,7 +9,7 @@ from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
-from app import models
+from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
@@ -130,7 +130,7 @@ class Cooperative(BatchExportAgent):
         if failed_transactions:
             self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]):
+    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         batch_size = int(self.Config.max_transactions_per_request)
         for transaction_batch in batch(transactions, batch_size):

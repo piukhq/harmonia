@@ -9,7 +9,7 @@ from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
-from app import models
+from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.service.atlas import atlas
@@ -98,7 +98,9 @@ class Iceland(BatchExportAgent):
     def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
         atlas.save_transaction(self.provider_slug, response, transaction, status)
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction]) -> t.Iterable[AgentExportData]:
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
         formatted_transactions = self.format_transactions(transactions)
 
         yield AgentExportData(
