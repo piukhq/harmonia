@@ -82,17 +82,14 @@ class MastercardSettled(BaseImportDataProvider):
 
 class MastercardAuth(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
-        transactions = []
 
-        transactions.append(
-            [
-                self._build_transaction(transaction, fixture, user["token"])
-                for user in fixture["users"]
-                for transaction in user["transactions"]
-            ]
-        )
+        transactions = [
+            self._build_transaction(transaction, fixture, user["token"])
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]
 
-        transactions.append(
+        transactions.extend(
             [
                 self._build_transaction(transaction, fixture, transaction["token"])
                 for transaction in fixture["payment_provider"].get("transactions", [])
@@ -104,7 +101,7 @@ class MastercardAuth(BaseImportDataProvider):
     def _build_transaction(transaction: dict, fixture: dict, token: str) -> dict:
         return {
             "third_party_id": transaction["settlement_key"][:9],
-            "time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD hh:mm:ss"),
+            "time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD HH:mm:ss"),
             "amount": to_pounds(transaction["amount"]),
             "currency_code": "GBP",
             "payment_card_token": token,

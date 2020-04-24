@@ -123,11 +123,17 @@ class Iceland(BaseMatchingAgent):
         self, scheme_transactions: t.Sequence[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
         transaction_date = self.payment_transaction.transaction_date.date()
-        transaction_time = datetime.strptime(
-            str(self.payment_transaction.extra_fields["transaction_time"]), "%H%M"
-        ).time()
-
-        transaction_datetime = pendulum.instance(datetime.combine(transaction_date, transaction_time))
+        try:
+            tx_time = self.payment_transaction.extra_fields["transaction_time"]
+            transaction_time = datetime.strptime(str(tx_time), "%H%M").time()
+            transaction_datetime = pendulum.instance(datetime.combine(transaction_date, transaction_time))
+        except KeyError as e:
+            # Transaction time not provided separately by MasterCard or this is an Auth transaction
+            self.log.warning(
+                f'Field "{e}" not found in MasterCard payment transaction. '
+                f'Attempting to extract transaction time from "transaction_date" datetime.'
+            )
+            transaction_datetime = pendulum.instance(self.payment_transaction.transaction_date)
 
         min_time = transaction_datetime.subtract(seconds=self.time_tolerance)
         max_time = transaction_datetime.add(seconds=self.time_tolerance)
