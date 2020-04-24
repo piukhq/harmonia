@@ -103,7 +103,9 @@ class Iceland(BaseMatchingAgent):
 
         return match, multiple_returned
 
-    def _filter(self, scheme_transactions: t.Sequence[models.SchemeTransaction]):
+    def _filter(
+        self, scheme_transactions: t.Sequence[models.SchemeTransaction]
+    ) -> t.Optional[t.Union[t.Sequence[models.SchemeTransaction], models.SchemeTransaction]]:
         """Recursively filters the transactions based on how many fallback filter functions are available"""
         matched_transaction_count = len(scheme_transactions)
 
@@ -122,18 +124,15 @@ class Iceland(BaseMatchingAgent):
     def _filter_by_time(
         self, scheme_transactions: t.Sequence[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
-        transaction_date = self.payment_transaction.transaction_date.date()
-        try:
-            tx_time = self.payment_transaction.extra_fields["transaction_time"]
-            transaction_time = datetime.strptime(str(tx_time), "%H%M").time()
-            transaction_datetime = pendulum.instance(datetime.combine(transaction_date, transaction_time))
-        except KeyError as e:
-            # Transaction time not provided separately by MasterCard or this is an Auth transaction
-            self.log.warning(
-                f'Field "{e}" not found in MasterCard payment transaction. '
-                f'Attempting to extract transaction time from "transaction_date" datetime.'
-            )
-            transaction_datetime = pendulum.instance(self.payment_transaction.transaction_date)
+
+        # Temporary - to identify if the payment transaction is settlement or auth
+        # settlement transaction_time field cannot be used for filtering as it is inaccurate
+        # TODO: This should be removed once payment_transaction.transaction_date
+        # is separated into date and time fields
+        if self.payment_transaction.extra_fields.get("transaction_time"):
+            return scheme_transactions
+
+        transaction_datetime = pendulum.instance(self.payment_transaction.transaction_date)
 
         min_time = transaction_datetime.subtract(seconds=self.time_tolerance)
         max_time = transaction_datetime.add(seconds=self.time_tolerance)
