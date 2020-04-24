@@ -3,7 +3,7 @@ import responses
 from app.exports.agents.iceland import Iceland
 import settings
 
-settings.SOTERIA_URL = "http://soteria"
+settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"
 settings.VAULT_URL = "http://vault"
 settings.VAULT_TOKEN = ""
@@ -14,7 +14,7 @@ MOCK_URL = "http://iceland.test"
 def add_mock_routes():
     responses.add(
         "GET",
-        f"{settings.SOTERIA_URL}/configuration",
+        f"{settings.EUROPA_URL}/configuration",
         json={
             "merchant_url": f"{MOCK_URL}/",
             "integration_service": 0,
