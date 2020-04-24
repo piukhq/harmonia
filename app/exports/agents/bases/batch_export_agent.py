@@ -11,7 +11,7 @@ from app.scheduler import CronScheduler
 class BatchExportAgent(BaseAgent):
     def run(self, *, once: bool = False):
         scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule, callback=self.export_all, logger=self.log  # type: ignore
+            schedule_fn=lambda: self.Config.schedule, callback=self.callback, logger=self.log  # type: ignore
         )
 
         if once:
@@ -28,6 +28,10 @@ class BatchExportAgent(BaseAgent):
     def export(self, export_data: AgentExportData, *, session: db.Session):
         pass
 
+    def callback(self):
+        with db.session_scope() as session:
+            self.export_all(session=session)
+
     def export_all(self, *, session: db.Session, once: bool = False):
         pending_exports_q = (
             session.query(models.PendingExport)
@@ -42,6 +46,9 @@ class BatchExportAgent(BaseAgent):
 
         pending_exports = pending_exports_q.all()
         transactions = [pe.matched_transaction for pe in pending_exports]
+
+        if not transactions:
+            return  # nothing to export
 
         self.log.debug(f"Exporting {len(pending_exports)} transactions.")
 

@@ -19,12 +19,12 @@ from app import db, encryption, models, tasks
 from app.core import key_manager
 from app.exports.agents import BatchExportAgent, export_agents
 from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
-from app.registry import RegistryError
+from app.registry import NoSuchAgent
 from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
 
 # most of the export agents need this to be set to something.
-settings.SOTERIA_URL = ""
+settings.EUROPA_URL = ""
 settings.ATLAS_URL = ""
 settings.VAULT_URL = ""
 settings.VAULT_TOKEN = ""
@@ -321,7 +321,7 @@ def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
 def run_import_agent(slug: str, fixture: dict):
     try:
         agent = import_agents.instantiate(slug)
-    except RegistryError:
+    except NoSuchAgent:
         click.secho(f"No import agent registered for {slug}, skipping", fg="red", bold=True)
         return
 

@@ -2,7 +2,15 @@ import importlib
 import typing as t
 
 
-class RegistryError(Exception):
+class NoSuchAgent(Exception):
+    pass
+
+
+class RegistryConfigurationError(Exception):
+    pass
+
+
+class InstantiationError(Exception):
     pass
 
 
@@ -23,18 +31,21 @@ class Registry(t.Generic[T]):
         try:
             mod_path, class_name = self._entries[key].rsplit(".", 1)
         except KeyError as ex:
-            raise RegistryError(f"Invalid registry key: {key}") from ex
+            raise NoSuchAgent(f"Invalid registry key: {key}") from ex
         except ValueError as ex:
-            raise RegistryError(f"Invalid import path: {self._entries[key]}") from ex
+            raise RegistryConfigurationError(f"Invalid import path: {self._entries[key]}") from ex
 
         try:
             mod = importlib.import_module(mod_path)
         except ImportError as ex:
-            raise RegistryError(f"Failed to import module {mod_path}: {ex}") from ex
+            raise RegistryConfigurationError(f"Failed to import module {mod_path}: {ex}") from ex
 
         try:
             object_class = getattr(mod, class_name)
         except AttributeError as ex:
-            raise RegistryError(f"Class {class_name} was not found in module {mod}") from ex
+            raise RegistryConfigurationError(f"Class {class_name} was not found in module {mod}") from ex
 
-        return object_class(*args, **kwargs)
+        try:
+            return object_class(*args, **kwargs)
+        except Exception as ex:
+            raise InstantiationError(f"Failed to instantiate {key} agent") from ex

@@ -3,12 +3,20 @@ import typing as t
 
 import click
 
-from app.registry import Registry, RegistryError
+from app.registry import Registry, NoSuchAgent, RegistryConfigurationError
 import settings
 
 
 def info(text):
     return click.style(text, fg="cyan")
+
+
+def clean_abort():
+    if settings.DEBUG:
+        raise
+    else:
+        click.echo("Enable debug mode for a stack trace.")
+        raise click.Abort()
 
 
 def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
@@ -21,7 +29,15 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     def cli(agent: str, no_user_input: bool, once: bool, dry_run: bool, quiet: bool) -> None:
         try:
             agent_instance = registry.instantiate(agent)
-        except RegistryError as ex:
+        except NoSuchAgent as ex:
+            click.echo(
+                f"{click.style('Error:', fg='red')} {ex}\n"
+                f"Agent {info(agent)} was not found "
+                f"in {info(registry_file)}.",
+                err=True,
+            )
+            clean_abort()
+        except RegistryConfigurationError as ex:
             click.echo(
                 f"{click.style('Error:', fg='red')} {ex}\n"
                 f"Check the value for key {info(agent)} "
@@ -29,11 +45,7 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
                 f"It is currently set to {info(registry._entries[agent])}.",
                 err=True,
             )
-            if settings.DEBUG:
-                raise
-            else:
-                click.echo("Enable debug mode for a stack trace.")
-                raise click.Abort()
+            clean_abort()
 
         if not quiet:
             click.echo(f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}.")
