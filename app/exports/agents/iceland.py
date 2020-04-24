@@ -37,9 +37,9 @@ class Iceland(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.SOTERIA_URL is None:
+        if settings.EUROPA_URL is None:
             raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Soteria URL to be set."
+                f"The {self.provider_slug} export agent requires the Europa URL to be set."
             )
 
         if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
@@ -52,7 +52,7 @@ class Iceland(BatchExportAgent):
             Configuration.TRANSACTION_MATCHING_HANDLER,
             settings.VAULT_URL,
             settings.VAULT_TOKEN,
-            settings.SOTERIA_URL,
+            settings.EUROPA_URL,
         )
 
     def help(self) -> str:
