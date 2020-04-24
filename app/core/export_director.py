@@ -7,7 +7,7 @@ from app.exports.models import PendingExport
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.status import status_monitor
-from app.registry import RegistryError
+from app.registry import NoSuchAgent
 
 log = get_logger("export-director")
 
@@ -62,7 +62,7 @@ class ExportDirector:
 
         try:
             agent = cast(BaseAgent, export_agents.instantiate(pending_export.provider_slug))
-        except RegistryError:
+        except NoSuchAgent:
             log.debug(
                 f"No export agent is registered for slug {pending_export.provider_slug}. Skipping {pending_export}"
             )

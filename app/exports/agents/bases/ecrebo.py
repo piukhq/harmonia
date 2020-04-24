@@ -6,12 +6,11 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pendulum
-from lxml import etree
 from soteria.configuration import Configuration
 from soteria.encryption import PGP
 
 import settings
-from app import models, db
+from app import models, db, xml_utils
 from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
@@ -90,7 +89,6 @@ class Ecrebo(BatchExportAgent):
 
         buf = io.StringIO()
 
-        xml_parser = etree.XMLParser(remove_blank_text=True)
         for transaction in transactions:
             transaction_id = self._get_transaction_id(sequence_number)
             transaction_amount = Decimal(transaction.spend_amount * 5) / Decimal(100)
@@ -102,8 +100,7 @@ class Ecrebo(BatchExportAgent):
                 TRANSACTION_DATE=date,
                 TRANSACTION_VALUE=transaction_amount.quantize(Decimal("0.01")),
             )
-            xml = etree.XML(bytes(xml_string, "utf-8"), parser=xml_parser)
-            formatted_xml = b64encode(etree.tostring(xml)).decode()
+            formatted_xml = b64encode(xml_utils.minify(xml_string).encode())
             print(formatted_xml, file=buf)
 
         return buf.getvalue()

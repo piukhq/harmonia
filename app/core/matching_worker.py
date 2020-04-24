@@ -6,7 +6,7 @@ from app.matching.agents.registry import matching_agents
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.reporting import get_logger
 from app.status import status_monitor
-from app.registry import RegistryError
+from app.registry import NoSuchAgent, RegistryConfigurationError
 from app import tasks, models, db
 import settings
 
@@ -68,11 +68,11 @@ class MatchingWorker:
 
         try:
             agent = matching_agents.instantiate(slug, payment_transaction)
-        except RegistryError as ex:
+        except (NoSuchAgent, RegistryConfigurationError) as ex:
             if settings.DEBUG:
                 raise ex
             self.log.warning(
-                f"Failed to instantiate matching agent for slug {slug} (ex). Skipping match of {payment_transaction}"
+                f"Failed to instantiate matching agent for slug {slug}: {ex}. Skipping match of {payment_transaction}"
             )
             return None
 
