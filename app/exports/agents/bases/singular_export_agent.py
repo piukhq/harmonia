@@ -7,14 +7,16 @@ from app.status import status_monitor
 
 class SingularExportAgent(BaseAgent):
     def run(self, *, once: bool = False):
-        self.export_all()
+        raise NotImplementedError(
+            f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
+        )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
 
-    def export_all(self):
+    def export_all(self, *, session: db.Session):
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such does not support batch exports."
         )
