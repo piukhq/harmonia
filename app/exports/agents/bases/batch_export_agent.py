@@ -47,6 +47,9 @@ class BatchExportAgent(BaseAgent):
         pending_exports = pending_exports_q.all()
         transactions = [pe.matched_transaction for pe in pending_exports]
 
+        if not transactions:
+            return  # nothing to export
+
         self.log.debug(f"Exporting {len(pending_exports)} transactions.")
 
         for export_data in self.yield_export_data(transactions, session=session):
