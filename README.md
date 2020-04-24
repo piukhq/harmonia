@@ -18,6 +18,7 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
     - [Development API Server](#development-api-server)
     - [Unit Tests](#unit-tests)
     - [End-to-End Matching Test](#end-to-end-matching-test)
+      - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
       - [Testing Visa](#testing-visa)
       - [Inspecting PostgreSQL](#inspecting-postgresql)
       - [Inspecting Redis](#inspecting-redis)
@@ -143,6 +144,36 @@ edit my-fixture.toml with the changes you want to make
 ...
 
 s/test-end-to-end -f my-fixture.toml
+```
+
+#### Testing with Flexible Transactions
+The default TOML file will test the happy path by generating a transaction for both the loyalty scheme and the payment scheme. There are cases where this may not be ideal, and the payment transaction and loyalty transaction will require some differences in order to test some matching functionality. For example, an agent may have fallback matching criteria in case multiple transactions are returned for the same amount and date e.g filtering by card number.
+
+For these scenarios, it is possible to configure separate transactions for the loyalty scheme and the payment provider.
+
+Example:
+
+```TOML
+# Transactions only imported as payment transactions
+[[payment_provider.transactions]]
+date = 2020-06-02T15:46:30Z  # Datetime representing the transaction time
+amount = 1222  # Transaction amount in pennies
+points = 8  # Points awarded for transaction
+
+# Settlement key of the payment transaction - should be kept to 9 chars or less for Mastercard
+settlement_key = "1111111111"
+token = "1111"  # Payment token
+
+# Which user to link the payment to - does not need to be changed in most cases as there is not much need to test with more than one user.
+user_id = 0  
+
+# Transactions only imported as scheme transactions
+[[loyalty_scheme.transactions]]
+date = 2020-06-02T15:47:45Z
+amount = 1222
+points = 8
+first_six = "123456"  # Payment card first six
+last_four = "7890"  # Payment card last four
 ```
 
 #### Testing Visa
