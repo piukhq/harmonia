@@ -36,6 +36,10 @@ class Ecrebo(BatchExportAgent):
         def receipt_upload_path(self):
             return missing_property(self, "receipt_upload_path")
 
+        @classproperty
+        def schedule(self):
+            return missing_property(self, "schedule")
+
     def __init__(self):
         super().__init__()
 

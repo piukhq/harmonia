@@ -28,6 +28,7 @@ RECEIPT_XML_TEMPLATE = string.Template(
 
 REWARD_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path"
 RECEIPT_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.receipt_upload_path"
+SCHEDULE_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 
 
 class FatFace(Ecrebo):
@@ -38,3 +39,4 @@ class FatFace(Ecrebo):
     class Config:
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/receipts")
         receipt_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
+        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
