@@ -104,7 +104,7 @@ class Iceland(BaseMatchingAgent):
 
     def _filter(
         self, scheme_transactions: t.Sequence[models.SchemeTransaction]
-    ) -> t.Optional[t.Union[t.Sequence[models.SchemeTransaction], models.SchemeTransaction]]:
+    ) -> t.Optional[models.SchemeTransaction]:
         """Recursively filters the transactions based on how many fallback filter functions are available"""
         matched_transaction_count = len(scheme_transactions)
 
@@ -122,7 +122,7 @@ class Iceland(BaseMatchingAgent):
 
     def _filter_by_time(
         self, scheme_transactions: t.Sequence[models.SchemeTransaction]
-    ) -> t.List[models.SchemeTransaction]:
+    ) -> t.Sequence[models.SchemeTransaction]:
 
         # Temporary - to identify if the payment transaction is settlement or auth
         # settlement transaction_time field cannot be used for filtering as it is inaccurate
@@ -146,7 +146,7 @@ class Iceland(BaseMatchingAgent):
 
     def _filter_by_card_number(
         self, scheme_transactions: t.Iterable[models.SchemeTransaction]
-    ) -> t.List[models.SchemeTransaction]:
+    ) -> t.Sequence[models.SchemeTransaction]:
         user_identity = self.payment_transaction.user_identity
 
         matched_transactions = [
