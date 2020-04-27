@@ -147,6 +147,7 @@ s/test-end-to-end -f my-fixture.toml
 ```
 
 #### Testing with Flexible Transactions
+
 The default TOML file will test the happy path by generating a transaction for both the loyalty scheme and the payment scheme. There are cases where this may not be ideal, and the payment transaction and loyalty transaction will require some differences in order to test some matching functionality. For example, an agent may have fallback matching criteria in case multiple transactions are returned for the same amount and date e.g filtering by card number.
 
 For these scenarios, it is possible to configure separate transactions for the loyalty scheme and the payment provider.
