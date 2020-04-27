@@ -41,6 +41,24 @@ PaymentTransaction = namedtuple(
 )
 
 
+class FeedTypeHandler(t.NamedTuple):
+    model: db.Base
+    import_task: t.Callable[[t.Union[models.SchemeTransaction, models.PaymentTransaction]], None]
+
+
+FEED_TYPE_HANDLERS = {
+    ImportFeedTypes.MERCHANT: FeedTypeHandler(
+        model=models.SchemeTransaction, import_task=tasks.import_scheme_transaction
+    ),
+    ImportFeedTypes.AUTH: FeedTypeHandler(
+        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transaction
+    ),
+    ImportFeedTypes.SETTLED: FeedTypeHandler(
+        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transaction
+    ),
+}
+
+
 @lru_cache(maxsize=2048)
 def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str, *, session: db.Session) -> t.List[int]:
     def find_mid():
@@ -207,24 +225,10 @@ class BaseAgent:
         Creates a transaction instance depending on the feed type and enqueues the transaction.
         """
         transaction = self.to_queue_transaction(transaction_data)
+        handler = FEED_TYPE_HANDLERS[self.feed_type]
 
-        import_data = {
-            ImportFeedTypes.MERCHANT: {
-                "transaction_type": models.SchemeTransaction,
-                "import_task": tasks.import_scheme_transaction,
-            },
-            ImportFeedTypes.AUTH: {
-                "transaction_type": models.PaymentTransaction,
-                "import_task": tasks.import_auth_payment_transaction,
-            },
-            ImportFeedTypes.SETTLED: {
-                "transaction_type": models.PaymentTransaction,
-                "import_task": tasks.import_settled_payment_transaction,
-            },
-        }[self.feed_type]
-
-        queue_tx = import_data["transaction_type"](
+        queue_tx = handler.model(
             merchant_identifier_ids=merchant_identifier_ids, transaction_id=transaction_id, **transaction._asdict()
         )
 
-        tasks.import_queue.enqueue(import_data["import_task"], queue_tx)
+        tasks.import_queue.enqueue(handler.import_task, queue_tx)
