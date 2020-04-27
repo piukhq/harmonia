@@ -3,8 +3,7 @@ import typing as t
 from marshmallow import Schema, fields
 
 from app import feeds
-from app.imports.agents import PassiveAPIAgent
-from app.imports.agents.bases import base
+from app.imports.agents import PassiveAPIAgent, SchemeTransactionFields
 from app.serialization import PendulumField
 
 
@@ -26,8 +25,8 @@ class BinkLoyalty(PassiveAPIAgent):
         return self._help(__name__)
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> base.SchemeTransaction:
-        return base.SchemeTransaction(
+    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
             transaction_date=data["date"],
             payment_provider_slug=data["payment_provider_slug"],
             spend_amount=data["spend"],

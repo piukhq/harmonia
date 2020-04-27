@@ -3,6 +3,7 @@ import typing as t
 from functools import lru_cache
 
 import redis.lock
+import pendulum
 
 import settings
 from app import db, models, tasks
@@ -12,33 +13,26 @@ from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
 
-SchemeTransaction = namedtuple(
-    "SchemeTransaction",
-    [
-        "transaction_date",
-        "payment_provider_slug",
-        "spend_amount",
-        "spend_multiplier",
-        "spend_currency",
-        "points_amount",
-        "points_multiplier",
-        "extra_fields",
-    ],
-)
 
-PaymentTransaction = namedtuple(
-    "PaymentTransaction",
-    [
-        "settlement_key",
-        "transaction_date",
-        "provider_slug",
-        "spend_amount",
-        "spend_multiplier",
-        "spend_currency",
-        "card_token",
-        "extra_fields",
-    ],
-)
+class SchemeTransactionFields(t.NamedTuple):
+    payment_provider_slug: str
+    transaction_date: pendulum.DateTime
+    spend_amount: int
+    spend_multiplier: int
+    spend_currency: str
+    points_amount: int
+    points_multiplier: int
+    extra_fields: dict
+
+
+class PaymentTransactionFields(t.NamedTuple):
+    transaction_date: pendulum.DateTime
+    spend_amount: int
+    spend_multiplier: int
+    spend_currency: str
+    card_token: str
+    settlement_key: str
+    extra_fields: dict
 
 
 class FeedTypeHandler(t.NamedTuple):
@@ -107,8 +101,8 @@ class BaseAgent:
         )
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> t.Union[SchemeTransaction, PaymentTransaction]:
-        raise NotImplementedError("Override to_queue_transaction in your agent.")
+    def to_transaction_fields(data: dict) -> t.Union[SchemeTransactionFields, PaymentTransactionFields]:
+        raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
@@ -224,11 +218,14 @@ class BaseAgent:
         """
         Creates a transaction instance depending on the feed type and enqueues the transaction.
         """
-        transaction = self.to_queue_transaction(transaction_data)
+        transaction_fields = self.to_transaction_fields(transaction_data)
         handler = FEED_TYPE_HANDLERS[self.feed_type]
 
         queue_tx = handler.model(
-            merchant_identifier_ids=merchant_identifier_ids, transaction_id=transaction_id, **transaction._asdict()
+            provider_slug=self.provider_slug,
+            merchant_identifier_ids=merchant_identifier_ids,
+            transaction_id=transaction_id,
+            **transaction_fields._asdict(),
         )
 
         tasks.import_queue.enqueue(handler.import_task, queue_tx)

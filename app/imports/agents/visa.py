@@ -10,8 +10,7 @@ from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent
-from app.imports.agents.bases import base
+from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 import settings
 
 PROVIDER_SLUG = "visa"
@@ -139,11 +138,10 @@ class Visa(FileAgent):
         return [data["card_acceptor_id"]]
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
-        return base.PaymentTransaction(
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        return PaymentTransactionFields(
             settlement_key="",
             transaction_date=data["transaction_date"],
-            provider_slug=PROVIDER_SLUG,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency=data["country_currency_code"],
@@ -169,11 +167,10 @@ class VisaAuth(QueueAgent):
         return [get_key_value(data, "Transaction.VisaMerchantId")]
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        return base.PaymentTransaction(
+        return PaymentTransactionFields(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
-            provider_slug=PROVIDER_SLUG,
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
@@ -200,11 +197,10 @@ class VisaSettlement(QueueAgent):
         return [get_key_value(data, "Transaction.VisaMerchantId")]
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> base.PaymentTransaction:
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        return base.PaymentTransaction(
+        return PaymentTransactionFields(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
-            provider_slug=PROVIDER_SLUG,
             spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",

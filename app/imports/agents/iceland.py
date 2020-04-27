@@ -9,8 +9,7 @@ import pendulum
 from app.config import KEY_PREFIX, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent
-from app.imports.agents.bases import base
+from app.imports.agents import FileAgent, SchemeTransactionFields
 from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
@@ -66,15 +65,15 @@ class Iceland(FileAgent):
         )
 
     @staticmethod
-    def to_queue_transaction(data: dict) -> base.SchemeTransaction:
-        return base.SchemeTransaction(
+    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
             payment_provider_slug=Iceland._get_payment_provider(data["TransactionCardScheme"]),
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
-            points_amount=None,
-            points_multiplier=None,
+            points_amount=0,
+            points_multiplier=0,
             extra_fields={
                 k: data[k]
                 for k in (
