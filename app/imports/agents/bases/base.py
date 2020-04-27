@@ -1,4 +1,3 @@
-from collections import namedtuple
 import typing as t
 from functools import lru_cache
 
