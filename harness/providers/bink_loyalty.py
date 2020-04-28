@@ -1,7 +1,6 @@
 import typing as t
 from uuid import uuid4
 
-from app.service.hermes import hermes
 from harness.providers.base import BaseImportDataProvider
 
 
