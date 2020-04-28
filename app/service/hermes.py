@@ -1,3 +1,4 @@
+from enum import Enum
 from urllib.parse import urljoin
 
 from app.core.requests_retry import requests_retry_session
@@ -6,6 +7,12 @@ import settings
 
 
 log = get_logger("hermes")
+
+
+class PaymentProviderSlug(str, Enum):
+    AMEX = "amex"
+    VISA = "visa"
+    MASTERCARD = "mastercard"
 
 
 class Hermes:

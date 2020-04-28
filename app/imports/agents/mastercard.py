@@ -5,10 +5,9 @@ from hashlib import sha256
 
 import pendulum
 
-from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent
+from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 from app.currency import to_pennies
 
 PROVIDER_SLUG = "mastercard"
@@ -79,12 +78,8 @@ class MastercardSettled(FileAgent):
         )
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
             transaction_date=data["transaction_date"],
             spend_amount=data["transaction_amount"],
@@ -123,14 +118,15 @@ class MastercardAuth(QueueAgent):
         queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
+        # we can remove this fix when the bug is resolved.
+        # https://github.com/sdispater/pendulum/pull/452
+        transaction_date: pendulum.DateTime = pendulum.parse(data["time"])  # type: ignore
+
+        return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
-            transaction_date=pendulum.parse(data["time"]),
+            transaction_date=transaction_date,
             spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],

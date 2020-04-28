@@ -1,20 +1,24 @@
-import typing as t
-import inspect
 import csv
+import inspect
 import io
+import typing as t
 from decimal import Decimal
+
 import pendulum
 
-from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent
+from app.imports.agents import FileAgent, SchemeTransactionFields
+from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
+
+
+NO_CARD_SCHEME = "No Card"
 
 
 class Iceland(FileAgent):
@@ -27,6 +31,23 @@ class Iceland(FileAgent):
         "TransactionCashbackValue": Decimal,
         "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
     }
+
+    payment_provider_map = {
+        "Amex": PaymentProviderSlug.AMEX,
+        "Visa": PaymentProviderSlug.VISA,
+        "Visa Debit": PaymentProviderSlug.VISA,
+        "Electron": PaymentProviderSlug.VISA,
+        "Visa CPC": PaymentProviderSlug.VISA,
+        "MasterCard/MasterCard One": PaymentProviderSlug.MASTERCARD,
+        "Maestro": PaymentProviderSlug.MASTERCARD,
+        "EDC/Maestro (INT) / Laser": PaymentProviderSlug.MASTERCARD,
+        "MasterCard Debit": PaymentProviderSlug.MASTERCARD,
+        "Mastercard One": PaymentProviderSlug.MASTERCARD,
+        "Bink-Payment": "bink-payment",
+    }
+
+    class UnmappedScheme(Exception):
+        pass
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
@@ -50,16 +71,15 @@ class Iceland(FileAgent):
         )
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.SchemeTransaction:
-        return models.SchemeTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
+            payment_provider_slug=Iceland._get_payment_provider(data["TransactionCardScheme"]),
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
+            points_amount=0,
+            points_multiplier=0,
             extra_fields={
                 k: data[k]
                 for k in (
@@ -82,3 +102,18 @@ class Iceland(FileAgent):
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
         return [data["TransactionStore_Id"]]
+
+    @staticmethod
+    def _get_payment_provider(scheme_name: str) -> str:
+        """
+        Returns the payment scheme slug from the mapping of slugs to strings of possible scheme names in Iceland
+        transaction files.
+        """
+
+        if not scheme_name or scheme_name == NO_CARD_SCHEME:
+            raise Iceland.UnmappedScheme("No card scheme was given.")
+
+        try:
+            return Iceland.payment_provider_map[scheme_name]
+        except KeyError as ex:
+            raise Iceland.UnmappedScheme(f"No mapping for scheme {scheme_name}") from ex

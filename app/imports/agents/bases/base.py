@@ -2,6 +2,7 @@ import typing as t
 from functools import lru_cache
 
 import redis.lock
+import pendulum
 
 import settings
 from app import db, models, tasks
@@ -10,6 +11,45 @@ from app.imports.exceptions import MissingMID
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
+
+
+class SchemeTransactionFields(t.NamedTuple):
+    payment_provider_slug: str
+    transaction_date: pendulum.DateTime
+    spend_amount: int
+    spend_multiplier: int
+    spend_currency: str
+    points_amount: int
+    points_multiplier: int
+    extra_fields: dict
+
+
+class PaymentTransactionFields(t.NamedTuple):
+    transaction_date: pendulum.DateTime
+    spend_amount: int
+    spend_multiplier: int
+    spend_currency: str
+    card_token: str
+    settlement_key: str
+    extra_fields: dict
+
+
+class FeedTypeHandler(t.NamedTuple):
+    model: db.Base
+    import_task: t.Callable[[t.Union[models.SchemeTransaction, models.PaymentTransaction]], None]
+
+
+FEED_TYPE_HANDLERS = {
+    ImportFeedTypes.MERCHANT: FeedTypeHandler(
+        model=models.SchemeTransaction, import_task=tasks.import_scheme_transaction
+    ),
+    ImportFeedTypes.AUTH: FeedTypeHandler(
+        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transaction
+    ),
+    ImportFeedTypes.SETTLED: FeedTypeHandler(
+        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transaction
+    ),
+}
 
 
 @lru_cache(maxsize=2048)
@@ -60,10 +100,8 @@ class BaseAgent:
         )
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> t.Union[models.SchemeTransaction, models.PaymentTransaction]:
-        raise NotImplementedError("Override to_queue_transaction in your agent.")
+    def to_transaction_fields(data: dict) -> t.Union[SchemeTransactionFields, PaymentTransactionFields]:
+        raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
@@ -165,16 +203,28 @@ class BaseAgent:
                 )
 
                 if identified:
-                    queue_tx = self.to_queue_transaction(tx_data, merchant_identifier_ids, tid)
+                    self._build_queue_transaction(tx_data, merchant_identifier_ids, tid)
 
-                    import_task = {
-                        ImportFeedTypes.MERCHANT: tasks.import_scheme_transaction,
-                        ImportFeedTypes.AUTH: tasks.import_auth_payment_transaction,
-                        ImportFeedTypes.SETTLED: tasks.import_settled_payment_transaction,
-                    }[self.feed_type]
-                    tasks.import_queue.enqueue(import_task, queue_tx)
             finally:
                 lock.release()
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+
+    def _build_queue_transaction(
+        self, transaction_data: dict, merchant_identifier_ids: t.List[int], transaction_id: str,
+    ) -> None:
+        """
+        Creates a transaction instance depending on the feed type and enqueues the transaction.
+        """
+        transaction_fields = self.to_transaction_fields(transaction_data)
+        handler = FEED_TYPE_HANDLERS[self.feed_type]
+
+        queue_tx = handler.model(
+            provider_slug=self.provider_slug,
+            merchant_identifier_ids=merchant_identifier_ids,
+            transaction_id=transaction_id,
+            **transaction_fields._asdict(),
+        )
+
+        tasks.import_queue.enqueue(handler.import_task, queue_tx)

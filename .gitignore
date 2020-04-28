@@ -10,3 +10,4 @@ monitor
 .env
 htmlcov
 .vscode
+.DS_Store
