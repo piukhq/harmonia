@@ -66,7 +66,6 @@ class Iceland(BaseMatchingAgent):
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
         if multiple_returned:
-            self.filter_level = 0
             match = self._filter(scheme_transactions.all())
 
         if not match:
@@ -103,18 +102,17 @@ class Iceland(BaseMatchingAgent):
         return match, multiple_returned
 
     def _filter(
-        self, scheme_transactions: t.Sequence[models.SchemeTransaction]
+        self, scheme_transactions: t.Sequence[models.SchemeTransaction], *, depth: int = 0
     ) -> t.Optional[models.SchemeTransaction]:
         """Recursively filters the transactions based on how many fallback filter functions are available"""
         matched_transaction_count = len(scheme_transactions)
 
         if matched_transaction_count > 1:
-            if self.filter_level >= len(self.fallback_filter_functions):
+            if depth >= len(self.fallback_filter_functions):
                 return None
 
-            filtered_transactions = self.fallback_filter_functions[self.filter_level](scheme_transactions)
-            self.filter_level += 1
-            return self._filter(filtered_transactions)
+            filtered_transactions = self.fallback_filter_functions[depth](scheme_transactions)
+            return self._filter(filtered_transactions, depth=depth + 1)
         elif matched_transaction_count < 1:
             return None
         else:
