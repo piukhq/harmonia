@@ -18,6 +18,9 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
+NO_CARD_SCHEME = "No Card"
+
+
 class Iceland(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
@@ -30,18 +33,21 @@ class Iceland(FileAgent):
     }
 
     payment_provider_map = {
-        PaymentProviderSlug.AMEX: ("Amex",),
-        PaymentProviderSlug.VISA: ("Visa", "Visa Debit", "Electron", "Visa CPC"),
-        PaymentProviderSlug.MASTERCARD: (
-            "MasterCard/MasterCard One",
-            "Maestro",
-            "EDC/Maestro (INT) / Laser",
-            "MasterCard Debit",
-            "Mastercard One",
-        ),
-        "no_card": ("No Card",),
-        "bink-payment": ("Bink-Payment"),  # Testing only
+        "Amex": PaymentProviderSlug.AMEX,
+        "Visa": PaymentProviderSlug.VISA,
+        "Visa Debit": PaymentProviderSlug.VISA,
+        "Electron": PaymentProviderSlug.VISA,
+        "Visa CPC": PaymentProviderSlug.VISA,
+        "MasterCard/MasterCard One": PaymentProviderSlug.MASTERCARD,
+        "Maestro": PaymentProviderSlug.MASTERCARD,
+        "EDC/Maestro (INT) / Laser": PaymentProviderSlug.MASTERCARD,
+        "MasterCard Debit": PaymentProviderSlug.MASTERCARD,
+        "Mastercard One": PaymentProviderSlug.MASTERCARD,
+        "Bink-Payment": "bink-payment",
     }
+
+    class UnmappedScheme(Exception):
+        pass
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
@@ -103,10 +109,11 @@ class Iceland(FileAgent):
         Returns the payment scheme slug from the mapping of slugs to strings of possible scheme names in Iceland
         transaction files.
         """
-        if not scheme_name or scheme_name in Iceland.payment_provider_map["no_card"]:
-            return ""
 
-        for slug, potential_values in Iceland.payment_provider_map.items():
-            if scheme_name in potential_values:
-                return slug
-        return scheme_name
+        if not scheme_name or scheme_name == NO_CARD_SCHEME:
+            raise Iceland.UnmappedScheme("No card scheme was given.")
+
+        try:
+            return Iceland.payment_provider_map[scheme_name]
+        except KeyError as ex:
+            raise Iceland.UnmappedScheme(f"No mapping for scheme {scheme_name}") from ex

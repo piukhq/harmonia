@@ -1,18 +1,25 @@
-import io
 import csv
-from uuid import uuid4
+import io
+import itertools
+import typing as t
 from random import sample
+from uuid import uuid4
 
 import pendulum
 
-from harness.providers.base import BaseImportDataProvider
 from app.currency import to_pounds
-import itertools
 from app.service.hermes import hermes
+from harness.providers.base import BaseImportDataProvider
 
 
-def _get_card_scheme_id(slug: str) -> int:
-    return {"amex": 1, "visa": 2, "mastercard-settled": 3, "mastercard-auth": 3, "bink-payment": 6502}[slug]
+def _get_card_scheme(slug: str) -> t.Tuple[int, str]:
+    return {
+        "amex": (1, "Amex"),
+        "visa": (2, "Visa"),
+        "mastercard-settled": (3, "MasterCard/MasterCard One"),
+        "mastercard-auth": (3, "MasterCard/MasterCard One"),
+        "bink-payment": (9, "Bink-Payment"),
+    }[slug]
 
 
 class Iceland(BaseImportDataProvider):
@@ -53,13 +60,14 @@ class Iceland(BaseImportDataProvider):
         return buf.getvalue().encode()
 
     @staticmethod
-    def _build_transaction(transaction: dict, fixture: dict, first_six: str, last_four: str) -> dict:
+    def _build_transaction(transaction: dict, fixture: dict, first_six: str, last_four: str) -> tuple:
+        scheme_id, scheme_name = _get_card_scheme(fixture["payment_provider"]["slug"])
         return (
             first_six,
             last_four,
             "01/80",
-            _get_card_scheme_id(fixture["payment_provider"]["slug"]),
-            hermes.get_payment_provider_slug(fixture["payment_provider"]["slug"]),
+            scheme_id,
+            scheme_name,
             fixture["mid"],
             pendulum.instance(transaction["date"]).format("YYYY-MM-DD HH:mm:ss"),
             to_pounds(transaction["amount"]),
