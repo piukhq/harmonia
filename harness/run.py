@@ -237,9 +237,7 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
 def create_merchant_identifier(fixture: dict, session: db.Session):
     loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, session=session, slug=fixture["loyalty_scheme"]["slug"])
     payment_provider, _ = db.get_or_create(
-        models.PaymentProvider,
-        session=session,
-        slug=hermes.get_payment_provider_slug(fixture["payment_provider"]["slug"]),
+        models.PaymentProvider, session=session, slug=fixture["payment_provider"]["slug"]
     )
     db.get_or_create(
         models.MerchantIdentifier,

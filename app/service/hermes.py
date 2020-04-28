@@ -29,21 +29,6 @@ class Hermes:
             slug = settings.HERMES_SLUG_FORMAT_STRING.format(slug)
         return slug
 
-    @staticmethod
-    def get_payment_provider_slug(slug: str) -> str:
-        try:
-            return {
-                "mastercard-settled": PaymentProviderSlug.MASTERCARD,
-                "mastercard-auth": PaymentProviderSlug.MASTERCARD,
-                "visa": PaymentProviderSlug.VISA,
-                "visa-auth": PaymentProviderSlug.VISA,
-                "visa-settlement": PaymentProviderSlug.VISA,
-                "amex": PaymentProviderSlug.AMEX,
-                "amex-auth": PaymentProviderSlug.AMEX,
-            }[slug]
-        except KeyError:
-            return slug
-
     def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
         log.debug(f"Posting {name} request with parameters: {body}.")
         url = urljoin(self.base_url, endpoint)
