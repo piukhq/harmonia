@@ -8,7 +8,6 @@ from uuid import uuid4
 import pendulum
 
 from app.currency import to_pounds
-from app.service.hermes import hermes
 from harness.providers.base import BaseImportDataProvider
 
 
