@@ -305,7 +305,10 @@ def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
     click.secho(
         f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
     )
-    agent._do_import(data, "end-to-end test file")
+
+    # file agents run as a coroutine
+    for _ in agent._do_import(data, "end-to-end test file"):
+        pass
 
 
 def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
