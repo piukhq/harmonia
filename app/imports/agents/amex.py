@@ -68,7 +68,7 @@ class Amex(FileAgent):
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         amount = data["transaction_amount"]
-        settlement_key = f"{data['card_token']},{amount}"
+        settlement_key = _make_settlement_key(f"{data['card_token']},{amount}")
 
         return PaymentTransactionFields(
             settlement_key=settlement_key,
@@ -105,7 +105,7 @@ class AmexAuth(QueueAgent):
         # https://github.com/sdispater/pendulum/pull/452
         transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"])  # type: ignore
         amount = to_pennies(float(data["transaction_amount"]))
-        settlement_key = f"{data['cm_alias']},{amount}"
+        settlement_key = _make_settlement_key(f"{data['cm_alias']},{amount}")
 
         return PaymentTransactionFields(
             settlement_key=settlement_key,
