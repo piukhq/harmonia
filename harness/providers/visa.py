@@ -87,7 +87,7 @@ class Visa(BaseImportDataProvider):
         return enc.data
 
     @staticmethod
-    def _build_transaction(transaction: dict, fixture: dict, token: str) -> dict:
+    def _build_transaction(transaction: dict, fixture: dict, token: str) -> str:
         return join(
             ("16", 2),  # record type
             ("01", 2),  # record subtype
@@ -149,7 +149,7 @@ class VisaAuth(BaseImportDataProvider):
             "CardId": transaction["settlement_key"][:9],
             "ExternalUserId": token,
             "MessageElementsCollection": [
-                {"Key": "Transaction.BillingAmount", "Value": to_pounds(["amount"])},
+                {"Key": "Transaction.BillingAmount", "Value": to_pounds(transaction["amount"])},
                 {"Key": "Transaction.TimeStampYYMMDD", "Value": pendulum.instance(transaction["date"]).isoformat()},
                 {"Key": "Transaction.MerchantCardAcceptorId", "Value": "32423 ABC"},
                 {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
