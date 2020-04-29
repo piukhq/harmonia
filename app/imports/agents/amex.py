@@ -5,10 +5,9 @@ from uuid import uuid4
 
 import pendulum
 
-from app import models
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent
+from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 from app.currency import to_pennies
 
 PROVIDER_SLUG = "amex"
@@ -67,12 +66,9 @@ class Amex(FileAgent):
             yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        return PaymentTransactionFields(
+            settlement_key="",
             transaction_date=data["purchase_date"],
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -100,14 +96,15 @@ class AmexAuth(QueueAgent):
         queue_name = ConfigValue(QUEUE_NAME_KEY, "amex-auth")
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.PaymentTransaction:
-        return models.PaymentTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
+        # we can remove this fix when the bug is resolved.
+        # https://github.com/sdispater/pendulum/pull/452
+        transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"])  # type: ignore
+
+        return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["cm_alias"]),
-            transaction_date=pendulum.parse(data["transaction_time"]),
+            transaction_date=transaction_date,
             spend_amount=to_pennies(float(data["transaction_amount"])),
             spend_multiplier=100,
             spend_currency="GBP",

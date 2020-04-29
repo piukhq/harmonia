@@ -4,9 +4,8 @@ import json
 
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent
+from app.imports.agents import FileAgent, SchemeTransactionFields
 from app.currency import to_pennies
-from app import models
 
 
 PROVIDER_SLUG = "harvey-nichols"
@@ -144,16 +143,15 @@ class HarveyNichols(FileAgent):
         )
 
     @staticmethod
-    def to_queue_transaction(
-        data: dict, merchant_identifier_ids: t.List[int], transaction_id: str
-    ) -> models.SchemeTransaction:
-        return models.SchemeTransaction(
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
+    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
             transaction_date=data["timestamp"],
+            payment_provider_slug="",
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
+            points_amount=0,
+            points_multiplier=0,
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},
         )
 

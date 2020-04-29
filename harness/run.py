@@ -116,10 +116,6 @@ class IdentityDateTimeField(fields.DateTime):
         return super()._deserialize(value, attr, data, **kwargs)
 
 
-class FixtureProviderSchema(Schema):
-    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
-
-
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
@@ -136,12 +132,35 @@ class FixtureUserSchema(Schema):
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
 
 
+class FixtureLoyaltyTransactionSchema(FixtureUserTransactionSchema):
+    first_six = fields.String(required=True, allow_none=False, validate=validate.Length(equal=6))
+    last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
+    settlement_key = fields.String(required=False, allow_none=True, validate=validate.Length(min=1))
+
+
+class FixturePaymentTransactionSchema(FixtureUserTransactionSchema):
+    token = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    user_id = fields.Integer(required=True, allow_none=False)
+
+
+class FixtureProviderSchema(Schema):
+    slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+
+
+class FixtureLoyaltyProviderSchema(FixtureProviderSchema):
+    transactions = fields.Nested(FixtureLoyaltyTransactionSchema, many=True)
+
+
+class FixturePaymentProviderSchema(FixtureProviderSchema):
+    transactions = fields.Nested(FixturePaymentTransactionSchema, many=True)
+
+
 class FixtureSchema(Schema):
     mid = fields.String(required=True, allow_none=False)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
-    loyalty_scheme = fields.Nested(FixtureProviderSchema)
-    payment_provider = fields.Nested(FixtureProviderSchema)
+    loyalty_scheme = fields.Nested(FixtureLoyaltyProviderSchema)
+    payment_provider = fields.Nested(FixturePaymentProviderSchema)
     agents = fields.Nested(FixtureProviderSchema, many=True)
     users = fields.Nested(FixtureUserSchema, many=True)
 
@@ -174,6 +193,21 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
                     "loyalty_id": user["loyalty_id"],
                     "scheme_account_id": idx,
                     "user_id": idx,
+                    "credentials": user["credentials"],
+                    "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
+                }
+            }
+
+        for transaction in fixture["payment_provider"].get("transactions", []):
+            if transaction["token"] != payment_token:
+                continue
+
+            user = fixture["users"][transaction["user_id"]]
+            return {
+                payment_token: {
+                    "loyalty_id": user["loyalty_id"],
+                    "scheme_account_id": transaction["user_id"],
+                    "user_id": transaction["user_id"],
                     "credentials": user["credentials"],
                     "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
                 }
@@ -305,7 +339,10 @@ def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
     click.secho(
         f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
     )
-    agent._do_import(data, "end-to-end test file")
+
+    # file agents run as a coroutine
+    for _ in agent._do_import(data, "end-to-end test file"):
+        pass
 
 
 def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
