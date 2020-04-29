@@ -67,10 +67,13 @@ class Amex(FileAgent):
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        amount = data["transaction_amount"]
+        settlement_key = _make_settlement_key(f"{data['card_token']},{amount}")
+
         return PaymentTransactionFields(
-            settlement_key="",
+            settlement_key=settlement_key,
             transaction_date=data["purchase_date"],
-            spend_amount=data["transaction_amount"],
+            spend_amount=amount,
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["card_token"],
@@ -101,11 +104,13 @@ class AmexAuth(QueueAgent):
         # we can remove this fix when the bug is resolved.
         # https://github.com/sdispater/pendulum/pull/452
         transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"])  # type: ignore
+        amount = to_pennies(float(data["transaction_amount"]))
+        settlement_key = _make_settlement_key(f"{data['cm_alias']},{amount}")
 
         return PaymentTransactionFields(
-            settlement_key=_make_settlement_key(data["cm_alias"]),
+            settlement_key=settlement_key,
             transaction_date=transaction_date,
-            spend_amount=to_pennies(float(data["transaction_amount"])),
+            spend_amount=amount,
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
