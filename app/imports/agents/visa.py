@@ -175,7 +175,7 @@ class VisaAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
-            settlement_key=_make_settlement_key(ext_user_id),
+            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             extra_fields={k: data[k] for k in ("MessageId",)},
         )
 
@@ -205,6 +205,6 @@ class VisaSettlement(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
-            settlement_key=_make_settlement_key(ext_user_id),
+            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             extra_fields={k: data[k] for k in ("MessageId",)},
         )

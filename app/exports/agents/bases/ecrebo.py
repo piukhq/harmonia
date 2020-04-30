@@ -86,7 +86,7 @@ class Ecrebo(BatchExportAgent):
 
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
-        return "BKBNK{}".format(transaction_number)
+        return f"{self.receipt_file_suffix}BNK{transaction_number}"
 
     def _create_receipt_data(self, transactions: t.List[models.MatchedTransaction], sequence_number: int) -> str:
         date = pendulum.now().format("YYYY-MM-DDTHH:mm:ss")
