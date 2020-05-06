@@ -1,5 +1,6 @@
 import typing as t
 
+import pendulum
 import rq
 
 from app import models, db, reporting, config
@@ -51,28 +52,32 @@ matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
-def import_scheme_transaction(scheme_transaction: models.SchemeTransaction) -> None:
-    log.debug(f"Task started: import scheme transaction {scheme_transaction}")
+def import_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction]) -> None:
+    log.debug(f"Task started: import {len(scheme_transactions)} scheme transactions.")
     director = import_director.SchemeImportDirector()
 
     with db.session_scope() as session:
-        director.handle_scheme_transaction(scheme_transaction, session=session)
+        director.handle_scheme_transactions(scheme_transactions, session=session)
 
 
-def import_auth_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
-    log.debug(f"Task started: import auth payment transaction {payment_transaction}")
+def import_auth_payment_transactions(payment_transactions: t.List[models.PaymentTransaction]) -> None:
+    log.debug(f"Task started: import {len(payment_transactions)} auth payment transactions.")
     director = import_director.PaymentImportDirector()
 
     with db.session_scope() as session:
-        director.handle_auth_payment_transaction(payment_transaction, session=session)
+        # TODO: replace with batch process
+        for payment_transaction in payment_transactions:
+            director.handle_auth_payment_transaction(payment_transaction, session=session)
 
 
-def import_settled_payment_transaction(payment_transaction: models.PaymentTransaction) -> None:
-    log.debug(f"Task started: import settled payment transaction {payment_transaction}")
+def import_settled_payment_transactions(payment_transactions: t.List[models.PaymentTransaction]) -> None:
+    log.debug(f"Task started: import {len(payment_transactions)} settled payment transactions.")
     director = import_director.PaymentImportDirector()
 
     with db.session_scope() as session:
-        director.handle_settled_payment_transaction(payment_transaction, session=session)
+        # TODO: replace with batch process
+        for payment_transaction in payment_transactions:
+            director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
 def identify_payment_transaction(payment_transaction_id: int) -> None:
@@ -91,12 +96,12 @@ def match_payment_transaction(payment_transaction_id: int) -> None:
         worker.handle_payment_transaction(payment_transaction_id, session=session)
 
 
-def match_scheme_transaction(scheme_transaction_id: int) -> None:
-    log.debug(f"Task started: match scheme transaction #{scheme_transaction_id}")
+def match_scheme_transactions(from_date: pendulum.DateTime) -> None:
+    log.debug(f"Task started: match scheme transactions from {from_date}")
     worker = matching_worker.MatchingWorker()
 
     with db.session_scope() as session:
-        worker.handle_scheme_transaction(scheme_transaction_id, session=session)
+        worker.handle_scheme_transactions(from_date=from_date, session=session)
 
 
 def export_matched_transaction(matched_transaction_id: int) -> None:
