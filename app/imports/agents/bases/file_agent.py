@@ -130,7 +130,7 @@ class FileAgent(BaseAgent):
         path = self.Config.path  # type: ignore
         filesource = filesource_class(Path(path), logger=self.log)
 
-        self.log.info("Starting import loop.")
+        self.log.info(f"Watching {path} for files via {filesource_class.__name__}.")
 
         attempts = 0
         while True:

@@ -168,6 +168,7 @@ class BaseAgent:
 
         handler = FEED_TYPE_HANDLERS[self.feed_type]
 
+        # TODO: it may be worth limiting the batch size if files get any larger than 10k transactions.
         insertions = []
         queue_transactions = []
 
@@ -192,9 +193,6 @@ class BaseAgent:
                         pass
 
                 identified = len(merchant_identifier_ids) > 0
-
-                if not identified:
-                    self.log.debug(f"No MIDs were found for transaction {tid}")
 
                 insertions.append(
                     dict(

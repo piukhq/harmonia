@@ -43,7 +43,7 @@ def run_worker(queue_names: t.List[str], *, burst: bool = False):
         log.warning("No queues were passed to tasks.run_worker, exiting early.")
         return  # no queues, nothing to do
     queues = [LoggedQueue(name, connection=db.redis_raw) for name in queue_names]
-    worker = rq.Worker(queues, connection=db.redis_raw)
+    worker = rq.Worker(queues, connection=db.redis_raw, log_job_description=False)
     worker.work(burst=burst)
 
 
