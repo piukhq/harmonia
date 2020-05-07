@@ -41,13 +41,13 @@ class FeedTypeHandler(t.NamedTuple):
 
 FEED_TYPE_HANDLERS = {
     ImportFeedTypes.MERCHANT: FeedTypeHandler(
-        model=models.SchemeTransaction, import_task=tasks.import_scheme_transaction
+        model=models.SchemeTransaction, import_task=tasks.import_scheme_transactions
     ),
     ImportFeedTypes.AUTH: FeedTypeHandler(
-        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transaction
+        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transactions
     ),
     ImportFeedTypes.SETTLED: FeedTypeHandler(
-        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transaction
+        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transactions
     ),
 }
 
@@ -166,7 +166,12 @@ class BaseAgent:
 
         new, duplicate = self._find_new_transactions(provider_transactions, session=session)
 
+        handler = FEED_TYPE_HANDLERS[self.feed_type]
+
+        # TODO: it may be worth limiting the batch size if files get any larger than 10k transactions.
         insertions = []
+        queue_transactions = []
+
         for tx_data in new:
             tid = self.get_transaction_id(tx_data)
 
@@ -189,9 +194,6 @@ class BaseAgent:
 
                 identified = len(merchant_identifier_ids) > 0
 
-                if not identified:
-                    self.log.debug(f"No MIDs were found for transaction {tid}")
-
                 insertions.append(
                     dict(
                         transaction_id=tid,
@@ -203,7 +205,9 @@ class BaseAgent:
                 )
 
                 if identified:
-                    self._build_queue_transaction(tx_data, merchant_identifier_ids, tid)
+                    queue_transactions.append(
+                        self._build_queue_transaction(handler.model, tx_data, merchant_identifier_ids, tid)
+                    )
 
             finally:
                 lock.release()
@@ -211,20 +215,19 @@ class BaseAgent:
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
 
+        tasks.import_queue.enqueue(handler.import_task, queue_transactions)
+
     def _build_queue_transaction(
-        self, transaction_data: dict, merchant_identifier_ids: t.List[int], transaction_id: str,
-    ) -> None:
+        self, model: db.Base, transaction_data: dict, merchant_identifier_ids: t.List[int], transaction_id: str,
+    ) -> db.Base:
         """
         Creates a transaction instance depending on the feed type and enqueues the transaction.
         """
         transaction_fields = self.to_transaction_fields(transaction_data)
-        handler = FEED_TYPE_HANDLERS[self.feed_type]
 
-        queue_tx = handler.model(
+        return model(
             provider_slug=self.provider_slug,
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
             **transaction_fields._asdict(),
         )
-
-        tasks.import_queue.enqueue(handler.import_task, queue_tx)

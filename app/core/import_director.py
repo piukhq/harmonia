@@ -1,5 +1,7 @@
 import typing as t
 
+import pendulum
+
 from app import models, tasks, db
 from app.reporting import get_logger
 from app.status import status_monitor
@@ -8,18 +10,23 @@ log = get_logger("import-director")
 
 
 class SchemeImportDirector:
-    def handle_scheme_transaction(self, scheme_transaction: models.SchemeTransaction, *, session: db.Session) -> None:
+    def handle_scheme_transactions(
+        self, scheme_transactions: t.List[models.SchemeTransaction], *, session: db.Session
+    ) -> None:
         status_monitor.checkin(self)
 
-        def add_transaction():
-            session.add(scheme_transaction)
+        now = pendulum.now()
+
+        def add_transactions():
+            for scheme_transaction in scheme_transactions:
+                session.add(scheme_transaction)
             session.commit()
 
-        db.run_query(add_transaction, session=session, description="create scheme transaction")
+        db.run_query(add_transactions, session=session, description="create scheme transaction")
 
-        tasks.matching_queue.enqueue(tasks.match_scheme_transaction, scheme_transaction.id)
+        tasks.matching_queue.enqueue(tasks.match_scheme_transactions, from_date=now.add(minutes=-5))
 
-        log.info(f"Received, persisted, and enqueued {scheme_transaction}.")
+        log.info(f"Received, persisted, and enqueued {len(scheme_transactions)} scheme transactions.")
 
 
 class PaymentImportDirector:
