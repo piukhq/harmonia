@@ -18,9 +18,6 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
-NO_CARD_SCHEME = "No Card"
-
-
 class Iceland(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
@@ -46,9 +43,6 @@ class Iceland(FileAgent):
         "Bink-Payment": "bink-payment",
     }
 
-    class UnmappedScheme(Exception):
-        pass
-
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
@@ -57,6 +51,9 @@ class Iceland(FileAgent):
         reader = csv.DictReader(fd)
         for raw_data in reader:
             if raw_data["TransactionAuthCode"].lower() == "decline":
+                continue
+
+            if raw_data["TransactionCardScheme"] not in self.payment_provider_map:
                 continue
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
@@ -74,7 +71,7 @@ class Iceland(FileAgent):
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
-            payment_provider_slug=Iceland._get_payment_provider(data["TransactionCardScheme"]),
+            payment_provider_slug=Iceland.payment_provider_map[data["TransactionCardScheme"]],
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
@@ -102,18 +99,3 @@ class Iceland(FileAgent):
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
         return [data["TransactionStore_Id"]]
-
-    @staticmethod
-    def _get_payment_provider(scheme_name: str) -> str:
-        """
-        Returns the payment scheme slug from the mapping of slugs to strings of possible scheme names in Iceland
-        transaction files.
-        """
-
-        if not scheme_name or scheme_name == NO_CARD_SCHEME:
-            raise Iceland.UnmappedScheme("No card scheme was given.")
-
-        try:
-            return Iceland.payment_provider_map[scheme_name]
-        except KeyError as ex:
-            raise Iceland.UnmappedScheme(f"No mapping for scheme {scheme_name}") from ex

@@ -1,6 +1,7 @@
 import typing as t
 
 import sentry_sdk
+import pendulum
 
 from app.matching.agents.registry import matching_agents
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
@@ -61,7 +62,7 @@ class MatchingWorker:
         if len(slugs) > 1:
             raise ValueError(
                 f"{payment_transaction} contains multiple scheme slugs! This is likely caused by an error in the MIDs. "
-                f"Conflicting slugs: {slugs}"
+                f"Conflicting slugs: {slugs}."
             )
 
         slug = slugs.pop()
@@ -72,7 +73,7 @@ class MatchingWorker:
             if settings.DEBUG:
                 raise ex
             self.log.warning(
-                f"Failed to instantiate matching agent for slug {slug}: {ex}. Skipping match of {payment_transaction}"
+                f"Failed to instantiate matching agent for slug {slug}: {ex}. Skipping match of {payment_transaction}."
             )
             return None
 
@@ -136,27 +137,31 @@ class MatchingWorker:
 
         tasks.export_queue.enqueue(tasks.export_matched_transaction, match_result.matched_transaction.id)
 
-    def handle_scheme_transaction(self, scheme_transaction_id: int, *, session: db.Session) -> None:
+    def handle_scheme_transactions(self, from_date: pendulum.DateTime, *, session: db.Session) -> None:
         """Finds potential matching payment transactions and requeues a matching job for them."""
         status_monitor.checkin(self)
 
-        scheme_transaction = db.run_query(
-            lambda: session.query(models.SchemeTransaction).get(scheme_transaction_id),
+        scheme_transactions = db.run_query(
+            lambda: session.query(models.SchemeTransaction)
+            .filter(models.SchemeTransaction.created_at >= from_date)
+            .all(),
             session=session,
             read_only=True,
-            description="find scheme transaction",
+            description=f"find scheme transactions from {from_date}",
         )
 
-        if scheme_transaction is None:
-            self.log.warning(f"Couldn't find a scheme transaction with ID {scheme_transaction_id}. Skipping.")
+        if len(scheme_transactions) == 0:
+            self.log.warning(f"Couldn't find any scheme transaction from {from_date}. Skipping.")
             return
 
-        self.log.debug(f"Received scheme transaction #{scheme_transaction.id}. Finding potential matches…")
+        self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
+
+        mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.merchant_identifier_ids}
 
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(
-                models.PaymentTransaction.merchant_identifier_ids.overlap(scheme_transaction.merchant_identifier_ids),
+                models.PaymentTransaction.merchant_identifier_ids.overlap(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.user_identity_id.isnot(None),
             )
@@ -167,6 +172,10 @@ class MatchingWorker:
         )
 
         if payment_transactions:
-            self.log.debug(f"Found {len(payment_transactions)} potential matches. Enqueueing matching jobs.")
+            self.log.debug(
+                f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs."
+            )
             for payment_transaction in payment_transactions:
                 tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
+        else:
+            self.log.debug("Found no matching payment transactions. Exiting matching job.")
