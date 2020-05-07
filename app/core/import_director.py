@@ -24,7 +24,7 @@ class SchemeImportDirector:
 
         db.run_query(add_transactions, session=session, description="create scheme transaction")
 
-        tasks.matching_queue.enqueue(tasks.match_scheme_transactions, from_date=now)
+        tasks.matching_queue.enqueue(tasks.match_scheme_transactions, from_date=now.add(minutes=-5))
 
         log.info(f"Received, persisted, and enqueued {len(scheme_transactions)} scheme transactions.")
 
