@@ -142,7 +142,9 @@ class MatchingWorker:
         status_monitor.checkin(self)
 
         scheme_transactions = db.run_query(
-            lambda: session.query(models.SchemeTransaction).filter(models.SchemeTransaction.created_at >= from_date).all(),
+            lambda: session.query(models.SchemeTransaction)
+            .filter(models.SchemeTransaction.created_at >= from_date)
+            .all(),
             session=session,
             read_only=True,
             description=f"find scheme transactions from {from_date}",
@@ -152,15 +154,9 @@ class MatchingWorker:
             self.log.warning(f"Couldn't find any scheme transaction from {from_date}. Skipping.")
             return
 
-        self.log.debug(
-            f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now."
-        )
+        self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
-        mids = {
-            mid
-            for scheme_transaction in scheme_transactions
-            for mid in scheme_transaction.merchant_identifier_ids
-        }
+        mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.merchant_identifier_ids}
 
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
@@ -176,7 +172,9 @@ class MatchingWorker:
         )
 
         if payment_transactions:
-            self.log.debug(f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs.")
+            self.log.debug(
+                f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs."
+            )
             for payment_transaction in payment_transactions:
                 tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
         else:
