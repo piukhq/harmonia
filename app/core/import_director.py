@@ -18,8 +18,7 @@ class SchemeImportDirector:
         now = pendulum.now()
 
         def add_transactions():
-            for scheme_transaction in scheme_transactions:
-                session.add(scheme_transaction)
+            session.bulk_save_objects(scheme_transactions)
             session.commit()
 
         db.run_query(add_transactions, session=session, description="create scheme transaction")
