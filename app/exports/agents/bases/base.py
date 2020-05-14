@@ -83,17 +83,20 @@ class BaseAgent:
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
 
         def add_transactions():
-            for transaction in export_data.transactions:
-                session.add(
-                    models.ExportTransaction(
-                        matched_transaction_id=transaction.id,
-                        transaction_id=transaction.transaction_id,
-                        provider_slug=self.provider_slug,
-                        destination=export_data.outputs[self.saved_output_index].key,
-                        data=export_data.outputs[self.saved_output_index].data,
-                    )
+            session.bulk_save_objects(
+                models.ExportTransaction(
+                    matched_transaction_id=transaction.id,
+                    transaction_id=transaction.transaction_id,
+                    provider_slug=self.provider_slug,
+                    destination=export_data.outputs[self.saved_output_index].key,
+                    data=export_data.outputs[self.saved_output_index].data,
                 )
+                for transaction in export_data.transactions
+            )
+
+            for transaction in export_data.transactions:
                 transaction.status = models.MatchedTransactionStatus.EXPORTED
+
             session.commit()
 
         db.run_query(add_transactions, session=session, description="save export transactions")
