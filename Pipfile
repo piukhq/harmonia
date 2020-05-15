@@ -29,7 +29,6 @@ soteria = {git = "ssh://git@git.bink.com/Olympus/soteria.git"}
 hvac = "*"
 paramiko = "*"
 kombu = "*"
-shared-config-storage = {git = "ssh://git@git.bink.com/libs/shared-config-storage.git"}
 
 [dev-packages]
 alembic = "*"

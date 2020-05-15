@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c0aa92ece2dfafa646ac41199e8a817c9a794ee7973b4c5409476da7e2d8ccfb"
+            "sha256": "d524a959beb0ef8b6ff89b7ff8dae4195a113cfd035ec7c3e556c937cf1ecbc2"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -541,10 +541,6 @@
             ],
             "index": "pypi",
             "version": "==0.14.4"
-        },
-        "shared-config-storage": {
-            "git": "ssh://git@git.bink.com/libs/shared-config-storage.git",
-            "ref": "118b44aeeed698db01c07db710b52df25225fd2c"
         },
         "six": {
             "hashes": [
