@@ -121,6 +121,7 @@ class FixtureUserTransactionSchema(Schema):
     amount = fields.Integer(required=True, allow_none=False, strict=True)
     points = fields.Integer(required=True, allow_none=False, strict=True)
     settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
+    auth_code = fields.String(validate=validate.Length(equal=6))
 
 
 class FixtureUserSchema(Schema):
@@ -136,6 +137,7 @@ class FixtureLoyaltyTransactionSchema(FixtureUserTransactionSchema):
     first_six = fields.String(required=True, allow_none=False, validate=validate.Length(equal=6))
     last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     settlement_key = fields.String(required=False, allow_none=True, validate=validate.Length(min=1))
+    auth_code = fields.String(validate=validate.Length(equal=6))
 
 
 class FixturePaymentTransactionSchema(FixtureUserTransactionSchema):

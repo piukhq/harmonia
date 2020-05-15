@@ -66,7 +66,7 @@ class SchemeTransaction(Base, ModelMixin):
     points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
     points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
-
+    auth_code = s.Column(s.String(20), nullable=False, default="")
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="scheme_transaction")
@@ -87,12 +87,11 @@ class PaymentTransaction(Base, ModelMixin):
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
-
+    auth_code = s.Column(s.String(20), nullable=False, default="")
     user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
-    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
-
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
+    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
 
 

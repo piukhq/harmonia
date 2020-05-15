@@ -52,7 +52,7 @@ def matched_tx_str(tx: MatchedTransaction) -> str:
 
 
 def export_tx_str(tx: ExportTransaction) -> str:
-    return "\n".join([f"EXPORT TX", "", f"exported at {tx.created_at}", f"to {tx.destination}"])
+    return "\n".join(["EXPORT TX", "", f"exported at {tx.created_at}", f"to {tx.destination}"])
 
 
 def tx_str(tx: Base) -> str:

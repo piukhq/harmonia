@@ -151,7 +151,7 @@ class VisaAuth(BaseImportDataProvider):
             "MessageElementsCollection": [
                 {"Key": "Transaction.BillingAmount", "Value": to_pounds(transaction["amount"])},
                 {"Key": "Transaction.TimeStampYYMMDD", "Value": pendulum.instance(transaction["date"]).isoformat()},
-                {"Key": "Transaction.MerchantCardAcceptorId", "Value": "32423 ABC"},
+                {"Key": "Transaction.MerchantCardAcceptorId", "Value": fixture["mid"]},
                 {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                 {"Key": "Transaction.TransactionAmount", "Value": to_pounds(transaction["amount"])},
                 {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
@@ -172,7 +172,7 @@ class VisaAuth(BaseImportDataProvider):
                 {"Key": "Transaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
                 {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "MYSTORE"},
                 {"Key": "Transaction.MerchantDateTimeGMT ", "Value": "2019-12-19T23:40:00"},
-                {"Key": "Transaction.AuthCode", "Value": "800533"},
+                {"Key": "Transaction.AuthCode", "Value": randint(100000, 999999)},
                 {"Key": "Transaction.PanLastFour", "Value": "2345"},
             ],
             "MessageId": "12345678",
@@ -193,7 +193,7 @@ class VisaSettlement(BaseImportDataProvider):
         transactions.extend(
             [
                 self._build_transaction(transaction, fixture, transaction["token"])
-                for transaction in fixture["loyalty_scheme"].get("transactions", [])
+                for transaction in fixture["payment_provider"].get("transactions", [])
             ]
         )
         return transactions
@@ -206,7 +206,7 @@ class VisaSettlement(BaseImportDataProvider):
             "MessageElementsCollection": [
                 {"Key": "Transaction.BillingAmount", "Value": to_pounds(transaction["amount"])},
                 {"Key": "Transaction.TimeStampYYMMDD", "Value": pendulum.instance(transaction["date"]).isoformat()},
-                {"Key": "Transaction.MerchantCardAcceptorId", "Value": "32423 ABC"},
+                {"Key": "Transaction.MerchantCardAcceptorId", "Value": fixture["mid"]},
                 {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                 {"Key": "Transaction.TransactionAmount", "Value": to_pounds(transaction["amount"])},
                 {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
@@ -230,7 +230,7 @@ class VisaSettlement(BaseImportDataProvider):
                     "Key": "Transaction.MerchantDateTimeGMT ",
                     "Value": pendulum.instance(transaction["date"]).isoformat(),
                 },
-                {"Key": "Transaction.AuthCode", "Value": "800533"},
+                {"Key": "Transaction.AuthCode", "Value": transaction["auth_code"]},
                 {"Key": "Transaction.PanLastFour", "Value": "2345"},
             ],
             "MessageId": "12345678",

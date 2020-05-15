@@ -20,7 +20,7 @@ class MatchingWorker:
         pass
 
     def __init__(self) -> None:
-        self.log = get_logger(f"matching-worker")
+        self.log = get_logger("matching-worker")
 
         if settings.DEBUG:
             self.log.warning("Running in debug mode. Exceptions will not be handled gracefully!")
@@ -118,7 +118,7 @@ class MatchingWorker:
             self.log.info("Failed to find any matches.")
             return
 
-        self.log.debug(f"Matching succeeded! Marking transactions as matched.")
+        self.log.debug("Matching succeeded! Marking transactions as matched.")
 
         def mark_transactions():
             payment_transaction.status = models.TransactionStatus.MATCHED
@@ -132,7 +132,7 @@ class MatchingWorker:
 
         db.run_query(mark_transactions, session=session, description="mark scheme transaction as matched")
 
-        self.log.debug(f"Persisting matched transaction.")
+        self.log.debug("Persisting matched transaction.")
         self._persist(match_result.matched_transaction, session=session)
 
         tasks.export_queue.enqueue(tasks.export_matched_transaction, match_result.matched_transaction.id)
