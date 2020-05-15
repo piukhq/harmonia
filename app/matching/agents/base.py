@@ -126,7 +126,7 @@ class BaseMatchingAgent:
     """
 
     def _filter(
-        self, scheme_transactions: t.Sequence[models.SchemeTransaction], fallback_filter_functions, *, depth: int = 0
+        self, scheme_transactions: t.List[models.SchemeTransaction], fallback_filter_functions, *, depth: int = 0
     ) -> t.Optional[models.SchemeTransaction]:
         """Recursively filters the transactions based on how many fallback filter functions are available"""
         matched_transaction_count = len(scheme_transactions)
@@ -143,8 +143,8 @@ class BaseMatchingAgent:
             return scheme_transactions[0]
 
     def _filter_by_time(
-        self, scheme_transactions: t.Sequence[models.SchemeTransaction], time_tolerance=60
-    ) -> t.Sequence[models.SchemeTransaction]:
+        self, scheme_transactions: t.List[models.SchemeTransaction], time_tolerance=60
+    ) -> t.List[models.SchemeTransaction]:
 
         # Temporary - to identify if the payment transaction is settlement or auth
         # settlement transaction_time field cannot be used for filtering as it is inaccurate
@@ -167,8 +167,8 @@ class BaseMatchingAgent:
         return matched_transactions
 
     def _filter_by_card_number(
-        self, scheme_transactions: t.Iterable[models.SchemeTransaction]
-    ) -> t.Sequence[models.SchemeTransaction]:
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
         user_identity = self.payment_transaction.user_identity
 
         matched_transactions = [
@@ -186,8 +186,8 @@ class BaseMatchingAgent:
     """
 
     def _filter_by_auth_code(
-        self, scheme_transactions: t.Iterable[models.SchemeTransaction]
-    ) -> t.Sequence[models.SchemeTransaction]:
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
         auth_code = self.payment_transaction["auth_code"]
 
         if not bool(auth_code and auth_code.strip()):

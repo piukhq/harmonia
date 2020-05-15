@@ -87,7 +87,7 @@ class Iceland(FileAgent):
                     "TransactionCardSchemeId",
                     "TransactionCardScheme",
                     "TransactionCashbackValue",
-                    "TransactionCashbackUnit"
+                    "TransactionCashbackUnit",
                 )
             },
         )
