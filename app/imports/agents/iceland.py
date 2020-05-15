@@ -77,6 +77,7 @@ class Iceland(FileAgent):
             spend_currency=data["TransactionAmountUnit"],
             points_amount=0,
             points_multiplier=0,
+            auth_code=data["TransactionAuthCode"],
             extra_fields={
                 k: data[k]
                 for k in (
@@ -86,8 +87,7 @@ class Iceland(FileAgent):
                     "TransactionCardSchemeId",
                     "TransactionCardScheme",
                     "TransactionCashbackValue",
-                    "TransactionCashbackUnit",
-                    "TransactionAuthCode",
+                    "TransactionCashbackUnit"
                 )
             },
         )

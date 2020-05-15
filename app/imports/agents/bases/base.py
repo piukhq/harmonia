@@ -22,6 +22,7 @@ class SchemeTransactionFields(t.NamedTuple):
     points_amount: int
     points_multiplier: int
     extra_fields: dict
+    auth_code: str = ""
 
 
 class PaymentTransactionFields(t.NamedTuple):
@@ -32,6 +33,7 @@ class PaymentTransactionFields(t.NamedTuple):
     card_token: str
     settlement_key: str
     extra_fields: dict
+    auth_code: str = ""
 
 
 class FeedTypeHandler(t.NamedTuple):
