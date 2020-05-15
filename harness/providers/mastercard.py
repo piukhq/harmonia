@@ -62,7 +62,7 @@ class MastercardSettled(BaseImportDataProvider):
         return "\n".join(lines).encode()
 
     @staticmethod
-    def _build_transaction(transaction: dict, fixture: dict, token: str) -> dict:
+    def _build_transaction(transaction: dict, fixture: dict, token: str) -> str:
         return join(
             ("D", 1),  # data record
             (str(randint(0, 10 ** 12)).rjust(13, "0"), 13),  # tx sequence number

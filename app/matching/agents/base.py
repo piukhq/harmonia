@@ -1,3 +1,4 @@
+import pendulum
 import typing as t
 from collections import namedtuple
 
@@ -116,3 +117,85 @@ class BaseMatchingAgent:
 
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         raise NotImplementedError("Matching agents must implement the do_match method")
+
+    """
+    The main filter recursion method
+    Supply a list of filter methods for each payment card provider. If more than one matched transaction is returned
+    then the next level of filtering is invoked.
+    Params: Scheme transactions, list of filter functions, depth = determines the next filter function to run.
+    """
+
+    def _filter(
+        self, scheme_transactions: t.List[models.SchemeTransaction], fallback_filter_functions, *, depth: int = 0
+    ) -> t.Optional[models.SchemeTransaction]:
+        """Recursively filters the transactions based on how many fallback filter functions are available"""
+        matched_transaction_count = len(scheme_transactions)
+
+        if matched_transaction_count > 1:
+            if depth >= len(fallback_filter_functions):
+                return None
+
+            filtered_transactions = fallback_filter_functions[depth](scheme_transactions)
+            return self._filter(filtered_transactions, fallback_filter_functions, depth=depth + 1)
+        elif matched_transaction_count < 1:
+            return None
+        else:
+            return scheme_transactions[0]
+
+    def _filter_by_time(
+        self, scheme_transactions: t.List[models.SchemeTransaction], time_tolerance=60
+    ) -> t.List[models.SchemeTransaction]:
+
+        # Temporary - to identify if the payment transaction is settlement or auth
+        # settlement transaction_time field cannot be used for filtering as it is inaccurate
+        # TODO: This should be removed once payment_transaction.transaction_date
+        # is separated into date and time fields
+        if self.payment_transaction.extra_fields.get("transaction_time"):
+            return scheme_transactions
+
+        transaction_datetime = pendulum.instance(self.payment_transaction.transaction_date)
+
+        min_time = transaction_datetime.subtract(seconds=time_tolerance)
+        max_time = transaction_datetime.add(seconds=time_tolerance)
+        match_period = pendulum.period(min_time, max_time)
+
+        matched_transactions = [
+            transaction
+            for transaction in scheme_transactions
+            if pendulum.instance(transaction.transaction_date) in match_period
+        ]
+        return matched_transactions
+
+    def _filter_by_card_number(
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
+        user_identity = self.payment_transaction.user_identity
+
+        matched_transactions = [
+            transaction
+            for transaction in scheme_transactions
+            if (
+                transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
+                and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four
+            )
+        ]
+        return matched_transactions
+
+    """
+    Auth Codes are 6 digit numbers, possibly not be unique.
+    """
+
+    def _filter_by_auth_code(
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
+        auth_code = self.payment_transaction["auth_code"]
+
+        if not bool(auth_code and auth_code.strip()):
+            return scheme_transactions
+
+        matched_transactions = [
+            transaction
+            for transaction in scheme_transactions
+            if transaction.extra_fields["TransactionAuthCode"] == auth_code
+        ]
+        return matched_transactions

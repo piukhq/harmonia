@@ -1,0 +1,53 @@
+# base fixture data
+mid = "test-mid-123"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "iceland-bonus-card"
+
+[payment_provider]
+slug = "mastercard"
+
+[[agents]]
+slug = "iceland-bonus-card"
+
+[[agents]]
+slug = "mastercard-settled"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+# transactions imported as payment and scheme transactions
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 1099
+points = 5
+settlement_key = "settle123"  # Should be 9 chars or less for mastercard
+auth_code = "666666"
+
+# Transactions only imported as payment transactions
+[[payment_provider.transactions]]
+date = 2020-06-02T15:46:30Z
+amount = 1222
+points = 8
+settlement_key = "1111111111"
+token = "1111"
+user_id = 0
+auth_code = "666666"
+
+# # Transactions only imported as scheme transactions
+[[loyalty_scheme.transactions]]
+date = 2020-06-02T15:47:45Z
+amount = 1222
+points = 8
+first_six = "123456"
+last_four = "7890"
+auth_code = "666666"

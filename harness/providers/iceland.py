@@ -2,7 +2,6 @@ import csv
 import io
 import itertools
 import typing as t
-from random import sample
 from uuid import uuid4
 
 import pendulum
@@ -15,8 +14,7 @@ def _get_card_scheme(slug: str) -> t.Tuple[int, str]:
     return {
         "amex": (1, "Amex"),
         "visa": (2, "Visa"),
-        "mastercard-settled": (3, "MasterCard/MasterCard One"),
-        "mastercard-auth": (3, "MasterCard/MasterCard One"),
+        "mastercard": (3, "MasterCard/MasterCard One"),
         "bink-payment": (9, "Bink-Payment"),
     }[slug]
 
@@ -74,5 +72,5 @@ class Iceland(BaseImportDataProvider):
             ".00",
             "GBP",
             str(uuid4()),
-            "".join(str(d) for d in sample(range(0, 10), 6)),
+            transaction["auth_code"],
         )
