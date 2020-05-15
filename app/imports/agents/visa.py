@@ -164,7 +164,7 @@ class VisaAuth(QueueAgent):
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        return [get_key_value(data, "Transaction.VisaMerchantId")]
+        return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
@@ -176,7 +176,7 @@ class VisaAuth(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            extra_fields={k: data[k] for k in ("MessageId",)},
+            extra_fields={k: data[k] for k in ("MessageId", "Transaction.AuthCode")},
         )
 
 
@@ -194,7 +194,7 @@ class VisaSettlement(QueueAgent):
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        return [get_key_value(data, "Transaction.VisaMerchantId")]
+        return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
@@ -206,5 +206,5 @@ class VisaSettlement(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            extra_fields={k: data[k] for k in ("MessageId",)},
+            extra_fields={"auth_code": get_key_value(data, "Transaction.AuthCode")},
         )

@@ -4,13 +4,13 @@ location = "Ascot"
 postcode = "SL5 9FE"
 
 [loyalty_scheme]
-slug = "bink-loyalty"
+slug = "iceland-bonus-card"
 
 [payment_provider]
 slug = "visa"
 
 [[agents]]
-slug = "bink-loyalty"
+slug = "iceland-bonus-card"
 
 [[agents]]
 slug = "visa-settlement"
@@ -19,14 +19,44 @@ slug = "visa-settlement"
 [[users]]
 loyalty_id = "loyalty-234"
 token = "token-234"
-first_six = "234567"
+first_six = "434567"
 last_four = "7890"
 
 [users.credentials]
 card_number = "loyalty-234"
 
+# transactions imported as payment and scheme transactions
 [[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 1099
+points = 5
+settlement_key = "settle123"  # Should be 9 chars or less for mastercard
+auth_code = "666665"
+
+[[payment_provider.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 2345
 points = 23
 settlement_key = "settlement-234"
+auth_code = "666666"
+token = "token-2345"  # Payment token
+# Which user to link the payment to - does not need to be changed in most cases as there is not much need to test with more than one user.
+user_id = 0
+
+[[loyalty_scheme.transactions]]
+date = 2020-06-02T15:46:12Z
+amount = 2345
+points = 23
+settlement_key = "settlement-1545"
+auth_code = "666666"
+first_six = "434567"  # Payment card first six
+last_four = "7890"  # Payment card last four
+
+[[loyalty_scheme.transactions]]
+date = 2020-06-02T15:46:10Z
+amount = 2345
+points = 23
+settlement_key = "settlement-1546"
+auth_code = "666666"
+first_six = "434567"  # Payment card first six
+last_four = "7890"  # Payment card last four

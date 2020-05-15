@@ -58,7 +58,7 @@ class Amex(FileAgent):
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         for line in data.decode().split("\n"):
-            raw_data = [l.strip() for l in line.split("|")]
+            raw_data = [ln.strip() for ln in line.split("|")]
 
             if not raw_data or raw_data[0] != "D":
                 continue
