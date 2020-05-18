@@ -16,8 +16,12 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("payment_transaction", sa.Column("auth_code", sa.String(length=20), nullable=False))
-    op.add_column("scheme_transaction", sa.Column("auth_code", sa.String(length=20), nullable=False))
+    op.add_column("payment_transaction", sa.Column("auth_code", sa.String(length=20), nullable=True))
+    op.add_column("scheme_transaction", sa.Column("auth_code", sa.String(length=20), nullable=True))
+    op.execute("UPDATE payment_transaction SET auth_code = ''")
+    op.execute("UPDATE scheme_transaction SET auth_code = ''")
+    op.alter_column("payment_transaction", "auth_code", nullable=False)
+    op.alter_column("scheme_transaction", "auth_code", nullable=False)
 
 
 def downgrade():
