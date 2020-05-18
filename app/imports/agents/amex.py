@@ -1,7 +1,6 @@
 import typing as t
 import inspect
 from hashlib import sha256
-from uuid import uuid4
 
 import pendulum
 
@@ -119,8 +118,7 @@ class AmexAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        # TODO: is this alright?
-        return str(uuid4())
+        return data["transaction_id"]
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
