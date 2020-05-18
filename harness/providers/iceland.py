@@ -1,6 +1,5 @@
 import csv
 import io
-import itertools
 import typing as t
 from uuid import uuid4
 

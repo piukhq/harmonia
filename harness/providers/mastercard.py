@@ -81,4 +81,3 @@ class MastercardAuth(BaseImportDataProvider):
             for user in fixture["users"]
             for transaction in user["transactions"]
         ]
-
