@@ -32,21 +32,19 @@ class Amex(BaseImportDataProvider):
         )
 
         lines.extend(
-            (
-                pipe(
-                    "D",  # detail identifier
-                    "AADP0050",  # partner id
-                    str(uuid4()),  # transaction ID
-                    pendulum.instance(transaction["date"]).format("YYYY-MM-DD"),
-                    str(transaction["amount"] / 100).rjust(17, "0"),
-                    user["token"].ljust(200),
-                    fixture["mid"].ljust(15),
-                    pendulum.instance(transaction["date"]).format("YYYY-MM-DD-hh.mm.ss"),
-                    f'{transaction["first_six"]}XXXXX{transaction["last_four"]}',
-                )
-                for user in fixture["users"]
-                for transaction in user.get("transactions", [])
+            pipe(
+                "D",  # detail identifier
+                "AADP0050",  # partner id
+                str(uuid4()),  # transaction ID
+                pendulum.instance(transaction["date"]).format("YYYY-MM-DD"),
+                str(transaction["amount"] / 100).rjust(17, "0"),
+                user["token"].ljust(200),
+                fixture["mid"].ljust(15),
+                pendulum.instance(transaction["date"]).format("YYYY-MM-DD-hh.mm.ss"),
+                f'{user["first_six"]}XXXXX{user["last_four"]}',
             )
+            for user in fixture["users"]
+            for transaction in user.get("transactions", [])
         )
 
         # trailer
