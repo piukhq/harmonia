@@ -30,21 +30,12 @@ card_number = "loyalty-123"
 date = 2020-06-02T15:46:00Z
 amount = 1099
 points = 5
-settlement_key = "settle123"  # Should be 9 chars or less for mastercard
+settlement_key = "settle123"
 
-# Transactions only imported as payment transactions
-[[payment_provider.transactions]]
-date = 2020-06-02T15:46:30Z
-amount = 1222
-points = 8
-settlement_key = "1111111111"
-token = "1111"
-user_id = 0 
-
-# # Transactions only imported as scheme transactions
-[[loyalty_scheme.transactions]]
+[[users.transactions]]
 date = 2020-06-02T15:47:45Z
 amount = 1222
 points = 8
-first_six = "123456"
-last_four = "7890"
+settlement_key = "1111111111"
+[users.transactions.merchant_overrides]
+date = 2020-06-02T15:46:30Z

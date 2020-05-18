@@ -15,7 +15,7 @@ from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 import settings
-from app import db, encryption, models, tasks
+from app import db, encryption, models, tasks, feeds
 from app.core import key_manager
 from app.exports.agents import BatchExportAgent, export_agents
 from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
@@ -122,6 +122,8 @@ class FixtureUserTransactionSchema(Schema):
     points = fields.Integer(required=True, allow_none=False, strict=True)
     settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     auth_code = fields.String(validate=validate.Length(equal=6))
+    merchant_overrides = fields.Dict(required=False)
+    payment_provider_overrides = fields.Dict(required=False)
 
 
 class FixtureUserSchema(Schema):
@@ -133,36 +135,16 @@ class FixtureUserSchema(Schema):
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
 
 
-class FixtureLoyaltyTransactionSchema(FixtureUserTransactionSchema):
-    first_six = fields.String(required=True, allow_none=False, validate=validate.Length(equal=6))
-    last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
-    settlement_key = fields.String(required=False, allow_none=True, validate=validate.Length(min=1))
-    auth_code = fields.String(validate=validate.Length(equal=6))
-
-
-class FixturePaymentTransactionSchema(FixtureUserTransactionSchema):
-    token = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
-    user_id = fields.Integer(required=True, allow_none=False)
-
-
 class FixtureProviderSchema(Schema):
     slug = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
-
-
-class FixtureLoyaltyProviderSchema(FixtureProviderSchema):
-    transactions = fields.Nested(FixtureLoyaltyTransactionSchema, many=True)
-
-
-class FixturePaymentProviderSchema(FixtureProviderSchema):
-    transactions = fields.Nested(FixturePaymentTransactionSchema, many=True)
 
 
 class FixtureSchema(Schema):
     mid = fields.String(required=True, allow_none=False)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
-    loyalty_scheme = fields.Nested(FixtureLoyaltyProviderSchema)
-    payment_provider = fields.Nested(FixturePaymentProviderSchema)
+    loyalty_scheme = fields.Nested(FixtureProviderSchema)
+    payment_provider = fields.Nested(FixtureProviderSchema)
     agents = fields.Nested(FixtureProviderSchema, many=True)
     users = fields.Nested(FixtureUserSchema, many=True)
 
@@ -298,8 +280,12 @@ def setup_keyring():
 ImportDataType = t.Union[bytes, t.List[dict]]
 
 
-def make_import_data(slug: str, fixture: dict) -> ImportDataType:
+def make_import_data(slug: str, fixture: dict, *, feed_type: feeds.ImportFeedTypes) -> ImportDataType:
     provider = import_data_providers.instantiate(slug)
+    if feed_type == feeds.ImportFeedTypes.MERCHANT:
+        fixture = provider.apply_merchant_overrides(fixture)
+    else:
+        fixture = provider.apply_payment_provider_overrides(fixture)
     return provider.provide(fixture)
 
 
@@ -311,7 +297,7 @@ def make_test_client(agent: PassiveAPIAgent):
 
 
 def run_passive_api_import_agent(agent_slug: str, agent: PassiveAPIAgent, fixture: dict):
-    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture))
+    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
     client = make_test_client(agent)
     url = f"{settings.URL_PREFIX}/import/{agent_slug}/"
 
@@ -336,7 +322,7 @@ def run_active_api_import_agent(agent_slug: str, agent: ActiveAPIAgent, fixture:
 
 
 def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
-    data = t.cast(bytes, make_import_data(agent_slug, fixture))
+    data = t.cast(bytes, make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
 
     click.secho(
         f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
@@ -348,7 +334,7 @@ def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
 
 
 def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
-    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture))
+    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
 
     click.secho(
         f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
