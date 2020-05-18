@@ -13,7 +13,7 @@ class Iceland(BaseMatchingAgent):
 
     def filter_functions(self, payment_slug: str) -> tuple:
         return {
-            "amex": (),
+            "amex": (self._filter_by_auth_code, lambda tx: self._filter_by_time(tx, time_tolerance=10)),
             "mastercard": (lambda tx: self._filter_by_time(tx, time_tolerance=60), self._filter_by_card_number),
             "visa": (self._filter_by_auth_code, lambda tx: self._filter_by_time(tx, time_tolerance=10)),
         }[payment_slug]
