@@ -39,7 +39,7 @@ def _make_settlement_key(
     settlement key = card token + approval code + MID
 
     if approval code is blank:
-    settlemnet key = card token + amount + MID
+    settlement key = card token + amount + MID
     """
 
     parts = ["amex", card_token]
