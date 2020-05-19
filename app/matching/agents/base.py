@@ -194,8 +194,6 @@ class BaseMatchingAgent:
             return scheme_transactions
 
         matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if transaction.auth_code == auth_code
+            transaction for transaction in scheme_transactions if transaction.auth_code == auth_code
         ]
         return matched_transactions
