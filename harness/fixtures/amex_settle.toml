@@ -25,37 +25,22 @@ last_four = "7890"
 [users.credentials]
 card_number = "loyalty-234"
 
-# transactions imported as payment and scheme transactions
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 2233
 points = 2
-settlement_key = "settle123"  # Should be 9 chars or less for mastercard
-auth_code = "777775"
+settlement_key = "settle123"
+auth_code = "777777"
+[users.transactions.merchant_overrides]
+date = 2020-06-02T15:47:00Z
+# [users.transactions.payment_provider_overrides]
+# auth_code = "777778"
 
-[[payment_provider.transactions]]
+[[users.transactions]]
 date = 2020-06-02T15:46:00Z
-amount = 7234
-points = 72
+amount = 2233
+points = 2
 settlement_key = "settlement-234"
 auth_code = "777777"
-token = "token-2345"  # Payment token
-user_id = 0
-
-[[loyalty_scheme.transactions]]
-date = 2020-06-02T15:46:12Z
-amount = 7234
-points = 72
-settlement_key = "settlement-1545"
-auth_code = "777777"
-first_six = "344567"  # Payment card first six
-last_four = "7890"  # Payment card last four
-
-[[loyalty_scheme.transactions]]
-date = 2020-06-02T15:46:10Z
-amount = 7234
-points = 72
-settlement_key = "settlement-1546"
-auth_code = "666666"
-first_six = "344567"  # Payment card first six
-last_four = "7890"  # Payment card last four
+[users.transactions.merchant_overrides]
+date = 2020-06-02T15:46:15Z
