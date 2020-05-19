@@ -1,0 +1,46 @@
+# Amex settlement fixture data
+mid = "test-mid-234"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "iceland-bonus-card"
+
+[payment_provider]
+slug = "amex"
+
+[[agents]]
+slug = "iceland-bonus-card"
+
+[[agents]]
+slug = "amex"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-234"
+token = "token-234"
+first_six = "344567"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-234"
+
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 2233
+points = 2
+settlement_key = "settle123"
+auth_code = "777777"
+[users.transactions.merchant_overrides]
+date = 2020-06-02T15:47:00Z
+# [users.transactions.payment_provider_overrides]
+# auth_code = "777778"
+
+[[users.transactions]]
+date = 2020-06-02T15:46:00Z
+amount = 2233
+points = 2
+settlement_key = "settlement-234"
+auth_code = "777777"
+[users.transactions.merchant_overrides]
+date = 2020-06-02T15:46:15Z

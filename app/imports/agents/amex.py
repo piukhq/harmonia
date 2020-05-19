@@ -71,13 +71,13 @@ class Amex(FileAgent):
 
         return PaymentTransactionFields(
             settlement_key=settlement_key,
-            transaction_date=data["purchase_date"],
+            transaction_date=data["transaction_date"],
             spend_amount=amount,
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["card_token"],
             extra_fields={
-                k: data[k] for k in ("detail_identifier", "partner_id", "transaction_date", "alias_card_number")
+                k: data[k] for k in ("detail_identifier", "partner_id", "purchase_date", "alias_card_number")
             },
         )
 
