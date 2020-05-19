@@ -188,7 +188,7 @@ class BaseMatchingAgent:
     def _filter_by_auth_code(
         self, scheme_transactions: t.List[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
-        auth_code = self.payment_transaction["auth_code"]
+        auth_code = self.payment_transaction.auth_code
 
         if not bool(auth_code and auth_code.strip()):
             return scheme_transactions
@@ -196,6 +196,6 @@ class BaseMatchingAgent:
         matched_transactions = [
             transaction
             for transaction in scheme_transactions
-            if transaction.extra_fields["TransactionAuthCode"] == auth_code
+            if transaction.auth_code == auth_code
         ]
         return matched_transactions
