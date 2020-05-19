@@ -70,6 +70,7 @@ class AmexAuth(BaseImportDataProvider):
                 "transaction_amount": to_pounds(transaction["amount"]),
                 "cm_alias": user["token"],
                 "merchant_number": fixture["mid"],
+                "approval_code": transaction["auth_code"],
             }
             for user in fixture["users"]
             for transaction in user["transactions"]

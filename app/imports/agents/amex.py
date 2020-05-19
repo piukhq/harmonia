@@ -17,8 +17,51 @@ DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
 
 
-def _make_settlement_key(key_id: str):
-    return sha256(f"amex.{key_id}".encode()).hexdigest()
+class SettlementKeyError(Exception):
+    pass
+
+
+def _make_settlement_key(
+    *,
+    card_token: str,
+    transaction_id: t.Optional[str] = None,
+    mid: t.Optional[str] = None,
+    approval_code: t.Optional[str] = None,
+    amount: t.Optional[str] = None,
+):
+    """
+    auth-settled transaction pairing logic from amex:
+
+    most transactions:
+    settlement key = card token + transaction ID
+
+    if transaction ID is blank:
+    settlement key = card token + approval code + MID
+
+    if approval code is blank:
+    settlemnet key = card token + amount + MID
+    """
+
+    parts = ["amex", card_token]
+    if transaction_id:
+        parts.append(transaction_id)
+    elif approval_code and mid:
+        parts.append(approval_code)
+        parts.append(mid)
+    elif amount and mid:
+        parts.append(amount)
+        parts.append(mid)
+    else:
+        raise SettlementKeyError(
+            "Failed to generate a settlement key. "
+            "At least one of the following combinations must be provided: "
+            "card token + transaction ID, "
+            "card token + approval code + mid, or"
+            "card_token + amount + mid. "
+            "This transaction has not been imported."
+        )
+
+    return sha256(".".join(parts).encode()).hexdigest()
 
 
 class Amex(FileAgent):
@@ -66,13 +109,17 @@ class Amex(FileAgent):
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
-        amount = data["transaction_amount"]
-        settlement_key = _make_settlement_key(f"{data['card_token']},{amount}")
+        settlement_key = _make_settlement_key(
+            card_token=data["card_token"],
+            transaction_id=data["transaction_id"],
+            mid=data["merchant_number"],
+            amount=str(data["transaction_amount"]),
+        )
 
         return PaymentTransactionFields(
             settlement_key=settlement_key,
             transaction_date=data["transaction_date"],
-            spend_amount=amount,
+            spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["card_token"],
@@ -104,7 +151,13 @@ class AmexAuth(QueueAgent):
         # https://github.com/sdispater/pendulum/pull/452
         transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"])  # type: ignore
         amount = to_pennies(float(data["transaction_amount"]))
-        settlement_key = _make_settlement_key(f"{data['cm_alias']},{amount}")
+        settlement_key = _make_settlement_key(
+            card_token=data["cm_alias"],
+            transaction_id=data["transaction_id"],
+            mid=data["merchant_number"],
+            approval_code=data["approval_code"],
+            amount=str(amount),
+        )
 
         return PaymentTransactionFields(
             settlement_key=settlement_key,
@@ -113,6 +166,7 @@ class AmexAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
+            auth_code=data["approval_code"],
             extra_fields={"offer_id": data["offer_id"]},
         )
 
