@@ -182,11 +182,11 @@ class VisaSettlement(BaseImportDataProvider):
                     {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
                     {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
                     {"Key": "Transaction.USDAmount", "Value": str(to_pounds(transaction["amount"]))},
-                    {"Key": "Transaction.MerchantLocalPurchaseDate ", "Value": "2019-12-19"},
+                    {"Key": "Transaction.MerchantLocalPurchaseDate", "Value": "2019-12-19"},
                     {"Key": "Transaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
                     {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "MYSTORE"},
                     {
-                        "Key": "Transaction.MerchantDateTimeGMT ",
+                        "Key": "Transaction.MerchantDateTimeGMT",
                         "Value": pendulum.instance(transaction["date"]).isoformat(),
                     },
                     {"Key": "Transaction.AuthCode", "Value": transaction["auth_code"]},
