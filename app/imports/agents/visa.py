@@ -201,7 +201,7 @@ class VisaSettlement(QueueAgent):
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         return PaymentTransactionFields(
-            transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            transaction_date=get_key_value(data, "Transaction.MerchantDateTimeGMT"),
             spend_amount=to_pennies(float(get_key_value(data, "Transaction.SettlementAmount"))),
             spend_multiplier=100,
             spend_currency="GBP",
