@@ -10,6 +10,7 @@ RUN apk --no-cache add --virtual build-deps \
       libxml2-dev \
       libxslt-dev \
       openssh \
+      gnupg1 \
       git && \
     apk --no-cache add \
       libpq \
