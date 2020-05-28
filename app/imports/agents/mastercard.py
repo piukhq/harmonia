@@ -127,7 +127,7 @@ class MastercardAuth(QueueAgent):
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,
-            spend_amount=to_pennies(data["amount"]),
+            spend_amount=to_pennies(float(data["amount"])),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             card_token=data["payment_card_token"],

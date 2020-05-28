@@ -73,7 +73,7 @@ class MastercardAuth(BaseImportDataProvider):
             {
                 "third_party_id": transaction["settlement_key"][:9],
                 "time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD HH:mm:ss"),
-                "amount": to_pounds(transaction["amount"]),
+                "amount": str(to_pounds(transaction["amount"])),
                 "currency_code": "GBP",
                 "payment_card_token": user["token"],
                 "mid": fixture["mid"],
