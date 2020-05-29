@@ -29,6 +29,7 @@ soteria = {git = "ssh://git@git.bink.com/Olympus/soteria.git"}
 hvac = "*"
 paramiko = "*"
 kombu = "*"
+hashids = "*"
 
 [dev-packages]
 alembic = "*"
