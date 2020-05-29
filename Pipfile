@@ -30,6 +30,7 @@ hvac = "*"
 paramiko = "*"
 kombu = "*"
 hashids = "*"
+pgpy = "*"
 
 [dev-packages]
 alembic = "*"
