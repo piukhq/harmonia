@@ -29,6 +29,7 @@ class BinkPayment(PassiveAPIAgent):
         return PaymentTransactionFields(
             settlement_key=data["settlement_key"],
             transaction_date=data["date"],
+            has_time=True,
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",

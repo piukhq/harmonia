@@ -16,6 +16,7 @@ from app.utils import missing_property
 class SchemeTransactionFields(t.NamedTuple):
     payment_provider_slug: str
     transaction_date: pendulum.DateTime
+    has_time: bool
     spend_amount: int
     spend_multiplier: int
     spend_currency: str
@@ -27,6 +28,7 @@ class SchemeTransactionFields(t.NamedTuple):
 
 class PaymentTransactionFields(t.NamedTuple):
     transaction_date: pendulum.DateTime
+    has_time: bool
     spend_amount: int
     spend_multiplier: int
     spend_currency: str

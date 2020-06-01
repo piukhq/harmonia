@@ -82,6 +82,7 @@ class MastercardSettled(FileAgent):
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
             transaction_date=data["transaction_date"],
+            has_time=False,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",
@@ -127,6 +128,7 @@ class MastercardAuth(QueueAgent):
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,
+            has_time=True,
             spend_amount=to_pennies(float(data["amount"])),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
