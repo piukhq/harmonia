@@ -17,8 +17,12 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("payment_transaction", sa.Column("has_time", sa.Boolean(), nullable=False))
-    op.add_column("scheme_transaction", sa.Column("has_time", sa.Boolean(), nullable=False))
+    op.add_column("payment_transaction", sa.Column("has_time", sa.Boolean(), nullable=True))
+    op.add_column("scheme_transaction", sa.Column("has_time", sa.Boolean(), nullable=True))
+    op.execute("UPDATE payment_transaction SET has_time = False")
+    op.execute("UPDATE scheme_transaction SET has_time = False")
+    op.alter_column("payment_transaction", "has_time", nullable=False)
+    op.alter_column("scheme_transaction", "has_time", nullable=False)
 
 
 def downgrade():
