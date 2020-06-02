@@ -142,6 +142,7 @@ class Visa(FileAgent):
         return PaymentTransactionFields(
             settlement_key="",
             transaction_date=data["transaction_date"],
+            has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency=data["country_currency_code"],
@@ -171,6 +172,7 @@ class VisaAuth(QueueAgent):
         ext_user_id = data["ExternalUserId"]
         return PaymentTransactionFields(
             transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            has_time=True,
             spend_amount=to_pennies(float(get_key_value(data, "Transaction.TransactionAmount"))),
             spend_multiplier=100,
             spend_currency="GBP",
@@ -202,6 +204,7 @@ class VisaSettlement(QueueAgent):
         ext_user_id = data["ExternalUserId"]
         return PaymentTransactionFields(
             transaction_date=get_key_value(data, "Transaction.MerchantDateTimeGMT"),
+            has_time=True,
             spend_amount=to_pennies(float(get_key_value(data, "Transaction.SettlementAmount"))),
             spend_multiplier=100,
             spend_currency="GBP",
