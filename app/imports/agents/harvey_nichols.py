@@ -125,17 +125,17 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 
 
 payment_provider_map = {
-    'AMERICAN EXPRESS': PaymentProviderSlug.AMEX,
-    'AMEX': PaymentProviderSlug.AMEX,
-    'DCC MASTERCARD': PaymentProviderSlug.MASTERCARD,
-    'MAESTRO': PaymentProviderSlug.MASTERCARD,
-    'MASTERCARD': PaymentProviderSlug.MASTERCARD,
-    'SOLO': PaymentProviderSlug.MASTERCARD,
-    'SWITCH': PaymentProviderSlug.MASTERCARD,
-    'DCC VISA': PaymentProviderSlug.VISA,
-    'DELTA': PaymentProviderSlug.VISA,
-    'ELECTRON': PaymentProviderSlug.VISA,
-    'VISA': PaymentProviderSlug.VISA
+    "AMERICAN EXPRESS": PaymentProviderSlug.AMEX,
+    "AMEX": PaymentProviderSlug.AMEX,
+    "DCC MASTERCARD": PaymentProviderSlug.MASTERCARD,
+    "MAESTRO": PaymentProviderSlug.MASTERCARD,
+    "MASTERCARD": PaymentProviderSlug.MASTERCARD,
+    "SOLO": PaymentProviderSlug.MASTERCARD,
+    "SWITCH": PaymentProviderSlug.MASTERCARD,
+    "DCC VISA": PaymentProviderSlug.VISA,
+    "DELTA": PaymentProviderSlug.VISA,
+    "ELECTRON": PaymentProviderSlug.VISA,
+    "VISA": PaymentProviderSlug.VISA,
 }
 
 

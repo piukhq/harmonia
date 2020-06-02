@@ -8,17 +8,14 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class HarveyNichols(BaseMatchingAgent):
-
     def filter_functions(self, payment_slug: str) -> tuple:
         return {
-            "amex": (self._filter_by_card_number, ),
-            "mastercard": (self._filter_by_card_number, ),
-            "visa": (self._filter_by_card_number, ),
+            "amex": (self._filter_by_card_number,),
+            "mastercard": (self._filter_by_card_number,),
+            "visa": (self._filter_by_card_number,),
         }[payment_slug]
 
-    def _time_filter(
-        self, scheme_transactions: orm.query.Query, *, tolerance: int
-    ) -> orm.query.Query:
+    def _time_filter(self, scheme_transactions: orm.query.Query, *, tolerance: int) -> orm.query.Query:
         if self.payment_transaction.has_time:
             transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
             return scheme_transactions.filter(
@@ -29,9 +26,7 @@ class HarveyNichols(BaseMatchingAgent):
             )
         return scheme_transactions
 
-    def _filter_scheme_transactions_with_time(
-        self, scheme_transactions: orm.query.Query
-    ) -> orm.query.Query:
+    def _filter_scheme_transactions_with_time(self, scheme_transactions: orm.query.Query) -> orm.query.Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
@@ -39,9 +34,7 @@ class HarveyNichols(BaseMatchingAgent):
         scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
         return scheme_transactions
 
-    def _filter_scheme_transactions_mastercard(
-        self, scheme_transactions: orm.query.Query
-    ) -> orm.query.Query:
+    def _filter_scheme_transactions_mastercard(self, scheme_transactions: orm.query.Query) -> orm.query.Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
@@ -108,10 +101,12 @@ class HarveyNichols(BaseMatchingAgent):
         matched_transactions = [
             transaction
             for transaction in scheme_transactions
-            if (transaction.extra_fields["card"]["last_4"] == user_identity.last_four
-                and (transaction.extra_fields["card"]["first_6"] == user_identity.first_six
-                     or transaction.extra_fields["card"]["first_6"] == "000000"
-                     )
+            if (
+                transaction.extra_fields["card"]["last_4"] == user_identity.last_four
+                and (
+                    transaction.extra_fields["card"]["first_6"] == user_identity.first_six
+                    or transaction.extra_fields["card"]["first_6"] == "000000"
                 )
+            )
         ]
         return matched_transactions
