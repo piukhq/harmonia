@@ -147,6 +147,7 @@ class Visa(FileAgent):
             spend_multiplier=100,
             spend_currency=data["country_currency_code"],
             card_token=data["external_card_holder_id"],
+            auth_code=data["authorisation_code"],
             extra_fields={k: data[k] for k in ("merchant_description_name", "merchant_city")},
         )
 
