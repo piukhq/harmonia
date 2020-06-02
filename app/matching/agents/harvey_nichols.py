@@ -2,7 +2,7 @@ import typing as t
 import pendulum
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from sqlalchemy import orm, and_, or_
+from sqlalchemy import orm
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
