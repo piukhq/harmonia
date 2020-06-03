@@ -1,8 +1,8 @@
 import typing as t
 from collections import namedtuple
 
-import sqlalchemy
 import pendulum
+from sqlalchemy.orm.query import Query
 
 from app.reporting import get_logger
 from app import models, db
@@ -26,9 +26,7 @@ class BaseMatchingAgent:
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def _time_filter(
-        self, scheme_transactions: sqlalchemy.orm.query.Query, *, tolerance: int
-    ) -> sqlalchemy.orm.query.Query:
+    def _time_filter(self, scheme_transactions: Query, *, tolerance: int) -> Query:
         if self.payment_transaction.has_time:
             transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
             return scheme_transactions.filter(
