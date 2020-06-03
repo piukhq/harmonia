@@ -12,9 +12,17 @@ class Iceland(BaseMatchingAgent):
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-            models.SchemeTransaction.auth_code == self.payment_transaction.auth_code,
         )
+
+        # auth code is an optional field that we use if we have it
+        if self.payment_transaction.auth_code:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
+            )
+
+        # apply a 10 second fuzzy match on time
         scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+
         return scheme_transactions
 
     def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
