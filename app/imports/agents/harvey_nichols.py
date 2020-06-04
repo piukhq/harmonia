@@ -6,6 +6,7 @@ from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
 from app.currency import to_pennies
+from app.service.hermes import PaymentProviderSlug
 
 
 PROVIDER_SLUG = "harvey-nichols"
@@ -123,6 +124,21 @@ STORE_ID_TO_MIDS: t.Dict[str, t.List[str]] = {
 }
 
 
+payment_provider_map = {
+    "AMERICAN EXPRESS": PaymentProviderSlug.AMEX,
+    "AMEX": PaymentProviderSlug.AMEX,
+    "DCC MASTERCARD": PaymentProviderSlug.MASTERCARD,
+    "MAESTRO": PaymentProviderSlug.MASTERCARD,
+    "MASTERCARD": PaymentProviderSlug.MASTERCARD,
+    "SOLO": PaymentProviderSlug.MASTERCARD,
+    "SWITCH": PaymentProviderSlug.MASTERCARD,
+    "DCC VISA": PaymentProviderSlug.VISA,
+    "DELTA": PaymentProviderSlug.VISA,
+    "ELECTRON": PaymentProviderSlug.VISA,
+    "VISA": PaymentProviderSlug.VISA,
+}
+
+
 class HarveyNichols(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
@@ -146,7 +162,8 @@ class HarveyNichols(FileAgent):
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["timestamp"],
-            payment_provider_slug="",
+            has_time=True,
+            payment_provider_slug=payment_provider_map[data["card"]["scheme"]],
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],

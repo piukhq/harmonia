@@ -28,6 +28,7 @@ class BinkLoyalty(PassiveAPIAgent):
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["date"],
+            has_time=True,
             payment_provider_slug=data["payment_provider_slug"],
             spend_amount=data["spend"],
             spend_multiplier=100,

@@ -34,6 +34,7 @@ class Cooperative(FileAgent):
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["timestamp"],
+            has_time=True,
             payment_provider_slug="",
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,

@@ -1,37 +1,51 @@
 import typing as t
-import sqlalchemy
-from sqlalchemy import Date, cast
+
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.query import Query
 
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class Iceland(BaseMatchingAgent):
-    def __init__(self, payment_transaction: models.PaymentTransaction) -> None:
-        super().__init__(payment_transaction)
-
-    def filter_functions(self, payment_slug: str) -> tuple:
-        return {
-            "amex": (lambda tx: self._filter_by_time(tx, time_tolerance=10), self._filter_by_auth_code),
-            "mastercard": (lambda tx: self._filter_by_time(tx, time_tolerance=60), self._filter_by_card_number),
-            "visa": (self._filter_by_auth_code, lambda tx: self._filter_by_time(tx, time_tolerance=10)),
-        }[payment_slug]
-
-    def do_match(self, scheme_transactions: sqlalchemy.orm.query.Query) -> t.Optional[MatchResult]:
+    def _filter_scheme_transactions_with_auth_code(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
-            cast(models.SchemeTransaction.transaction_date, Date)
-            == cast(self.payment_transaction.transaction_date, Date),
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
 
+        # auth code is an optional field that we use if we have it
+        if self.payment_transaction.auth_code:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
+            )
+
+        # apply a 10 second fuzzy match on time
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+
+        return scheme_transactions
+
+    def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
+        scheme_transactions = scheme_transactions.filter(
+            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+        )
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
+        return scheme_transactions
+
+    def _filter_scheme_transactions(self, scheme_transactions: Query):
+        return {
+            "visa": self._filter_scheme_transactions_with_auth_code,
+            "amex": self._filter_scheme_transactions_with_auth_code,
+            "mastercard": self._filter_scheme_transactions_mastercard,
+        }[self.payment_transaction.provider_slug](scheme_transactions)
+
+    def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
+        scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
         if multiple_returned:
-            match = self._filter(
-                scheme_transactions.all(), self.filter_functions(self.payment_transaction.provider_slug)
-            )
+            match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
 
         if not match:
             self.log.warning(
@@ -47,9 +61,7 @@ class Iceland(BaseMatchingAgent):
             scheme_transaction_id=match.id,
         )
 
-    def _check_for_match(
-        self, scheme_transactions: sqlalchemy.orm.query.Query
-    ) -> t.Tuple[t.Optional[models.SchemeTransaction], bool]:
+    def _check_for_match(self, scheme_transactions: Query) -> t.Tuple[t.Optional[models.SchemeTransaction], bool]:
         match = None
         multiple_returned = False
         try:

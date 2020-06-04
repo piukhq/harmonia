@@ -1,0 +1,40 @@
+# base fixture data
+mid = "92040913"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "harvey-nichols"
+
+[payment_provider]
+slug = "mastercard"
+
+[[agents]]
+slug = "harvey-nichols"
+
+[[agents]]
+slug = "mastercard-auth"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-hn-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-hn-123"
+
+[[users.transactions]]
+date = 2020-05-28T15:46:00Z
+amount = 1099
+points = 5
+settlement_key = "settle123"
+auth_code = "666666"
+
+[[users.transactions]]
+date = 2020-05-28T13:46:00Z
+amount = 2099
+points = 6
+settlement_key = "1111111111"
+auth_code = "666666"

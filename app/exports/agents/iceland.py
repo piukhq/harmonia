@@ -18,7 +18,7 @@ from app.service.iceland import IcelandAPI
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
 
-hashids = Hashids(
+hash_ids = Hashids(
     min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890"
 )
 
@@ -79,8 +79,8 @@ class Iceland(BatchExportAgent):
         for transaction in transactions:
             user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
             formatted_transaction = {
-                "record_uid": hashids.encode(user_identity.scheme_account_id),
-                "merchant_scheme_id1": hashids.encode(user_identity.user_id),
+                "record_uid": hash_ids.encode(user_identity.scheme_account_id),
+                "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
                 "merchant_scheme_id2": transaction.merchant_identifier.mid,
                 "transaction_id": transaction.transaction_id,
             }

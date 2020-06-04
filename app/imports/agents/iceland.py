@@ -71,6 +71,7 @@ class Iceland(FileAgent):
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
+            has_time=True,
             payment_provider_slug=Iceland.payment_provider_map[data["TransactionCardScheme"]],
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,

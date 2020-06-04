@@ -119,6 +119,7 @@ class Amex(FileAgent):
         return PaymentTransactionFields(
             settlement_key=settlement_key,
             transaction_date=data["transaction_date"],
+            has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",
@@ -162,6 +163,7 @@ class AmexAuth(QueueAgent):
         return PaymentTransactionFields(
             settlement_key=settlement_key,
             transaction_date=transaction_date,
+            has_time=True,
             spend_amount=amount,
             spend_multiplier=100,
             spend_currency="GBP",
