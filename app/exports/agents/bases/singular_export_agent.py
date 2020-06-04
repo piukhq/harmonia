@@ -6,7 +6,7 @@ from app.status import status_monitor
 
 
 class SingularExportAgent(BaseAgent):
-    def run(self, *, once: bool = False):
+    def run(self):
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
         )

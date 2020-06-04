@@ -98,15 +98,7 @@ class BaseMatchingAgent:
 
         st_fields = {
             k: getattr(scheme_transaction, k)
-            for k in (
-                "transaction_id",
-                "transaction_date",
-                "spend_amount",
-                "spend_multiplier",
-                "spend_currency",
-                "points_amount",
-                "points_multiplier",
-            )
+            for k in ("transaction_id", "transaction_date", "spend_amount", "spend_multiplier", "spend_currency",)
         }
         return {
             "merchant_identifier_id": matching_merchant_identifier_ids[0],
@@ -154,30 +146,6 @@ class BaseMatchingAgent:
             return None
         else:
             return scheme_transactions[0]
-
-    def _filter_by_time(
-        self, scheme_transactions: t.List[models.SchemeTransaction], time_tolerance=60
-    ) -> t.List[models.SchemeTransaction]:
-
-        # Temporary - to identify if the payment transaction is settlement or auth
-        # settlement transaction_time field cannot be used for filtering as it is inaccurate
-        # TODO: This should be removed once payment_transaction.transaction_date
-        # is separated into date and time fields
-        if self.payment_transaction.extra_fields.get("transaction_time"):
-            return scheme_transactions
-
-        transaction_datetime = pendulum.instance(self.payment_transaction.transaction_date)
-
-        min_time = transaction_datetime.subtract(seconds=time_tolerance)
-        max_time = transaction_datetime.add(seconds=time_tolerance)
-        match_period = pendulum.period(min_time, max_time)
-
-        matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if pendulum.instance(transaction.transaction_date) in match_period
-        ]
-        return matched_transactions
 
     def _filter_by_card_number(
         self, scheme_transactions: t.List[models.SchemeTransaction]

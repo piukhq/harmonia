@@ -159,7 +159,6 @@ Example:
 [[payment_provider.transactions]]
 date = 2020-06-02T15:46:30Z  # Datetime representing the transaction time
 amount = 1222  # Transaction amount in pennies
-points = 8  # Points awarded for transaction
 
 # Settlement key of the payment transaction - should be kept to 9 chars or less for Mastercard
 settlement_key = "1111111111"
@@ -172,7 +171,6 @@ user_id = 0
 [[loyalty_scheme.transactions]]
 date = 2020-06-02T15:47:45Z
 amount = 1222
-points = 8
 first_six = "123456"  # Payment card first six
 last_four = "7890"  # Payment card last four
 ```

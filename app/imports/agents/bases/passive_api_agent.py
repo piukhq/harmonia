@@ -54,7 +54,7 @@ class PassiveAPIAgent(BaseAgent):
     def extract_transactions(self, request_json: t.Dict[str, str]) -> t.List[t.Dict[str, str]]:
         return [request_json]
 
-    def run(self, *, once: bool = False) -> None:
+    def run(self) -> None:
         self.log.warning(
             "This agent cannot be run this way. "
             "For local testing, use the flask development server. "

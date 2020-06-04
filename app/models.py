@@ -64,8 +64,6 @@ class SchemeTransaction(Base, ModelMixin):
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
-    points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
-    points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
@@ -120,8 +118,6 @@ class MatchedTransaction(Base, ModelMixin):
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
-    points_amount = s.Column(s.Integer)  # number of points that were involved in the transaction
-    points_multiplier = s.Column(s.Integer)  # amount points_amount was multiplied by to make it integral
     card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     matching_type = s.Column(s.Enum(MatchingType), nullable=False)  # type of matching, see MatchingType for options
     status = s.Column(s.Enum(MatchedTransactionStatus), nullable=False, default=MatchedTransactionStatus.PENDING)

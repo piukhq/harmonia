@@ -8,7 +8,7 @@ from app.imports.agents import BaseAgent
 
 
 class QueueAgent(BaseAgent):
-    def run(self, *, once: bool = False):
+    def run(self):
         required_settings = [
             "RABBITMQ_HOST",
             "RABBITMQ_PORT",
