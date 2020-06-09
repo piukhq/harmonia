@@ -47,7 +47,7 @@ class BaseAgent:
             "and override this help method to provide specific information."
         )
 
-    def run(self, *, bool=False):
+    def run(self):
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
