@@ -28,6 +28,5 @@ card_number = "loyalty-123"
 [[users.transactions]]
 date = 2020-04-09T15:46:00Z
 amount = 11199
-points = 5
 auth_code = "666666"
 settlement_key = "settlement-123"

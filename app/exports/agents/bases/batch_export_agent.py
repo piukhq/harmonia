@@ -9,15 +9,10 @@ from app.scheduler import CronScheduler
 
 
 class BatchExportAgent(BaseAgent):
-    def run(self, *, once: bool = False):
+    def run(self):
         scheduler = CronScheduler(
             schedule_fn=lambda: self.Config.schedule, callback=self.callback, logger=self.log  # type: ignore
         )
-
-        if once:
-            self.log.debug("Batch export agent running once.")
-            scheduler.tick()
-            return
 
         self.log.debug(f"Beginning schedule {scheduler}.")
         scheduler.run()
@@ -32,7 +27,7 @@ class BatchExportAgent(BaseAgent):
         with db.session_scope() as session:
             self.export_all(session=session)
 
-    def export_all(self, *, session: db.Session, once: bool = False):
+    def export_all(self, *, session: db.Session):
         pending_exports_q = (
             session.query(models.PendingExport)
             .options(

@@ -20,8 +20,6 @@ class SchemeTransactionFields(t.NamedTuple):
     spend_amount: int
     spend_multiplier: int
     spend_currency: str
-    points_amount: int
-    points_multiplier: int
     extra_fields: dict
     auth_code: str = ""
 
@@ -98,7 +96,7 @@ class BaseAgent:
             "and override this help method to provide specific information."
         )
 
-    def run(self, *, once: bool = False):
+    def run(self):
         raise NotImplementedError(
             "Override the run method in your agent to act as the main entry point into the import process."
         )

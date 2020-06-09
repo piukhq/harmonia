@@ -28,7 +28,6 @@ card_number = "loyalty-234"
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 2233
-points = 2
 settlement_key = "settle123"
 auth_code = "777777"
 [users.transactions.merchant_overrides]
@@ -39,7 +38,6 @@ date = 2020-06-02T15:47:00Z
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 2233
-points = 2
 settlement_key = "settlement-234"
 auth_code = "777777"
 [users.transactions.merchant_overrides]

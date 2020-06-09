@@ -39,8 +39,6 @@ class Cooperative(FileAgent):
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
-            points_amount=0,
-            points_multiplier=0,
             extra_fields={k: data[k] for k in ("card",)},
         )
 
