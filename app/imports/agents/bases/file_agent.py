@@ -125,7 +125,7 @@ class FileAgent(BaseAgent):
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError
 
-    def run(self, *, once: bool = False) -> None:
+    def run(self) -> None:
         filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource)
         path = self.Config.path  # type: ignore
         filesource = filesource_class(Path(path), logger=self.log)
@@ -144,9 +144,6 @@ class FileAgent(BaseAgent):
             attempts = 0  # reset attempt counter for next time
 
             filesource.provide(self._do_import)
-            if once is True:
-                self.log.info("Quitting early as we were told to run once.")
-                break
             time.sleep(30)
 
         self.log.info("Shutting down.")

@@ -10,7 +10,6 @@ class BinkLoyalty(BaseImportDataProvider):
             {
                 "date": transaction["date"].isoformat(),
                 "mid": fixture["mid"],
-                "points": transaction["points"],
                 "spend": transaction["amount"],
                 "tid": str(uuid4()),
                 "payment_provider_slug": fixture["payment_provider"]["slug"],

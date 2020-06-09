@@ -12,7 +12,6 @@ class TransactionSchema(Schema):
     mid = fields.String(required=True, allow_none=False)
     date = PendulumField(required=True, allow_none=False)
     spend = fields.Integer(required=True, allow_none=False)
-    points = fields.Integer(required=True, allow_none=False)
     payment_provider_slug = fields.String(required=True, allow_none=False)
 
 
@@ -33,8 +32,6 @@ class BinkLoyalty(PassiveAPIAgent):
             spend_amount=data["spend"],
             spend_multiplier=100,
             spend_currency="GBP",
-            points_amount=data["points"],
-            points_multiplier=1,
             extra_fields={},
         )
 

@@ -28,5 +28,4 @@ card_number = "loyalty-123"
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 1099
-points = 5
 settlement_key = "settlement-123"

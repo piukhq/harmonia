@@ -76,8 +76,6 @@ class Iceland(FileAgent):
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
-            points_amount=0,
-            points_multiplier=0,
             auth_code=data["TransactionAuthCode"],
             extra_fields={
                 k: data[k]

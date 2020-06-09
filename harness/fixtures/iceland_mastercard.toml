@@ -28,14 +28,12 @@ card_number = "loyalty-123"
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 1099
-points = 5
 settlement_key = "settle123"
 auth_code = "666666"
 
 [[users.transactions]]
 date = 2020-06-02T15:46:30Z
 amount = 1222
-points = 8
 settlement_key = "1111111111"
 auth_code = "666666"
 [users.transactions.merchant_overrides]

@@ -49,7 +49,6 @@ class SchemeTransactionSchema(SQLAlchemyAutoSchema):
     id = fields.Integer(required=True, allow_none=False)
     transaction_date = fields.DateTime(required=True, allow_none=False)
     spend_amount = fields.Integer(required=True, allow_none=False)
-    points_amount = fields.Integer(required=True, allow_none=False)
     created_at = fields.DateTime(required=True, allow_none=False)
 
 
@@ -75,7 +74,6 @@ class MatchedTransactionSchema(SQLAlchemyAutoSchema):
     id = fields.Integer(required=True, allow_none=False)
     transaction_date = fields.DateTime(required=True, allow_none=False)
     spend_amount = fields.Integer(required=True, allow_none=False)
-    points_amount = fields.Integer(required=True, allow_none=False)
     card_token = fields.String(required=True, allow_none=False)
     created_at = fields.DateTime(required=True, allow_none=False)
 
