@@ -119,7 +119,7 @@ class MastercardAuth(QueueAgent):
         queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
-        transaction_date: pendulum.DateTime = self.pendulum_parse(data["time"], tz="Europe/London")
+        transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,

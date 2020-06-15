@@ -1,7 +1,6 @@
 import json
 import inspect
 import typing as t
-import pendulum
 
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
@@ -32,7 +31,7 @@ class Cooperative(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date: pendulum.DateTime = self.pendulum_parse(data["timestamp"], tz="GMT")
+        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
 
         return SchemeTransactionFields(
             transaction_date=transaction_date,

@@ -143,12 +143,8 @@ class AmexAuth(QueueAgent):
     class Config:
         queue_name = ConfigValue(QUEUE_NAME_KEY, "amex-auth")
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
-        # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
-        # we can remove this fix when the bug is resolved.
-        # https://github.com/sdispater/pendulum/pull/452
-        transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"], tz="MST")  # type: ignore
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.pendulum_parse(data["transaction_time"], tz="MST")
         amount = to_pennies(float(data["transaction_amount"]))
         settlement_key = _make_settlement_key(
             card_token=data["cm_alias"],

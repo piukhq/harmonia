@@ -1,7 +1,6 @@
 import typing as t
 import inspect
 import json
-import pendulum
 
 from app.config import KEY_PREFIX, ConfigValue
 from app.feeds import ImportFeedTypes
@@ -160,7 +159,7 @@ class HarveyNichols(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date: pendulum.DateTime = self.pendulum_parse(data["timestamp"], tz="GMT")
+        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
         return SchemeTransactionFields(
             transaction_date=transaction_date,
             has_time=True,

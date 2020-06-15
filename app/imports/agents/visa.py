@@ -170,9 +170,7 @@ class VisaAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date: pendulum.DateTime = self.pendulum_parse(
-            get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT"
-        )
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
@@ -204,9 +202,7 @@ class VisaSettlement(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date: pendulum.DateTime = self.pendulum_parse(
-            get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT"
-        )
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
