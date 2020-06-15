@@ -26,7 +26,7 @@ class Iceland(FileAgent):
         "TransactionCardSchemeId": int,
         "TransactionAmountValue": lambda x: to_pennies(float(x)),
         "TransactionCashbackValue": Decimal,
-        "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
+        "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
     }
 
     payment_provider_map = {
@@ -67,8 +67,7 @@ class Iceland(FileAgent):
             """
         )
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
             has_time=True,

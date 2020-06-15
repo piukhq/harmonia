@@ -29,7 +29,7 @@ class Iceland(BaseImportDataProvider):
                 scheme_id,
                 scheme_name,
                 fixture["mid"],
-                pendulum.instance(transaction["date"]).format("YYYY-MM-DD HH:mm:ss"),
+                pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DD HH:mm:ss"),
                 to_pounds(transaction["amount"]),
                 "GBP",
                 ".00",
