@@ -36,11 +36,11 @@ class Amex(BaseImportDataProvider):
                 "D",  # detail identifier
                 "AADP0050",  # partner id
                 str(uuid4()),  # transaction ID
-                pendulum.instance(transaction["date"]).format("YYYY-MM-DD"),
+                pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DD"),
                 str(transaction["amount"] / 100).rjust(17, "0"),
                 user["token"].ljust(200),
                 fixture["mid"].ljust(15),
-                pendulum.instance(transaction["date"]).format("YYYY-MM-DD-HH.mm.ss"),
+                pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DD-HH.mm.ss"),
                 f'{user["first_six"]}XXXXX{user["last_four"]}',
             )
             for user in fixture["users"]
@@ -66,7 +66,7 @@ class AmexAuth(BaseImportDataProvider):
             {
                 "transaction_id": get_transaction_id(),
                 "offer_id": transaction["settlement_key"],
-                "transaction_time": pendulum.instance(transaction["date"]).format("YYYY-MM-DD HH:mm:ss"),
+                "transaction_time": pendulum.instance(transaction["date"]).in_tz("MST").format("YYYY-MM-DD HH:mm:ss"),
                 "transaction_amount": to_pounds(transaction["amount"]),
                 "cm_alias": user["token"],
                 "merchant_number": fixture["mid"],

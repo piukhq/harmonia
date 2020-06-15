@@ -123,8 +123,7 @@ class MastercardAuth(QueueAgent):
         # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
         # we can remove this fix when the bug is resolved.
         # https://github.com/sdispater/pendulum/pull/452
-        transaction_date: pendulum.DateTime = pendulum.parse(data["time"])  # type: ignore
-
+        transaction_date: pendulum.DateTime = pendulum.parse(data["time"], tz="Europe/London")
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,

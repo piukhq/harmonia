@@ -81,8 +81,8 @@ class Amex(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
-        "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT),
+        "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="Europe/London"),
+        "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
         "transaction_amount": lambda x: to_pennies(float(x)),
     }
 
@@ -115,7 +115,6 @@ class Amex(FileAgent):
             mid=data["merchant_number"],
             amount=str(data["transaction_amount"]),
         )
-
         return PaymentTransactionFields(
             settlement_key=settlement_key,
             transaction_date=data["transaction_date"],
@@ -150,7 +149,7 @@ class AmexAuth(QueueAgent):
         # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
         # we can remove this fix when the bug is resolved.
         # https://github.com/sdispater/pendulum/pull/452
-        transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"])  # type: ignore
+        transaction_date: pendulum.DateTime = pendulum.parse(data["transaction_time"], tz="MST")  # type: ignore
         amount = to_pennies(float(data["transaction_amount"]))
         settlement_key = _make_settlement_key(
             card_token=data["cm_alias"],

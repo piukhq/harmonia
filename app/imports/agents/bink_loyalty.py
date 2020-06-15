@@ -10,7 +10,7 @@ from app.serialization import PendulumField
 class TransactionSchema(Schema):
     tid = fields.String(required=True, allow_none=False)
     mid = fields.String(required=True, allow_none=False)
-    date = PendulumField(required=True, allow_none=False)
+    date = PendulumField(required=True, allow_none=False, tz="Europe/London")
     spend = fields.Integer(required=True, allow_none=False)
     payment_provider_slug = fields.String(required=True, allow_none=False)
 
