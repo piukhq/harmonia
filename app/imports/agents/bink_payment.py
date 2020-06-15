@@ -24,8 +24,7 @@ class BinkPayment(PassiveAPIAgent):
     def help(self) -> str:
         return self._help(__name__)
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
             settlement_key=data["settlement_key"],
             transaction_date=data["date"],

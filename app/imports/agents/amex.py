@@ -107,8 +107,7 @@ class Amex(FileAgent):
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         settlement_key = _make_settlement_key(
             card_token=data["card_token"],
             transaction_id=data["transaction_id"],

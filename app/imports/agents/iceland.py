@@ -67,8 +67,7 @@ class Iceland(FileAgent):
             """
         )
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             transaction_date=data["TransactionTimestamp"],
             has_time=True,

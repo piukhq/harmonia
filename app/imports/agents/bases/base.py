@@ -101,8 +101,7 @@ class BaseAgent:
             "Override the run method in your agent to act as the main entry point into the import process."
         )
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> t.Union[SchemeTransactionFields, PaymentTransactionFields]:
+    def to_transaction_fields(self, data: dict) -> t.Union[SchemeTransactionFields, PaymentTransactionFields]:
         raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
@@ -112,6 +111,13 @@ class BaseAgent:
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
+
+    @staticmethod
+    def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
+        # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
+        # we can remove this fix when the bug is resolved.
+        # https://github.com/sdispater/pendulum/pull/452
+        return pendulum.parse(date_time, tz=tz)  # type: ignore
 
     def _find_new_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session
