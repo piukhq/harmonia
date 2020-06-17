@@ -118,13 +118,8 @@ class MastercardAuth(QueueAgent):
     class Config:
         queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
-        # pendulum 2.1.0 has a type hint bug that suggests `parse` returns a string.
-        # we can remove this fix when the bug is resolved.
-        # https://github.com/sdispater/pendulum/pull/452
-        transaction_date: pendulum.DateTime = pendulum.parse(data["time"])  # type: ignore
-
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,

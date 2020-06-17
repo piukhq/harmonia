@@ -72,8 +72,8 @@ class Visa(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "transaction_amount": int,
-        "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
-        "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
+        "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="GMT"),
+        "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="GMT"),
         "acquirer_transaction_amount": int,
     }
 
@@ -168,11 +168,11 @@ class VisaAuth(QueueAgent):
     def get_mids(data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
-            transaction_date=get_key_value(data, "Transaction.TimeStampYYMMDD"),
+            transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(float(get_key_value(data, "Transaction.TransactionAmount"))),
             spend_multiplier=100,
@@ -200,11 +200,11 @@ class VisaSettlement(QueueAgent):
     def get_mids(data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
         return PaymentTransactionFields(
-            transaction_date=get_key_value(data, "Transaction.MerchantDateTimeGMT"),
+            transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(float(get_key_value(data, "Transaction.SettlementAmount"))),
             spend_multiplier=100,

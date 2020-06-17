@@ -158,10 +158,10 @@ class HarveyNichols(FileAgent):
             """
         )
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
+        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
         return SchemeTransactionFields(
-            transaction_date=data["timestamp"],
+            transaction_date=transaction_date,
             has_time=True,
             payment_provider_slug=payment_provider_map[data["card"]["scheme"]],
             spend_amount=to_pennies(data["amount"]["value"]),

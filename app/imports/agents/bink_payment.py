@@ -10,7 +10,7 @@ from app.serialization import PendulumField
 class TransactionSchema(Schema):
     tid = fields.String(required=True, allow_none=False)
     mid = fields.String(required=True, allow_none=False)
-    date = PendulumField(required=True, allow_none=False)
+    date = PendulumField(required=True, allow_none=False, tz="Europe/London")
     spend = fields.Integer(required=True, allow_none=False)
     token = fields.String(required=True, allow_none=False)
     settlement_key = fields.String(required=True, allow_none=False)
@@ -24,8 +24,7 @@ class BinkPayment(PassiveAPIAgent):
     def help(self) -> str:
         return self._help(__name__)
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
             settlement_key=data["settlement_key"],
             transaction_date=data["date"],
