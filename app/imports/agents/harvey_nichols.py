@@ -146,8 +146,16 @@ class HarveyNichols(FileAgent):
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
 
+    """
+    Harvey Nichols send transaction data with unrecognised payment providers, EG "ACCESS (NOT USED)"
+    The following generator only yields the valid payment provider transactions, only these are stored.
+    """
+
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
-        yield from json.loads(data.decode())["transactions"]
+        transactions = json.loads(data.decode())["transactions"]
+        for transaction in transactions:
+            if transaction["card"]["scheme"] in payment_provider_map:
+                yield transaction
 
     def help(self) -> str:
         return inspect.cleandoc(
