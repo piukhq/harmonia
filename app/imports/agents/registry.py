@@ -12,5 +12,6 @@ import_agents.add("mastercard-auth", "app.imports.agents.mastercard.MastercardAu
 import_agents.add("cooperative", "app.imports.agents.cooperative.Cooperative")
 import_agents.add("harvey-nichols", "app.imports.agents.harvey_nichols.HarveyNichols")
 import_agents.add("iceland-bonus-card", "app.imports.agents.iceland.Iceland")
+import_agents.add("whsmith-rewards", "app.imports.agents.whsmith.WhSmith")
 import_agents.add("bink-loyalty", "app.imports.agents.bink_loyalty.BinkLoyalty")
 import_agents.add("bink-payment", "app.imports.agents.bink_payment.BinkPayment")

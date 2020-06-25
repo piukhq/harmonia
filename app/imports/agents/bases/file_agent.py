@@ -42,7 +42,8 @@ class LocalFileSource(FileSourceBase):
             with open(filepath, "rb") as f:
                 data = f.read()
             try:
-                callback(data=data, source=str(filepath))
+                for _ in callback(data=data, source=str(filepath)):
+                    pass  # callback is a generator object
             except Exception as ex:
                 if settings.DEBUG:
                     raise
