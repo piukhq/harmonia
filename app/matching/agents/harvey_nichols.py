@@ -1,6 +1,5 @@
 import typing as t
 
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.orm.query import Query
 
 from app import models
@@ -52,23 +51,6 @@ class HarveyNichols(BaseMatchingAgent):
             ),
             scheme_transaction_id=match.id,
         )
-
-    def _check_for_match(self, scheme_transactions: Query) -> t.Tuple[t.Optional[models.SchemeTransaction], bool]:
-        match = None
-        multiple_returned = False
-        try:
-            match = scheme_transactions.one()
-        except NoResultFound:
-            self.log.warning(
-                f"Couldn't match any scheme transactions to payment transaction #{self.payment_transaction.id}."
-            )
-        except MultipleResultsFound:
-            self.log.warning(
-                f"More than one scheme transaction matches payment transaction #{self.payment_transaction.id}."
-            )
-            multiple_returned = True
-
-        return match, multiple_returned
 
     def _filter_by_card_number(
         self, scheme_transactions: t.List[models.SchemeTransaction]

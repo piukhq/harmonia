@@ -2,6 +2,7 @@ import typing as t
 from collections import namedtuple
 
 import pendulum
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.query import Query
 
 from app.reporting import get_logger
@@ -163,3 +164,20 @@ class BaseMatchingAgent:
             transaction for transaction in scheme_transactions if transaction.auth_code == auth_code
         ]
         return matched_transactions
+
+    def _check_for_match(self, scheme_transactions: Query) -> t.Tuple[t.Optional[models.SchemeTransaction], bool]:
+        match = None
+        multiple_returned = False
+        try:
+            match = scheme_transactions.one()
+        except NoResultFound:
+            self.log.warning(
+                f"Couldn't match any scheme transactions to payment transaction #{self.payment_transaction.id}."
+            )
+        except MultipleResultsFound:
+            self.log.warning(
+                f"More than one scheme transaction matches payment transaction #{self.payment_transaction.id}."
+            )
+            multiple_returned = True
+
+        return match, multiple_returned
