@@ -10,8 +10,11 @@ class WhSmith(BaseMatchingAgent):
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-            models.SchemeTransaction.auth_code == self.payment_transaction.auth_code,
         )
+        if self.payment_transaction.auth_code:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
+            )
         scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
         return scheme_transactions
 
