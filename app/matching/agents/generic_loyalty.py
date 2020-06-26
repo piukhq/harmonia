@@ -1,7 +1,5 @@
 import typing as t
 
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
@@ -11,18 +9,8 @@ class GenericLoyalty(BaseMatchingAgent):
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount
         )
-
-        try:
-            match = scheme_transactions.one()
-        except NoResultFound:
-            self.log.warning(
-                f"Couldn't match any scheme transactions to payment transaction #{self.payment_transaction.id}."
-            )
-            return None
-        except MultipleResultsFound:
-            self.log.warning(
-                f"More than one scheme transaction matches payment transaction #{self.payment_transaction.id}."
-            )
+        match, multiple_returned = self._check_for_match(scheme_transactions)
+        if not match or multiple_returned:
             return None
 
         return MatchResult(
