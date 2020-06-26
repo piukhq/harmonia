@@ -147,21 +147,6 @@ class BaseMatchingAgent:
         else:
             return scheme_transactions[0]
 
-    def _filter_by_card_number(
-        self, scheme_transactions: t.List[models.SchemeTransaction]
-    ) -> t.List[models.SchemeTransaction]:
-        user_identity = self.payment_transaction.user_identity
-
-        matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if (
-                transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
-                and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four
-            )
-        ]
-        return matched_transactions
-
     """
     Auth Codes are 6 digit numbers, possibly not be unique.
     """

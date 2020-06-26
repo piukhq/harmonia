@@ -40,6 +40,21 @@ class Iceland(BaseMatchingAgent):
             "mastercard": self._filter_scheme_transactions_mastercard,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
+    def _filter_by_card_number(
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
+        user_identity = self.payment_transaction.user_identity
+
+        matched_transactions = [
+            transaction
+            for transaction in scheme_transactions
+            if (
+                transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
+                and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four
+            )
+        ]
+        return matched_transactions
+
     def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
