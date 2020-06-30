@@ -23,6 +23,10 @@ def getenv(key: str, default: str = None, conv: t.Callable = str, required: bool
         return None
 
 
+def delimited_list_conv(s: str, *, sep: str = ",") -> t.List[str]:
+    return [_.strip() for _ in s.split(sep) if _]
+
+
 def boolconv(s: str) -> bool:
     return s.lower() in ["true", "t", "yes"]
 
@@ -111,6 +115,9 @@ JSON_SERIALIZER = "txmatch+json"
 
 # Base URL for the Hermes API
 HERMES_URL = getenv("TXM_HERMES_URL", required=False)
+
+# If the scheme exists in this list, use HERMES_SLUG_FORMAT_STRING as below
+HERMES_SLUGS_TO_FORMAT = getenv("TXM_HERMES_SLUGS_TO_FORMAT", default="", conv=delimited_list_conv)
 
 # If set, format the scheme slug with this string before sending to Hermes.
 # This allows things such as adding `-mock` to the end of a scheme slug in dev.

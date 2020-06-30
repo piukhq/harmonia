@@ -25,7 +25,7 @@ class Hermes:
 
     @staticmethod
     def _format_slug(slug: str) -> str:
-        if settings.HERMES_SLUG_FORMAT_STRING is not None:
+        if slug in settings.HERMES_SLUGS_TO_FORMAT and settings.HERMES_SLUG_FORMAT_STRING is not None:
             slug = settings.HERMES_SLUG_FORMAT_STRING.format(slug)
         return slug
 
