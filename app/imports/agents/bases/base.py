@@ -131,9 +131,9 @@ class BaseAgent:
         duplicate_ids = {
             row[0]
             for row in db.run_query(
-                lambda: session.query(models.ImportTransaction.transaction_id)
-                .filter(models.ImportTransaction.provider_slug == self.provider_slug)
-                .all(),
+                lambda: session.query(models.ImportTransaction.transaction_id).filter(
+                    models.ImportTransaction.provider_slug == self.provider_slug
+                ),
                 session=session,
                 read_only=True,
                 description=f"find duplicated {self.provider_slug} import transactions",
