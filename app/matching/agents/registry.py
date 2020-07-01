@@ -8,3 +8,4 @@ matching_agents.add("harvey-nichols", "app.matching.agents.harvey_nichols.Harvey
 matching_agents.add("iceland-bonus-card", "app.matching.agents.iceland.Iceland")
 matching_agents.add("burger-king-rewards", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("fatface", "app.matching.agents.generic_spotted.GenericSpotted")
+matching_agents.add("whsmith-rewards", "app.matching.agents.whsmith.WhSmith")

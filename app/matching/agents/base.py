@@ -2,6 +2,7 @@ import typing as t
 from collections import namedtuple
 
 import pendulum
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.query import Query
 
 from app.reporting import get_logger
@@ -147,21 +148,6 @@ class BaseMatchingAgent:
         else:
             return scheme_transactions[0]
 
-    def _filter_by_card_number(
-        self, scheme_transactions: t.List[models.SchemeTransaction]
-    ) -> t.List[models.SchemeTransaction]:
-        user_identity = self.payment_transaction.user_identity
-
-        matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if (
-                transaction.extra_fields["TransactionCardFirst6"] == user_identity.first_six
-                and transaction.extra_fields["TransactionCardLast4"] == user_identity.last_four
-            )
-        ]
-        return matched_transactions
-
     """
     Auth Codes are 6 digit numbers, possibly not be unique.
     """
@@ -178,3 +164,20 @@ class BaseMatchingAgent:
             transaction for transaction in scheme_transactions if transaction.auth_code == auth_code
         ]
         return matched_transactions
+
+    def _check_for_match(self, scheme_transactions: Query) -> t.Tuple[t.Optional[models.SchemeTransaction], bool]:
+        match = None
+        multiple_returned = False
+        try:
+            match = scheme_transactions.one()
+        except NoResultFound:
+            self.log.warning(
+                f"Couldn't match any scheme transactions to payment transaction #{self.payment_transaction.id}."
+            )
+        except MultipleResultsFound:
+            self.log.warning(
+                f"More than one scheme transaction matches payment transaction #{self.payment_transaction.id}."
+            )
+            multiple_returned = True
+
+        return match, multiple_returned

@@ -1,6 +1,7 @@
 import pytest
 
 import responses
+import settings
 
 from app.service.hermes import Hermes
 
@@ -31,3 +32,13 @@ def test_create_join_scheme_account(hermes: Hermes) -> None:
 
     resp = hermes.create_join_scheme_account("test-slug", 1)
     assert resp == json
+
+
+def test__slug_format(hermes: Hermes):
+    settings.HERMES_SLUGS_TO_FORMAT = ["test-slug1", "test-slug2"]
+    settings.HERMES_SLUG_FORMAT_STRING = "{}-mock"
+    assert hermes._format_slug("test-slug1") == "test-slug1-mock"
+    assert hermes._format_slug("test-slug3") == "test-slug3"
+
+    settings.HERMES_SLUG_FORMAT_STRING = None
+    assert hermes._format_slug("test-slug1") == "test-slug1"

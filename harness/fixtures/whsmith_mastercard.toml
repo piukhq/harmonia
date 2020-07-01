@@ -1,0 +1,38 @@
+# base fixture data
+mid = "61584292"
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "whsmith-rewards"
+
+[payment_provider]
+slug = "mastercard"
+
+[[agents]]
+slug = "whsmith-rewards"
+
+[[agents]]
+slug = "mastercard-settled"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "0004"
+
+[users.credentials]
+card_number = "loyalty-123"
+
+[[users.transactions]]
+date = 2020-01-20T15:10:00.000
+amount = 1575
+settlement_key = "settle123"
+auth_code = "198190"
+
+[[users.transactions]]
+date = 2020-01-20T15:01:00.000
+amount = 425
+settlement_key = "settle123"
+auth_code = "198090"
