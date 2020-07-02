@@ -11,7 +11,10 @@ from app.scheduler import CronScheduler
 class BatchExportAgent(BaseAgent):
     def run(self):
         scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule, callback=self.callback, logger=self.log  # type: ignore
+            name="batch-export",
+            schedule_fn=lambda: self.Config.schedule,
+            callback=self.callback,
+            logger=self.log,  # type: ignore
         )
 
         self.log.debug(f"Beginning schedule {scheduler}.")

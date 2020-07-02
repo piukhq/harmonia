@@ -12,8 +12,8 @@ from app import db
 import settings
 
 
-def is_leader(*, hostname=None):
-    lock_key = f"{settings.REDIS_KEY_PREFIX}:schedule-lock"
+def is_leader(lock_name: str, *, hostname=None):
+    lock_key = f"{settings.REDIS_KEY_PREFIX}:schedule-lock:{lock_name}"
     if hostname is None:
         hostname = socket.gethostname()
     is_leader = False
@@ -34,7 +34,8 @@ def is_leader(*, hostname=None):
 
 
 class CronScheduler:
-    def __init__(self, *, schedule_fn: t.Callable, callback: t.Callable, logger: Logger = None):
+    def __init__(self, *, name: str, schedule_fn: t.Callable, callback: t.Callable, logger: Logger = None):
+        self.name = name
         self.schedule_fn = schedule_fn
         self.callback = callback
         self.log = logger if logger is not None else get_logger("cron-scheduler")
@@ -70,7 +71,7 @@ class CronScheduler:
 
     def tick(self):
         try:
-            if is_leader():
+            if is_leader(self.name):
                 self.callback()
         except Exception as e:
             if settings.DEBUG:
