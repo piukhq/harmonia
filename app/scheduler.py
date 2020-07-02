@@ -1,4 +1,6 @@
 import typing as t
+import socket
+from redis.exceptions import WatchError
 from logging import Logger
 from time import sleep
 
@@ -6,7 +8,29 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.reporting import get_logger
+from app import db
 import settings
+
+
+def is_leader(*, hostname=None):
+    lock_key = f"{settings.REDIS_KEY_PREFIX}:schedule-lock"
+    if hostname is None:
+        hostname = socket.gethostname()
+    is_leader = False
+
+    with db.redis.pipeline() as pipe:
+        try:
+            pipe.watch(lock_key)
+            leader_host = pipe.get(lock_key)
+            if leader_host in (hostname, None):
+                pipe.multi()
+                pipe.setex(lock_key, 10, hostname)
+                pipe.execute()
+                is_leader = True
+        except WatchError:
+            pass  # somebody else changed the key
+
+    return is_leader
 
 
 class CronScheduler:
@@ -46,7 +70,8 @@ class CronScheduler:
 
     def tick(self):
         try:
-            self.callback()
+            if is_leader():
+                self.callback()
         except Exception as e:
             if settings.DEBUG:
                 raise
