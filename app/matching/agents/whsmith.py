@@ -1,7 +1,7 @@
 import typing as t
 
 from app import models
-from app.matching.agents.base import BaseMatchingAgent, MatchResult
+from app.matching.agents.base import BaseMatchingAgent, MatchResult, TimestampPrecision
 from sqlalchemy.orm.query import Query
 
 
@@ -15,7 +15,9 @@ class WhSmith(BaseMatchingAgent):
             scheme_transactions = scheme_transactions.filter(
                 models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
             )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        scheme_transactions = self._time_filter(
+            scheme_transactions, tolerance=30, scheme_timestamp_precision=TimestampPrecision.MINUTES
+        )
         return scheme_transactions
 
     def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
@@ -23,7 +25,9 @@ class WhSmith(BaseMatchingAgent):
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
+        scheme_transactions = self._time_filter(
+            scheme_transactions, tolerance=30, scheme_timestamp_precision=TimestampPrecision.MINUTES
+        )
         return scheme_transactions
 
     def _filter_scheme_transactions(self, scheme_transactions: Query):
