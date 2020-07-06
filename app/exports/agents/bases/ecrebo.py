@@ -19,19 +19,23 @@ from app.service.sftp import SFTP
 
 
 class ExportFileSet(t.NamedTuple):
-    receipt_data: str
+    receipt_data: t.Optional[str]
     reward_data: str
     transaction_count: int
 
 
 class EcreboConfig:
+    def __init__(self, export_receipt_data: bool = True) -> None:
+        self.export_receipt_data = export_receipt_data
+
     @classproperty
     def reward_upload_path(self):
         return missing_property(self, "reward_upload_path")
 
     @classproperty
     def receipt_upload_path(self):
-        return missing_property(self, "receipt_upload_path")
+        if self.export_receipt_data:
+            return missing_property(self, "receipt_upload_path")
 
     @classproperty
     def schedule(self):
@@ -39,6 +43,7 @@ class EcreboConfig:
 
 
 class Ecrebo(BatchExportAgent):
+    export_receipt_data = True
     saved_output_index = 2  # save rewards CSV to export_transaction table
 
     class Config(EcreboConfig):
@@ -82,7 +87,8 @@ class Ecrebo(BatchExportAgent):
 
     @property
     def receipt_xml_template(self):
-        return missing_property(type(self), "receipt_xml_template")
+        if self.export_receipt_data:
+            return missing_property(type(self), "receipt_xml_template")
 
     @property
     def provider_short_code(self):
@@ -146,7 +152,7 @@ class Ecrebo(BatchExportAgent):
         sequence_number = self.sequencer.next_value(session=session)
         reward_data, atlas_calls = self._create_reward_data(transactions, sequence_number)
         fileset = ExportFileSet(
-            receipt_data=self._create_receipt_data(transactions, sequence_number),
+            receipt_data=self._create_receipt_data(transactions, sequence_number) if self.export_receipt_data else None,
             reward_data=reward_data,
             transaction_count=len(transactions),
         )
@@ -160,16 +166,23 @@ class Ecrebo(BatchExportAgent):
         ts = pendulum.now().int_timestamp
 
         # the order of these outputs is used to upload to SFTP in sequence.
-        yield AgentExportData(
-            outputs=[
-                AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.base64", fileset.receipt_data),
-                AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)),
+        outputs = []
+        if fileset.receipt_data is not None:
+            outputs.extend(
+                [
+                    AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.base64", fileset.receipt_data),
+                    AgentExportDataOutput(
+                        f"receipt_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)
+                    ),
+                ]
+            )
+        outputs.extend(
+            [
                 AgentExportDataOutput(f"rewards_{self.provider_short_code}{ts}.csv", fileset.reward_data),
                 AgentExportDataOutput(f"rewards_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)),
-            ],
-            transactions=transactions,
-            extra_data={},
+            ]
         )
+        yield AgentExportData(outputs=outputs, transactions=transactions, extra_data={})
 
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
