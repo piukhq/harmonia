@@ -81,12 +81,12 @@ class Ecrebo(BatchExportAgent):
         return missing_property(type(self), "receipt_xml_template")
 
     @property
-    def receipt_file_suffix(self):
-        return missing_property(type(self), "receipt_file_suffix")
+    def provider_short_code(self):
+        return missing_property(type(self), "provider_short_code")
 
     def _get_transaction_id(self, seq_number):
         transaction_number = str(seq_number).rjust(10, "0")
-        return f"{self.receipt_file_suffix}BNK{transaction_number}"
+        return f"{self.provider_short_code}BNK{transaction_number}"
 
     def _create_receipt_data(self, transactions: t.List[models.MatchedTransaction], sequence_number: int) -> str:
         date = pendulum.now().format("YYYY-MM-DDTHH:mm:ss")
@@ -158,10 +158,10 @@ class Ecrebo(BatchExportAgent):
         # the order of these outputs is used to upload to SFTP in sequence.
         yield AgentExportData(
             outputs=[
-                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}{ts}.base64", fileset.receipt_data),
-                AgentExportDataOutput(f"receipt_{self.receipt_file_suffix}{ts}.chk", str(fileset.transaction_count)),
-                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}{ts}.csv", fileset.reward_data),
-                AgentExportDataOutput(f"rewards_{self.receipt_file_suffix}{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.base64", fileset.receipt_data),
+                AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)),
+                AgentExportDataOutput(f"rewards_{self.provider_short_code}{ts}.csv", fileset.reward_data),
+                AgentExportDataOutput(f"rewards_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)),
             ],
             transactions=transactions,
             extra_data={},

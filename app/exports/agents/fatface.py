@@ -34,7 +34,7 @@ SCHEDULE_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 class FatFace(Ecrebo):
     provider_slug = PROVIDER_SLUG
     receipt_xml_template = RECEIPT_XML_TEMPLATE
-    receipt_file_suffix = "FF"
+    provider_short_code = "FF"
 
     class Config:
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
