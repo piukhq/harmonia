@@ -24,21 +24,25 @@ class ExportFileSet(t.NamedTuple):
     transaction_count: int
 
 
+class EcreboConfig:
+    @classproperty
+    def reward_upload_path(self):
+        return missing_property(self, "reward_upload_path")
+
+    @classproperty
+    def receipt_upload_path(self):
+        return missing_property(self, "receipt_upload_path")
+
+    @classproperty
+    def schedule(self):
+        return missing_property(self, "schedule")
+
+
 class Ecrebo(BatchExportAgent):
     saved_output_index = 2  # save rewards CSV to export_transaction table
 
-    class Config:
-        @classproperty
-        def reward_upload_path(self):
-            return missing_property(self, "reward_upload_path")
-
-        @classproperty
-        def receipt_upload_path(self):
-            return missing_property(self, "receipt_upload_path")
-
-        @classproperty
-        def schedule(self):
-            return missing_property(self, "schedule")
+    class Config(EcreboConfig):
+        pass
 
     def __init__(self):
         super().__init__()

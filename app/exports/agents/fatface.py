@@ -1,7 +1,7 @@
 import string
 
 from app import config
-from app.exports.agents.bases.ecrebo import Ecrebo
+from app.exports.agents.bases.ecrebo import Ecrebo, EcreboConfig
 
 PROVIDER_SLUG = "fatface"
 
@@ -36,7 +36,7 @@ class FatFace(Ecrebo):
     receipt_xml_template = RECEIPT_XML_TEMPLATE
     provider_short_code = "FF"
 
-    class Config:
+    class Config(EcreboConfig):
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
         receipt_upload_path = config.ConfigValue(RECEIPT_UPLOAD_PATH_KEY, default="upload/staging/receipts")
         schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
