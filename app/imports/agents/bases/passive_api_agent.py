@@ -44,7 +44,8 @@ class PassiveAPIAgent(BaseAgent):
             transactions_data = self.extract_transactions(data)
 
             with db.session_scope() as session:
-                self._import_transactions(transactions_data, session=session, source="POST /")
+                list(self._import_transactions(transactions_data, session=session, source="POST /"))
+
             return {"ok": True}, 200
 
         index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)

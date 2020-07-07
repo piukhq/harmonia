@@ -121,7 +121,7 @@ class FileAgent(BaseAgent):
 
         # TODO: this is less than ideal, should be keep a session open?
         with db.session_scope() as session:
-            self._import_transactions(transactions_data, session=session, source=source)
+            yield from self._import_transactions(transactions_data, session=session, source=source)
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError
