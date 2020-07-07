@@ -51,7 +51,7 @@ class TransactionStatus(Enum):
 
 
 @auto_repr
-@auto_str("id", "transaction_id")
+@auto_str("id", "transaction_id", "provider_slug", "payment_provider_slug")
 class SchemeTransaction(Base, ModelMixin):
     __tablename__ = "scheme_transaction"
 
@@ -72,7 +72,7 @@ class SchemeTransaction(Base, ModelMixin):
 
 
 @auto_repr
-@auto_str("id", "transaction_id")
+@auto_str("id", "transaction_id", "provider_slug")
 class PaymentTransaction(Base, ModelMixin):
     __tablename__ = "payment_transaction"
 
@@ -130,6 +130,7 @@ class MatchedTransaction(Base, ModelMixin):
 
 
 @auto_repr
+@auto_str("id", "user_id", "scheme_account_id")
 class UserIdentity(Base, ModelMixin):
     __tablename__ = "user_identity"
 
