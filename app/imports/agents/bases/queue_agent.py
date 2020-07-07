@@ -32,7 +32,7 @@ class QueueAgent(BaseAgent):
 
         # TODO: this is less than ideal - should we keep a session open?
         with db.session_scope() as session:
-            self._import_transactions([body], source=f"AMQP: {queue_name}", session=session)
+            list(self._import_transactions([body], source=f"AMQP: {queue_name}", session=session))
 
 
 class Consumer(kombu.mixins.ConsumerMixin):
