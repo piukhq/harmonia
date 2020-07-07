@@ -140,7 +140,7 @@ class Visa(FileAgent):
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
-            settlement_key="",
+            settlement_key=_make_settlement_key(data["transaction_id"]),
             transaction_date=data["transaction_date"],
             has_time=True,
             spend_amount=data["transaction_amount"],
