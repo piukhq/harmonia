@@ -7,13 +7,13 @@ postcode = "SL5 9FE"
 slug = "whsmith-rewards"
 
 [payment_provider]
-slug = "mastercard"
+slug = "amex"
 
 [[agents]]
 slug = "whsmith-rewards"
 
 [[agents]]
-slug = "mastercard-settled"
+slug = "amex"
 
 # first user
 [[users]]
@@ -26,13 +26,9 @@ last_four = "0004"
 card_number = "loyalty-123"
 
 [[users.transactions]]
-date = 2020-01-20T15:10:00.000
-amount = 1575
-settlement_key = "settle123"
-auth_code = "198190"
-
-[[users.transactions]]
-date = 2020-01-20T15:01:00.000
+date = 2020-01-20T15:00:29
 amount = 425
-settlement_key = "settle123"
 auth_code = "198090"
+settlement_key = "settle123"
+[users.transactions.merchant_overrides]
+date = 2020-01-20T14:59:00

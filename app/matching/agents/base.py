@@ -1,5 +1,6 @@
 import typing as t
 from collections import namedtuple
+from enum import Enum
 
 import pendulum
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
@@ -9,6 +10,11 @@ from app.reporting import get_logger
 from app import models, db
 
 MatchResult = namedtuple("MatchResult", ("matched_transaction", "scheme_transaction_id"))
+
+
+class TimestampPrecision(Enum):
+    AUTO = "auto"
+    MINUTES = "minutes"
 
 
 class BaseMatchingAgent:
@@ -27,13 +33,19 @@ class BaseMatchingAgent:
     def __str__(self) -> str:
         return f"{type(self).__name__}"
 
-    def _time_filter(self, scheme_transactions: Query, *, tolerance: int) -> Query:
+    def _time_filter(
+        self,
+        scheme_transactions: Query,
+        *,
+        tolerance: int,
+        scheme_timestamp_precision: TimestampPrecision = TimestampPrecision.AUTO,
+    ) -> Query:
         if self.payment_transaction.has_time:
             transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
             return scheme_transactions.filter(
                 models.SchemeTransaction.transaction_date.between(
-                    transaction_date.subtract(seconds=tolerance).isoformat(),
-                    transaction_date.add(seconds=tolerance).isoformat(),
+                    transaction_date.subtract(seconds=tolerance).isoformat(timespec=scheme_timestamp_precision.value),
+                    transaction_date.add(seconds=tolerance).isoformat(timespec=scheme_timestamp_precision.value),
                 )
             )
         return scheme_transactions

@@ -164,7 +164,9 @@ class BaseAgent:
             raise MissingMID
         return mids
 
-    def _import_transactions(self, provider_transactions: t.List[dict], *, session: db.Session, source: str) -> None:
+    def _import_transactions(
+        self, provider_transactions: t.List[dict], *, session: db.Session, source: str
+    ) -> t.Iterable[None]:
         """
         Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
@@ -219,6 +221,8 @@ class BaseAgent:
 
             finally:
                 lock.release()
+
+            yield
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))

@@ -113,14 +113,22 @@ class Visa(FileAgent):
         with key_path.open("rb") as f:
             return f.read()
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def _decrypt_data(self, data: bytes) -> str:
         key = self._get_key()
         gpg = gnupg.GPG(**settings.GPG_ARGS)
         gpg.import_keys(key)
         result = gpg.decrypt(data)
         if not result.ok:
             raise self.ImportError(f"Decryption failed: {result.stderr}")
-        lines = str(result).split("\n")
+        return str(result)
+
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        if settings.VISA_ENCRYPTED:
+            file_data = self._decrypt_data(data)
+        else:
+            file_data = data.decode()
+
+        lines = file_data.split("\n")
         for line in lines:
             if not line.startswith("1601"):
                 continue
@@ -140,7 +148,7 @@ class Visa(FileAgent):
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
-            settlement_key="",
+            settlement_key=_make_settlement_key(data["transaction_id"]),
             transaction_date=data["transaction_date"],
             has_time=True,
             spend_amount=data["transaction_amount"],

@@ -7,10 +7,11 @@ from pathlib import Path
 
 import click
 import gnupg
+import pendulum
 import soteria.configuration
 import toml
 from flask import Flask
-from marshmallow import ValidationError, fields, validate
+from marshmallow import ValidationError, fields, validate, pre_load
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
@@ -123,6 +124,15 @@ class FixtureUserTransactionSchema(Schema):
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
+
+    @pre_load
+    def convert_dates(self, data, **kwargs):
+        # TomlTz objects don't have deepcopy support (for fixture overriding)
+        data["date"] = pendulum.instance(data["date"])
+        for override in ("merchant_overrides", "payment_provider_overrides"):
+            if override in data and "date" in data[override]:
+                data[override]["date"] = pendulum.instance(data[override]["date"])
+        return data
 
 
 class FixtureUserSchema(Schema):

@@ -162,6 +162,9 @@ VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
 VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
 
+# If set, visa files will be decrypted with GPG
+VISA_ENCRYPTED = getenv("TXM_VISA_ENCRYPTED", default="true", conv=boolconv)
+
 # Arguments to pass to gnupg.GPG(...)
 GPG_ARGS = {
     "gpgbinary": getenv("TXM_GPG1_BINARY", default="gpg1"),

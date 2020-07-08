@@ -1,6 +1,6 @@
 import typing as t
 
-from copy import copy
+from copy import deepcopy
 
 
 class BaseImportDataProvider:
@@ -14,7 +14,7 @@ class BaseImportDataProvider:
         return self._apply_overrides(fixture, field_name="payment_provider_overrides")
 
     def _apply_overrides(self, fixture: dict, *, field_name: str) -> dict:
-        fixture = copy(fixture)
+        fixture = deepcopy(fixture)
         for user in fixture["users"]:
             for transaction in user["transactions"]:
                 if field_name not in transaction:
