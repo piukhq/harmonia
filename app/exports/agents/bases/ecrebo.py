@@ -49,21 +49,19 @@ class next_sequence_number:
 
 
 class EcreboConfig:
-    def __init__(self, matching_type: t.Literal[models.MatchingType.SPOTTED, models.MatchingType.LOYALTY]) -> None:
-        self.matching_type = matching_type
-
     @classproperty
     def reward_upload_path(self):
         return missing_property(self, "reward_upload_path")
 
     @classproperty
-    def receipt_upload_path(self):
-        if self.matching_type == models.MatchingType.SPOTTED:
-            return missing_property(self, "receipt_upload_path")
-
-    @classproperty
     def schedule(self):
         return missing_property(self, "schedule")
+
+
+class EcreboSpottingConfigMixin:
+    @classproperty
+    def receipt_upload_path(self):
+        return missing_property(self, "receipt_upload_path")
 
 
 class Ecrebo(BatchExportAgent):
@@ -225,7 +223,7 @@ class Ecrebo(BatchExportAgent):
         # we have to send the files in a very specific order.
         skey = io.StringIO(self.skey)
         if self.matching_type == models.MatchingType.SPOTTED:
-            with SFTP(self.sftp_credentials, skey, self.Config.receipt_upload_path) as sftp:
+            with SFTP(self.sftp_credentials, skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
                 name, buf = buffered_outputs[0]
                 sftp.client.putfo(buf, name)
                 name, buf = buffered_outputs[1]

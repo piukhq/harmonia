@@ -14,8 +14,5 @@ class WhSmith(Ecrebo):
     provider_short_code = "WHS"
 
     class Config(EcreboConfig):
-        def __init__(self) -> None:
-            super().__init__(matching_type=WhSmith.matching_type)
-
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
         schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
