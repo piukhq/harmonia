@@ -3,6 +3,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+url = "https://269fdc63-af3d-4eca-8101-8bddc22d6f14:b694b5b1-f97e-49e4-959e-f3c202e3ab91@pypi.tools.bink.sh/simple"
+verify_ssl = true
+name = "bink-pypi"
+
 [packages]
 harmonia = {editable = true,path = "."}
 sqlalchemy = "*"
@@ -23,8 +28,8 @@ python-gnupg = "*"
 azure-storage-blob = "*"
 marshmallow-sqlalchemy = "*"
 sentry-sdk = {extras = ["flask"],version = "*"}
-user_auth_token = {git = "ssh://git@git.bink.com/libs/user-token-store.git"}
-soteria = {git = "ssh://git@git.bink.com/Olympus/soteria.git"}
+user-token-store = "*"
+soteria = "*"
 hvac = "*"
 paramiko = "*"
 kombu = "*"
@@ -46,3 +51,4 @@ toml = "*"
 ptpython = "*"
 isort = {extras = ["pipfile"],version = "*"}
 rope = "*"
+xenon = "*"

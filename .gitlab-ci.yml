@@ -5,11 +5,17 @@ stages:
   - staging
   - prod
 
+default:
+  image: binkhq/python:3.8
+  
+before_script: &setup
+  - pip install pipenv
+  - pipenv install --dev --system --deploy --ignore-pipfile
+  - pip freeze
+
 tests:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
-    - pip freeze
+  before_script: *setup
   script:
     - export TXM_POSTGRES_USER=postgres
     - export TXM_POSTGRES_HOST=${POSTGRES_PORT_5432_TCP_ADDR}
@@ -25,22 +31,19 @@ tests:
 
 complexity:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - xenon --max-average A --max-modules B --max-absolute B .
 
 style:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - flake8 && black --line-length 120 --check .
 
 type-check:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - mypy --ignore-missing-imports app
 
