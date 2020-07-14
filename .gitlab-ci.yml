@@ -5,9 +5,13 @@ stages:
   - staging
   - prod
 
+default:
+  image: binkhq/python:3.8
+
 tests:
   stage: tests
-  before_script:
+  before_script: &setup
+    - pip install pipenv
     - pipenv install --dev --system --deploy --ignore-pipfile
     - pip freeze
   script:
@@ -25,22 +29,19 @@ tests:
 
 complexity:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - xenon --max-average A --max-modules B --max-absolute B .
 
 style:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - flake8 && black --line-length 120 --check .
 
 type-check:
   stage: tests
-  before_script:
-    - pipenv install --dev --system --deploy --ignore-pipfile
+  before_script: *setup
   script:
     - mypy --ignore-missing-imports app
 
