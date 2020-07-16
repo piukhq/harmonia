@@ -9,6 +9,7 @@ verify_ssl = true
 name = "bink-pypi"
 
 [packages]
+alembic = "*"
 harmonia = {editable = true,path = "."}
 sqlalchemy = "*"
 flask = "*"
@@ -38,7 +39,6 @@ pgpy = "*"
 psycopg2-binary = "*"
 
 [dev-packages]
-alembic = "*"
 pytest = "*"
 pytest-cov = "*"
 mypy = "*"
