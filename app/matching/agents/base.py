@@ -5,6 +5,7 @@ from enum import Enum
 import pendulum
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.query import Query
+import sqlalchemy
 
 from app.reporting import get_logger
 from app import models, db
@@ -40,15 +41,21 @@ class BaseMatchingAgent:
         tolerance: int,
         scheme_timestamp_precision: TimestampPrecision = TimestampPrecision.AUTO,
     ) -> Query:
+        transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
+
         if self.payment_transaction.has_time:
-            transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
             return scheme_transactions.filter(
                 models.SchemeTransaction.transaction_date.between(
                     transaction_date.subtract(seconds=tolerance).isoformat(timespec=scheme_timestamp_precision.value),
                     transaction_date.add(seconds=tolerance).isoformat(timespec=scheme_timestamp_precision.value),
                 )
             )
-        return scheme_transactions
+        else:
+            # checking the date exactly like this means that transactions very close to midnight may not match.
+            # this risk is known & accepted at the time of writing.
+            return scheme_transactions.filter(
+                sqlalchemy.func.date(models.SchemeTransaction.transaction_date) == transaction_date.date().isoformat()
+            )
 
     def _get_scheme_transactions(self, *, session: db.Session, **search_fields) -> t.List[models.SchemeTransaction]:
         search_fields["mid"] = self.payment_transaction.mid
