@@ -167,7 +167,7 @@ class HarveyNichols(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
+        transaction_date = self.pendulum_parse(data["timestamp"], tz="Europe/London")
         return SchemeTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
