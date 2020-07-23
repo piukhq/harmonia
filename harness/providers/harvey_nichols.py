@@ -29,7 +29,7 @@ class HarveyNichols(BaseImportDataProvider):
                             "expiry": "0",
                             "scheme": scheme_name,
                         },
-                        "amount": {"value": to_pounds(transaction["amount"]), "unit": "GBP"},
+                        "amount": {"value": float(to_pounds(transaction["amount"])), "unit": "GBP"},
                         "store_id": "0001017   005682",
                         "timestamp": transaction["date"].isoformat(),
                         "id": str(uuid4()),

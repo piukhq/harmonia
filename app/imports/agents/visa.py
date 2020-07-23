@@ -182,7 +182,7 @@ class VisaAuth(QueueAgent):
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(get_key_value(data, "Transaction.TransactionAmount"))),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
@@ -214,7 +214,7 @@ class VisaSettlement(QueueAgent):
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(get_key_value(data, "Transaction.SettlementAmount"))),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,

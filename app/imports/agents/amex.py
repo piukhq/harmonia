@@ -83,7 +83,7 @@ class Amex(FileAgent):
     field_transforms: t.Dict[str, t.Callable] = {
         "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="Europe/London"),
         "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
-        "transaction_amount": lambda x: to_pennies(float(x)),
+        "transaction_amount": lambda x: to_pennies(x),
     }
 
     class Config:
@@ -145,7 +145,7 @@ class AmexAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["transaction_time"], tz="MST")
-        amount = to_pennies(float(data["transaction_amount"]))
+        amount = to_pennies(data["transaction_amount"])
         settlement_key = _make_settlement_key(
             card_token=data["cm_alias"],
             transaction_id=data["transaction_id"],
