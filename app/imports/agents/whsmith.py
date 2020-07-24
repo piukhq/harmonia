@@ -55,7 +55,7 @@ class WhSmith(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "datetime": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
-        "total": lambda x: to_pennies(float(x)),
+        "total": lambda x: to_pennies(x),
     }
 
     payment_provider_map = {
