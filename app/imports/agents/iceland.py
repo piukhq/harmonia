@@ -24,7 +24,7 @@ class Iceland(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "TransactionCardSchemeId": int,
-        "TransactionAmountValue": lambda x: to_pennies(float(x)),
+        "TransactionAmountValue": lambda x: to_pennies(x),
         "TransactionCashbackValue": Decimal,
         "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
     }

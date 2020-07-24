@@ -42,7 +42,7 @@ class MastercardSettled(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "transaction_amount": lambda x: to_pennies(float(x)),
+        "transaction_amount": lambda x: to_pennies(x),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_time": int,
     }
@@ -124,7 +124,7 @@ class MastercardAuth(QueueAgent):
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(data["amount"])),
+            spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             card_token=data["payment_card_token"],
