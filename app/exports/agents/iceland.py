@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import requests
 from hashids import Hashids
-from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
@@ -14,6 +13,7 @@ from app.config import KEY_PREFIX, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
+from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
@@ -23,7 +23,7 @@ hash_ids = Hashids(
 )
 
 
-class Iceland(BatchExportAgent):
+class Iceland(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
     class Config:
@@ -37,23 +37,7 @@ class Iceland(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.EUROPA_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Europa URL to be set."
-            )
-
-        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
-            )
-
-        self.merchant_config = Configuration(
-            self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
-            settings.VAULT_URL,
-            settings.VAULT_TOKEN,
-            settings.EUROPA_URL,
-        )
+        self.merchant_config = self.get_soteria_config()
 
     def help(self) -> str:
         return inspect.cleandoc(

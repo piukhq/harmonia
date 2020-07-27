@@ -6,11 +6,11 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pendulum
-from soteria.configuration import Configuration
 from soteria.encryption import PGP
 
 import settings
 from app import models, db, xml_utils
+from app.soteria import SoteriaConfigMixin
 from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
@@ -64,7 +64,7 @@ class EcreboSpottingConfigMixin:
         return missing_property(self, "receipt_upload_path")
 
 
-class Ecrebo(BatchExportAgent):
+class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
     saved_output_index = 2  # save rewards CSV to export_transaction table
 
     class Config(EcreboConfig):
@@ -78,24 +78,7 @@ class Ecrebo(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.EUROPA_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Europa URL to be set."
-            )
-
-        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
-            )
-
-        config = Configuration(
-            self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
-            settings.VAULT_URL,
-            settings.VAULT_TOKEN,
-            settings.EUROPA_URL,
-        )
-
+        config = self.get_soteria_config()
         security_credentials = {
             c["credential_type"]: c["value"] for c in config.security_credentials["outbound"]["credentials"]
         }

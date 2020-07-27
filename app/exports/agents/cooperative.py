@@ -5,7 +5,6 @@ import os
 import typing as t
 from uuid import uuid4
 
-from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
@@ -16,13 +15,14 @@ from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExpo
 from app.sequences import batch
 from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
+from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "cooperative"
 SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.schedule"
 MAX_TRANSACTIONS_PER_REQUEST_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.max_transactions_per_request"
 
 
-class Cooperative(BatchExportAgent):
+class Cooperative(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
     class Config:
@@ -37,24 +37,7 @@ class Cooperative(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.EUROPA_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Europa URL to be set."
-            )
-
-        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
-            )
-
-        self.merchant_config = Configuration(
-            self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
-            settings.VAULT_URL,
-            settings.VAULT_TOKEN,
-            settings.EUROPA_URL,
-        )
-
+        self.merchant_config = self.get_soteria_config()
         self.api = CooperativeAPI(self.merchant_config.merchant_url)
 
     def help(self):
