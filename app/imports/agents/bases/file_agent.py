@@ -1,9 +1,12 @@
 import datetime
+import io
 import logging
 import shutil
+import stat
 import time
 import typing as t
 
+from functools import partial
 from pathlib import Path
 
 import humanize
@@ -16,6 +19,8 @@ import settings
 
 from app import db, reporting, retry, tasks
 from app.imports.agents import BaseAgent
+from app.scheduler import CronScheduler
+from app.service.sftp import SFTP, SFTPCredentials
 
 logging.getLogger("azure").setLevel(logging.CRITICAL)
 
@@ -112,6 +117,53 @@ class BlobFileSource(FileSourceBase):
                 self.archive(blob.name, content, lease)
 
 
+class SftpFileSource(FileSourceBase):
+    def __init__(
+        self, credentials: SFTPCredentials, skey: t.Optional[t.TextIO], path: Path, *, logger: logging.Logger
+    ) -> None:
+        super().__init__(path, logger=logger)
+        self.credentials = credentials
+        self.skey = skey
+        self.log = reporting.get_logger("sftp-file-source")
+
+    def archive(self, filename: str, data: bytes) -> None:
+        pass
+
+    def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
+        with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
+            listing = sftp.client.listdir_attr()
+            for file_attr in listing:
+                if not stat.S_ISDIR(file_attr.st_mode):
+                    try:
+                        with sftp.client.file(file_attr.filename, "r") as f:
+                            data = f.read()
+                            # Opportunity to check the file hash here with f.check()
+                            # but as per Paramiko docs: "Many (most?) servers don’t
+                            # support this extension yet."
+                    except IOError:
+                        self.log.warning(f"Failed to read file {file_attr.filename} on {self.credentials.host}.")
+                        continue
+
+                    try:
+                        for _ in callback(
+                            data=data, source=f"{self.credentials.host}:{self.credentials.port}/{file_attr.filename}",
+                        ):
+                            pass  # callback is a generator object
+                    except Exception as ex:
+                        if settings.DEBUG:
+                            raise
+                        else:
+                            self.log.error(
+                                f"File source callback {callback} for file {file_attr.filename} on "
+                                f"{self.credentials.host} failed: {ex}"
+                            )
+                    else:
+                        self.archive(file_attr.filename, data)
+                        sftp.client.remove(file_attr.filename)
+                else:
+                    self.log.debug(f"{file_attr.filename} is a directory. Skipping")
+
+
 class FileAgent(BaseAgent):
     def _do_import(self, data: bytes, source: str) -> t.Iterable[None]:
         self.log.info(f"Importing {source}")
@@ -150,3 +202,29 @@ class FileAgent(BaseAgent):
             time.sleep(30)
 
         self.log.info("Shutting down.")
+
+
+class ScheduledSftpFileAgent(FileAgent):
+    @property
+    def sftp_credentials(self) -> SFTPCredentials:
+        return None
+
+    @property
+    def skey(self) -> t.Optional[io.StringIO]:
+        return None
+
+    def run(self):
+        path = self.Config.path
+        filesource = SftpFileSource(self.sftp_credentials, self.skey, Path(path), logger=self.log)
+
+        self.log.info(f"Watching {path} on {self.sftp_credentials.host} for files via {filesource.__class__.__name__}.")
+
+        scheduler = CronScheduler(
+            schedule_fn=lambda: self.Config.schedule, callback=partial(self.callback, filesource), logger=self.log,
+        )
+
+        self.log.debug(f"Beginning schedule {scheduler}.")
+        scheduler.run()
+
+    def callback(self, filesource: FileSourceBase):
+        filesource.provide(self._do_import)
