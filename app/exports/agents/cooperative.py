@@ -113,7 +113,9 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
         if failed_transactions:
             self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         batch_size = int(self.Config.max_transactions_per_request)
         for transaction_batch in batch(transactions, batch_size):

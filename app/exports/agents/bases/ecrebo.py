@@ -199,7 +199,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData) -> None:
         # place output data into BytesIO objects for SFTP usage.
         buffered_outputs = [(name, io.BytesIO(t.cast(str, content).encode())) for name, content in export_data.outputs]
 
