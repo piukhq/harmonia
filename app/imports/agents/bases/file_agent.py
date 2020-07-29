@@ -13,7 +13,7 @@ import humanize
 import pendulum
 
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
-from azure.storage.blob import BlobLeaseClient, BlobServiceClient
+from azure.storage.blob import BlobServiceClient
 
 import settings
 
@@ -60,27 +60,40 @@ class LocalFileSource(FileSourceBase):
                 self.archive(filepath)
 
 
-class BlobFileSource(FileSourceBase):
+class BlobFileArchiveMixin:
+    def archive(
+        self,
+        blob_name: str,
+        blob_content: bytes,
+        *,
+        delete_callback: t.Callable,
+        logger: logging.Logger,
+        bbs: t.Optional[BlobServiceClient] = None,
+    ) -> None:
+        if not bbs:
+            bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
+
+        archive_container = f"archive-{pendulum.today().to_date_string()}"
+        try:
+            bbs.create_container(archive_container)
+        except ResourceExistsError:
+            pass  # this is fine
+
+        try:
+            bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
+        except ResourceExistsError:
+            logger.warning(f"Failed to archive {blob_name} as this blob already exists in the archive.")
+
+        delete_callback()
+
+
+class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
     container_name = "import"
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
         self.log = reporting.get_logger("blob-file-source")
         self._bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
-
-    def archive(self, blob_name: str, blob_content: bytes, lease: BlobLeaseClient) -> None:
-        archive_container = f"archive-{pendulum.today().to_date_string()}"
-        try:
-            self._bbs.create_container(archive_container)
-        except ResourceExistsError:
-            pass  # this is fine
-
-        try:
-            self._bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
-        except ResourceExistsError:
-            self.log.warning(f"Failed to archive {blob_name} as this blob already exists in the archive.")
-
-        self._bbs.get_blob_client(self.container_name, blob_name).delete_blob(lease=lease)
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         try:
@@ -114,10 +127,16 @@ class BlobFileSource(FileSourceBase):
                 else:
                     self.log.error(f"File source callback {callback} for blob {blob.name} failed: {ex}.")
             else:
-                self.archive(blob.name, content, lease)
+                self.archive(
+                    blob.name,
+                    content,
+                    delete_callback=partial(blob_client.delete_blob, lease=lease),
+                    bbs=self._bbs,
+                    logger=self.log,
+                )
 
 
-class SftpFileSource(FileSourceBase):
+class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
     def __init__(
         self, credentials: SFTPCredentials, skey: t.Optional[t.TextIO], path: Path, *, logger: logging.Logger
     ) -> None:
@@ -125,9 +144,6 @@ class SftpFileSource(FileSourceBase):
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
-
-    def archive(self, filename: str, data: bytes) -> None:
-        pass
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
@@ -158,8 +174,12 @@ class SftpFileSource(FileSourceBase):
                                 f"{self.credentials.host} failed: {ex}"
                             )
                     else:
-                        self.archive(file_attr.filename, data)
-                        sftp.client.remove(file_attr.filename)
+                        self.archive(
+                            file_attr.filename,
+                            data,
+                            delete_callback=partial(sftp.client.remove, file_attr.filename),
+                            logger=self.log,
+                        )
                 else:
                     self.log.debug(f"{file_attr.filename} is a directory. Skipping")
 
