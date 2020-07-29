@@ -15,7 +15,7 @@ from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
-from app.service.sftp import SFTP
+from app.service.sftp import SFTP, SFTPCredentials
 
 
 class ExportFileSet(t.NamedTuple):
@@ -84,8 +84,8 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         }
 
         self.pgp = PGP(security_credentials["merchant_public_key"].encode())
-        self.sftp_credentials = security_credentials["compound_key"]
-        self.skey = security_credentials["bink_private_key"]
+        self.sftp_credentials = SFTPCredentials(**security_credentials["compound_key"])
+        self.skey = io.StringIO(security_credentials.get("bink_private_key"))
 
         self.sequencer = Sequencer(self.provider_slug)
 
@@ -204,15 +204,14 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         buffered_outputs = [(name, io.BytesIO(t.cast(str, content).encode())) for name, content in export_data.outputs]
 
         # we have to send the files in a very specific order.
-        skey = io.StringIO(self.skey)
         if self.matching_type == models.MatchingType.SPOTTED:
-            with SFTP(self.sftp_credentials, skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
+            with SFTP(self.sftp_credentials, self.skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
                 name, buf = buffered_outputs[0]
                 sftp.client.putfo(buf, name)
                 name, buf = buffered_outputs[1]
                 sftp.client.putfo(buf, name)
 
-        with SFTP(self.sftp_credentials, skey, self.Config.reward_upload_path) as sftp:
+        with SFTP(self.sftp_credentials, self.skey, self.Config.reward_upload_path) as sftp:
             name, buf = buffered_outputs[2]
             sftp.client.putfo(buf, name)
             name, buf = buffered_outputs[3]
