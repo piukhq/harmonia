@@ -3,6 +3,7 @@ from enum import Enum
 from urllib.parse import urljoin
 
 import settings
+import pendulum
 from app import models
 from app.reporting import get_logger
 from app.core.requests_retry import requests_retry_session
@@ -43,7 +44,7 @@ class Atlas:
             "response": json.dumps(response),
             "transaction_id": transaction.transaction_id,
             "status": status.value,
-            "transaction_date": transaction.transaction_date.to_datetime_string(),
+            "transaction_date": pendulum.instance(transaction.transaction_date).to_datetime_string(),
             "user_id": str(transaction.payment_transaction.user_identity.user_id),
             "amount": transaction.spend_amount,
         }
