@@ -2,6 +2,7 @@ import typing as t
 from logging import Logger
 from time import sleep
 
+import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -47,8 +48,8 @@ class CronScheduler:
     def tick(self):
         try:
             self.callback()
-        except Exception as e:
+        except Exception:
             if settings.DEBUG:
                 raise
             else:
-                self.log.error(e)
+                sentry_sdk.capture_exception()
