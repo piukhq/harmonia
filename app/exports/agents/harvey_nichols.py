@@ -88,7 +88,7 @@ class HarveyNichols(SingularExportAgent):
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
-        _, body = export_data.outputs.pop()
+        _, body = export_data.outputs[0]
         transaction = export_data.transactions[0]
         credentials = export_data.extra_data["credentials"]
         scheme_account_id = export_data.extra_data["scheme_account_id"]
