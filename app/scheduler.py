@@ -48,7 +48,7 @@ class CronScheduler:
     def tick(self):
         try:
             self.callback()
-        except Exception as e:
+        except Exception:
             if settings.DEBUG:
                 raise
             else:
