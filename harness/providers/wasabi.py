@@ -4,8 +4,9 @@ import typing as t
 from random import randint
 
 import pendulum
-
 from app.currency import to_pounds
+from app.imports.agents.wasabi import DATE_FORMAT as IMPORT_DATE_FORMAT
+from app.imports.agents.wasabi import TIME_FORMAT as IMPORT_TIME_FORMAT
 from harness.providers.base import BaseImportDataProvider
 
 
@@ -32,8 +33,8 @@ class Wasabi(BaseImportDataProvider):
                 scheme_name,
                 transaction["auth_code"],
                 "1",
-                pendulum.instance(transaction["date"]).in_tz("Europe/London").format("DD-MM-YYYY"),
-                pendulum.instance(transaction["date"]).in_tz("Europe/London").format("HH:mm:ss"),
+                pendulum.instance(transaction["date"]).in_tz("Europe/London").format(IMPORT_DATE_FORMAT),
+                pendulum.instance(transaction["date"]).in_tz("Europe/London").format(IMPORT_TIME_FORMAT),
                 fixture["mid"],
                 f"0000A0{str(randint(0, 10 ** 12)).rjust(13, '0')}",
             )

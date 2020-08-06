@@ -391,12 +391,12 @@ def run_transaction_matching(fixture: dict):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
-    run_rq_worker("matching")
-    run_rq_worker("export")
+    # run_rq_worker("matching")
+    # run_rq_worker("export")
 
     # at this point, the event-driven singular exports have already happened.
     # batch export agents will still be waiting their own run.
-    maybe_run_batch_export_agent(fixture)
+    # maybe_run_batch_export_agent(fixture)
 
 
 def dump_provider_data(fixture: dict, slug: str):

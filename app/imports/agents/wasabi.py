@@ -19,8 +19,8 @@ from app.soteria import SoteriaConfigMixin
 PROVIDER_SLUG = "wasabi-club"
 SCHEDULE_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
-DATE_FORMAT = "MM/DD/YYYY"
-TIME_FORMAT = "HH:mm:ss A"
+DATE_FORMAT = "DD/MM/YYYY"
+TIME_FORMAT = "HH:mm:ss"
 
 
 class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
@@ -30,7 +30,7 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
     payment_provider_map = {
         "American Express": PaymentProviderSlug.AMEX,
         "Visa Debit": PaymentProviderSlug.VISA,
-        "Mastercard": PaymentProviderSlug.MASTERCARD,
+        "MasterCard": PaymentProviderSlug.MASTERCARD,
         "Bink-Payment": "bink-payment",
     }
 
@@ -70,11 +70,12 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
 
     @staticmethod
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+        transaction_date_time = f"{data['Date']} {data['Time']}"
+        transaction_date_format = f"{DATE_FORMAT} {TIME_FORMAT}"
+        transaction_date = pendulum.from_format(transaction_date_time, transaction_date_format)
         return SchemeTransactionFields(
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
-            transaction_date=pendulum.from_format(
-                f"{data['Authorisation Date']} {data['Time']}", f"{DATE_FORMAT} {TIME_FORMAT}"
-            ),
+            transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(data["Amount"]),
             spend_multiplier=100,
@@ -85,8 +86,11 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return data["Transaction No_"]
+        """
+        For Wasabi we need to take the Receipt No as this is the unique field, rather than Transaction No
+        """
+        return data["Receipt No_"]
 
     @staticmethod
     def get_mids(data: dict) -> t.List[str]:
-        return data["EFT Merchant No_"]
+        return [data["EFT Merchant No_"]]
