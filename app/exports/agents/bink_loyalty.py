@@ -19,7 +19,7 @@ class BinkLoyalty(SingularExportAgent):
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
-        _, body = export_data.outputs.pop()
+        _, body = export_data.outputs[0]
         matched_transaction = export_data.transactions[0]
 
         self.log.info(f"Export: {body}")
