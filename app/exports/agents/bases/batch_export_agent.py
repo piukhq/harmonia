@@ -65,7 +65,9 @@ class BatchExportAgent(BaseAgent):
 
         db.run_query(delete_pending_exports, session=session, description="delete pending exports")
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
     def send_export_data(self, export_data: AgentExportData):
