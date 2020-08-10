@@ -30,7 +30,7 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
     payment_provider_map = {
         "American Express": PaymentProviderSlug.AMEX,
         "Visa Debit": PaymentProviderSlug.VISA,
-        "MasterCard": PaymentProviderSlug.MASTERCARD,
+        "Mastercard": PaymentProviderSlug.MASTERCARD,
         "Bink-Payment": "bink-payment",
     }
 
