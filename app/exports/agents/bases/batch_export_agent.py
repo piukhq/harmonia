@@ -70,5 +70,5 @@ class BatchExportAgent(BaseAgent):
     ) -> t.Iterable[AgentExportData]:
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData) -> None:
         raise NotImplementedError("Override the send_export_data method in your agent.")
