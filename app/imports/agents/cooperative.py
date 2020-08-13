@@ -9,6 +9,7 @@ from app.currency import to_pennies
 
 PROVIDER_SLUG = "cooperative"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 
 class Cooperative(FileAgent):
@@ -17,6 +18,7 @@ class Cooperative(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         yield from json.loads(data.decode())["transactions"]

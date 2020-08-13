@@ -18,6 +18,7 @@ import settings
 
 from app import db, reporting, retry, tasks
 from app.imports.agents import BaseAgent
+from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials
 
 logging.getLogger("azure").setLevel(logging.CRITICAL)
@@ -207,6 +208,17 @@ class FileAgent(BaseAgent):
     def run(self) -> None:
         self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
+        scheduler = CronScheduler(
+            schedule_fn=lambda: self.Config.schedule,  # type: ignore
+            callback=self.callback,
+            coalesce_jobs=True,
+            logger=self.log,
+        )
+
+        self.log.debug(f"Beginning {scheduler}.")
+        scheduler.run()
+
+    def callback(self):
         attempts = 0
         while True:
             if not tasks.import_queue.has_capacity():
@@ -216,9 +228,6 @@ class FileAgent(BaseAgent):
                 self.log.info(f"Import queue is at capacity. Suspending for {humanize_delta}.")
                 time.sleep(delay_seconds)
                 continue  # retry
-            attempts = 0  # reset attempt counter for next time
 
             self.filesource.provide(self._do_import)
-            time.sleep(30)
-
-        self.log.info("Shutting down.")
+            break

@@ -18,6 +18,7 @@ from app.service.sftp import SFTPCredentials
 from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "wasabi-club"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATE_FORMAT = "DD/MM/YYYY"
 TIME_FORMAT = "HH:mm:ss"
@@ -39,6 +40,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     class Config:
         path = ConfigValue(PATH_KEY, default="/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     @cached_property
     def _security_credentials(self) -> dict:

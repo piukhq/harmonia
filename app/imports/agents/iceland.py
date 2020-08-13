@@ -14,6 +14,7 @@ from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
@@ -45,6 +46,7 @@ class Iceland(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         fd = io.StringIO(data.decode())
