@@ -21,6 +21,7 @@ SCHEDULE_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATE_FORMAT = "DD/MM/YYYY"
 TIME_FORMAT = "HH:mm:ss"
+TXN_DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
 class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
@@ -43,7 +44,10 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
     @cached_property
     def _security_credentials(self) -> dict:
         config = self.get_soteria_config()
-        return {c["credential_type"]: c["value"] for c in config.security_credentials["inbound"]["credentials"]}
+        return {
+            c["credential_type"]: c["value"]
+            for c in config.security_credentials["inbound"]["credentials"]
+        }
 
     @cached_property
     def sftp_credentials(self) -> SFTPCredentials:  # type: ignore
@@ -73,8 +77,9 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
     @staticmethod
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         transaction_date_time = f"{data['Date']} {data['Time']}"
-        transaction_date_format = f"{DATE_FORMAT} {TIME_FORMAT}"
-        transaction_date = pendulum.from_format(transaction_date_time, transaction_date_format)
+        transaction_date = pendulum.from_format(
+            transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London"
+        )
         return SchemeTransactionFields(
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
             transaction_date=transaction_date,
@@ -83,7 +88,10 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
             spend_multiplier=100,
             spend_currency="GBP",
             auth_code=data["Auth_code"],
-            extra_fields={"first_six": data["Card Number"][:6], "last_four": data["Card Number"][-4:]},
+            extra_fields={
+                "first_six": data["Card Number"][:6],
+                "last_four": data["Card Number"][-4:],
+            },
         )
 
     @staticmethod

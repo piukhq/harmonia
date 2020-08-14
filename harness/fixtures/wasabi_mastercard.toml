@@ -13,7 +13,7 @@ slug = "mastercard"
 slug = "wasabi-club"
 
 [[agents]]
-slug = "mastercard-settled"
+slug = "mastercard-auth"
 
 # first user
 [[users]]
@@ -36,5 +36,3 @@ date = 2020-08-05T16:28:57Z
 amount = 8000
 settlement_key = "1111111111"
 auth_code = "999999"
-[users.transactions.merchant_overrides]
-date = 2020-08-05T16:30:00Z
