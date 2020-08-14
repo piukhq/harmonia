@@ -131,7 +131,7 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
 
     def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
-        _, body = export_data.outputs.pop()
+        _, body = export_data.outputs[0]
         matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(

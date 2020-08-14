@@ -98,7 +98,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
 
     def send_export_data(self, export_data: AgentExportData):
-        _, body = export_data.outputs.pop()
+        _, body = export_data.outputs[0]
         request = self.make_secured_request(t.cast(str, body))
 
         api = IcelandAPI(self.merchant_config.merchant_url)
