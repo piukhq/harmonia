@@ -84,7 +84,7 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
             spend_multiplier=100,
             spend_currency="GBP",
             auth_code=data["Auth_code"],
-            extra_fields={"first_six": data["Card Number"][:6], "last_four": data["Card Number"][-4:],},
+            extra_fields={"first_six": data["Card Number"][:6], "last_four": data["Card Number"][-4:]},
         )
 
     @staticmethod
