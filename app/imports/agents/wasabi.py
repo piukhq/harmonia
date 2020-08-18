@@ -21,6 +21,7 @@ SCHEDULE_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATE_FORMAT = "DD/MM/YYYY"
 TIME_FORMAT = "HH:mm:ss"
+TXN_DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
 class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
@@ -29,8 +30,10 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
 
     payment_provider_map = {
         "American Express": PaymentProviderSlug.AMEX,
+        "Visa": PaymentProviderSlug.VISA,
         "Visa Debit": PaymentProviderSlug.VISA,
         "Mastercard": PaymentProviderSlug.MASTERCARD,
+        "Debit Mastercard": PaymentProviderSlug.MASTERCARD,
         "Bink-Payment": "bink-payment",
     }
 
@@ -72,8 +75,7 @@ class Wasabi(ScheduledSftpFileAgent, SoteriaConfigMixin):
     @staticmethod
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         transaction_date_time = f"{data['Date']} {data['Time']}"
-        transaction_date_format = f"{DATE_FORMAT} {TIME_FORMAT}"
-        transaction_date = pendulum.from_format(transaction_date_time, transaction_date_format)
+        transaction_date = pendulum.from_format(transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London")
         return SchemeTransactionFields(
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
             transaction_date=transaction_date,
