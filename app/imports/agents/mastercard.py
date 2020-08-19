@@ -13,6 +13,7 @@ from app.currency import to_pennies
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -49,6 +50,7 @@ class MastercardSettled(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def parse_line(self, line: str) -> dict:
         idx = 0

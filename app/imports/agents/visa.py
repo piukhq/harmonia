@@ -15,6 +15,7 @@ import settings
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -79,6 +80,7 @@ class Visa(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(

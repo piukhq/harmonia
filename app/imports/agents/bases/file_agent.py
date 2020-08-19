@@ -1,12 +1,11 @@
 import datetime
-import io
 import logging
 import shutil
 import stat
 import time
 import typing as t
 
-from functools import partial
+from functools import cached_property, partial
 from pathlib import Path
 
 import humanize
@@ -200,13 +199,26 @@ class FileAgent(BaseAgent):
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError
 
-    def run(self) -> None:
+    @cached_property
+    def filesource(self) -> FileSourceBase:
         filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource)
         path = self.Config.path  # type: ignore
-        filesource = filesource_class(Path(path), logger=self.log)
+        return filesource_class(Path(path), logger=self.log)
 
-        self.log.info(f"Watching {path} for files via {filesource_class.__name__}.")
+    def run(self) -> None:
+        self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
+        scheduler = CronScheduler(
+            schedule_fn=lambda: self.Config.schedule,  # type: ignore
+            callback=self.callback,
+            coalesce_jobs=True,
+            logger=self.log,
+        )
+
+        self.log.debug(f"Beginning {scheduler}.")
+        scheduler.run()
+
+    def callback(self):
         attempts = 0
         while True:
             if not tasks.import_queue.has_capacity():
@@ -216,35 +228,6 @@ class FileAgent(BaseAgent):
                 self.log.info(f"Import queue is at capacity. Suspending for {humanize_delta}.")
                 time.sleep(delay_seconds)
                 continue  # retry
-            attempts = 0  # reset attempt counter for next time
 
-            filesource.provide(self._do_import)
-            time.sleep(30)
-
-        self.log.info("Shutting down.")
-
-
-class ScheduledSftpFileAgent(FileAgent):
-    @property
-    def sftp_credentials(self) -> SFTPCredentials:
-        return None
-
-    @property
-    def skey(self) -> t.Optional[io.StringIO]:
-        return None
-
-    def run(self):
-        path = self.Config.path
-        filesource = SftpFileSource(self.sftp_credentials, self.skey, Path(path), logger=self.log)
-
-        self.log.info(f"Watching {path} on {self.sftp_credentials.host} for files via {filesource.__class__.__name__}.")
-
-        scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule, callback=partial(self.callback, filesource), logger=self.log,
-        )
-
-        self.log.debug(f"Beginning schedule {scheduler}.")
-        scheduler.run()
-
-    def callback(self, filesource: FileSourceBase):
-        filesource.provide(self._do_import)
+            self.filesource.provide(self._do_import)
+            break
