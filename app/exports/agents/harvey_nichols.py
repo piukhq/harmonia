@@ -51,7 +51,7 @@ class HarveyNichols(SingularExportAgent):
         return token
 
     def internal_requests(
-        self, response: dict, transaction: models.MatchedTransaction, audit_data: dict, matched_transaction_id: int
+        self, response: dict, transaction: models.MatchedTransaction, matched_transaction_id: int
     ) -> None:
         response_outcome = response["outcome"].lower()
         if response_outcome == "success":
@@ -99,9 +99,4 @@ class HarveyNichols(SingularExportAgent):
             token = self.get_new_token(credentials, scheme_account_id)
             response = self.api.claim_transaction(token, body)
 
-        audit_data = {
-            "token": token,
-            "card_number": credentials["card_number"],
-            "transaction_id": transaction.transaction_id,
-        }
-        self.internal_requests(response, transaction, audit_data, transaction.id)
+        self.internal_requests(response, transaction, transaction.id)
