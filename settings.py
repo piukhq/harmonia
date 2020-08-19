@@ -5,6 +5,8 @@ import os
 
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.rq import RqIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 import sentry_sdk
 
 
@@ -107,7 +109,11 @@ SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 SENTRY_ENV = getenv("TXM_SENTRY_ENV", default="unset").lower()
 
 if SENTRY_DSN is not None:
-    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENV, integrations=[FlaskIntegration(), RqIntegration()])
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENV,
+        integrations=[FlaskIntegration(), RqIntegration(), RedisIntegration(), SqlalchemyIntegration()],
+    )
 
 # JSON encoding with custom extensions.
 # Used in queue messages, postgres JSON field storage, et cetera.
