@@ -50,7 +50,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
     @cached_property
     def sftp_credentials(self) -> SFTPCredentials:
         compound_key = self._security_credentials["compound_key"]
-        return SFTPCredentials(**{k: compound_key[k] for k in SFTPCredentials._fields})
+        return SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
 
     @cached_property
     def skey(self) -> t.Optional[io.StringIO]:

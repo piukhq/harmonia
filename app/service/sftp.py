@@ -7,7 +7,7 @@ class SFTPCredentials(t.NamedTuple):
     host: str
     port: int
     username: str
-    password: str
+    password: t.Optional[str]
 
 
 class SFTP:
