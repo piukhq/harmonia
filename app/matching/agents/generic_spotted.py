@@ -11,7 +11,7 @@ class GenericSpotted(BaseMatchingAgent):
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self._make_spotted_transaction_fields(), matching_type=models.MatchingType.SPOTTED,
+                **self.make_spotted_transaction_fields(), matching_type=models.MatchingType.SPOTTED,
             ),
             scheme_transaction_id=None,
         )

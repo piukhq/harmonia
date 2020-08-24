@@ -100,6 +100,7 @@ class MatchingType(Enum):
     LOYALTY = 1  # payment tx identified with loyalty tx scheme feed available
     NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
     MIXED = 3  # payment tx identified with full tx scheme feed available
+    FORCED = 4  # match was created manually via redress process
 
 
 class MatchedTransactionStatus(Enum):
