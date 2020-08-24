@@ -85,7 +85,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
 
         self.pgp = PGP(security_credentials["merchant_public_key"].encode())
         compound_key = security_credentials["compound_key"]
-        self.sftp_credentials = SFTPCredentials(**{k: compound_key[k] for k in SFTPCredentials._fields})
+        self.sftp_credentials = SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
         self.skey = io.StringIO(security_credentials.get("bink_private_key"))
 
         self.sequencer = Sequencer(self.provider_slug)
