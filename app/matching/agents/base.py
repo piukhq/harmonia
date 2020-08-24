@@ -1,5 +1,4 @@
 import typing as t
-from collections import namedtuple
 from enum import Enum
 
 import pendulum
@@ -13,7 +12,7 @@ from app import models, db
 
 class MatchResult(t.NamedTuple):
     matched_transaction: models.MatchedTransaction
-    scheme_transaction_id: int
+    scheme_transaction_id: t.Optional[int]
 
 
 class TimestampPrecision(Enum):

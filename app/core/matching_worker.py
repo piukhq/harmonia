@@ -1,4 +1,3 @@
-from app.db import session_scope
 import typing as t
 
 import sentry_sdk
