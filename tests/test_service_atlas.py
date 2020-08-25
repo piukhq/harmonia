@@ -1,6 +1,8 @@
 import pendulum
 import pytest
 import settings
+
+from requests.models import Response
 from unittest import mock
 
 from app.service.atlas import Atlas
@@ -44,5 +46,9 @@ request_body = (
 @mock.patch("app.service.queue.add", autospec=True)
 def test_save_transaction(mocked_queue) -> None:
     atlas = Atlas()
-    atlas.save_transaction("test-slug", {"outcome": "Success"}, request_body, MockMatchedTransaction())
+    response = mock.Mock(spec=Response)
+    response.json.return_value = {"outcome": "success"}
+    response.status_code = 200
+
+    atlas.save_transaction("test-slug", response, request_body, [MockMatchedTransaction()])
     mocked_queue.assert_called

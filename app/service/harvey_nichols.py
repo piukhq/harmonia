@@ -32,12 +32,12 @@ class HarveyNicholsAPI:
         endpoint = f"{self.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
         body["CustomerClaimTransactionRequest"]["token"] = token
 
-        response = self.post(endpoint, body, name="claim_transaction")["CustomerClaimTransactionResponse"]
+        response = self.post(endpoint, body, name="claim_transaction")
 
-        if response["outcome"] == "AuthFailed":
+        if "AuthFailed" in response.text:
             token = self.get_new_token(credentials, scheme_account_id)
             body["CustomerClaimTransactionRequest"]["token"] = token
-            response = self.post(endpoint, body, name="claim_transaction")["CustomerClaimTransactionResponse"]
+            response = self.post(endpoint, body, name="claim_transaction")
 
         return response
 

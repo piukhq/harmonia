@@ -25,13 +25,13 @@ def test_merchant_request(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> N
 
     url = f"{TEST_HARVEY_NICHOLS_URL}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
     body = {"CustomerClaimTransactionResponse": {"outcome": "Success"}}
-    responses.add(responses.POST, url, json=body)
+    responses.add(responses.POST, url, json=body, status=200)
 
     body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
 
     resp = harvey_nichols.claim_transaction(extra_data, body_request)
-    expected_resp = {"outcome": "Success"}
-    assert resp == expected_resp
+    expected_resp = '{"CustomerClaimTransactionResponse": {"outcome": "Success"}}'
+    assert resp.text == expected_resp
 
 
 @responses.activate

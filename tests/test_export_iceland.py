@@ -147,31 +147,3 @@ def test_format_transactions() -> None:
 
     assert formatted_transaction == Expected.formatted_transaction
 
-
-@responses.activate
-def test_check_response_error_codes() -> None:
-    add_mock_routes()
-    response = Response(Expected.response_error_codes)
-    expected = Expected.response_error_codes
-    iceland = Iceland()
-    try:
-        iceland.check_response(response)
-
-    except Exception as error:
-        error_response = error
-
-    assert str(expected["error_codes"]) in str(error_response)
-
-
-@responses.activate
-def test_check_response_error_codes_internal_server_error() -> None:
-    add_mock_routes()
-    response = ResponseNoContent(Expected.response_internal_server_error)
-    iceland = Iceland()
-    try:
-        iceland.check_response(response)
-
-    except Exception as error:
-        error_response = error
-
-    assert "no attribute" in str(error_response)
