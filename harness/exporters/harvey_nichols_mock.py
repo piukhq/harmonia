@@ -20,6 +20,7 @@ class HarveyNicholsMockAPI:
     TXM_DEVELOPMENT=true
 
     """
+
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
         self.session = requests_retry_session()
@@ -31,10 +32,10 @@ class HarveyNicholsMockAPI:
         response.json.return_value = {"outcome": "success"}
         response.status_code = 200
 
-        '''Sample AlreadyAssigned response
-        
+        """Sample AlreadyAssigned response
+        ---
         response = {"errorDetails": {"messageText":
         "Transaction already assigned to the customer", "errorCode": "AlreadyAssigned"}, "outcome": "AlreadyAssigned"}
-        
-        '''
+        ---
+        """
         return response

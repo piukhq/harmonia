@@ -13,7 +13,6 @@ from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.sequences import batch
-from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
 from app.soteria import SoteriaConfigMixin
 
@@ -92,27 +91,6 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
             "X-API-KEY": security_credentials["outbound"]["credentials"][0]["value"]["api_key"],
         }
 
-    def send_to_atlas(self, response, transactions):
-        failed_transactions = []
-        atlas_status_mapping = {
-            "processed": atlas.Status.BINK_ASSIGNED,
-            "alreadyprocessed": atlas.Status.MERCHANT_ASSIGNED,
-            "alreadyclaimed": atlas.Status.MERCHANT_ASSIGNED,
-            "alreadyassigned": atlas.Status.MERCHANT_ASSIGNED,
-            "unfound": atlas.Status.NOT_ASSIGNED,
-        }
-        transaction_id_dict = {t.transaction_id: t for t in transactions}
-        for transaction_response in response.json():
-            transaction_status = str(list(transaction_response.keys())[0])
-            transaction = transaction_id_dict[transaction_response[transaction_status]]
-            atlas_status = atlas_status_mapping[transaction_status.lower()]
-        #     try:
-        #         atlas.save_transaction(self.provider_slug, transaction_response, transaction, atlas_status)
-        #     except Exception:
-        #         failed_transactions.append(transaction_response)
-        # if failed_transactions:
-        #     self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
-
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
@@ -132,7 +110,7 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
     def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         _, body = export_data.outputs[0]
-        matched_transactions = export_data.transactions
+        # matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(
             body,
@@ -144,4 +122,4 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
         response.raise_for_status()
 
         self.save_backup_file(response)
-        self.send_to_atlas(response, matched_transactions)
+        # self.send_to_atlas(response, matched_transactions)

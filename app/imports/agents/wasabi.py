@@ -42,7 +42,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         path = ConfigValue(PATH_KEY, default="/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
-    @lru_cache(128)
+    @cached_property
     def _security_credentials(self) -> dict:
         config = self.get_soteria_config()
         return {c["credential_type"]: c["value"] for c in config.security_credentials["inbound"]["credentials"]}

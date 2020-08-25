@@ -30,13 +30,15 @@ def atlas() -> Atlas:
     return Atlas()
 
 
-request_body = '{' \
-                '"CustomerClaimTransactionRequest": {' \
-                '"token": "token",' \
-                '"customerNumber": credentials["card_number"],' \
-                '"id": matched_transaction.transaction_id,' \
-                '}' \
-                '}'
+request_body = (
+    "{"
+    '"CustomerClaimTransactionRequest": {'
+    '"token": "token",'
+    '"customerNumber": credentials["card_number"],'
+    '"id": matched_transaction.transaction_id,'
+    "}"
+    "}"
+)
 
 
 @mock.patch("app.service.queue.add", autospec=True)

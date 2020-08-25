@@ -21,7 +21,7 @@ extra_data = {"scheme_account_id": 123456, "credentials": "some credentials"}
 @responses.activate
 @mock.patch("app.service.harvey_nichols.HarveyNicholsAPI.get_token")
 def test_merchant_request(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> None:
-    mock_get_token.return_value = 'mock_token'
+    mock_get_token.return_value = "mock_token"
 
     url = f"{TEST_HARVEY_NICHOLS_URL}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
     body = {"CustomerClaimTransactionResponse": {"outcome": "Success"}}
@@ -37,7 +37,7 @@ def test_merchant_request(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> N
 @responses.activate
 @mock.patch("app.service.harvey_nichols.HarveyNicholsAPI.get_token")
 def test_merchant_request_bad_500(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> None:
-    mock_get_token.return_value = 'mock_token'
+    mock_get_token.return_value = "mock_token"
 
     url = f"{TEST_HARVEY_NICHOLS_URL}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
     body = {"bad_request": {"outcome": "error"}}
@@ -52,7 +52,7 @@ def test_merchant_request_bad_500(mock_get_token, harvey_nichols: HarveyNicholsA
 @responses.activate
 @mock.patch("app.service.harvey_nichols.HarveyNicholsAPI.get_token")
 def test_merchant_request_bad_400(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> None:
-    mock_get_token.return_value = 'mock_token'
+    mock_get_token.return_value = "mock_token"
 
     url = f"{TEST_HARVEY_NICHOLS_URL}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
     body = {"bad_request": {"outcome": "error"}}

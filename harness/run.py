@@ -253,19 +253,18 @@ def patch_soteria_service():
         TRANSACTION_MATCHING_HANDLER = "mock-handler"
 
         data = {
-            "security_credentials":
-            {
+            "security_credentials": {
                 "outbound": {
                     "credentials": [
                         {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
                         {"credential_type": "compound_key", "value": {}},
                         {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
                     ],
-                    "service": soteria.configuration.Configuration.RSA_SECURITY
+                    "service": soteria.configuration.Configuration.RSA_SECURITY,
                 }
             }
         }
-        merchant_url = ''
+        merchant_url = ""
 
         def __init__(self, *args, **kwargs):
             click.echo(f"{type(self).__name__} was instantiated!")

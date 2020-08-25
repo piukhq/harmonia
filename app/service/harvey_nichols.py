@@ -5,8 +5,6 @@ from urllib.parse import urljoin
 from app.reporting import get_logger
 from app.core.requests_retry import requests_retry_session
 from user_auth_token.core import UserTokenStore
-from app.exports.agents import AgentExportData
-from app.service.atlas import Atlas, atlas
 
 log = get_logger("harvey-nichols")
 
