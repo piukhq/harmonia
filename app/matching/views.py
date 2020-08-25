@@ -34,7 +34,10 @@ def force_match():
 
     worker = MatchingWorker()
 
-    with db.session_scope() as session:
-        worker.force_match(data["payment_transaction_id"], data["scheme_transaction_id"], session=session)
+    try:
+        with db.session_scope() as session:
+            worker.force_match(data["payment_transaction_id"], data["scheme_transaction_id"], session=session)
+    except worker.RedressError as ex:
+        return {"error": str(ex)}, 400
 
     return "", 204
