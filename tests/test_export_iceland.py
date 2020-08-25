@@ -146,4 +146,3 @@ def test_format_transactions() -> None:
     formatted_transaction = iceland.format_transactions(transactions)
 
     assert formatted_transaction == Expected.formatted_transaction
-
