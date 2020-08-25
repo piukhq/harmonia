@@ -106,12 +106,12 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
             transaction_status = str(list(transaction_response.keys())[0])
             transaction = transaction_id_dict[transaction_response[transaction_status]]
             atlas_status = atlas_status_mapping[transaction_status.lower()]
-            try:
-                atlas.save_transaction(self.provider_slug, transaction_response, transaction, atlas_status)
-            except Exception:
-                failed_transactions.append(transaction_response)
-        if failed_transactions:
-            self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
+        #     try:
+        #         atlas.save_transaction(self.provider_slug, transaction_response, transaction, atlas_status)
+        #     except Exception:
+        #         failed_transactions.append(transaction_response)
+        # if failed_transactions:
+        #     self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
 
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session

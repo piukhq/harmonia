@@ -197,8 +197,8 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         )
         yield AgentExportData(outputs=outputs, transactions=transactions, extra_data={})
 
-        for atlas_call in atlas_calls:
-            atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
+#        for atlas_call in atlas_calls:
+#            atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
 
     def _prepare_for_sftp(self, output: AgentExportDataOutput) -> t.Tuple[str, io.BytesIO]:
         if output.key.endswith((".base64", ".csv")):

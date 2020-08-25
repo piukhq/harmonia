@@ -9,6 +9,7 @@ import click
 import gnupg
 import pendulum
 import soteria.configuration
+import soteria.security
 import toml
 from flask import Flask
 from marshmallow import ValidationError, fields, validate, pre_load
@@ -251,15 +252,20 @@ def patch_soteria_service():
     class MockSoteriaConfiguration(soteria.configuration.Configuration):
         TRANSACTION_MATCHING_HANDLER = "mock-handler"
 
-        security_credentials = {
-            "outbound": {
-                "credentials": [
-                    {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
-                    {"credential_type": "compound_key", "value": {}},
-                    {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
-                ]
+        data = {
+            "security_credentials":
+            {
+                "outbound": {
+                    "credentials": [
+                        {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
+                        {"credential_type": "compound_key", "value": {}},
+                        {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
+                    ],
+                    "service": soteria.configuration.Configuration.RSA_SECURITY
+                }
             }
         }
+        merchant_url = ''
 
         def __init__(self, *args, **kwargs):
             click.echo(f"{type(self).__name__} was instantiated!")
@@ -269,7 +275,15 @@ def patch_soteria_service():
         def get_security_credentials(self, key_items):
             return self.security_credentials
 
+    def mock_get_security_agent(*args, **kwargs):
+        class MockSoteriaAgent:
+            def encode(self, body: str) -> dict:
+                return {"body": body}
+
+        return MockSoteriaAgent()
+
     soteria.configuration.Configuration = MockSoteriaConfiguration
+    soteria.security.get_security_agent = mock_get_security_agent
 
 
 def setup_keyring():
