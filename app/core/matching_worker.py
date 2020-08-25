@@ -12,6 +12,9 @@ from app import tasks, models, db
 import settings
 
 
+TransactionType = t.TypeVar("TransactionType", models.PaymentTransaction, models.SchemeTransaction)
+
+
 class MatchingWorker:
     class LoyaltySchemeNotFound(Exception):
         pass
@@ -206,6 +209,25 @@ class MatchingWorker:
         else:
             self.log.debug("Found no matching payment transactions. Exiting matching job.")
 
+    def find_transaction_for_redress(
+        self, model: t.Type[TransactionType], id: int, *, session: db.Session,
+    ) -> TransactionType:
+        model_name = model.__name__
+        transaction: TransactionType = db.run_query(
+            lambda: session.query(model).get(id),
+            session=session,
+            read_only=True,
+            description=f"find {model_name} for redress",
+        )
+
+        if transaction is None:
+            raise self.RedressError(f"Couldn't find {model_name} with ID #{id}")
+
+        if transaction.status != models.TransactionStatus.PENDING:
+            raise self.RedressError(f"Redress attempted on non-pending {model_name} #{id}")
+
+        return transaction
+
     def force_match(self, payment_transaction_id: int, scheme_transaction_id: int, *, session: db.Session):
         """
         Given the IDs of a payment and scheme transaction pair, manually creates a match between them.
@@ -213,25 +235,12 @@ class MatchingWorker:
         """
         status_monitor.checkin(self)
 
-        payment_transaction = db.run_query(
-            lambda: session.query(models.PaymentTransaction).get(payment_transaction_id),
-            session=session,
-            read_only=True,
-            description="find payment transaction for redress",
+        payment_transaction = self.find_transaction_for_redress(
+            models.PaymentTransaction, payment_transaction_id, session=session
         )
-
-        if payment_transaction.status != models.TransactionStatus.PENDING:
-            raise self.RedressError(f"Redress attempted on non-pending payment transaction #{payment_transaction_id}")
-
-        scheme_transaction = db.run_query(
-            lambda: session.query(models.SchemeTransaction).get(scheme_transaction_id),
-            session=session,
-            read_only=True,
-            description="find scheme transaction for redress",
+        scheme_transaction = self.find_transaction_for_redress(
+            models.SchemeTransaction, scheme_transaction_id, session=session
         )
-
-        if scheme_transaction.status != models.TransactionStatus.PENDING:
-            raise self.RedressError(f"Redress attempted on non-pending scheme transaction #{scheme_transaction_id}")
 
         agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
         if agent is None:
