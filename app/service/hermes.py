@@ -13,6 +13,7 @@ class PaymentProviderSlug(str, Enum):
     AMEX = "amex"
     VISA = "visa"
     MASTERCARD = "mastercard"
+    BINK_PAYMENT = "bink-payment"
 
 
 class Hermes:
