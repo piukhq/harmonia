@@ -53,9 +53,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         return SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
 
     @cached_property
-    def skey(self) -> t.Optional[io.StringIO]:
-        skey = self._security_credentials.get("bink_private_key")
-        return io.StringIO(skey) if skey else None
+    def skey(self) -> t.Optional[str]:
+        return self._security_credentials.get("bink_private_key")
 
     @cached_property
     def filesource(self) -> FileSourceBase:
@@ -66,8 +65,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
             f"""
             This is the Wasabi scheme transaction SFTP file import agent.
 
-            It is currently set up to monitor {self.Config.path} on SFTP host {self.sftp_credentials.host}
-            for files to import.
+            It is currently set up to monitor {self.Config.path} on SFTP host
+            {self.sftp_credentials.host}:{self.sftp_credentials.port} for files to import.
             """
         )
 

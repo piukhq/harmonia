@@ -137,7 +137,7 @@ class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
 
 class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
     def __init__(
-        self, credentials: SFTPCredentials, skey: t.Optional[t.TextIO], path: Path, *, logger: logging.Logger
+        self, credentials: SFTPCredentials, skey: t.Optional[str], path: Path, *, logger: logging.Logger
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
