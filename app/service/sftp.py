@@ -5,7 +5,7 @@ import paramiko
 
 class SFTPCredentials(t.NamedTuple):
     host: str
-    port: int
+    port: t.Union[str, int]
     username: str
     password: t.Optional[str]
 
@@ -17,7 +17,7 @@ class SFTP:
     def __init__(self, credentials: SFTPCredentials, skey: t.Optional[t.TextIO] = None, path: t.Optional[str] = None):
         self.pkey = paramiko.RSAKey.from_private_key(skey) if skey else None
         self.credentials = credentials
-        self.transport = paramiko.Transport((credentials.host, credentials.port))
+        self.transport = paramiko.Transport((credentials.host, int(credentials.port)))
         self.path = path
 
     def __enter__(self):
