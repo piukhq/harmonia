@@ -11,6 +11,7 @@ from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "harvey-nichols"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -145,6 +146,7 @@ class HarveyNichols(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     """
     Harvey Nichols send transaction data with unrecognised payment providers, EG "ACCESS (NOT USED)"

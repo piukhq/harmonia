@@ -14,6 +14,7 @@ from app.service.hermes import PaymentProviderSlug
 PROVIDER_SLUG = "whsmith-rewards"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATETIME_FORMAT = "YYYY-MM-DDTHH:mm:ss.SSS"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATA_FIELDS = (
     "transaction_uuid",
@@ -68,6 +69,7 @@ class WhSmith(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(

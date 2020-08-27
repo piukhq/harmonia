@@ -1,0 +1,39 @@
+# base fixture data
+mid = "test-mid-456"
+location = "London"
+postcode = "W5 5LG"
+
+[loyalty_scheme]
+slug = "wasabi-club"
+
+[payment_provider]
+slug = "mastercard"
+
+[[agents]]
+slug = "wasabi-club"
+
+[[agents]]
+slug = "mastercard-auth"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+email = "test@binktest.com"
+
+[[users.transactions]]
+date = 2020-08-05T16:28:52Z
+amount = 9000
+settlement_key = "settle123"
+auth_code = "999999"
+
+[[users.transactions]]
+date = 2020-08-05T16:28:57Z
+amount = 8000
+settlement_key = "1111111111"
+auth_code = "999999"

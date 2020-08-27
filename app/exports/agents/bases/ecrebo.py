@@ -6,16 +6,16 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pendulum
-from soteria.configuration import Configuration
 from soteria.encryption import PGP
 
 import settings
 from app import models, db, xml_utils
+from app.soteria import SoteriaConfigMixin
 from app.utils import classproperty, missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
-from app.service.sftp import SFTP
+from app.service.sftp import SFTP, SFTPCredentials
 
 
 class ExportFileSet(t.NamedTuple):
@@ -64,7 +64,7 @@ class EcreboSpottingConfigMixin:
         return missing_property(self, "receipt_upload_path")
 
 
-class Ecrebo(BatchExportAgent):
+class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
     saved_output_index = 2  # save rewards CSV to export_transaction table
 
     class Config(EcreboConfig):
@@ -78,31 +78,15 @@ class Ecrebo(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.EUROPA_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Europa URL to be set."
-            )
-
-        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
-            )
-
-        config = Configuration(
-            self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
-            settings.VAULT_URL,
-            settings.VAULT_TOKEN,
-            settings.EUROPA_URL,
-        )
-
+        config = self.get_soteria_config()
         security_credentials = {
             c["credential_type"]: c["value"] for c in config.security_credentials["outbound"]["credentials"]
         }
 
         self.pgp = PGP(security_credentials["merchant_public_key"].encode())
-        self.sftp_credentials = security_credentials["compound_key"]
-        self.skey = security_credentials["bink_private_key"]
+        compound_key = security_credentials["compound_key"]
+        self.sftp_credentials = SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
+        self.skey = security_credentials.get("bink_private_key")
 
         self.sequencer = Sequencer(self.provider_slug)
 
@@ -216,20 +200,19 @@ class Ecrebo(BatchExportAgent):
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData) -> None:
         # place output data into BytesIO objects for SFTP usage.
         buffered_outputs = [(name, io.BytesIO(t.cast(str, content).encode())) for name, content in export_data.outputs]
 
         # we have to send the files in a very specific order.
-        skey = io.StringIO(self.skey)
         if self.matching_type == models.MatchingType.SPOTTED:
-            with SFTP(self.sftp_credentials, skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
+            with SFTP(self.sftp_credentials, self.skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
                 name, buf = buffered_outputs[0]
                 sftp.client.putfo(buf, name)
                 name, buf = buffered_outputs[1]
                 sftp.client.putfo(buf, name)
 
-        with SFTP(self.sftp_credentials, skey, self.Config.reward_upload_path) as sftp:
+        with SFTP(self.sftp_credentials, self.skey, self.Config.reward_upload_path) as sftp:
             name, buf = buffered_outputs[2]
             sftp.client.putfo(buf, name)
             name, buf = buffered_outputs[3]
