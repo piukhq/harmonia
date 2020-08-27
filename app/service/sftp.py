@@ -1,3 +1,4 @@
+import io
 import typing as t
 
 import paramiko
@@ -14,8 +15,8 @@ class SFTP:
     transport = None
     client = None
 
-    def __init__(self, credentials: SFTPCredentials, skey: t.Optional[t.TextIO] = None, path: t.Optional[str] = None):
-        self.pkey = paramiko.RSAKey.from_private_key(skey) if skey else None
+    def __init__(self, credentials: SFTPCredentials, skey: t.Optional[str] = None, path: t.Optional[str] = None):
+        self.pkey = paramiko.RSAKey.from_private_key(io.StringIO(skey)) if skey else None
         self.credentials = credentials
         self.transport = paramiko.Transport((credentials.host, int(credentials.port)))
         self.path = path
