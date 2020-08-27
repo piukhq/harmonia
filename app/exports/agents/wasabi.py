@@ -51,7 +51,7 @@ class Wasabi(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "origin_id": hashlib.sha1(credentials["email"].encode()).hexdigest(),
+                        "origin_id": hashlib.sha1(f'Bink-Wasabi-{credentials["email"]}'.encode()).hexdigest(),
                         "ReceiptNo": matched_transaction.transaction_id,
                     },
                 )
