@@ -1,4 +1,3 @@
-import json
 import settings
 import pendulum
 import requests
@@ -52,7 +51,7 @@ class Atlas:
             "request": request,
             "status_code": response.status_code,
             "timestamp": pendulum.now().to_datetime_string(),
-            "transactions": json.dumps(transaction_sub_set),
+            "transactions": transaction_sub_set,
         }
 
         queue.add(body, provider=provider_slug, queue_name="tx_matching")
