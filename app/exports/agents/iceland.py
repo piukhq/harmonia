@@ -1,14 +1,12 @@
 import inspect
 import json
 import typing as t
-
 import settings
+import pendulum
 
 from uuid import uuid4
-
 from hashids import Hashids
 from soteria.security import get_security_agent
-
 
 from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
@@ -95,7 +93,10 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     def send_export_data(self, export_data: AgentExportData):
         _, body = export_data.outputs[0]
         request = self.make_secured_request(t.cast(str, body))
-
+        request_timestamp = pendulum.now().to_datetime_string()
         response = self.api.merchant_request(request)
+        response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.save_transaction(self.provider_slug, response, request, export_data.transactions)
+        atlas.save_transaction(
+            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp
+        )

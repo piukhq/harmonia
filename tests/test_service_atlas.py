@@ -45,10 +45,15 @@ request_body = (
 
 @mock.patch("app.service.queue.add", autospec=True)
 def test_save_transaction(mocked_queue) -> None:
+    request_timestamp = pendulum.now().to_datetime_string()
     atlas = Atlas()
     response = mock.Mock(spec=Response)
     response.json.return_value = {"outcome": "success"}
     response.status_code = 200
+    response_timestamp = pendulum.now().to_datetime_string()
 
-    atlas.save_transaction("test-slug", response, request_body, [MockMatchedTransaction()])
+    atlas.save_transaction(
+        "test-slug", response, request_body, [MockMatchedTransaction()], request_timestamp, response_timestamp
+    )
+
     mocked_queue.assert_called

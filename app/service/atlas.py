@@ -28,6 +28,8 @@ class Atlas:
         response: requests.Response,
         request: dict,
         transactions: t.List[models.MatchedTransaction],
+        request_timestamp,
+        response_timestamp,
     ):
 
         if settings.SIMULATE_EXPORTS:
@@ -50,7 +52,8 @@ class Atlas:
             "response": response.json(),
             "request": request,
             "status_code": response.status_code,
-            "timestamp": pendulum.now().to_datetime_string(),
+            "request_timestamp": request_timestamp,
+            "response_timestamp": response_timestamp,
             "transactions": transaction_sub_set,
         }
 
