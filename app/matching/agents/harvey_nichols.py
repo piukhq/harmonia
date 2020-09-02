@@ -12,7 +12,7 @@ class HarveyNichols(BaseMatchingAgent):
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=30)
         return scheme_transactions
 
     def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
@@ -28,6 +28,8 @@ class HarveyNichols(BaseMatchingAgent):
             "visa": self._filter_scheme_transactions_with_time,
             "amex": self._filter_scheme_transactions_with_time,
             "mastercard": self._filter_scheme_transactions_mastercard,
+            # for end to end testing
+            "bink-payment": self._filter_scheme_transactions_with_time,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
     def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
