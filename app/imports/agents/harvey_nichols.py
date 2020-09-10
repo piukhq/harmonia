@@ -176,7 +176,7 @@ class HarveyNichols(FileAgent):
             transaction_date=transaction_date,
             has_time=True,
             payment_provider_slug=payment_provider_map[data["card"]["scheme"]],
-            spend_amount=to_pennies("{:.2f}".format(data["amount"]["value"])),
+            spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},
