@@ -133,8 +133,7 @@ class Amex(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
 
 
@@ -172,6 +171,5 @@ class AmexAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]

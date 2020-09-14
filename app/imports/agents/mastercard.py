@@ -108,8 +108,7 @@ class MastercardSettled(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_sequence_number"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_id"]]
 
 
@@ -138,6 +137,5 @@ class MastercardAuth(QueueAgent):
         # TODO: is this alright?
         return str(uuid4())
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["mid"]]

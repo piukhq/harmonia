@@ -98,6 +98,5 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         """
         return data["Receipt No_"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["EFT Merchant No_"]]
