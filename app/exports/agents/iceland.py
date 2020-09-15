@@ -14,6 +14,7 @@ from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExpo
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
+from app.encryption import decrypt_credentials
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
@@ -62,10 +63,11 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         formatted = []
         for transaction in transactions:
             user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
+            credential_values = decrypt_credentials(user_identity.credentials)
             formatted_transaction = {
                 "record_uid": hash_ids.encode(user_identity.scheme_account_id),
                 "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
-                "merchant_scheme_id2": transaction.merchant_identifier.mid,
+                "merchant_scheme_id2": credential_values["merchant_identifier"],
                 "transaction_id": transaction.transaction_id,
             }
             formatted.append(formatted_transaction)
