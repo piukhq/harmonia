@@ -125,7 +125,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
                 TRANSACTION_DATE=date,
                 TRANSACTION_VALUE=transaction_amount.quantize(Decimal("0.01")),
             )
-            formatted_xml = b64encode(xml_utils.minify(xml_string).encode())
+            formatted_xml = b64encode(xml_utils.minify(xml_string).encode()).decode()
             print(formatted_xml, file=buf)
 
         return buf.getvalue()
