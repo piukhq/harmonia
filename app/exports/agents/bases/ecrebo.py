@@ -183,9 +183,9 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         if fileset.receipt_data is not None:
             outputs.extend(
                 [
-                    AgentExportDataOutput(f"receipt_{self.provider_short_code}{ts}.base64", fileset.receipt_data),
+                    AgentExportDataOutput(f"receipts_{self.provider_short_code}{ts}.base64", fileset.receipt_data),
                     AgentExportDataOutput(
-                        f"receipt_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)
+                        f"receipts_{self.provider_short_code}{ts}.chk", str(fileset.transaction_count)
                     ),
                 ]
             )
@@ -200,9 +200,16 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         for atlas_call in atlas_calls:
             atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
 
+    def _prepare_for_sftp(self, output: AgentExportDataOutput) -> t.Tuple[str, io.BytesIO]:
+        if output.key.endswith((".base64", ".csv")):
+            return (f"{output.key}.gpg", io.BytesIO(self.pgp.encrypt(output.data)))
+        else:
+            return (output.key, io.BytesIO(t.cast(str, output.data).encode()))
+
     def send_export_data(self, export_data: AgentExportData) -> None:
         # place output data into BytesIO objects for SFTP usage.
-        buffered_outputs = [(name, io.BytesIO(t.cast(str, content).encode())) for name, content in export_data.outputs]
+        # this will also encrypt the .base64 and .csv files with PGP and append `.gpg` to the key
+        buffered_outputs = list(map(self._prepare_for_sftp, export_data.outputs))
 
         # we have to send the files in a very specific order.
         if self.matching_type == models.MatchingType.SPOTTED:
