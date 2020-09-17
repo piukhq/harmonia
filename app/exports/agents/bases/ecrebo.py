@@ -210,7 +210,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         # place output data into BytesIO objects for SFTP usage.
         # this will also encrypt the .base64 and .csv files with PGP and append `.gpg` to the key
         buffered_outputs = list(map(self._prepare_for_sftp, export_data.outputs))
-        
+
         # we have to send the files in a very specific order.
         if self.matching_type == models.MatchingType.SPOTTED:
             with SFTP(self.sftp_credentials, self.skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
