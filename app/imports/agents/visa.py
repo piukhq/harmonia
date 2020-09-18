@@ -143,8 +143,7 @@ class Visa(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["card_acceptor_id"]]
 
     @staticmethod
@@ -174,8 +173,7 @@ class VisaAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
@@ -206,8 +204,7 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:

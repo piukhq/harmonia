@@ -39,13 +39,14 @@ def get_payment_provider(slug, *, session: db.Session):
 
 
 def create_merchant_identifier_fields(
-    payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, *, session: db.Session
+    payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, *, session: db.Session
 ) -> dict:
     loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug, session=session)
     payment_provider = get_payment_provider(payment_provider_slug, session=session)
 
     return dict(
         mid=mid,
+        store_id=store_id if store_id else None,
         loyalty_scheme_id=loyalty_scheme.id,
         payment_provider_id=payment_provider.id,
         location=location,
@@ -62,15 +63,24 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
     for line, row in enumerate(reader):
         row = [value.strip() for value in row]
         try:
-            payment_provider_slug, mid, loyalty_scheme_slug, loyalty_scheme_name, location, postcode, action = row
+            (
+                payment_provider_slug,
+                mid,
+                loyalty_scheme_slug,
+                store_id,
+                loyalty_scheme_name,
+                location,
+                postcode,
+                action,
+            ) = row
         except ValueError as ex:
-            raise ValueError(f"Expected 7 items at line {line} of file, got {len(row)}") from ex
+            raise ValueError(f"Expected 8 items at line {line} of file, got {len(row)}") from ex
 
         if action.lower() != "a":
             continue
 
         merchant_identifier_fields = create_merchant_identifier_fields(
-            payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, session=session
+            payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, session=session
         )
         merchant_identifiers_fields.append(merchant_identifier_fields)
 

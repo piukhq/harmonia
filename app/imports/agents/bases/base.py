@@ -1,5 +1,6 @@
 import typing as t
-from functools import lru_cache
+from functools import cached_property, lru_cache
+from collections import defaultdict
 
 import redis.lock
 import pendulum
@@ -108,8 +109,28 @@ class BaseAgent:
     def get_transaction_id(data: dict) -> str:
         raise NotImplementedError("Override get_transaction_id in your agent.")
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    @cached_property
+    def storeid_mid_map(self):
+        with db.session_scope() as session:
+
+            def get_data():
+                return (
+                    session.query(models.MerchantIdentifier.store_id, models.MerchantIdentifier.mid)
+                    .join(models.LoyaltyScheme)
+                    .filter(models.LoyaltyScheme.slug == self.provider_slug)
+                    .filter(models.MerchantIdentifier.store_id.isnot(None))
+                )
+
+            data = db.run_query(
+                get_data, session=session, read_only=True, description=f"find {self.provider_slug} MIDs by store ID"
+            )
+
+        storeid_mid_map = defaultdict(list)
+        for (store_id, mid) in data:
+            storeid_mid_map[store_id].append(mid)
+        return storeid_mid_map
+
+    def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
 
     @staticmethod
