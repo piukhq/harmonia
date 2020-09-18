@@ -45,11 +45,13 @@ def create_app() -> flask.Flask:
     from app.config.views import api as config_api
     from app.status.views import api as status_api
     from app.mids.views import api as mids_api
+    from app.matching.views import api as matching_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)
     app.register_blueprint(status_api)
     app.register_blueprint(mids_api)
+    app.register_blueprint(matching_api)
 
     register_import_agent_routes(app)
 

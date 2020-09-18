@@ -1,4 +1,4 @@
-"""Alter transaction date field to have timezone.
+"""alter transaction date field to have timezone
 
 Revision ID: c98b8341cad2
 Revises: fba8c235398c

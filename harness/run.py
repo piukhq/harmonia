@@ -387,10 +387,14 @@ def maybe_run_batch_export_agent(fixture: dict):
         agent.export_all(session=session)
 
 
-def run_transaction_matching(fixture: dict):
+def run_transaction_matching(fixture: dict, *, import_only: bool = False):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
+
+    if import_only:
+        return
+
     run_rq_worker("matching")
     run_rq_worker("export")
 
@@ -431,7 +435,8 @@ def do_file_dump(fixture: dict):
     show_default=True,
 )
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
-def main(fixture_file: t.IO[str], dump_files: bool):
+@click.option("--import-only", is_flag=True, help="Halt after the import step.")
+def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
     fixture = load_fixture(fixture_file)
 
     if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
@@ -447,7 +452,7 @@ def main(fixture_file: t.IO[str], dump_files: bool):
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
 
-    run_transaction_matching(fixture)
+    run_transaction_matching(fixture, import_only=import_only)
 
 
 if __name__ == "__main__":
