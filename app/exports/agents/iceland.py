@@ -1,13 +1,13 @@
 import inspect
 import json
 import typing as t
-from uuid import uuid4
+import settings
+import pendulum
 
-import requests
+from uuid import uuid4
 from hashids import Hashids
 from soteria.security import get_security_agent
 
-import settings
 from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
@@ -15,6 +15,7 @@ from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
 from app.encryption import decrypt_credentials
+from harness.exporters.iceland_mock import IcelandMockAPI
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
@@ -39,6 +40,11 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             )
 
         self.merchant_config = self.get_soteria_config()
+        if settings.DEVELOPMENT is True:
+            # Use mocked Iceland endpoints
+            self.api = IcelandMockAPI(self.merchant_config.merchant_url)
+        else:
+            self.api = IcelandAPI(self.merchant_config.merchant_url)
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -46,18 +52,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
             """
         )
-
-    @staticmethod
-    def check_response(response: requests.Response):
-        try:
-            errors = response.json().get("error_codes")
-            if errors:
-                raise requests.RequestException(f"Error codes found in export response: {errors}")
-        except (AttributeError, json.JSONDecodeError):
-            if not response.content:
-                return
-
-            raise requests.RequestException(f"Received error response when posting transactions: {response.text}")
 
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
@@ -81,9 +75,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
         return security_class.encode(body)
 
-    def save_to_atlas(self, response: str, transaction: models.MatchedTransaction, status: atlas.Status):
-        atlas.save_transaction(self.provider_slug, response, transaction, status)
-
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
@@ -102,19 +93,10 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     def send_export_data(self, export_data: AgentExportData):
         _, body = export_data.outputs[0]
         request = self.make_secured_request(t.cast(str, body))
+        request_timestamp = pendulum.now().to_datetime_string()
+        response = self.api.merchant_request(request)
+        response_timestamp = pendulum.now().to_datetime_string()
 
-        api = IcelandAPI(self.merchant_config.merchant_url)
-
-        try:
-            response = api.merchant_request(request)
-            self.check_response(response)
-        except requests.exceptions.RequestException as error:
-            response_text = repr(error)
-            atlas_status = atlas.Status.NOT_ASSIGNED
-            self.log.error(f"Iceland export request failed with the following exception: {error}")
-        else:
-            response_text = response.text
-            atlas_status = atlas.Status.BINK_ASSIGNED
-
-        for transaction in export_data.transactions:
-            self.save_to_atlas(response_text, transaction, atlas_status)
+        atlas.save_transaction(
+            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp
+        )
