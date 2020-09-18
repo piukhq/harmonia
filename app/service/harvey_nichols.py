@@ -16,7 +16,7 @@ class HarveyNicholsAPI:
         self.base_url = base_url
         self.session = requests_retry_session()
 
-    def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
+    def post(self, endpoint: str, body: dict = None, *, name: str) -> requests.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         url = urljoin(self.base_url, endpoint)
         response = self.session.post(url, json=body)
@@ -24,7 +24,7 @@ class HarveyNicholsAPI:
         # Save the request and response for billing and audit
         return response
 
-    def claim_transaction(self, extra_data: dict, body: dict) -> requests:
+    def claim_transaction(self, extra_data: dict, body: dict) -> requests.Response:
         credentials = extra_data["credentials"]
         scheme_account_id = extra_data["scheme_account_id"]
 

@@ -25,7 +25,7 @@ class HarveyNicholsMockAPI:
         self.base_url = base_url
         self.session = requests_retry_session()
 
-    def claim_transaction(self, export_data: AgentExportData, body: dict) -> requests:
+    def claim_transaction(self, export_data: AgentExportData, body: dict) -> requests.Response:
         export_data = export_data
         body = body
         response = Mock(spec=Response)
