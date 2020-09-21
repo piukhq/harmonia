@@ -119,6 +119,7 @@ class BaseAgent:
                     .join(models.LoyaltyScheme)
                     .filter(models.LoyaltyScheme.slug == self.provider_slug)
                     .filter(models.MerchantIdentifier.store_id.isnot(None))
+                    .distinct()
                 )
 
             data = db.run_query(
