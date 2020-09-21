@@ -1,4 +1,4 @@
-"""Ensure uniqueness of loyalty scheme and payment provider slugs
+"""ensure uniqueness of loyalty scheme and payment provider slugs
 
 Revision ID: fd616c5e3fcf
 Revises: cfed42292ce7

@@ -1,5 +1,4 @@
 import typing as t
-from collections import namedtuple
 from enum import Enum
 
 import pendulum
@@ -10,7 +9,10 @@ import sqlalchemy
 from app.reporting import get_logger
 from app import models, db
 
-MatchResult = namedtuple("MatchResult", ("matched_transaction", "scheme_transaction_id"))
+
+class MatchResult(t.NamedTuple):
+    matched_transaction: models.MatchedTransaction
+    scheme_transaction_id: t.Optional[int]
 
 
 class TimestampPrecision(Enum):
@@ -79,7 +81,7 @@ class BaseMatchingAgent:
             description="find pending scheme transactions for matching",
         )
 
-    def _make_spotted_transaction_fields(self):
+    def make_spotted_transaction_fields(self):
         merchant_identifier_ids = self.payment_transaction.merchant_identifier_ids
 
         if len(merchant_identifier_ids) > 1:
@@ -102,7 +104,7 @@ class BaseMatchingAgent:
             "extra_fields": self.payment_transaction.extra_fields,
         }
 
-    def _make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
+    def make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
         matching_merchant_identifier_ids = list(
             set(self.payment_transaction.merchant_identifier_ids).intersection(
                 scheme_transaction.merchant_identifier_ids

@@ -1,4 +1,4 @@
-"""Add auth_code to payment and merchant transactions
+"""add auth_code to payment and merchant transactions
 
 Revision ID: cc180ddc654d
 Revises: 97aabf7b110b

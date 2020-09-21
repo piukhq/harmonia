@@ -9,6 +9,7 @@ import click
 import gnupg
 import pendulum
 import soteria.configuration
+import soteria.security
 import toml
 from flask import Flask
 from marshmallow import ValidationError, fields, validate, pre_load
@@ -251,15 +252,19 @@ def patch_soteria_service():
     class MockSoteriaConfiguration(soteria.configuration.Configuration):
         TRANSACTION_MATCHING_HANDLER = "mock-handler"
 
-        security_credentials = {
-            "outbound": {
-                "credentials": [
-                    {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
-                    {"credential_type": "compound_key", "value": {}},
-                    {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
-                ]
+        data = {
+            "security_credentials": {
+                "outbound": {
+                    "credentials": [
+                        {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
+                        {"credential_type": "compound_key", "value": {}},
+                        {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
+                    ],
+                    "service": soteria.configuration.Configuration.RSA_SECURITY,
+                }
             }
         }
+        merchant_url = ""
 
         def __init__(self, *args, **kwargs):
             click.echo(f"{type(self).__name__} was instantiated!")
@@ -269,7 +274,15 @@ def patch_soteria_service():
         def get_security_credentials(self, key_items):
             return self.security_credentials
 
+    def mock_get_security_agent(*args, **kwargs):
+        class MockSoteriaAgent:
+            def encode(self, body: str) -> dict:
+                return {"body": body}
+
+        return MockSoteriaAgent()
+
     soteria.configuration.Configuration = MockSoteriaConfiguration
+    soteria.security.get_security_agent = mock_get_security_agent
 
 
 def setup_keyring():
@@ -387,10 +400,14 @@ def maybe_run_batch_export_agent(fixture: dict):
         agent.export_all(session=session)
 
 
-def run_transaction_matching(fixture: dict):
+def run_transaction_matching(fixture: dict, *, import_only: bool = False):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
+
+    if import_only:
+        return
+
     run_rq_worker("matching")
     run_rq_worker("export")
 
@@ -431,7 +448,8 @@ def do_file_dump(fixture: dict):
     show_default=True,
 )
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
-def main(fixture_file: t.IO[str], dump_files: bool):
+@click.option("--import-only", is_flag=True, help="Halt after the import step.")
+def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
     fixture = load_fixture(fixture_file)
 
     if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
@@ -447,7 +465,7 @@ def main(fixture_file: t.IO[str], dump_files: bool):
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
 
-    run_transaction_matching(fixture)
+    run_transaction_matching(fixture, import_only=import_only)
 
 
 if __name__ == "__main__":

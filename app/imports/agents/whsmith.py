@@ -44,11 +44,6 @@ DATA_FIELDS = (
     "country",
 )
 
-STORE_ID_TO_MIDS = {
-    # FIXME: Full store ID to MID mapping required
-    "5842": ["942424905", "61584292"]
-}
-
 
 class WhSmith(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
@@ -103,7 +98,6 @@ class WhSmith(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_uuid"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
-        mid = data["store_id"]
-        return STORE_ID_TO_MIDS.get(mid, [mid])
+    def get_mids(self, data: dict) -> t.List[str]:
+        store_id = data["store_id"]
+        return self.storeid_mid_map.get(store_id, [store_id])

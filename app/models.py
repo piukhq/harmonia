@@ -37,6 +37,7 @@ class MerchantIdentifier(Base, ModelMixin):
     __table_args__ = (s.UniqueConstraint("mid", "payment_provider_id", name="_mid_provider_mi_uc"),)
 
     mid = s.Column(s.String(50), nullable=False)
+    store_id = s.Column(s.String(50), nullable=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
     payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
     location = s.Column(s.String(250), nullable=False)
@@ -100,6 +101,7 @@ class MatchingType(Enum):
     LOYALTY = 1  # payment tx identified with loyalty tx scheme feed available
     NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
     MIXED = 3  # payment tx identified with full tx scheme feed available
+    FORCED = 4  # match was created manually via redress process
 
 
 class MatchedTransactionStatus(Enum):
