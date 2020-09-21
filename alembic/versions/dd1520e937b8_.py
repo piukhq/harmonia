@@ -1,7 +1,7 @@
 """add store_id to merchant identifier
 
 Revision ID: dd1520e937b8
-Revises: cfd529bc3ab4
+Revises: c9bde0069699
 Create Date: 2020-09-14 11:41:29.173832+00:00
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "dd1520e937b8"
-down_revision = "cfd529bc3ab4"
+down_revision = "c9bde0069699"
 branch_labels = None
 depends_on = None
 
