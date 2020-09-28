@@ -10,6 +10,6 @@ class ActeolMockAPI:
 
     def post_matched_transaction(self, body: dict) -> requests.models.Response:
         response = Mock(spec=Response)
-        response.json.return_value = ""
+        response.json.return_value = {"Message": "Stamp awarded"}
         response.status_code = 200
         return response

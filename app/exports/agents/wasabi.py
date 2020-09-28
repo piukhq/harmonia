@@ -48,10 +48,10 @@ class Wasabi(SingularExportAgent):
     def export(self, export_data: AgentExportData, *, session: db.Session):
         _, body = export_data.outputs[0]
         request_timestamp = pendulum.now().to_datetime_string()
-        response = self.api.post_matched_transaction(body).json()
+        response = self.api.post_matched_transaction(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        if err := response.get("Error"):
+        if err := response.json().get("Error"):
             self.log.warn(f"Acteol API response contained 'Error': {err}")
 
         atlas.save_transaction(
