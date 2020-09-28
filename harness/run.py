@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 import gnupg
 import pendulum
+import rq
 import soteria.configuration
 import soteria.security
 import toml
@@ -151,6 +152,7 @@ class FixtureProviderSchema(Schema):
 
 class FixtureSchema(Schema):
     mid = fields.String(required=True, allow_none=False)
+    store_id = fields.String(required=False, allow_none=True)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
     loyalty_scheme = fields.Nested(FixtureProviderSchema)
@@ -237,6 +239,7 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
         models.MerchantIdentifier,
         session=session,
         mid=fixture["mid"],
+        store_id=fixture.get("store_id"),
         loyalty_scheme=loyalty_scheme,
         payment_provider=payment_provider,
         location=fixture["location"],
@@ -270,6 +273,10 @@ def patch_soteria_service():
             click.echo(f"{type(self).__name__} was instantiated!")
             click.echo(f"args: {args}")
             click.echo(f"kwargs: {kwargs}")
+
+        @property
+        def security_credentials(self):
+            return self.data["security_credentials"]
 
         def get_security_credentials(self, key_items):
             return self.security_credentials
@@ -386,7 +393,7 @@ def run_import_agent(slug: str, fixture: dict):
 
 
 def run_rq_worker(queue_name: str):
-    tasks.run_worker([queue_name], burst=True)
+    tasks.run_worker([queue_name], burst=True, workerclass=rq.SimpleWorker)
 
 
 def maybe_run_batch_export_agent(fixture: dict):

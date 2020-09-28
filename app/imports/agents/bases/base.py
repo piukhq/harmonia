@@ -110,7 +110,7 @@ class BaseAgent:
         raise NotImplementedError("Override get_transaction_id in your agent.")
 
     @cached_property
-    def storeid_mid_map(self):
+    def storeid_mid_map(self) -> t.DefaultDict[str, t.List[str]]:
         with db.session_scope() as session:
 
             def get_data():
