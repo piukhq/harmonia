@@ -1,4 +1,5 @@
 import csv
+import string
 import typing as t
 from functools import lru_cache
 
@@ -54,7 +55,20 @@ def create_merchant_identifier_fields(
     )
 
 
+def _get_first_character(file_storage: werkzeug.datastructures.FileStorage) -> str:
+    # the `line for line in ...` is required since FileStorage isn't a proper iterable
+    char = next(line for line in file_storage).decode()[0]
+    file_storage.seek(0)
+    return char
+
+
 def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session) -> t.Tuple[int, int]:
+    mark = _get_first_character(file_storage)
+    if mark not in string.printable:
+        raise ValueError(
+            "File starts with an invalid character. Ensure the file has been saved in UTF-8 format with no BOM."
+        )
+
     reader = csv.reader((line.decode() for line in file_storage), dialect=CSVDialect())
 
     log.debug("Processing MIDs...")
