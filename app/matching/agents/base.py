@@ -75,6 +75,7 @@ class BaseMatchingAgent:
                     self.payment_transaction.merchant_identifier_ids
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
+                models.SchemeTransaction.created_at >= pendulum.now().add(days=-14).isoformat(),
             ),
             read_only=True,
             session=session,
