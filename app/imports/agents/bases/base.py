@@ -1,6 +1,7 @@
 import typing as t
 from functools import cached_property, lru_cache
 from collections import defaultdict
+from uuid import uuid4
 
 import redis.lock
 import pendulum
@@ -37,9 +38,17 @@ class PaymentTransactionFields(t.NamedTuple):
     auth_code: str = ""
 
 
+TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
+
+
+class ImportTaskProtocol(t.Protocol):
+    def __call__(self, transactions: t.List[TxType], /, *, match_group: str) -> None:
+        ...
+
+
 class FeedTypeHandler(t.NamedTuple):
     model: db.Base
-    import_task: t.Callable[[t.Union[models.SchemeTransaction, models.PaymentTransaction]], None]
+    import_task: ImportTaskProtocol
 
 
 FEED_TYPE_HANDLERS = {
@@ -201,6 +210,9 @@ class BaseAgent:
         insertions = []
         queue_transactions = []
 
+        # generate a match group ID
+        match_group = str(uuid4())
+
         for tx_data in new:
             tid = self.get_transaction_id(tx_data)
 
@@ -228,6 +240,7 @@ class BaseAgent:
                         transaction_id=tid,
                         provider_slug=self.provider_slug,
                         identified=identified,
+                        match_group=match_group,
                         data=tx_data,
                         source=source,
                     )
@@ -235,7 +248,13 @@ class BaseAgent:
 
                 if identified:
                     queue_transactions.append(
-                        self._build_queue_transaction(handler.model, tx_data, merchant_identifier_ids, tid)
+                        self._build_queue_transaction(
+                            model=handler.model,
+                            transaction_data=tx_data,
+                            merchant_identifier_ids=merchant_identifier_ids,
+                            transaction_id=tid,
+                            match_group=match_group,
+                        )
                     )
 
             finally:
@@ -246,10 +265,16 @@ class BaseAgent:
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
 
-        tasks.import_queue.enqueue(handler.import_task, queue_transactions)
+        tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
 
     def _build_queue_transaction(
-        self, model: db.Base, transaction_data: dict, merchant_identifier_ids: t.List[int], transaction_id: str,
+        self,
+        *,
+        model: db.Base,
+        transaction_data: dict,
+        merchant_identifier_ids: t.List[int],
+        transaction_id: str,
+        match_group: str,
     ) -> db.Base:
         """
         Creates a transaction instance depending on the feed type and enqueues the transaction.
@@ -260,5 +285,6 @@ class BaseAgent:
             provider_slug=self.provider_slug,
             merchant_identifier_ids=merchant_identifier_ids,
             transaction_id=transaction_id,
+            match_group=match_group,
             **transaction_fields._asdict(),
         )
