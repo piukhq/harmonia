@@ -67,7 +67,7 @@ class SchemeTransaction(Base, ModelMixin):
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
-    match_group = s.Column(s.String(36), nullable=False, index=True)  # the group this transaction was matched in
+    match_group = s.Column(s.String(36), nullable=False, index=True)  # the group this transaction was imported in
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="scheme_transaction")
