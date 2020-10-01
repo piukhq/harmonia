@@ -1,14 +1,28 @@
 import typing as t
 
-from sqlalchemy.orm import Load, joinedload
-
 import settings
 from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
 from app.scheduler import CronScheduler
+from prometheus_client import Counter, Histogram
+from requests import HTTPError
+from sqlalchemy.orm import Load, joinedload
 
 
 class BatchExportAgent(BaseAgent):
+
+    def __init__(self) -> None:
+        super().__init__()
+        provider_slug = self.provider_slug.replace("-", "_")
+        self.exported_transactions_counter = Counter(f"exported_transactions_batch_{provider_slug}",
+                                                     f"Number of transactions sent to {provider_slug}")
+        self.requests_sent_counter = Counter(f"requests_sent_batch_{provider_slug}",
+                                             f"Number of requests sent to {provider_slug}")
+        self.failed_requests_counter = Counter(f"failed_requests_batch_{provider_slug}",
+                                               f"Number of failed requests to {provider_slug}")
+        self.request_latency = Histogram(f"request_latency_seconds_batch_{provider_slug}",
+                                         f"Request latency seconds for {provider_slug}")
+
     def run(self):
         scheduler = CronScheduler(
             schedule_fn=lambda: self.Config.schedule, callback=self.callback, logger=self.log  # type: ignore
@@ -51,8 +65,14 @@ class BatchExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self.send_export_data(export_data)
-
+                with self.request_latency.time():
+                    try:
+                        self.send_export_data(export_data)
+                    except HTTPError:
+                        self.failed_requests_counter.inc()
+                        raise
+                    else:
+                        self.exported_transactions_counter.inc()
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
                 session=session,

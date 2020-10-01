@@ -3,9 +3,23 @@ from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.status import status_monitor
+from prometheus_client import Counter, Histogram
 
 
 class SingularExportAgent(BaseAgent):
+
+    def __init__(self) -> None:
+        super().__init__()
+        provider_slug = self.provider_slug.replace("-", "_")
+        self.exported_transactions_counter = Counter(f"exported_transactions_single_{provider_slug}",
+                                                     f"Number of transactions sent to {provider_slug}")
+        self.requests_sent_counter = Counter(f"requests_sent_single_{provider_slug}",
+                                             f"Number of requests sent to {provider_slug}")
+        self.failed_requests_counter = Counter(f"failed_requests_single_{provider_slug}",
+                                               f"Number of failed requests to {provider_slug}")
+        self.request_latency = Histogram(f"request_latency_seconds_single_{provider_slug}",
+                                         f"Request latency seconds for {provider_slug}")
+
     def run(self):
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
@@ -58,7 +72,14 @@ class SingularExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self.export(export_data, session=session)
+                with self.request_latency.time():
+                    try:
+                        self.export(export_data, session=session)
+                    except Exception:
+                        self.failed_requests_counter.inc()
+                        raise
+                    else:
+                        self.exported_transactions_counter.inc()
             self._save_export_transactions(export_data, session=session)
 
         self.log.info(f"Removing pending export {pending_export}.")

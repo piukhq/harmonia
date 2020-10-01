@@ -176,3 +176,8 @@ GPG_ARGS = {
     "gpgbinary": getenv("TXM_GPG1_BINARY", default="gpg1"),
     "gnupghome": getenv("TXM_GPG_HOME", default="keyring"),
 }
+
+# Prometheus settings
+PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
+PROMETHEUS_JOB = "harmonia"
+

@@ -13,10 +13,12 @@ class SoteriaConfigMixin:
                 f"The {self.provider_slug} agent requires both the Vault URL and token to be set."
             )
 
-        return Configuration(
+        configuration = Configuration(
             self.provider_slug,
             Configuration.TRANSACTION_MATCHING_HANDLER,
             settings.VAULT_URL,
             settings.VAULT_TOKEN,
             settings.EUROPA_URL,
         )
+
+        return configuration
