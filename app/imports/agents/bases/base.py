@@ -265,7 +265,8 @@ class BaseAgent:
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
 
-        tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
+        if queue_transactions:
+            tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
 
     def _build_queue_transaction(
         self,
