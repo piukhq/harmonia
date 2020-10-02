@@ -11,7 +11,7 @@ from prometheus_client.registry import REGISTRY
 logger = get_logger(__name__)
 
 
-class PrometheusRegistry:
+class PrometheusMetricTypes:
     merchant_slugs = [
         "harvey-nichols",
         "iceland-bonus-card",
@@ -19,43 +19,42 @@ class PrometheusRegistry:
         "bink-loyalty",
     ]
 
-    def make_registry(self):
+    def _make_metric_types_dict(self):
         # Create an auto-vivified dict
-        return collections.defaultdict(self.make_registry)
+        return collections.defaultdict(self._make_metric_types_dict)
 
-    def get_registry(self) -> Dict:
-        registry = self.make_registry()
+    def get_metric_types(self) -> Dict:
+        metric_types = self._make_metric_types_dict()
 
         for merchant_slug in self.merchant_slugs:
             merchant_name = merchant_slug.replace("-", "_")
-            for export_type in ["single", "batch"]:
-                registry["export"][export_type][merchant_slug] = {
-                    "counter": {
-                        "transactions": Counter(
-                            f"exported_transactions_{export_type}_{merchant_name}",
-                            f"Number of transactions sent to {merchant_name}",
-                        ),
-                        "requests_sent": Counter(
-                            f"requests_sent_{export_type}_{merchant_name}",
-                            f"Number of requests sent to {merchant_name}",
-                        ),
-                        "failed_requests": Counter(
-                            f"failed_requests_{export_type}_{merchant_name}",
-                            f"Number of failed requests to {merchant_name}",
-                        ),
-                    },
-                    "histogram": {
-                        "request_latency": Histogram(
-                            f"request_latency_seconds_{export_type}_{merchant_name}",
-                            f"Request latency seconds for {merchant_name}",
-                        )
-                    },
-                }
+            metric_types["export"][merchant_slug] = {
+                "counter": {
+                    "transactions": Counter(
+                        f"exported_transactions_{merchant_name}",
+                        f"Number of transactions sent to {merchant_name}",
+                    ),
+                    "requests_sent": Counter(
+                        f"requests_sent_{merchant_name}",
+                        f"Number of requests sent to {merchant_name}",
+                    ),
+                    "failed_requests": Counter(
+                        f"failed_requests_{merchant_name}",
+                        f"Number of failed requests to {merchant_name}",
+                    ),
+                },
+                "histogram": {
+                    "request_latency": Histogram(
+                        f"request_latency_seconds_{merchant_name}",
+                        f"Request latency seconds for {merchant_name}",
+                    )
+                },
+            }
 
-        return registry
+        return metric_types
 
 
-prometheus_registry = PrometheusRegistry().get_registry()
+prometheus_metric_types = PrometheusMetricTypes().get_metric_types()
 
 
 class PrometheusPushThread(threading.Thread):

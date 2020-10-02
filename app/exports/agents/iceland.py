@@ -9,7 +9,7 @@ from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
-from app.prometheus import prometheus_registry
+from app.prometheus import prometheus_metric_types
 from app.reporting import get_logger
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
@@ -36,15 +36,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
 
     def __init__(self):
         super().__init__()
-        self.request_latency_histogram = (
-            prometheus_registry["export"]["single"][self.provider_slug]["histogram"]["request_latency"]
-        )
-        self.failed_requests_counter = (
-            prometheus_registry["export"]["single"][self.provider_slug]["counter"]["failed_requests"]
-        )
-        self.transactions_counter = (
-            prometheus_registry["export"]["single"][self.provider_slug]["counter"]["transactions"]
-        )
 
         if settings.ATLAS_URL is None:
             raise settings.ConfigVarRequiredError(
@@ -57,6 +48,17 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             self.api = IcelandMockAPI(self.merchant_config.merchant_url)
         else:
             self.api = IcelandAPI(self.merchant_config.merchant_url)
+
+        # Set up Prometheus metric types
+        self.request_latency_histogram = (
+            prometheus_metric_types["export"][self.provider_slug]["histogram"]["request_latency"]
+        )
+        self.failed_requests_counter = (
+            prometheus_metric_types["export"][self.provider_slug]["counter"]["failed_requests"]
+        )
+        self.transactions_counter = (
+            prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
+        )
 
     def help(self) -> str:
         return inspect.cleandoc(
