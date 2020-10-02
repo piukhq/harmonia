@@ -28,6 +28,7 @@ class Wasabi(SingularExportAgent):
         api_class = ActeolMockAPI if settings.DEVELOPMENT else ActeolAPI
         self.api = api_class(self.Config.base_url)
 
+
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity
         credentials = decrypt_credentials(user_identity.credentials)

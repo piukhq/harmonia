@@ -180,4 +180,3 @@ GPG_ARGS = {
 # Prometheus settings
 PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
 PROMETHEUS_JOB = "harmonia"
-
