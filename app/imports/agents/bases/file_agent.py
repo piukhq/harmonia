@@ -179,6 +179,12 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                             delete_callback=partial(sftp.client.remove, file_attr.filename),
                             logger=self.log,
                         )
+
+                        # Increment Prometheus counter and gauge
+                        if hasattr(self, "files_received_counter"):
+                            self.files_received_counter.inc()
+                        if hasattr(self, "last_file_timestamp_gauge"):
+                            self.last_file_timestamp_gauge.set(file_attr.st_mtime)
                 else:
                     self.log.debug(f"{file_attr.filename} is a directory. Skipping")
 

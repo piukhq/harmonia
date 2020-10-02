@@ -2,17 +2,16 @@ import csv
 import inspect
 import io
 import typing as t
-
 from functools import cached_property
 from pathlib import Path
 
 import pendulum
-
 from app.config import KEY_PREFIX, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent, FileSourceBase, SftpFileSource
+from app.prometheus import prometheus_metric_types
 from app.service.hermes import PaymentProviderSlug
 from app.service.sftp import SFTPCredentials
 from app.soteria import SoteriaConfigMixin
@@ -41,6 +40,20 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
     class Config:
         path = ConfigValue(PATH_KEY, default="/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.last_file_timestamp_gauge = (
+            prometheus_metric_types["import"][self.provider_slug]["gauge"]["last_file_timestamp"]
+        )
+        self.files_received_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
+        )
+        self.transactions_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
+        )
 
     @cached_property
     def _security_credentials(self) -> dict:

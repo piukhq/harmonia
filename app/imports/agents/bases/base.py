@@ -245,6 +245,9 @@ class BaseAgent:
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+            # Increment Prometheus counter
+            if hasattr(self, "transactions_counter"):
+                self.transactions_counter.inc(len(insertions))
 
         tasks.import_queue.enqueue(handler.import_task, queue_transactions)
 
