@@ -1,10 +1,10 @@
-import settings
 import pendulum
-
+import settings
 from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
+from app.prometheus import prometheus_metric_types
 from app.service.atlas import atlas
 from app.service.harvey_nichols import HarveyNicholsAPI
 from harness.exporters.harvey_nichols_mock import HarveyNicholsMockAPI
@@ -26,6 +26,17 @@ class HarveyNichols(SingularExportAgent):
             self.api = HarveyNicholsMockAPI(self.Config.base_url)
         else:
             self.api = HarveyNicholsAPI(self.Config.base_url)
+
+        # Set up Prometheus metric types
+        self.request_latency_histogram = (
+            prometheus_metric_types["export"][self.provider_slug]["histogram"]["request_latency"]
+        )
+        self.failed_requests_counter = (
+            prometheus_metric_types["export"][self.provider_slug]["counter"]["failed_requests"]
+        )
+        self.transactions_counter = (
+            prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
+        )
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity
