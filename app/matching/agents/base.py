@@ -4,7 +4,6 @@ from enum import Enum
 import pendulum
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.query import Query
-import sqlalchemy
 
 from app.reporting import get_logger
 from app import models, db
@@ -53,10 +52,12 @@ class BaseMatchingAgent:
                 )
             )
         else:
-            # checking the date exactly like this means that transactions very close to midnight may not match.
+            # checking a day's range like this means that transactions very close to midnight may not match.
             # this risk is known & accepted at the time of writing.
             return scheme_transactions.filter(
-                sqlalchemy.func.date(models.SchemeTransaction.transaction_date) == transaction_date.date().isoformat()
+                models.SchemeTransaction.transaction_date.between(
+                    transaction_date.date().isoformat(), transaction_date.add(days=1).date().isoformat(),
+                )
             )
 
     def _get_scheme_transactions(self, *, session: db.Session, **search_fields) -> t.List[models.SchemeTransaction]:
