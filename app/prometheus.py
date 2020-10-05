@@ -12,14 +12,21 @@ logger = get_logger(__name__)
 
 
 class PrometheusMetricTypes:
+    """
+    Provides global access to Prometheus metric types through a singleton
+    """
+
+    # Enable merchants' exports (by slug) that we want to monitor stats for
     merchant_slugs_export = [
         "harvey-nichols",
         "iceland-bonus-card",
         "wasabi-club",
         "bink-loyalty",
     ]
+    # Enable merchants' imports (by slug) that we want to monitor stats for
     merchant_slugs_import = [
         "wasabi-club",
+        "visa",
     ]
 
     def _make_metric_types_dict(self):
@@ -31,6 +38,7 @@ class PrometheusMetricTypes:
     def get_metric_types(self) -> Dict:
         metric_types = self._make_metric_types_dict()
 
+        # Export section
         for merchant_slug in self.merchant_slugs_export:
             merchant_name = merchant_slug.replace("-", "_")  # Can't use dashes in name
             metric_types["export"][merchant_slug] = {
@@ -56,6 +64,7 @@ class PrometheusMetricTypes:
                 },
             }
 
+        # Import section
         for merchant_slug in self.merchant_slugs_import:
             merchant_name = merchant_slug.replace("-", "_")  # Can't use dashes in name
             metric_types["import"][merchant_slug] = {
@@ -63,6 +72,10 @@ class PrometheusMetricTypes:
                     "transactions": Counter(
                         f"imported_transactions_{merchant_name}",
                         f"Number of transactions imported to {merchant_slug}",
+                    ),
+                    "settlement_transactions": Counter(
+                        f"imported_settlement_transactions_{merchant_name}",
+                        f"Number of settlement transactions imported to {merchant_slug}",
                     ),
                     "files_received": Counter(
                         f"files_received_{merchant_name}",
@@ -84,6 +97,9 @@ prometheus_metric_types = PrometheusMetricTypes().get_metric_types()
 
 
 class PrometheusPushThread(threading.Thread):
+    """
+    Thread daemon to push to Prometheus gateway
+    """
     SLEEP_INTERVAL = 30
     PUSH_TIMEOUT = 3  # PushGateway should be running in the same pod
 

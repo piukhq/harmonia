@@ -4,22 +4,19 @@ import shutil
 import stat
 import time
 import typing as t
-
 from functools import cached_property, partial
 from pathlib import Path
 
 import humanize
 import pendulum
-
-from azure.core.exceptions import HttpResponseError, ResourceExistsError
-from azure.storage.blob import BlobServiceClient
-
 import settings
-
 from app import db, reporting, retry, tasks
+from app.feeds import ImportFeedTypes
 from app.imports.agents import BaseAgent
 from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials
+from azure.core.exceptions import HttpResponseError, ResourceExistsError
+from azure.storage.blob import BlobServiceClient
 
 logging.getLogger("azure").setLevel(logging.CRITICAL)
 
@@ -196,6 +193,14 @@ class FileAgent(BaseAgent):
         transactions_data = []
         for transaction in self.yield_transactions_data(data):
             transactions_data.append(transaction)
+            if self.feed_type == ImportFeedTypes.SETTLED:
+                # Increment Prometheus counter if we have one
+                if hasattr(self, "settlement_transactions_counter"):
+                    self.settlement_transactions_counter.inc()
+            elif self.feed_type == ImportFeedTypes.AUTH:
+                # Increment Prometheus counter if we have one
+                if hasattr(self, "transactions_counter"):
+                    self.transactions_counter.inc()
             yield
 
         # TODO: this is less than ideal, should be keep a session open?

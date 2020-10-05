@@ -1,17 +1,17 @@
 import inspect
 import typing as t
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
 
 import gnupg
 import pendulum
-
+import settings
 from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
-import settings
+from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
+from app.prometheus import prometheus_metric_types
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -81,6 +81,17 @@ class Visa(FileAgent):
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.transactions_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
+        )
+        self.settlement_transactions_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["settlement_transactions"]
+        )
 
     def help(self) -> str:
         return inspect.cleandoc(

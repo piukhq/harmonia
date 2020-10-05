@@ -68,6 +68,8 @@ class SingularExportAgent(BaseAgent):
                 with ExitStack() as stack:
                     if hasattr(self, "request_latency_histogram"):
                         stack.enter_context(self.request_latency_histogram.time())
+                    if hasattr(self, "requests_sent"):
+                        self.requests_sent.inc()
                     try:
                         self.export(export_data, session=session)
                     except Exception:
