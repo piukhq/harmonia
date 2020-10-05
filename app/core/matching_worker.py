@@ -1,7 +1,6 @@
 import typing as t
 
 import sentry_sdk
-import pendulum
 
 from app.matching.agents.registry import matching_agents
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
@@ -166,21 +165,21 @@ class MatchingWorker:
 
         self._finalise_match(match_result, payment_transaction, session=session)
 
-    def handle_scheme_transactions(self, from_date: pendulum.DateTime, *, session: db.Session) -> None:
+    def handle_scheme_transactions(self, match_group: str, *, session: db.Session) -> None:
         """Finds potential matching payment transactions and requeues a matching job for them."""
         status_monitor.checkin(self)
 
         scheme_transactions = db.run_query(
             lambda: session.query(models.SchemeTransaction)
-            .filter(models.SchemeTransaction.created_at >= from_date)
+            .filter(models.SchemeTransaction.match_group == match_group)
             .all(),
             session=session,
             read_only=True,
-            description=f"find scheme transactions from {from_date}",
+            description=f"load scheme transactions for group {match_group}",
         )
 
         if len(scheme_transactions) == 0:
-            self.log.warning(f"Couldn't find any scheme transaction from {from_date}. Skipping.")
+            self.log.warning(f"Couldn't find any scheme transactions in group {match_group}. Skipping.")
             return
 
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
