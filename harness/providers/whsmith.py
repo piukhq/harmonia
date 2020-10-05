@@ -27,7 +27,7 @@ class WhSmith(BaseImportDataProvider):
                 "5842003682292310000",
                 pendulum.instance(transaction["date"]).in_tz("UTC").format("YYYY-MM-DDTHH:mm:ss.SSS"),
                 "1579532400",
-                "5842",  # maps to MID (61584292 for mastercard)
+                fixture["store_id"],
                 "Reading",
                 "",
                 "3",
@@ -44,7 +44,7 @@ class WhSmith(BaseImportDataProvider):
                 _get_card_type(fixture["payment_provider"]["slug"]),
                 "",
                 transaction["auth_code"],
-                "***" + fixture["mid"][3:],  # store_id 5842 maps to MID 61584292
+                "***" + fixture["mid"][3:],
                 "",
                 "GBP",
                 "GB",
