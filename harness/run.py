@@ -27,10 +27,10 @@ from app.service.hermes import hermes
 from harness.providers.registry import import_data_providers
 
 # most of the export agents need this to be set to something.
-# settings.EUROPA_URL = ""
+settings.EUROPA_URL = ""
 settings.ATLAS_URL = ""
-# settings.VAULT_URL = ""
-# settings.VAULT_TOKEN = ""
+settings.VAULT_URL = ""
+settings.VAULT_TOKEN = ""
 
 
 # payment provider slugs that will trigger a keyring being set up
