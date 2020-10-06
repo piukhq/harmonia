@@ -271,7 +271,6 @@ class BaseAgent:
             elif self.feed_type == ImportFeedTypes.AUTH:
                 if hasattr(self, "transactions_counter"):
                     self.transactions_counter.inc()
-                    thing = 1
 
         if queue_transactions:
             tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)

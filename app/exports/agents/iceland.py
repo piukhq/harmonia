@@ -28,6 +28,7 @@ hash_ids = Hashids(
 
 logger = get_logger(__name__)
 
+
 class Iceland(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
