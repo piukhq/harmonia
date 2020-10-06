@@ -10,7 +10,6 @@ from sqlalchemy.orm import Load, joinedload
 
 
 class BatchExportAgent(BaseAgent):
-
     def __init__(self) -> None:
         super().__init__()
 
@@ -37,7 +36,9 @@ class BatchExportAgent(BaseAgent):
             session.query(models.PendingExport)
             .options(
                 joinedload(models.PendingExport.matched_transaction, innerjoin=True)
-                .joinedload(models.MatchedTransaction.payment_transaction, innerjoin=True)
+                .joinedload(
+                    models.MatchedTransaction.payment_transaction, innerjoin=True
+                )
                 .joinedload(models.PaymentTransaction.user_identity, innerjoin=True),
                 Load(models.PendingExport).raiseload("*"),
             )
@@ -82,12 +83,18 @@ class BatchExportAgent(BaseAgent):
             pending_exports_q.delete()
             session.commit()
 
-        db.run_query(delete_pending_exports, session=session, description="delete pending exports")
+        db.run_query(
+            delete_pending_exports,
+            session=session,
+            description="delete pending exports",
+        )
 
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
-        raise NotImplementedError("Override the yield_export_data method in your agent.")
+        raise NotImplementedError(
+            "Override the yield_export_data method in your agent."
+        )
 
     def send_export_data(self, export_data: AgentExportData) -> None:
         raise NotImplementedError("Override the send_export_data method in your agent.")

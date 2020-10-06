@@ -3,7 +3,11 @@ import settings
 from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
-from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
+from app.exports.agents import (
+    AgentExportData,
+    AgentExportDataOutput,
+    SingularExportAgent,
+)
 from app.prometheus import prometheus_metric_types
 from app.service.atlas import atlas
 from app.service.harvey_nichols import HarveyNicholsAPI
@@ -28,17 +32,19 @@ class HarveyNichols(SingularExportAgent):
             self.api = HarveyNicholsAPI(self.Config.base_url)
 
         # Set up Prometheus metric types
-        self.request_latency_histogram = (
-            prometheus_metric_types["export"][self.provider_slug]["histogram"]["request_latency"]
-        )
-        self.failed_requests_counter = (
-            prometheus_metric_types["export"][self.provider_slug]["counter"]["failed_requests"]
-        )
-        self.transactions_counter = (
-            prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
-        )
+        self.request_latency_histogram = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["histogram"]["request_latency"]
+        self.failed_requests_counter = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["counter"]["failed_requests"]
+        self.transactions_counter = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["counter"]["transactions"]
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
+    def make_export_data(
+        self, matched_transaction: models.MatchedTransaction
+    ) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity
         credentials = decrypt_credentials(user_identity.credentials)
         scheme_account_id = user_identity.scheme_account_id
@@ -57,7 +63,10 @@ class HarveyNichols(SingularExportAgent):
                 )
             ],
             transactions=[matched_transaction],
-            extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
+            extra_data={
+                "credentials": credentials,
+                "scheme_account_id": scheme_account_id,
+            },
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
@@ -67,5 +76,10 @@ class HarveyNichols(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         atlas.save_transaction(
-            self.provider_slug, response, body, export_data.transactions, request_timestamp, response_timestamp
+            self.provider_slug,
+            response,
+            body,
+            export_data.transactions,
+            request_timestamp,
+            response_timestamp,
         )

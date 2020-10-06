@@ -23,9 +23,11 @@ def clean_abort():
 
 def get_prometheus_thread():
     process_id = str(os.getpid())
-    prometheus_thread = PrometheusPushThread(process_id=process_id,
-                                             prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-                                             prometheus_job=settings.PROMETHEUS_JOB)
+    prometheus_thread = PrometheusPushThread(
+        process_id=process_id,
+        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
+        prometheus_job=settings.PROMETHEUS_JOB,
+    )
     prometheus_thread.daemon = True
 
     return prometheus_thread
@@ -33,10 +35,27 @@ def get_prometheus_thread():
 
 def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     @click.command()
-    @click.option("-a", "--agent", type=click.Choice(registry._entries.keys()), required=True)
-    @click.option("-y", "--no-user-input", is_flag=True, help="bypass the y/N prompt to run the agent")
-    @click.option("-N", "--dry-run", is_flag=True, help="print agent information then quit without executing")
-    @click.option("-q", "--quiet", is_flag=True, help="skip printing agent information and warnings")
+    @click.option(
+        "-a", "--agent", type=click.Choice(registry._entries.keys()), required=True
+    )
+    @click.option(
+        "-y",
+        "--no-user-input",
+        is_flag=True,
+        help="bypass the y/N prompt to run the agent",
+    )
+    @click.option(
+        "-N",
+        "--dry-run",
+        is_flag=True,
+        help="print agent information then quit without executing",
+    )
+    @click.option(
+        "-q",
+        "--quiet",
+        is_flag=True,
+        help="skip printing agent information and warnings",
+    )
     def cli(agent: str, no_user_input: bool, dry_run: bool, quiet: bool) -> None:
         try:
             agent_instance = registry.instantiate(agent)
@@ -59,7 +78,9 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
             clean_abort()
 
         if not quiet:
-            click.echo(f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}.")
+            click.echo(
+                f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}."
+            )
 
             click.echo()
             click.echo("Agent help text:")

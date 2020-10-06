@@ -8,7 +8,6 @@ from app.status import status_monitor
 
 
 class SingularExportAgent(BaseAgent):
-
     def __init__(self) -> None:
         super().__init__()
 
@@ -31,10 +30,15 @@ class SingularExportAgent(BaseAgent):
         self, pending_export: models.PendingExport, *, session: db.Session
     ) -> models.MatchedTransaction:
         def find_transaction():
-            return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
+            return session.query(models.MatchedTransaction).get(
+                pending_export.matched_transaction_id
+            )
 
         matched_transaction = db.run_query(
-            find_transaction, session=session, read_only=True, description="load matched transaction"
+            find_transaction,
+            session=session,
+            read_only=True,
+            description="load matched transaction",
         )
 
         if matched_transaction is None:
@@ -46,13 +50,17 @@ class SingularExportAgent(BaseAgent):
 
         return matched_transaction
 
-    def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session):
+    def handle_pending_export(
+        self, pending_export: models.PendingExport, *, session: db.Session
+    ):
         status_monitor.checkin(self)
 
         self.log.info(f"Handling {pending_export}.")
 
         try:
-            matched_transaction = self.find_matched_transaction(pending_export, session=session)
+            matched_transaction = self.find_matched_transaction(
+                pending_export, session=session
+            )
         except db.NoResultFound:
             self.log.warning(
                 f"The export agent failed to load its matched transaction. {pending_export} will be discarded."
@@ -87,7 +95,13 @@ class SingularExportAgent(BaseAgent):
             session.delete(pending_export)
             session.commit()
 
-        db.run_query(delete_pending_export, session=session, description="delete pending export")
+        db.run_query(
+            delete_pending_export, session=session, description="delete pending export"
+        )
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
-        raise NotImplementedError("Override the make export data method in your export agent")
+    def make_export_data(
+        self, matched_transaction: models.MatchedTransaction
+    ) -> AgentExportData:
+        raise NotImplementedError(
+            "Override the make export data method in your export agent"
+        )

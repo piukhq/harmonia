@@ -100,6 +100,7 @@ class PrometheusPushThread(threading.Thread):
     """
     Thread daemon to push to Prometheus gateway
     """
+
     SLEEP_INTERVAL = 30
     PUSH_TIMEOUT = 3  # PushGateway should be running in the same pod
 

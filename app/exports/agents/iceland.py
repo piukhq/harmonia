@@ -22,7 +22,9 @@ PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
 
 hash_ids = Hashids(
-    min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890"
+    min_length=32,
+    salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM",
+    alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
 )
 
 
@@ -51,18 +53,18 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             self.api = IcelandAPI(self.merchant_config.merchant_url)
 
         # Set up Prometheus metric types
-        self.request_latency_histogram = (
-            prometheus_metric_types["export"][self.provider_slug]["histogram"]["request_latency"]
-        )
-        self.requests_sent = (
-            prometheus_metric_types["export"][self.provider_slug]["counter"]["requests_sent"]
-        )
-        self.failed_requests_counter = (
-            prometheus_metric_types["export"][self.provider_slug]["counter"]["failed_requests"]
-        )
-        self.transactions_counter = (
-            prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
-        )
+        self.request_latency_histogram = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["histogram"]["request_latency"]
+        self.requests_sent = prometheus_metric_types["export"][self.provider_slug][
+            "counter"
+        ]["requests_sent"]
+        self.failed_requests_counter = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["counter"]["failed_requests"]
+        self.transactions_counter = prometheus_metric_types["export"][
+            self.provider_slug
+        ]["counter"]["transactions"]
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -71,7 +73,9 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             """
         )
 
-    def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
+    def format_transactions(
+        self, transactions: t.Iterable[models.MatchedTransaction]
+    ) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
             user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
@@ -101,7 +105,13 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         yield AgentExportData(
             outputs=[
                 AgentExportDataOutput(
-                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions})
+                    "export.json",
+                    json.dumps(
+                        {
+                            "message_uid": str(uuid4()),
+                            "transactions": formatted_transactions,
+                        }
+                    ),
                 )
             ],
             transactions=transactions,
@@ -116,5 +126,10 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response_timestamp = pendulum.now().to_datetime_string()
 
         atlas.save_transaction(
-            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp
+            self.provider_slug,
+            response,
+            request,
+            export_data.transactions,
+            request_timestamp,
+            response_timestamp,
         )
