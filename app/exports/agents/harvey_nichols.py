@@ -59,7 +59,7 @@ class HarveyNichols(SingularExportAgent):
                 )
             ],
             transactions=[matched_transaction],
-            extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id, },
+            extra_data={"credentials": credentials, "scheme_account_id": scheme_account_id},
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):

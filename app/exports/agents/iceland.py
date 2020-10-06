@@ -97,7 +97,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         yield AgentExportData(
             outputs=[
                 AgentExportDataOutput(
-                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions, }),
+                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}),
                 )
             ],
             transactions=transactions,
