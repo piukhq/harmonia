@@ -264,6 +264,14 @@ class BaseAgent:
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+            # update Prometheus counter, depending on feed type
+            if self.feed_type == ImportFeedTypes.SETTLED:
+                if hasattr(self, "settlement_transactions_counter"):
+                    self.settlement_transactions_counter.inc()
+            elif self.feed_type == ImportFeedTypes.AUTH:
+                if hasattr(self, "transactions_counter"):
+                    self.transactions_counter.inc()
+                    thing = 1
 
         if queue_transactions:
             tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)

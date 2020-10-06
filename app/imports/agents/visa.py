@@ -82,17 +82,6 @@ class Visa(FileAgent):
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
-    def __init__(self):
-        super().__init__()
-
-        # Set up Prometheus metric types
-        self.transactions_counter = (
-            prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
-        )
-        self.settlement_transactions_counter = (
-            prometheus_metric_types["import"][self.provider_slug]["counter"]["settlement_transactions"]
-        )
-
     def help(self) -> str:
         return inspect.cleandoc(
             f"""
@@ -176,6 +165,14 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
 
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.transactions_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
+        )
+
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
@@ -206,6 +203,14 @@ class VisaAuth(QueueAgent):
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.settlement_transactions_counter = (
+            prometheus_metric_types["import"][self.provider_slug]["counter"]["settlement_transactions"]
+        )
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
