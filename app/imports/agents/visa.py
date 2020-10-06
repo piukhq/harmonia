@@ -157,9 +157,7 @@ class Visa(FileAgent):
             spend_currency=data["country_currency_code"],
             card_token=data["external_card_holder_id"],
             auth_code=data["authorisation_code"],
-            extra_fields={
-                k: data[k] for k in ("merchant_description_name", "merchant_city")
-            },
+            extra_fields={k: data[k] for k in ("merchant_description_name", "merchant_city")},
         )
 
 
@@ -171,9 +169,7 @@ class VisaAuth(QueueAgent):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.transactions_counter = prometheus_metric_types["import"][
-            self.provider_slug
-        ]["counter"]["transactions"]
+        self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
@@ -188,21 +184,15 @@ class VisaAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date = self.pendulum_parse(
-            get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT"
-        )
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(
-                get_key_value(data, "Transaction.TransactionAmount")
-            ),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
-            settlement_key=_make_settlement_key(
-                get_key_value(data, "Transaction.VipTransactionId")
-            ),
+            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=get_key_value(data, "Transaction.AuthCode"),
             extra_fields={},
         )
@@ -216,14 +206,12 @@ class VisaSettlement(QueueAgent):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.settlement_transactions_counter = prometheus_metric_types["import"][
-            self.provider_slug
-        ]["counter"]["settlement_transactions"]
+        self.settlement_transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"][
+            "settlement_transactions"
+        ]
 
     class Config:
-        QUEUE_NAME_KEY = (
-            f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
-        )
+        QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-settlement")
 
     @staticmethod
@@ -235,21 +223,15 @@ class VisaSettlement(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date = self.pendulum_parse(
-            get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT"
-        )
+        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(
-                get_key_value(data, "Transaction.SettlementAmount")
-            ),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
-            settlement_key=_make_settlement_key(
-                get_key_value(data, "Transaction.VipTransactionId")
-            ),
+            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=get_key_value(data, "Transaction.AuthCode"),
             extra_fields={},
         )

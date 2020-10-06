@@ -49,30 +49,21 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.last_file_timestamp_gauge = prometheus_metric_types["import"][
-            self.provider_slug
-        ]["gauge"]["last_file_timestamp"]
-        self.files_received_counter = prometheus_metric_types["import"][
-            self.provider_slug
-        ]["counter"]["files_received"]
-        self.transactions_counter = prometheus_metric_types["import"][
-            self.provider_slug
-        ]["counter"]["transactions"]
+        self.last_file_timestamp_gauge = prometheus_metric_types["import"][self.provider_slug]["gauge"][
+            "last_file_timestamp"
+        ]
+        self.files_received_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
+        self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
 
     @cached_property
     def _security_credentials(self) -> dict:
         config = self.get_soteria_config()
-        return {
-            c["credential_type"]: c["value"]
-            for c in config.security_credentials["inbound"]["credentials"]
-        }
+        return {c["credential_type"]: c["value"] for c in config.security_credentials["inbound"]["credentials"]}
 
     @cached_property
     def sftp_credentials(self) -> SFTPCredentials:
         compound_key = self._security_credentials["compound_key"]
-        return SFTPCredentials(
-            **{k: compound_key.get(k) for k in SFTPCredentials._fields}
-        )
+        return SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
 
     @cached_property
     def skey(self) -> t.Optional[str]:
@@ -80,9 +71,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     @cached_property
     def filesource(self) -> FileSourceBase:
-        return SftpFileSource(
-            self.sftp_credentials, self.skey, Path(self.Config.path), logger=self.log
-        )
+        return SftpFileSource(self.sftp_credentials, self.skey, Path(self.Config.path), logger=self.log)
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -103,9 +92,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
     @staticmethod
     def to_transaction_fields(data: dict) -> SchemeTransactionFields:
         transaction_date_time = f"{data['Date']} {data['Time']}"
-        transaction_date = pendulum.from_format(
-            transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London"
-        )
+        transaction_date = pendulum.from_format(transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London")
         return SchemeTransactionFields(
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
             transaction_date=transaction_date,
@@ -114,10 +101,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
             spend_multiplier=100,
             spend_currency="GBP",
             auth_code=data["Auth_code"],
-            extra_fields={
-                "first_six": data["Card Number"][:6],
-                "last_four": data["Card Number"][-4:],
-            },
+            extra_fields={"first_six": data["Card Number"][:6], "last_four": data["Card Number"][-4:],},
         )
 
     @staticmethod

@@ -44,22 +44,18 @@ class PrometheusMetricTypes:
             metric_types["export"][merchant_slug] = {
                 "counter": {
                     "transactions": Counter(
-                        f"exported_transactions_{merchant_name}",
-                        f"Number of transactions sent to {merchant_slug}",
+                        f"exported_transactions_{merchant_name}", f"Number of transactions sent to {merchant_slug}",
                     ),
                     "requests_sent": Counter(
-                        f"requests_sent_{merchant_name}",
-                        f"Number of requests sent to {merchant_slug}",
+                        f"requests_sent_{merchant_name}", f"Number of requests sent to {merchant_slug}",
                     ),
                     "failed_requests": Counter(
-                        f"failed_requests_{merchant_name}",
-                        f"Number of failed requests to {merchant_slug}",
+                        f"failed_requests_{merchant_name}", f"Number of failed requests to {merchant_slug}",
                     ),
                 },
                 "histogram": {
                     "request_latency": Histogram(
-                        f"request_latency_seconds_{merchant_name}",
-                        f"Request latency seconds for {merchant_slug}",
+                        f"request_latency_seconds_{merchant_name}", f"Request latency seconds for {merchant_slug}",
                     )
                 },
             }
@@ -70,22 +66,19 @@ class PrometheusMetricTypes:
             metric_types["import"][merchant_slug] = {
                 "counter": {
                     "transactions": Counter(
-                        f"imported_transactions_{merchant_name}",
-                        f"Number of transactions imported to {merchant_slug}",
+                        f"imported_transactions_{merchant_name}", f"Number of transactions imported to {merchant_slug}",
                     ),
                     "settlement_transactions": Counter(
                         f"imported_settlement_transactions_{merchant_name}",
                         f"Number of settlement transactions imported to {merchant_slug}",
                     ),
                     "files_received": Counter(
-                        f"files_received_{merchant_name}",
-                        f"Number of files received by {merchant_slug}",
+                        f"files_received_{merchant_name}", f"Number of files received by {merchant_slug}",
                     ),
                 },
                 "gauge": {
                     "last_file_timestamp": Gauge(
-                        f"last_file_timestamp_{merchant_name}",
-                        f"Timestamp of last file processed for {merchant_slug}",
+                        f"last_file_timestamp_{merchant_name}", f"Timestamp of last file processed for {merchant_slug}",
                     )
                 },
             }
@@ -104,9 +97,7 @@ class PrometheusPushThread(threading.Thread):
     SLEEP_INTERVAL = 30
     PUSH_TIMEOUT = 3  # PushGateway should be running in the same pod
 
-    def __init__(
-        self, process_id: str, prometheus_push_gateway: str, prometheus_job: str
-    ):
+    def __init__(self, process_id: str, prometheus_push_gateway: str, prometheus_job: str):
         # Grouping key should not need pod id as prometheus
         # should tag that itself
         self.grouping_key = {"pid": process_id}
@@ -130,9 +121,7 @@ class PrometheusPushThread(threading.Thread):
             except (ConnectionRefusedError, urllib.error.URLError):
                 logger.warning("Failed to push metrics, connection refused")
             except Exception as err:
-                logger.exception(
-                    "Caught exception whilst posting metrics", exc_info=err
-                )
+                logger.exception("Caught exception whilst posting metrics", exc_info=err)
 
             remaining = self.SLEEP_INTERVAL - (time.time() - now)
             if remaining > 0:
