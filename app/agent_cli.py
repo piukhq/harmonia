@@ -1,11 +1,10 @@
-import os
 import textwrap
 import typing as t
 
 import click
 
 import settings
-from app.prometheus import PrometheusPushThread
+from app.prometheus import prometheus_thread
 from app.registry import NoSuchAgent, Registry, RegistryConfigurationError
 
 
@@ -19,18 +18,6 @@ def clean_abort():
     else:
         click.echo("Enable debug mode for a stack trace.")
         raise click.Abort()
-
-
-def get_prometheus_thread():
-    process_id = str(os.getpid())
-    prometheus_thread = PrometheusPushThread(
-        process_id=process_id,
-        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-        prometheus_job=settings.PROMETHEUS_JOB,
-    )
-    prometheus_thread.daemon = True
-
-    return prometheus_thread
 
 
 def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
@@ -89,7 +76,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
             if not no_user_input:
                 click.echo()
             # Start up the Prometheus push thread for pushing metrics
-            prometheus_thread = get_prometheus_thread()
             prometheus_thread.start()
             click.echo("Prometheus push thread started")
             agent_instance.run()

@@ -5,6 +5,7 @@ from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.status import status_monitor
+from sqlalchemy.orm import Session
 
 
 class SingularExportAgent(BaseAgent):
@@ -60,21 +61,8 @@ class SingularExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                # Use the Prometheus request latency context manager if we have one
-                with ExitStack() as stack:
-                    if hasattr(self, "request_latency_histogram"):
-                        stack.enter_context(self.request_latency_histogram.time())
-                    if hasattr(self, "requests_sent"):
-                        self.requests_sent.inc()
-                    try:
-                        self.export(export_data, session=session)
-                    except Exception:
-                        if hasattr(self, "failed_requests_counter"):
-                            self.failed_requests_counter.inc()
-                        raise
-                    else:
-                        if hasattr(self, "transactions_counter"):
-                            self.transactions_counter.inc()
+                self._update_metrics(export_data=export_data, session=session)
+
             self._save_export_transactions(export_data, session=session)
 
         self.log.info(f"Removing pending export {pending_export}.")
@@ -84,6 +72,25 @@ class SingularExportAgent(BaseAgent):
             session.commit()
 
         db.run_query(delete_pending_export, session=session, description="delete pending export")
+
+    def _update_metrics(self, export_data: AgentExportData, session: Session):
+        """
+        Use the Prometheus request latency context manager if we have one
+        """
+        with ExitStack() as stack:
+            if getattr(self, "request_latency_histogram", None):
+                stack.enter_context(self.request_latency_histogram.time())
+            if getattr(self, "requests_sent", None):
+                self.requests_sent.inc()
+            try:
+                self.export(export_data, session=session)
+            except Exception:
+                if getattr(self, "failed_requests_counter", None):
+                    self.failed_requests_counter.inc()
+                raise
+            else:
+                if getattr(self, "transactions_counter", None):
+                    self.transactions_counter.inc()
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

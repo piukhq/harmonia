@@ -140,6 +140,15 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
 
+    def _update_metrics(self, file_attr):
+        """
+        Increment Prometheus counter and gauge
+        """
+        if getattr(self, "files_received_counter", None):
+            self.files_received_counter.inc()
+        if getattr(self, "last_file_timestamp_gauge", None):
+            self.last_file_timestamp_gauge.set(file_attr.st_mtime)
+
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
             listing = sftp.client.listdir_attr()
@@ -176,11 +185,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                             logger=self.log,
                         )
 
-                        # Increment Prometheus counter and gauge
-                        if hasattr(self, "files_received_counter"):
-                            self.files_received_counter.inc()
-                        if hasattr(self, "last_file_timestamp_gauge"):
-                            self.last_file_timestamp_gauge.set(file_attr.st_mtime)
+                        self._update_metrics(file_attr)
                 else:
                     self.log.debug(f"{file_attr.filename} is a directory. Skipping")
 

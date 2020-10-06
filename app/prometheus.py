@@ -1,9 +1,12 @@
 import collections
+import os
 import threading
 import time
 import urllib.error
+from contextlib import ExitStack
 from typing import Dict
 
+import settings
 from app.reporting import get_logger
 from prometheus_client import Counter, Gauge, Histogram, push_to_gateway
 from prometheus_client.registry import REGISTRY
@@ -11,7 +14,7 @@ from prometheus_client.registry import REGISTRY
 logger = get_logger(__name__)
 
 
-class PrometheusMetricTypes:
+class BinkPrometheus:
     """
     Provides global access to Prometheus metric types through a singleton
     """
@@ -86,7 +89,8 @@ class PrometheusMetricTypes:
         return metric_types
 
 
-prometheus_metric_types = PrometheusMetricTypes().get_metric_types()
+# Singleton metric types
+prometheus_metric_types = BinkPrometheus().get_metric_types()
 
 
 class PrometheusPushThread(threading.Thread):
@@ -126,3 +130,22 @@ class PrometheusPushThread(threading.Thread):
             remaining = self.SLEEP_INTERVAL - (time.time() - now)
             if remaining > 0:
                 time.sleep(remaining)
+
+
+def get_prometheus_thread():
+    """
+    The PrometheusPushThread class may well end up in an imported common lib
+    """
+    process_id = str(os.getpid())
+    prometheus_thread = PrometheusPushThread(
+        process_id=process_id,
+        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
+        prometheus_job=settings.PROMETHEUS_JOB,
+    )
+    prometheus_thread.daemon = True
+
+    return prometheus_thread
+
+
+# Singleton thread
+prometheus_thread = get_prometheus_thread()
