@@ -31,5 +31,3 @@ date = 2020-01-20T15:00:29
 amount = 425
 auth_code = "198090"
 settlement_key = "settle123"
-[users.transactions.merchant_overrides]
-date = 2020-01-20T14:59:00
