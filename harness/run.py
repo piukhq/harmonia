@@ -1,5 +1,6 @@
 import json
 import shutil
+import time
 import typing as t
 from datetime import datetime
 from enum import Enum
@@ -28,10 +29,10 @@ from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
 # most of the export agents need this to be set to something.
-settings.EUROPA_URL = ""
+# settings.EUROPA_URL = ""
 settings.ATLAS_URL = ""
-settings.VAULT_URL = ""
-settings.VAULT_TOKEN = ""
+# settings.VAULT_URL = ""
+# settings.VAULT_TOKEN = ""
 
 
 # payment provider slugs that will trigger a keyring being set up
@@ -478,6 +479,8 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
     click.echo("Prometheus push thread started")
 
     run_transaction_matching(fixture, import_only=import_only)
+
+    time.sleep(60)
 
 
 if __name__ == "__main__":

@@ -56,7 +56,6 @@ class BatchExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                # TODO: check the indentation here compared to develop
                 self._update_metrics(export_data)
 
             db.run_query(
