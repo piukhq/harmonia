@@ -1,15 +1,15 @@
 import typing as t
-from functools import cached_property, lru_cache
 from collections import defaultdict
+from functools import cached_property, lru_cache
 from uuid import uuid4
 
-import redis.lock
 import pendulum
-
+import redis.lock
 import settings
 from app import db, models, tasks
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
+from app.prometheus import BinkPrometheus
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
@@ -269,16 +269,16 @@ class BaseAgent:
         if queue_transactions:
             tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
 
-    def _update_metrics(self, n_insertions: int):
+    def _update_metrics(self, n_insertions: int) -> None:
         """
-        update Prometheus counter, depending on feed type
+        Update (optional) Prometheus metrics
         """
         if self.feed_type == ImportFeedTypes.SETTLED:
-            if getattr(self, "settlement_transactions_counter", None):
-                self.settlement_transactions_counter.inc(n_insertions)
+            BinkPrometheus.increment_counter(
+                obj=self, counter_name="settlement_transactions_counter", increment_by=n_insertions
+            )
         elif self.feed_type == ImportFeedTypes.AUTH:
-            if getattr(self, "transactions_counter", None):
-                self.transactions_counter.inc(n_insertions)
+            BinkPrometheus.increment_counter(obj=self, counter_name="transactions_counter", increment_by=n_insertions)
 
     def _build_queue_transaction(
         self,

@@ -2,9 +2,8 @@ import collections
 import os
 import threading
 import time
+import typing as t
 import urllib.error
-from contextlib import ExitStack
-from typing import Dict
 
 import settings
 from app.reporting import get_logger
@@ -38,7 +37,7 @@ class BinkPrometheus:
         """
         return collections.defaultdict(self._make_metric_types_dict)
 
-    def get_metric_types(self) -> Dict:
+    def _get_metric_types(self) -> t.Dict:
         metric_types = self._make_metric_types_dict()
 
         # Export section
@@ -88,9 +87,29 @@ class BinkPrometheus:
 
         return metric_types
 
+    @staticmethod
+    def increment_counter(obj: object, counter_name: str, increment_by: t.Union[int, float]) -> None:
+        """
+        Useful function for getting an instance's counter, if it exists,
+        and incrementing it
+        """
+        counter = getattr(obj, counter_name, None)
+        if counter:
+            counter.inc(increment_by)
+
+    @staticmethod
+    def update_gauge(obj: object, gauge_name: str, value: t.Union[int, float]) -> None:
+        """
+        Useful function for getting an instance's gauge, if it exists,
+        and setting it to a value
+        """
+        gauge = getattr(obj, gauge_name, None)
+        if gauge:
+            gauge.set(value)
+
 
 # Singleton metric types
-prometheus_metric_types = BinkPrometheus().get_metric_types()
+prometheus_metric_types = BinkPrometheus()._get_metric_types()
 
 
 class PrometheusPushThread(threading.Thread):

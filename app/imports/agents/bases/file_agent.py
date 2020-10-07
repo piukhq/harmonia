@@ -12,6 +12,7 @@ import pendulum
 import settings
 from app import db, reporting, retry, tasks
 from app.imports.agents import BaseAgent
+from app.prometheus import BinkPrometheus
 from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
@@ -27,6 +28,13 @@ class FileSourceBase:
 
     def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
+
+    def _update_metrics(self, file_attr) -> None:
+        """
+        Update (optional) Prometheus metrics
+        """
+        BinkPrometheus.increment_counter(obj=self, counter_name="files_received_counter", increment_by=1)
+        BinkPrometheus.update_gauge(obj=self, gauge_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
 
 
 class LocalFileSource(FileSourceBase):
@@ -139,15 +147,6 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
-
-    def _update_metrics(self, file_attr):
-        """
-        Increment Prometheus counter and gauge
-        """
-        if getattr(self, "files_received_counter", None):
-            self.files_received_counter.inc()
-        if getattr(self, "last_file_timestamp_gauge", None):
-            self.last_file_timestamp_gauge.set(file_attr.st_mtime)
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:

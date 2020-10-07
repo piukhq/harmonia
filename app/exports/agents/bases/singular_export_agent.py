@@ -4,6 +4,7 @@ import settings
 from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
+from app.prometheus import BinkPrometheus
 from app.status import status_monitor
 from sqlalchemy.orm import Session
 
@@ -73,24 +74,23 @@ class SingularExportAgent(BaseAgent):
 
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
-    def _update_metrics(self, export_data: AgentExportData, session: Session):
+    def _update_metrics(self, export_data: AgentExportData, session: Session) -> None:
         """
-        Use the Prometheus request latency context manager if we have one
+        Update (optional) Prometheus metrics
         """
+        # Use the Prometheus request latency context manager if we have one
         with ExitStack() as stack:
-            if getattr(self, "request_latency_histogram", None):
-                stack.enter_context(self.request_latency_histogram.time())
-            if getattr(self, "requests_sent", None):
-                self.requests_sent.inc()
+            context_manager = getattr(self, "request_latency_histogram", None)
+            if context_manager:
+                stack.enter_context(context_manager.time())
+            BinkPrometheus.increment_counter(obj=self, counter_name="requests_sent", increment_by=1)
             try:
                 self.export(export_data, session=session)
             except Exception:
-                if getattr(self, "failed_requests_counter", None):
-                    self.failed_requests_counter.inc()
+                BinkPrometheus.increment_counter(obj=self, counter_name="failed_requests_counter", increment_by=1)
                 raise
             else:
-                if getattr(self, "transactions_counter", None):
-                    self.transactions_counter.inc()
+                BinkPrometheus.increment_counter(obj=self, counter_name="transactions_counter", increment_by=1)
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

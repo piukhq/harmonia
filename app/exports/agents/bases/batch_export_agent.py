@@ -4,6 +4,7 @@ from contextlib import ExitStack
 import settings
 from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
+from app.prometheus import BinkPrometheus
 from app.scheduler import CronScheduler
 from requests import HTTPError
 from sqlalchemy.orm import Load, joinedload
@@ -55,6 +56,7 @@ class BatchExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
+                # TODO: check the indentation here compared to develop
                 self._update_metrics(export_data)
 
             db.run_query(
@@ -71,24 +73,25 @@ class BatchExportAgent(BaseAgent):
             delete_pending_exports, session=session, description="delete pending exports",
         )
 
-    def _update_metrics(self, export_data: AgentExportData):
+    def _update_metrics(self, export_data: AgentExportData, session=None) -> None:
         """
-        Use the Prometheus request latency context manager if we have one
+        Update (optional) Prometheus metrics
         """
+        # Use the Prometheus request latency context manager if we have one
         with ExitStack() as stack:
-            if getattr(self, "request_latency_histogram", None):
-                stack.enter_context(self.request_latency_histogram.time())
-            if getattr(self, "requests_sent", None):
-                self.requests_sent.inc()
+            context_manager = getattr(self, "request_latency_histogram", None)
+            if context_manager:
+                stack.enter_context(context_manager.time())
+            BinkPrometheus.increment_counter(obj=self, counter_name="requests_sent", increment_by=1)
             try:
                 self.send_export_data(export_data)
             except HTTPError:
-                if getattr(self, "failed_requests_counter", None):
-                    self.failed_requests_counter.inc()
+                BinkPrometheus.increment_counter(obj=self, counter_name="failed_requests_counter", increment_by=1)
                 raise
             else:
-                if getattr(self, "transactions_counter", None):
-                    self.transactions_counter.inc(len(export_data.transactions))
+                BinkPrometheus.increment_counter(
+                    obj=self, counter_name="transactions_counter", increment_by=len(export_data.transactions)
+                )
 
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
