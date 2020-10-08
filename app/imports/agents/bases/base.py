@@ -272,7 +272,7 @@ class BaseAgent:
 
     def _update_metrics(self, n_insertions: int) -> None:
         """
-        Update (optional) Prometheus metrics
+        Update any Prometheus metrics this agent might have
         """
         transaction_type = self.feed_type.name.lower()
         self.bink_prometheus.increment_counter(

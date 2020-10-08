@@ -81,7 +81,7 @@ class SingularExportAgent(BaseAgent):
 
     def _update_metrics(self, export_data: AgentExportData, session: Session) -> None:
         """
-        Update (optional) Prometheus metrics
+        Update any Prometheus metrics this agent might have
         """
         # Use the Prometheus request latency context manager if we have one. This must be the first method
         # call of course

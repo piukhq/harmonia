@@ -191,7 +191,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
 
     def _update_metrics(self, file_attr) -> None:
         """
-        Update (optional) Prometheus metrics
+        Update any Prometheus metrics this agent might have
         """
         self.bink_prometheus.increment_counter(
             agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,

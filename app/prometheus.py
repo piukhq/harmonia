@@ -14,41 +14,59 @@ logger = get_logger(__name__)
 
 
 class BinkPrometheus:
-    """
-    Provides global access to Prometheus metric types through a singleton
-    """
-
     def __init__(self):
         self.metric_types = self._get_metric_types()
 
     def _get_metric_types(self) -> t.Dict:
         """
-        Define metric types here (see https://prometheus.io/docs/concepts/metric_types/), with the name,
-        description and a list of expected labels
+        Define globally available metric types here (see https://prometheus.io/docs/concepts/metric_types/),
+        with the name, description and a list of the labels they expect.
+
+        Agents register the metrics they care about like this:
+
+        self.prometheus_metrics = {
+            "counters": ["requests_sent", "failed_requests", "transactions"],
+            "histograms": ["request_latency"],
+        }
+
+        It's the labels (e.g. transaction_type, slug), passed as parameters when a metric is updated, that determine
+        things like whether it's an export or import, or auth or transaction, as well as the slug for the agent.
         """
         metric_types = {
             "counters": {
                 "transactions": Counter(
-                    "transactions", "Number of transactions", ["transaction_type", "process_type", "slug"]
+                    name="transactions",
+                    documentation="Number of transactions",
+                    labelnames=("transaction_type", "process_type", "slug"),
                 ),
                 "requests_sent": Counter(
-                    "requests_sent", "Number of requests sent", ["transaction_type", "process_type", "slug"]
+                    name="requests_sent",
+                    documentation="Number of requests sent",
+                    labelnames=("transaction_type", "process_type", "slug"),
                 ),
                 "failed_requests": Counter(
-                    "failed_requests", "Number of failed requests", ["transaction_type", "process_type", "slug"]
+                    name="failed_requests",
+                    documentation="Number of failed requests",
+                    labelnames=("transaction_type", "process_type", "slug"),
                 ),
                 "files_received": Counter(
-                    "files_received", "Number of files received", ["transaction_type", "process_type", "slug"]
+                    name="files_received",
+                    documentation="Number of files received",
+                    labelnames=("transaction_type", "process_type", "slug"),
                 ),
             },
             "histograms": {
                 "request_latency": Histogram(
-                    "request_latency_seconds", "Request latency seconds", ["process_type", "slug"]
+                    name="request_latency_seconds",
+                    documentation="Request latency seconds",
+                    labelnames=("process_type", "slug"),
                 )
             },
             "gauges": {
                 "last_file_timestamp": Gauge(
-                    "last_file_timestamp", "Timestamp of last file processed", ["process_type", "slug"]
+                    name="last_file_timestamp",
+                    documentation="Timestamp of last file processed",
+                    labelnames=("process_type", "slug"),
                 )
             },
         }
@@ -143,10 +161,10 @@ class PrometheusPushThread(threading.Thread):
     SLEEP_INTERVAL = 30
     PUSH_TIMEOUT = 3  # PushGateway should be running in the same pod
 
-    def __init__(self, process_id: str, prometheus_push_gateway: str, prometheus_job: str):
+    def __init__(self, prometheus_push_gateway: str, prometheus_job: str):
         # Grouping key should not need pod id as prometheus
         # should tag that itself
-        self.grouping_key = {"pid": process_id}
+        self.grouping_key = {"pid": str(os.getpid())}
         self.prometheus_push_gateway = prometheus_push_gateway
         self.prometheus_job = prometheus_job
         super().__init__()
@@ -154,7 +172,6 @@ class PrometheusPushThread(threading.Thread):
     def run(self):
         time.sleep(10)
         while True:
-            now = time.time()
             try:
                 push_to_gateway(
                     gateway=self.prometheus_push_gateway,
@@ -169,18 +186,14 @@ class PrometheusPushThread(threading.Thread):
             except Exception as err:
                 logger.exception("Caught exception whilst posting metrics", exc_info=err)
 
-            remaining = self.SLEEP_INTERVAL - (time.time() - now)
-            if remaining > 0:
-                time.sleep(remaining)
+            time.sleep(self.SLEEP_INTERVAL)
 
 
 def get_prometheus_thread():
     # The PrometheusPushThread class may well end up in an imported common lib, hence this helper function
     process_id = str(os.getpid())
     prometheus_thread = PrometheusPushThread(
-        process_id=process_id,
-        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-        prometheus_job=settings.PROMETHEUS_JOB,
+        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB,
     )
     prometheus_thread.daemon = True
 
