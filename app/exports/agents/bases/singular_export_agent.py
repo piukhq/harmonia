@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session
 
 
 class SingularExportAgent(BaseAgent):
+    def __init__(self):
+        super().__init__()
+
+        self.bink_prometheus = BinkPrometheus()
+
     def run(self):
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
@@ -80,17 +85,36 @@ class SingularExportAgent(BaseAgent):
         """
         # Use the Prometheus request latency context manager if we have one
         with ExitStack() as stack:
-            context_manager = getattr(self, "request_latency_histogram", None)
-            if context_manager:
-                stack.enter_context(context_manager.time())
-            BinkPrometheus.increment_counter(obj=self, counter_name="requests_sent", increment_by=1)
-            try:
-                self.export(export_data, session=session)
-            except Exception:
-                BinkPrometheus.increment_counter(obj=self, counter_name="failed_requests_counter", increment_by=1)
-                raise
-            else:
-                BinkPrometheus.increment_counter(obj=self, counter_name="transactions_counter", increment_by=1)
+            agent_metrics = getattr(self, "prometheus_metrics", None)
+            if agent_metrics:
+                if "request_latency_histogram" in agent_metrics["histograms"]:
+                    context_manager = self.bink_prometheus.metric_types["histograms"]["request_latency"]
+                    stack.enter_context(
+                        context_manager.labels(**{"process_type": "export", "slug": self.provider_slug}).time()
+                    )
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="requests_sent",
+                    increment_by=1,
+                    labels={"process_type": "export", "slug": self.provider_slug},
+                )
+                try:
+                    self.export(export_data, session=session)
+                except Exception:
+                    self.bink_prometheus.increment_counter(
+                        agent=self,
+                        counter_name="failed_requests_counter",
+                        increment_by=1,
+                        labels={"process_type": "export", "slug": self.provider_slug},
+                    )
+                    raise
+                else:
+                    self.bink_prometheus.increment_counter(
+                        agent=self,
+                        counter_name="transactions_counter",
+                        increment_by=1,
+                        labels={"process_type": "export", "slug": self.provider_slug},
+                    )
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

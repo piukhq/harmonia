@@ -169,7 +169,9 @@ class VisaAuth(QueueAgent):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
@@ -206,9 +208,9 @@ class VisaSettlement(QueueAgent):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.settlement_transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"][
-            "settlement_transactions"
-        ]
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"

@@ -90,6 +90,7 @@ class BaseAgent:
 
     def __init__(self) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
+        self.bink_prometheus = BinkPrometheus()
 
     @property
     def provider_slug(self) -> str:
@@ -273,12 +274,12 @@ class BaseAgent:
         """
         Update (optional) Prometheus metrics
         """
-        if self.feed_type == ImportFeedTypes.SETTLED:
-            BinkPrometheus.increment_counter(
-                obj=self, counter_name="settlement_transactions_counter", increment_by=n_insertions
-            )
-        elif self.feed_type == ImportFeedTypes.AUTH:
-            BinkPrometheus.increment_counter(obj=self, counter_name="transactions_counter", increment_by=n_insertions)
+        self.bink_prometheus.increment_counter(
+            agent=self,
+            counter_name="transactions",
+            increment_by=n_insertions,
+            labels={"transaction_type": self.feed_type, "process_type": "import", "slug": self.provider_slug},
+        )
 
     def _build_queue_transaction(
         self,

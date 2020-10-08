@@ -32,13 +32,18 @@ class HarveyNichols(SingularExportAgent):
             self.api = HarveyNicholsAPI(self.Config.base_url)
 
         # Set up Prometheus metric types
-        self.request_latency_histogram = prometheus_metric_types["export"][self.provider_slug]["histogram"][
-            "request_latency"
-        ]
-        self.failed_requests_counter = prometheus_metric_types["export"][self.provider_slug]["counter"][
-            "failed_requests"
-        ]
-        self.transactions_counter = prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
+        self.prometheus_metrics = {
+            "counters": ["failed_requests", "transactions"],
+            "histograms": ["request_latency"],
+        }
+        # # Set up Prometheus metric types
+        # self.request_latency_histogram = prometheus_metric_types["export"][self.provider_slug]["histogram"][
+        #     "request_latency"
+        # ]
+        # self.failed_requests_counter = prometheus_metric_types["export"][self.provider_slug]["counter"][
+        #     "failed_requests"
+        # ]
+        # self.transactions_counter = prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity

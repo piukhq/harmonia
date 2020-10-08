@@ -49,11 +49,16 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         super().__init__()
 
         # Set up Prometheus metric types
-        self.last_file_timestamp_gauge = prometheus_metric_types["import"][self.provider_slug]["gauge"][
-            "last_file_timestamp"
-        ]
-        self.files_received_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
-        self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
+        self.prometheus_metrics = {
+            "counters": ["files_received", "transactions"],
+            "gauges": ["last_file_timestamp"],
+        }
+        # # Set up Prometheus metric types
+        # self.last_file_timestamp_gauge = prometheus_metric_types["import"][self.provider_slug]["gauge"][
+        #     "last_file_timestamp"
+        # ]
+        # self.files_received_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
+        # self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
 
     @cached_property
     def _security_credentials(self) -> dict:

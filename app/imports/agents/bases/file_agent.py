@@ -25,6 +25,7 @@ class FileSourceBase:
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         self.path = path
         self.log = logger
+        self.bink_prometheus = BinkPrometheus()
 
     def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
@@ -33,8 +34,24 @@ class FileSourceBase:
         """
         Update (optional) Prometheus metrics
         """
-        BinkPrometheus.increment_counter(obj=self, counter_name="files_received_counter", increment_by=1)
-        BinkPrometheus.update_gauge(obj=self, gauge_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
+        self.bink_prometheus.increment_counter(
+            agent=self,
+            counter_name="files_received_counter",
+            increment_by=1,
+            transaction_type=self.feed_type,
+            process_type="import",
+            slug=self.provider_slug,
+        )
+        self.bink_prometheus.update_gauge(
+            agent=self,
+            gauge_name="last_file_timestamp_gauge",
+            value=file_attr.st_mtime,
+            transaction_type=self.feed_type,
+            process_type="import",
+            slug=self.provider_slug,
+        )
+        # BinkPrometheus.increment_counter(agent=self, counter_name="files_received_counter", increment_by=1)
+        # BinkPrometheus.update_gauge(obj=self, gauge_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
 
 
 class LocalFileSource(FileSourceBase):
