@@ -54,15 +54,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             "counters": ["requests_sent", "failed_requests", "transactions"],
             "histograms": ["request_latency"],
         }
-        # # Set up Prometheus metric types
-        # self.request_latency_histogram = prometheus_metric_types["export"][self.provider_slug]["histogram"][
-        #     "request_latency"
-        # ]
-        # self.requests_sent = prometheus_metric_types["export"][self.provider_slug]["counter"]["requests_sent"]
-        # self.failed_requests_counter = prometheus_metric_types["export"][self.provider_slug]["counter"][
-        #     "failed_requests"
-        # ]
-        # self.transactions_counter = prometheus_metric_types["export"][self.provider_slug]["counter"]["transactions"]
 
     def help(self) -> str:
         return inspect.cleandoc(

@@ -194,17 +194,14 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         Update (optional) Prometheus metrics
         """
         self.bink_prometheus.increment_counter(
-            agent=self,
-            counter_name="files_received",
-            increment_by=1,
-            process_type="import",
-            slug=self.provider_slug,
+            agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,
         )
         self.bink_prometheus.update_gauge(
             agent=self,
             gauge_name="last_file_timestamp",
             value=file_attr.st_mtime,
-            labels={"process_type": "import", "slug": self.provider_slug},
+            process_type="import",
+            slug=self.provider_slug,
         )
 
 
