@@ -37,6 +37,7 @@ kombu = "*"
 hashids = "*"
 pgpy = "*"
 psycopg2-binary = "*"
+azure-oidc = "*"
 
 [dev-packages]
 pytest = "*"
