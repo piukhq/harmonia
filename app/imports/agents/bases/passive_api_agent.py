@@ -6,8 +6,12 @@ import marshmallow
 
 from app import utils, db
 from app.api import utils as api_utils
+from app.api.auth import auth_decorator
 from app.imports.agents import BaseAgent
 import settings
+
+
+requires_auth = auth_decorator()
 
 
 class PassiveAPIAgent(BaseAgent):
@@ -23,6 +27,7 @@ class PassiveAPIAgent(BaseAgent):
         )
 
         @api.route("/", strict_slashes=False, methods=["POST"])
+        @requires_auth(auth_scopes="transactions:write")
         @api_utils.expects_json
         def index() -> t.Tuple[dict, int]:
             """

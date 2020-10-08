@@ -1,6 +1,7 @@
 import json
 import shutil
 import typing as t
+from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -17,14 +18,25 @@ from marshmallow import ValidationError, fields, validate, pre_load
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
-import settings
-from app import db, encryption, models, tasks, feeds
-from app.core import key_manager
-from app.exports.agents import BatchExportAgent, export_agents
-from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
-from app.registry import NoSuchAgent
-from app.service.hermes import hermes
-from harness.providers.registry import import_data_providers
+from app.api import auth
+
+
+@contextmanager
+def mocked_auth_decorator():
+    # replace the requires_auth decorator with a no-op
+    auth.auth_decorator = lambda: lambda *args, **kwargs: lambda fn: fn
+    yield
+
+
+with mocked_auth_decorator():
+    import settings
+    from app import db, encryption, models, tasks, feeds
+    from app.core import key_manager
+    from app.exports.agents import BatchExportAgent, export_agents
+    from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
+    from app.registry import NoSuchAgent
+    from app.service.hermes import hermes
+    from harness.providers.registry import import_data_providers
 
 # most of the export agents need this to be set to something.
 settings.EUROPA_URL = ""

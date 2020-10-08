@@ -9,11 +9,12 @@ import werkzeug
 
 from app import models, db, reporting
 from app.api.utils import view_session
+from app.api.auth import auth_decorator
 import settings
 
 
 api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
-
+requires_auth = auth_decorator()
 log = reporting.get_logger("mids-api")
 
 
@@ -126,6 +127,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
 
 
 @api.route("/", methods=["POST"])
+@requires_auth(auth_scopes="mids:write")
 @view_session
 def import_mids(*, session: db.Session) -> ResponseType:
     """

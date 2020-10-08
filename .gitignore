@@ -11,3 +11,4 @@ monitor
 htmlcov
 .vscode
 .DS_Store
+build
