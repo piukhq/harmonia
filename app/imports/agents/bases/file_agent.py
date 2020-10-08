@@ -12,7 +12,7 @@ import pendulum
 import settings
 from app import db, reporting, retry, tasks
 from app.imports.agents import BaseAgent
-from app.prometheus import BinkPrometheus
+from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
@@ -25,7 +25,7 @@ class FileSourceBase:
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         self.path = path
         self.log = logger
-        self.bink_prometheus = BinkPrometheus()
+        self.bink_prometheus = bink_prometheus
 
     def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
@@ -197,7 +197,8 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
             agent=self,
             counter_name="files_received",
             increment_by=1,
-            labels={"process_type": "import", "slug": self.provider_slug},
+            process_type="import",
+            slug=self.provider_slug,
         )
         self.bink_prometheus.update_gauge(
             agent=self,
@@ -205,8 +206,6 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
             value=file_attr.st_mtime,
             labels={"process_type": "import", "slug": self.provider_slug},
         )
-        # BinkPrometheus.increment_counter(agent=self, counter_name="files_received_counter", increment_by=1)
-        # BinkPrometheus.update_gauge(obj=self, histogram_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
 
 
 class FileAgent(BaseAgent):

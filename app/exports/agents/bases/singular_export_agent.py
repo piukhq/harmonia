@@ -4,7 +4,7 @@ import settings
 from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
-from app.prometheus import BinkPrometheus
+from app.prometheus import bink_prometheus
 from app.status import status_monitor
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ class SingularExportAgent(BaseAgent):
     def __init__(self):
         super().__init__()
 
-        self.bink_prometheus = BinkPrometheus()
+        self.bink_prometheus = bink_prometheus
 
     def run(self):
         raise NotImplementedError(
@@ -90,13 +90,15 @@ class SingularExportAgent(BaseAgent):
                 agent=self,
                 histogram_name="request_latency",
                 context_manager_stack=stack,
-                labels={"process_type": "export", "slug": self.provider_slug},
+                process_type="export",
+                slug=self.provider_slug,
             )
             self.bink_prometheus.increment_counter(
                 agent=self,
                 counter_name="requests_sent",
                 increment_by=1,
-                labels={"process_type": "export", "slug": self.provider_slug},
+                process_type="export",
+                slug=self.provider_slug,
             )
             try:
                 self.export(export_data, session=session)
@@ -105,7 +107,8 @@ class SingularExportAgent(BaseAgent):
                     agent=self,
                     counter_name="failed_requests",
                     increment_by=1,
-                    labels={"process_type": "export", "slug": self.provider_slug},
+                    process_type="export",
+                    slug=self.provider_slug,
                 )
                 raise
             else:
@@ -113,7 +116,8 @@ class SingularExportAgent(BaseAgent):
                     agent=self,
                     counter_name="transactions",
                     increment_by=1,
-                    labels={"process_type": "export", "slug": self.provider_slug},
+                    process_type="export",
+                    slug=self.provider_slug,
                 )
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:

@@ -4,7 +4,7 @@ from contextlib import ExitStack
 import settings
 from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
-from app.prometheus import BinkPrometheus
+from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
 from sqlalchemy.orm import Load, joinedload
 
@@ -13,7 +13,7 @@ class BatchExportAgent(BaseAgent):
     def __init__(self):
         super().__init__()
 
-        self.bink_prometheus = BinkPrometheus()
+        self.bink_prometheus = bink_prometheus
 
     def run(self):
         scheduler = CronScheduler(
@@ -84,13 +84,15 @@ class BatchExportAgent(BaseAgent):
                 agent=self,
                 histogram_name="request_latency",
                 context_manager_stack=stack,
-                labels={"process_type": "export", "slug": self.provider_slug},
+                process_type="export",
+                slug=self.provider_slug,
             )
             self.bink_prometheus.increment_counter(
                 agent=self,
                 counter_name="requests_sent",
                 increment_by=1,
-                labels={"process_type": "export", "slug": self.provider_slug},
+                process_type="export",
+                slug=self.provider_slug,
             )
             try:
                 self.export(export_data, session=session)
@@ -99,7 +101,8 @@ class BatchExportAgent(BaseAgent):
                     agent=self,
                     counter_name="failed_requests",
                     increment_by=1,
-                    labels={"process_type": "export", "slug": self.provider_slug},
+                    process_type="export",
+                    slug=self.provider_slug,
                 )
                 raise
             else:
@@ -107,7 +110,8 @@ class BatchExportAgent(BaseAgent):
                     agent=self,
                     counter_name="transactions",
                     increment_by=len(export_data.transactions),
-                    labels={"process_type": "export", "slug": self.provider_slug},
+                    process_type="export",
+                    slug=self.provider_slug,
                 )
 
     def yield_export_data(

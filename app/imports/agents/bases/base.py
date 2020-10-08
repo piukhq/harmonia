@@ -9,7 +9,7 @@ import settings
 from app import db, models, tasks
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
-from app.prometheus import BinkPrometheus
+from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
@@ -90,7 +90,7 @@ class BaseAgent:
 
     def __init__(self) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
-        self.bink_prometheus = BinkPrometheus()
+        self.bink_prometheus = bink_prometheus
 
     @property
     def provider_slug(self) -> str:
@@ -274,11 +274,14 @@ class BaseAgent:
         """
         Update (optional) Prometheus metrics
         """
+        transaction_type = self.feed_type.name.lower()
         self.bink_prometheus.increment_counter(
             agent=self,
             counter_name="transactions",
             increment_by=n_insertions,
-            labels={"transaction_type": self.feed_type, "process_type": "import", "slug": self.provider_slug},
+            transaction_type=transaction_type,
+            process_type="import",
+            slug=self.provider_slug,
         )
 
     def _build_queue_transaction(
