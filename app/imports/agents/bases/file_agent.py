@@ -30,29 +30,6 @@ class FileSourceBase:
     def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
 
-    def _update_metrics(self, file_attr) -> None:
-        """
-        Update (optional) Prometheus metrics
-        """
-        self.bink_prometheus.increment_counter(
-            agent=self,
-            counter_name="files_received_counter",
-            increment_by=1,
-            transaction_type=self.feed_type,
-            process_type="import",
-            slug=self.provider_slug,
-        )
-        self.bink_prometheus.update_gauge(
-            agent=self,
-            gauge_name="last_file_timestamp_gauge",
-            value=file_attr.st_mtime,
-            transaction_type=self.feed_type,
-            process_type="import",
-            slug=self.provider_slug,
-        )
-        # BinkPrometheus.increment_counter(agent=self, counter_name="files_received_counter", increment_by=1)
-        # BinkPrometheus.update_gauge(obj=self, gauge_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
-
 
 class LocalFileSource(FileSourceBase):
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
@@ -158,12 +135,19 @@ class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
 
 class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
     def __init__(
-        self, credentials: SFTPCredentials, skey: t.Optional[str], path: Path, *, logger: logging.Logger
+        self,
+        credentials: SFTPCredentials,
+        skey: t.Optional[str],
+        path: Path,
+        *,
+        logger: logging.Logger,
+        provider_slug: str,
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
+        self.provider_slug = provider_slug
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
@@ -204,6 +188,25 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                         self._update_metrics(file_attr)
                 else:
                     self.log.debug(f"{file_attr.filename} is a directory. Skipping")
+
+    def _update_metrics(self, file_attr) -> None:
+        """
+        Update (optional) Prometheus metrics
+        """
+        self.bink_prometheus.increment_counter(
+            agent=self,
+            counter_name="files_received",
+            increment_by=1,
+            labels={"process_type": "import", "slug": self.provider_slug},
+        )
+        self.bink_prometheus.update_gauge(
+            agent=self,
+            gauge_name="last_file_timestamp",
+            value=file_attr.st_mtime,
+            labels={"process_type": "import", "slug": self.provider_slug},
+        )
+        # BinkPrometheus.increment_counter(agent=self, counter_name="files_received_counter", increment_by=1)
+        # BinkPrometheus.update_gauge(obj=self, histogram_name="last_file_timestamp_gauge", value=file_attr.st_mtime)
 
 
 class FileAgent(BaseAgent):

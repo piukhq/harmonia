@@ -15,7 +15,6 @@ from app.imports.agents.bases.file_agent import (
     FileSourceBase,
     SftpFileSource,
 )
-from app.prometheus import prometheus_metric_types
 from app.service.hermes import PaymentProviderSlug
 from app.service.sftp import SFTPCredentials
 from app.soteria import SoteriaConfigMixin
@@ -57,7 +56,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         # self.last_file_timestamp_gauge = prometheus_metric_types["import"][self.provider_slug]["gauge"][
         #     "last_file_timestamp"
         # ]
-        # self.files_received_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
+        # self.files_received_counter = \
+        # prometheus_metric_types["import"][self.provider_slug]["counter"]["files_received"]
         # self.transactions_counter = prometheus_metric_types["import"][self.provider_slug]["counter"]["transactions"]
 
     @cached_property
@@ -76,7 +76,9 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     @cached_property
     def filesource(self) -> FileSourceBase:
-        return SftpFileSource(self.sftp_credentials, self.skey, Path(self.Config.path), logger=self.log)
+        return SftpFileSource(
+            self.sftp_credentials, self.skey, Path(self.Config.path), logger=self.log, provider_slug=self.provider_slug
+        )
 
     def help(self) -> str:
         return inspect.cleandoc(

@@ -83,38 +83,38 @@ class SingularExportAgent(BaseAgent):
         """
         Update (optional) Prometheus metrics
         """
-        # Use the Prometheus request latency context manager if we have one
+        # Use the Prometheus request latency context manager if we have one. This must be the first method
+        # call of course
         with ExitStack() as stack:
-            agent_metrics = getattr(self, "prometheus_metrics", None)
-            if agent_metrics:
-                if "request_latency_histogram" in agent_metrics["histograms"]:
-                    context_manager = self.bink_prometheus.metric_types["histograms"]["request_latency"]
-                    stack.enter_context(
-                        context_manager.labels(**{"process_type": "export", "slug": self.provider_slug}).time()
-                    )
+            self.bink_prometheus.use_histogram_context_manager(
+                agent=self,
+                histogram_name="request_latency",
+                context_manager_stack=stack,
+                labels={"process_type": "export", "slug": self.provider_slug},
+            )
+            self.bink_prometheus.increment_counter(
+                agent=self,
+                counter_name="requests_sent",
+                increment_by=1,
+                labels={"process_type": "export", "slug": self.provider_slug},
+            )
+            try:
+                self.export(export_data, session=session)
+            except Exception:
                 self.bink_prometheus.increment_counter(
                     agent=self,
-                    counter_name="requests_sent",
+                    counter_name="failed_requests",
                     increment_by=1,
                     labels={"process_type": "export", "slug": self.provider_slug},
                 )
-                try:
-                    self.export(export_data, session=session)
-                except Exception:
-                    self.bink_prometheus.increment_counter(
-                        agent=self,
-                        counter_name="failed_requests_counter",
-                        increment_by=1,
-                        labels={"process_type": "export", "slug": self.provider_slug},
-                    )
-                    raise
-                else:
-                    self.bink_prometheus.increment_counter(
-                        agent=self,
-                        counter_name="transactions_counter",
-                        increment_by=1,
-                        labels={"process_type": "export", "slug": self.provider_slug},
-                    )
+                raise
+            else:
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="transactions",
+                    increment_by=1,
+                    labels={"process_type": "export", "slug": self.provider_slug},
+                )
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

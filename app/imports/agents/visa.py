@@ -11,7 +11,6 @@ from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
-from app.prometheus import prometheus_metric_types
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"

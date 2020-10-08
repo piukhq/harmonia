@@ -3,9 +3,9 @@ import threading
 import time
 import typing as t
 import urllib.error
+from contextlib import ExitStack
 
 import settings
-from app.feeds import ImportFeedTypes
 from app.reporting import get_logger
 from prometheus_client import Counter, Gauge, Histogram, push_to_gateway
 from prometheus_client.registry import REGISTRY
@@ -54,14 +54,10 @@ class BinkPrometheus:
         return self.metric_types
 
     def increment_counter(
-        self,
-        agent: object,
-        counter_name: str,
-        increment_by: t.Union[int, float],
-        labels: t.Dict,
+        self, agent: object, counter_name: str, increment_by: t.Union[int, float], labels: t.Dict,
     ) -> None:
         """
-        Useful function for getting an instance's counter, if it exists,
+        Useful method for getting an instance's counter, if it exists,
         and incrementing it
 
         :param agent: instance of an agent
@@ -79,15 +75,9 @@ class BinkPrometheus:
             if counter_name in agent_metrics["counters"]:
                 self.metric_types["counters"][counter_name].labels(**labels).inc(increment_by)
 
-    def update_gauge(
-        self,
-        agent: object,
-        gauge_name: str,
-        value: t.Union[int, float],
-        labels: t.Dict,
-    ) -> None:
+    def update_gauge(self, agent: object, gauge_name: str, value: t.Union[int, float], labels: t.Dict,) -> None:
         """
-        Useful function for getting an instance's gauge, if it exists,
+        Useful method for getting an instance's gauge, if it exists,
         and setting it to a value
 
         :param agent: instance of an agent
@@ -104,6 +94,29 @@ class BinkPrometheus:
         if agent_metrics:
             if gauge_name in agent_metrics["counters"]:
                 self.metric_types["gauges"][gauge_name].labels(**labels).set(value)
+
+    def use_histogram_context_manager(
+        self, agent: object, histogram_name: str, context_manager_stack: ExitStack, labels: t.Dict
+    ) -> None:
+        """
+        Useful method for using an instance's histogram CM, if it exists,
+        by appending it to a CM stack
+
+        :param agent: instance of an agent
+        :param histogram_name: e.g. 'request_latency'
+        :param context_manager_stack: a contextlib ExitStack instance
+        :param labels: a dict of labels e.g.:
+        {
+            "transaction_type": str,
+            "process_type": str,
+            "slug": str,
+        }
+        """
+        agent_metrics = getattr(agent, "prometheus_metrics", None)
+        if agent_metrics:
+            if histogram_name in agent_metrics["histograms"]:
+                context_manager = self.metric_types["histograms"]["request_latency"]
+                context_manager_stack.enter_context(context_manager.labels(**labels).time())
 
 
 #

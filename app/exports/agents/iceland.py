@@ -9,7 +9,6 @@ from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
-from app.prometheus import prometheus_metric_types
 from app.reporting import get_logger
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
