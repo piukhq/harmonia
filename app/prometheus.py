@@ -191,7 +191,6 @@ class PrometheusPushThread(threading.Thread):
 
 def get_prometheus_thread():
     # The PrometheusPushThread class may well end up in an imported common lib, hence this helper function
-    process_id = str(os.getpid())
     prometheus_thread = PrometheusPushThread(
         prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB,
     )
