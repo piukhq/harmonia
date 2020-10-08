@@ -141,13 +141,13 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         path: Path,
         *,
         logger: logging.Logger,
-        provider_slug: str,
+        provider_agent: object,
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
-        self.provider_slug = provider_slug
+        self.provider_agent = provider_agent
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
@@ -193,15 +193,20 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         """
         Update any Prometheus metrics this agent might have
         """
+        provider_slug = getattr(self.provider_agent, "provider_slug", "")
         self.bink_prometheus.increment_counter(
-            agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,
+            agent=self.provider_agent,
+            counter_name="files_received",
+            increment_by=1,
+            process_type="import",
+            slug=provider_slug,
         )
         self.bink_prometheus.update_gauge(
-            agent=self,
+            agent=self.provider_agent,
             gauge_name="last_file_timestamp",
             value=file_attr.st_mtime,
             process_type="import",
-            slug=self.provider_slug,
+            slug=provider_slug,
         )
 
 
