@@ -3,12 +3,15 @@ from flask import Blueprint
 from app import db, models
 from app.status import status_monitor, schemas
 from app.api.utils import ResponseType, view_session
+from app.api.auth import auth_decorator
 import settings
 
 api = Blueprint("status_api", __name__, url_prefix=f"{settings.URL_PREFIX}/status")
+requires_auth = auth_decorator()
 
 
 @api.route("/")
+@requires_auth(auth_scopes="status:read")
 def get_status():
     """---
     get:
@@ -27,6 +30,7 @@ def get_status():
 
 
 @api.route("/transaction/lookup/<transaction_id>")
+@requires_auth(auth_scopes="transactions:read")
 @view_session
 def lookup_transaction(transaction_id: str, *, session: db.Session) -> ResponseType:
     import_transaction = db.run_query(
