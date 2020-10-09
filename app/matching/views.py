@@ -4,13 +4,16 @@ import marshmallow
 from app import db
 from app.matching import schemas
 from app.core.matching_worker import MatchingWorker
+from app.api.auth import auth_decorator
 import settings
 
 
 api = Blueprint("matching_api", __name__, url_prefix=f"{settings.URL_PREFIX}/matching")
+requires_auth = auth_decorator()
 
 
 @api.route("/force_match", methods=["POST"])
+@requires_auth(auth_scopes="transactions:write")
 def force_match():
     """Manually create a match between two transactions
     ---
@@ -36,7 +39,9 @@ def force_match():
 
     try:
         with db.session_scope() as session:
-            worker.force_match(data["payment_transaction_id"], data["scheme_transaction_id"], session=session)
+            worker.force_match(
+                data["payment_transaction_id"], data["scheme_transaction_id"], session=session,
+            )
     except worker.RedressError as ex:
         return {"error": str(ex)}, 400
 

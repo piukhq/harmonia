@@ -151,6 +151,10 @@ FLASK = dict(
 # The prefix used on every API endpoint in the project.
 URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
 
+# Azure AD application details
+AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID")
+AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
+
 # API key for service authentication.
 SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 

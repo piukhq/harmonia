@@ -40,6 +40,12 @@ def create_app() -> flask.Flask:
 
     flask_cors.CORS(app)
 
+    from azure_oidc.integrations.flask_decorator import HTTPUnauthorized
+
+    @app.errorhandler(HTTPUnauthorized)
+    def handle_unauthorized(error: HTTPUnauthorized):
+        return {"title": "401 Unauthorized", "description": error.description}, 401
+
     from app.api.views import api as core_api
     from app.config.views import api as config_api
     from app.status.views import api as status_api

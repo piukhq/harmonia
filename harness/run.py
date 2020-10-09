@@ -1,6 +1,7 @@
 import json
 import shutil
 import typing as t
+from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -11,21 +12,31 @@ import toml
 import gnupg
 import pendulum
 import rq
-import settings
 import soteria.configuration
 import soteria.security
-from app import db, encryption, feeds, models, tasks
-from app.core import key_manager
-from app.exports.agents import BatchExportAgent, export_agents
-from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
-from app.prometheus import prometheus_thread
-from app.registry import NoSuchAgent
-from app.service.hermes import hermes
+from app.api import auth
 from flask import Flask
-from harness.providers.registry import import_data_providers
 from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
+
+
+@contextmanager
+def mocked_auth_decorator():
+    # replace the requires_auth decorator with a no-op
+    auth.auth_decorator = lambda: lambda *args, **kwargs: lambda fn: fn
+    yield
+
+
+with mocked_auth_decorator():
+    import settings
+    from app import db, encryption, models, tasks, feeds
+    from app.core import key_manager
+    from app.exports.agents import BatchExportAgent, export_agents
+    from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
+    from app.registry import NoSuchAgent
+    from app.service.hermes import hermes
+    from harness.providers.registry import import_data_providers
 
 # most of the export agents need this to be set to something.
 settings.EUROPA_URL = ""
@@ -472,10 +483,6 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
 
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
-
-    # Start up the Prometheus push thread for pushing metrics
-    prometheus_thread.start()
-    click.echo("Prometheus push thread started")
 
     run_transaction_matching(fixture, import_only=import_only)
 

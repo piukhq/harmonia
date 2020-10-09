@@ -38,6 +38,7 @@ hashids = "*"
 pgpy = "*"
 psycopg2-binary = "*"
 prometheus-client = "*"
+azure-oidc = "*"
 
 [dev-packages]
 pytest = "*"
