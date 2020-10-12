@@ -8,7 +8,6 @@ from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
 from app.utils import missing_property
-from sqlalchemy.orm import Session
 
 
 class AgentExportDataOutput(t.NamedTuple):
@@ -102,7 +101,7 @@ class BaseAgent:
 
         db.run_query(add_transactions, session=session, description="save export transactions")
 
-    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[Session]) -> None:
+    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> None:
         """
         Update (optional) Prometheus metrics
         """

@@ -1,12 +1,14 @@
 import typing as t
 
+from apispec import APISpec
+from apispec_webframeworks.flask import FlaskPlugin
+from apispec.ext.marshmallow import MarshmallowPlugin
 import flask
 import flask_cors
-import settings
-from apispec import APISpec
-from apispec.ext.marshmallow import MarshmallowPlugin
-from apispec_webframeworks.flask import FlaskPlugin
+
 from app.version import __version__
+import settings
+
 
 spec = APISpec(
     title="Transaction Matching API",

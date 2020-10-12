@@ -1,4 +1,5 @@
 import typing as t
+from sqlalchemy.orm import Load, joinedload
 from contextlib import ExitStack
 
 import settings
@@ -6,7 +7,6 @@ from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
 from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
-from sqlalchemy.orm import Load, joinedload
 
 
 class BatchExportAgent(BaseAgent):

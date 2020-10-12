@@ -9,18 +9,18 @@ import time
 
 import click
 import toml
-
 import gnupg
 import pendulum
 import rq
 import soteria.configuration
 import soteria.security
-from app.api import auth
 from flask import Flask
 from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
+
 from app.prometheus import prometheus_thread
+from app.api import auth
 
 
 @contextmanager
@@ -495,6 +495,7 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prom
     run_transaction_matching(fixture, import_only=import_only)
 
     if with_prometheus:
+        click.echo("Sleeping for 60 seconds to allow Prometheus push thread to push all stats")
         time.sleep(60)
 
 

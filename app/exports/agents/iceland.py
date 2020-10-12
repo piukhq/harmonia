@@ -1,21 +1,21 @@
 import inspect
 import json
 import typing as t
-from uuid import uuid4
-
-import pendulum
 import settings
-from app import db, models
+import pendulum
+
+from uuid import uuid4
+from hashids import Hashids
+from soteria.security import get_security_agent
+
+from app import models, db
 from app.config import KEY_PREFIX, ConfigValue
-from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
-from app.reporting import get_logger
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
+from app.encryption import decrypt_credentials
 from harness.exporters.iceland_mock import IcelandMockAPI
-from hashids import Hashids
-from soteria.security import get_security_agent
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
@@ -23,9 +23,6 @@ SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
 hash_ids = Hashids(
     min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
 )
-
-
-logger = get_logger(__name__)
 
 
 class Iceland(BatchExportAgent, SoteriaConfigMixin):
