@@ -179,8 +179,13 @@ class HarveyNichols(FileAgent):
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
+            auth_code=self.process_auth_code(data["auth_code"]),
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},
         )
+
+    def process_auth_code(self, auth_code: str) -> str:
+        auth_code = auth_code.strip()
+        return auth_code[2:] if auth_code.startswith("00") else auth_code
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
