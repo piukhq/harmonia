@@ -7,6 +7,18 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class HarveyNichols(BaseMatchingAgent):
+    def _filter_scheme_transactions_with_time_and_auth_code(self, scheme_transactions: Query) -> Query:
+        scheme_transactions = scheme_transactions.filter(
+            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+        )
+        if self.payment_transaction.auth_code:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
+            )
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=30)
+        return scheme_transactions
+
     def _filter_scheme_transactions_with_time(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
@@ -17,7 +29,7 @@ class HarveyNichols(BaseMatchingAgent):
 
     def _filter_scheme_transactions(self, scheme_transactions: Query) -> Query:
         return {
-            "visa": self._filter_scheme_transactions_with_time,
+            "visa": self._filter_scheme_transactions_with_time_and_auth_code,
             "amex": self._filter_scheme_transactions_with_time,
             "mastercard": self._filter_scheme_transactions_with_time,
             # for end to end testing
