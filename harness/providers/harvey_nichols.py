@@ -33,7 +33,7 @@ class HarveyNichols(BaseImportDataProvider):
                         "store_id": "0001017   005682",
                         "timestamp": transaction["date"].isoformat(),
                         "id": str(uuid4()),
-                        "auth_code": "00000000",
+                        "auth_code": f'00{transaction["auth_code"]}',
                     }
                     for user in fixture["users"]
                     for transaction in user["transactions"]
