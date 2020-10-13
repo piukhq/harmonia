@@ -56,7 +56,7 @@ class HarveyNicholsAPI:
             token = self.token_store.get_new(url, token_path, scheme_account_id, json=credentials_json)
         except UserTokenStore.TokenError:
             token = ""
-        self.log.debug(f"New token has been assigned: {token}")
+        log.debug(f"New token has been assigned: {token}")
 
         return token
 
