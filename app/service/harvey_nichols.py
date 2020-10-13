@@ -42,7 +42,7 @@ class HarveyNicholsAPI:
         return response
 
     def get_new_token(self, credentials, scheme_account_id):
-        url = f"{self.Config.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/SignOn"
+        url = f"{self.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/SignOn"
         token_path = ["CustomerSignOnResult", "token"]
         credentials_json = {
             "CustomerSignOnRequest": {
