@@ -24,9 +24,16 @@ last_four = "7890"
 
 [users.credentials]
 card_number = "loyalty-123"
+merchant_identifier = "88899966"
 
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 1099
 settlement_key = "settlement-123"
 auth_code = "666666"
+
+[[users.transactions]]
+date = 2020-07-02T15:46:00Z
+amount = 1099
+settlement_key = "settlement-123"
+auth_code = "666667"

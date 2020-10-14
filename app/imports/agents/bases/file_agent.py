@@ -4,22 +4,19 @@ import shutil
 import stat
 import time
 import typing as t
-
 from functools import cached_property, partial
 from pathlib import Path
 
 import humanize
 import pendulum
-
-from azure.core.exceptions import HttpResponseError, ResourceExistsError
-from azure.storage.blob import BlobServiceClient
-
 import settings
-
 from app import db, reporting, retry, tasks
 from app.imports.agents import BaseAgent
+from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials
+from azure.core.exceptions import HttpResponseError, ResourceExistsError
+from azure.storage.blob import BlobServiceClient
 
 logging.getLogger("azure").setLevel(logging.CRITICAL)
 
@@ -28,6 +25,7 @@ class FileSourceBase:
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         self.path = path
         self.log = logger
+        self.bink_prometheus = bink_prometheus
 
     def provide(self, callback: t.Callable) -> None:
         raise NotImplementedError(f"{type(self).__name__} does not implement provide()")
@@ -137,12 +135,19 @@ class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
 
 class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
     def __init__(
-        self, credentials: SFTPCredentials, skey: t.Optional[str], path: Path, *, logger: logging.Logger
+        self,
+        credentials: SFTPCredentials,
+        skey: t.Optional[str],
+        path: Path,
+        *,
+        logger: logging.Logger,
+        provider_agent: "FileAgent",
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
+        self.provider_agent = provider_agent
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
@@ -179,8 +184,30 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                             delete_callback=partial(sftp.client.remove, file_attr.filename),
                             logger=self.log,
                         )
+
+                        self._update_metrics(file_attr)
                 else:
                     self.log.debug(f"{file_attr.filename} is a directory. Skipping")
+
+    def _update_metrics(self, file_attr) -> None:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+        provider_slug = getattr(self.provider_agent, "provider_slug", "")
+        self.bink_prometheus.increment_counter(
+            agent=self.provider_agent,
+            counter_name="files_received",
+            increment_by=1,
+            process_type="import",
+            slug=provider_slug,
+        )
+        self.bink_prometheus.update_gauge(
+            agent=self.provider_agent,
+            gauge_name="last_file_timestamp",
+            value=file_attr.st_mtime,
+            process_type="import",
+            slug=provider_slug,
+        )
 
 
 class FileAgent(BaseAgent):

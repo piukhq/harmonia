@@ -5,19 +5,21 @@ from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+import time
 
 import click
+import toml
 import gnupg
 import pendulum
 import rq
 import soteria.configuration
 import soteria.security
-import toml
 from flask import Flask
-from marshmallow import ValidationError, fields, validate, pre_load
+from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
+from app.prometheus import prometheus_thread
 from app.api import auth
 
 
@@ -468,7 +470,8 @@ def do_file_dump(fixture: dict):
 )
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
 @click.option("--import-only", is_flag=True, help="Halt after the import step.")
-def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
+@click.option("--with-prometheus", is_flag=True, help="Run the Prometheus push thread as a daemon")
+def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool):
     fixture = load_fixture(fixture_file)
 
     if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
@@ -484,7 +487,16 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool):
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
 
+    # Start up the Prometheus push thread for pushing metrics
+    if with_prometheus:
+        prometheus_thread.start()
+        click.echo("Prometheus push thread started")
+
     run_transaction_matching(fixture, import_only=import_only)
+
+    if with_prometheus:
+        click.echo("Sleeping for 60 seconds to allow Prometheus push thread to push all stats")
+        time.sleep(60)
 
 
 if __name__ == "__main__":

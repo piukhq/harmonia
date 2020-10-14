@@ -9,6 +9,7 @@ import flask_cors
 from app.version import __version__
 import settings
 
+
 spec = APISpec(
     title="Transaction Matching API",
     version=__version__,

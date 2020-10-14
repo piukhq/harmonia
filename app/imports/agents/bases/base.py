@@ -1,15 +1,16 @@
 import typing as t
-from functools import cached_property, lru_cache
 from collections import defaultdict
+from functools import cached_property, lru_cache
 from uuid import uuid4
 
-import redis.lock
 import pendulum
+import redis.lock
 
 import settings
 from app import db, models, tasks
 from app.feeds import ImportFeedTypes
 from app.imports.exceptions import MissingMID
+from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.utils import missing_property
@@ -90,6 +91,7 @@ class BaseAgent:
 
     def __init__(self) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
+        self.bink_prometheus = bink_prometheus
 
     @property
     def provider_slug(self) -> str:
@@ -264,9 +266,24 @@ class BaseAgent:
 
         if insertions:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+            self._update_metrics(n_insertions=len(insertions))
 
         if queue_transactions:
             tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
+
+    def _update_metrics(self, n_insertions: int) -> None:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+        transaction_type = self.feed_type.name.lower()
+        self.bink_prometheus.increment_counter(
+            agent=self,
+            counter_name="transactions",
+            increment_by=n_insertions,
+            transaction_type=transaction_type,
+            process_type="import",
+            slug=self.provider_slug,
+        )
 
     def _build_queue_transaction(
         self,
