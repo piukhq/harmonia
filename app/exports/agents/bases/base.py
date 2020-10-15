@@ -3,12 +3,11 @@ import typing as t
 from dataclasses import dataclass
 
 import pendulum
-
-from app import models, db
-from app.utils import missing_property
+from app import db, models
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
+from app.utils import missing_property
 
 
 class AgentExportDataOutput(t.NamedTuple):
@@ -51,7 +50,7 @@ class BaseAgent:
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
-        raise NotImplementedError("This method should be overridden by specicialised base agents.")
+        raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
         raise NotImplementedError(
@@ -101,3 +100,9 @@ class BaseAgent:
             session.commit()
 
         db.run_query(add_transactions, session=session, description="save export transactions")
+
+    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> None:
+        """
+        Update (optional) Prometheus metrics
+        """
+        raise NotImplementedError("This method should be overridden by specialised base agents.")

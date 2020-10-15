@@ -3,8 +3,9 @@ import typing as t
 
 import click
 
-from app.registry import Registry, NoSuchAgent, RegistryConfigurationError
 import settings
+from app.prometheus import prometheus_thread
+from app.registry import NoSuchAgent, Registry, RegistryConfigurationError
 
 
 def info(text):
@@ -68,6 +69,9 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         if no_user_input or click.confirm("Do you wish to run this agent?"):
             if not no_user_input:
                 click.echo()
+            # Start up the Prometheus push thread for pushing metrics
+            prometheus_thread.start()
+            click.echo("Prometheus push thread started")
             agent_instance.run()
 
     return cli

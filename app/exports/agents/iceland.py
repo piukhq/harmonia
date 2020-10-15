@@ -21,7 +21,7 @@ PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
 
 hash_ids = Hashids(
-    min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890"
+    min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
 )
 
 
@@ -45,6 +45,12 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             self.api = IcelandMockAPI(self.merchant_config.merchant_url)
         else:
             self.api = IcelandAPI(self.merchant_config.merchant_url)
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["requests_sent", "failed_requests", "transactions"],
+            "histograms": ["request_latency"],
+        }
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -83,7 +89,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         yield AgentExportData(
             outputs=[
                 AgentExportDataOutput(
-                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions})
+                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}),
                 )
             ],
             transactions=transactions,
@@ -98,5 +104,5 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response_timestamp = pendulum.now().to_datetime_string()
 
         atlas.save_transaction(
-            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp
+            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp,
         )

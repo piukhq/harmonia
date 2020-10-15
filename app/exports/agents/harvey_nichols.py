@@ -1,6 +1,5 @@
-import settings
 import pendulum
-
+import settings
 from app import db, models
 from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
@@ -26,6 +25,12 @@ class HarveyNichols(SingularExportAgent):
             self.api = HarveyNicholsMockAPI(self.Config.base_url)
         else:
             self.api = HarveyNicholsAPI(self.Config.base_url)
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["failed_requests", "transactions"],
+            "histograms": ["request_latency"],
+        }
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity
@@ -56,5 +61,5 @@ class HarveyNichols(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         atlas.save_transaction(
-            self.provider_slug, response, body, export_data.transactions, request_timestamp, response_timestamp
+            self.provider_slug, response, body, export_data.transactions, request_timestamp, response_timestamp,
         )

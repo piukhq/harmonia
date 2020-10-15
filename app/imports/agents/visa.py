@@ -1,17 +1,16 @@
 import inspect
 import typing as t
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
 
 import gnupg
 import pendulum
-
+import settings
 from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
-import settings
+from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -165,6 +164,14 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
 
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
+
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
@@ -195,6 +202,14 @@ class VisaAuth(QueueAgent):
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
