@@ -121,7 +121,7 @@ class BinkPrometheus:
         """
         agent_metrics = getattr(agent, "prometheus_metrics", None)
         if agent_metrics:
-            if gauge_name in agent_metrics["counters"]:
+            if gauge_name in agent_metrics["gauges"]:
                 self.metric_types["gauges"][gauge_name].labels(process_type=process_type, slug=slug).set(value)
 
     def use_histogram_context_manager(
