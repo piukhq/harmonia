@@ -47,9 +47,14 @@ class Atlas:
             }
             transaction_sub_set.append(data)
 
+        try:
+            resp_json = response.json()
+        except ValueError:
+            resp_json = {}
+
         body = {
             "scheme_provider": provider_slug,
-            "response": response.json(),
+            "response": resp_json,
             "request": request,
             "status_code": response.status_code,
             "request_timestamp": request_timestamp,
