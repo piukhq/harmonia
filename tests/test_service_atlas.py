@@ -57,3 +57,20 @@ def test_save_transaction(mocked_queue) -> None:
     )
 
     mocked_queue.assert_called
+
+
+@mock.patch("app.service.queue.add", autospec=True)
+def test_save_transaction_empty_response(mocked_queue) -> None:
+    request_timestamp = pendulum.now().to_datetime_string()
+    atlas = Atlas()
+    response = mock.Mock(spec=Response)
+    response.json.side_effect = ValueError
+    response.status_code = 204
+    response_timestamp = pendulum.now().to_datetime_string()
+
+    atlas.save_transaction(
+        "test-slug", response, request_body, [MockMatchedTransaction()], request_timestamp, response_timestamp
+    )
+
+    mocked_queue.assert_called
+    assert mocked_queue.call_args[0][0]["response"] == {}
