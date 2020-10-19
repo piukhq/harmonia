@@ -201,7 +201,7 @@ class VisaAuth(QueueAgent):
 
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.AUTH
+    feed_type = ImportFeedTypes.SETTLED
 
     def __init__(self):
         super().__init__()
