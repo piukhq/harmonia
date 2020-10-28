@@ -39,6 +39,10 @@ pgpy = "*"
 psycopg2-binary = "*"
 prometheus-client = "*"
 azure-oidc = "*"
+pytest-factoryboy = "*"
+mimesis-factory = "*"
+factory-boy = "*"
+mimesis = "*"
 
 [dev-packages]
 pytest = "*"
