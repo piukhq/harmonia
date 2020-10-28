@@ -20,7 +20,7 @@ class Iceland(BaseMatchingAgent):
             )
 
         # apply a 10 second fuzzy match on time
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
 
         return scheme_transactions
 
@@ -29,7 +29,7 @@ class Iceland(BaseMatchingAgent):
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
         return scheme_transactions
 
     def _filter_scheme_transactions(self, scheme_transactions: Query):
