@@ -30,7 +30,8 @@ class ExportTransactionFactory(factory.Factory):
     class Meta:
         model = ExportTransaction
 
-    matched_transaction_id = factory.SubFactory("app.factories.MatchedTransactionFactory")
+    matched_transaction = factory.SubFactory("app.factories.MatchedTransactionFactory")
+    matched_transaction_id = factory.SelfAttribute("matched_transaction.id")
     transaction_id = generic.text.random.randstr(unique=True, length=50)
     provider_slug = generic.text.random.randstr(length=50)
     destination = generic.text.random.randstr(length=500)
@@ -42,7 +43,8 @@ class PendingExportFactory(factory.Factory):
         model = PendingExport
 
     provider_slug = generic.text.random.randstr(length=50)
-    matched_transaction_id = factory.SubFactory("app.factories.MatchedTransactionFactory")
+    matched_transaction = factory.SubFactory("app.factories.MatchedTransactionFactory")
+    matched_transaction_id = factory.SelfAttribute("matched_transaction.id")
 
 
 class FileSequenceNumberFactory(factory.Factory):
