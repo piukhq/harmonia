@@ -1,11 +1,12 @@
+import time
 import json
 import shutil
 import typing as t
 from contextlib import contextmanager
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
-import time
+from uuid import uuid4
+from enum import Enum
 
 import click
 import toml
@@ -35,7 +36,14 @@ with mocked_auth_decorator():
     from app import db, encryption, models, tasks, feeds
     from app.core import key_manager
     from app.exports.agents import BatchExportAgent, export_agents
-    from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
+    from app.imports.agents import (
+        ActiveAPIAgent,
+        BaseAgent,
+        FileAgent,
+        PassiveAPIAgent,
+        QueueAgent,
+        import_agents,
+    )
     from app.registry import NoSuchAgent
     from app.service.hermes import hermes
     from harness.providers.registry import import_data_providers
@@ -253,12 +261,49 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
         models.MerchantIdentifier,
         session=session,
         mid=fixture["mid"],
-        store_id=fixture.get("store_id"),
-        loyalty_scheme=loyalty_scheme,
-        payment_provider=payment_provider,
-        location=fixture["location"],
-        postcode=fixture["postcode"],
+        loyalty_scheme_id=loyalty_scheme.id,
+        payment_provider_id=payment_provider.id,
+        defaults={
+            "store_id": fixture.get("store_id"),
+            "location": fixture["location"],
+            "postcode": fixture["postcode"],
+        },
     )
+
+
+def preload_import_transactions(count: int, *, fixture: dict, session: db.Session):
+    insertions: t.List[t.Dict] = []
+    for _ in range(count):
+        insertions.append(
+            {
+                "transaction_id": str(uuid4()),
+                "provider_slug": fixture["loyalty_scheme"]["slug"],
+                "identified": True,
+                "match_group": str(uuid4()),
+                "source": "end to end test preload",
+                "data": {},
+            }
+        )
+
+    db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+
+
+def preload_data(count: int, *, fixture: dict, session: db.Session, batch_size: int = 10000):
+    batches = count // batch_size
+    remainder = count % batch_size
+
+    click.secho(
+        f"Preloading {count} transactions in batches of {batch_size}", fg="cyan", bold=True,
+    )
+
+    with click.progressbar(length=count, label="import transactions") as bar:
+        for _ in range(batches):
+            preload_import_transactions(batch_size, fixture=fixture, session=session)
+            bar.update(batch_size)
+
+        if remainder > 0:
+            preload_import_transactions(remainder, fixture=fixture, session=session)
+            bar.update(remainder)
 
 
 def patch_hermes_service(fixture: dict):
@@ -470,8 +515,15 @@ def do_file_dump(fixture: dict):
 )
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
 @click.option("--import-only", is_flag=True, help="Halt after the import step.")
-@click.option("--with-prometheus", is_flag=True, help="Run the Prometheus push thread as a daemon")
-def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool):
+@click.option("--with-prometheus", is_flag=True, help="Run the Prometheus push thread as a daemon.")
+@click.option(
+    "--preload",
+    type=int,
+    default=0,
+    help="Load the database with this many transactions before running the test.",
+    show_default=True,
+)
+def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool, preload: int):
     fixture = load_fixture(fixture_file)
 
     if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
@@ -486,6 +538,9 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prom
 
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
+
+        if preload > 0:
+            preload_data(preload, fixture=fixture, session=session)
 
     # Start up the Prometheus push thread for pushing metrics
     if with_prometheus:
