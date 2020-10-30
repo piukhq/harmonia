@@ -1,18 +1,13 @@
-import cProfile
 import pstats
+import cProfile
 import contextlib
-import io
 
 
 @contextlib.contextmanager
-def profiled():
+def profiled(name: str):
     pr = cProfile.Profile()
     pr.enable()
     yield
     pr.disable()
-    s = io.StringIO()
-    ps = pstats.Stats(pr, stream=s).sort_stats("cumulative")
-    ps.print_stats()
-    # uncomment this to see who's calling what
-    # ps.print_callers()
-    print(s.getvalue())
+    stats = pstats.Stats(pr)
+    stats.dump_stats(f"{name}.stats")

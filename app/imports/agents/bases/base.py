@@ -57,10 +57,10 @@ FEED_TYPE_HANDLERS = {
         model=models.SchemeTransaction, import_task=tasks.import_scheme_transactions
     ),
     ImportFeedTypes.AUTH: FeedTypeHandler(
-        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transactions
+        model=models.PaymentTransaction, import_task=tasks.import_auth_payment_transactions,
     ),
     ImportFeedTypes.SETTLED: FeedTypeHandler(
-        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transactions
+        model=models.PaymentTransaction, import_task=tasks.import_settled_payment_transactions,
     ),
 }
 
@@ -80,7 +80,7 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str, *, se
         return q.filter(models.MerchantIdentifier.mid == mid).all()
 
     merchant_identifiers = db.run_query(
-        find_mid, session=session, read_only=True, description=f"find {provider_slug} MID"
+        find_mid, session=session, read_only=True, description=f"find {provider_slug} MID",
     )
     return [mid.id for mid in merchant_identifiers]
 
@@ -126,7 +126,7 @@ class BaseAgent:
 
             def get_data():
                 return (
-                    session.query(models.MerchantIdentifier.store_id, models.MerchantIdentifier.mid)
+                    session.query(models.MerchantIdentifier.store_id, models.MerchantIdentifier.mid,)
                     .join(models.LoyaltyScheme)
                     .filter(models.LoyaltyScheme.slug == self.provider_slug)
                     .filter(models.MerchantIdentifier.store_id.isnot(None))
@@ -134,7 +134,7 @@ class BaseAgent:
                 )
 
             data = db.run_query(
-                get_data, session=session, read_only=True, description=f"find {self.provider_slug} MIDs by store ID"
+                get_data, session=session, read_only=True, description=f"find {self.provider_slug} MIDs by store ID",
             )
 
         storeid_mid_map = defaultdict(list)
@@ -165,8 +165,12 @@ class BaseAgent:
             row[0]
             for row in db.run_query(
                 lambda: session.query(models.ImportTransaction.transaction_id)
+                .distinct()
                 .yield_per(yield_per)
-                .filter(models.ImportTransaction.provider_slug == self.provider_slug),
+                .filter(
+                    models.ImportTransaction.provider_slug == self.provider_slug,
+                    models.ImportTransaction.transaction_id.in_(tids_in_set),
+                ),
                 session=session,
                 read_only=True,
                 description=f"find duplicated {self.provider_slug} import transactions",
