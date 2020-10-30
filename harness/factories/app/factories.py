@@ -1,14 +1,17 @@
 import factory
 from app import models
-from harness.factories.common import generic
+from harness.factories.common import fake, generic, session
+from mimesis_factory import MimesisField
 
 
-class MatchedTransactionFactory(factory.Factory):
+class MatchedTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.MatchedTransaction
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     merchant_identifier_id = factory.SelfAttribute("merchant_identifier.id")
-    merchant_identifier = factory.SubFactory("app.factories.MerchantIdentifierFactory")
+    merchant_identifier = factory.SubFactory("harness.factories.app.factories.MerchantIdentifierFactory")
     transaction_id = generic.text.random.randstr(unique=True, length=100)
     transaction_date = generic.datetime.formatted_datetime(fmt="%Y-%m-%d %H:%M:%S")
     spend_amount = generic.numbers.integer_number(start=1)
@@ -18,51 +21,62 @@ class MatchedTransactionFactory(factory.Factory):
     matching_type = generic.choice(items=[x.value for x in models.MatchingType])
     status = generic.choice(items=[x.value for x in models.MatchedTransactionStatus])
     payment_transaction_id = factory.SelfAttribute("payment_transaction.id")
-    payment_transaction = factory.SubFactory("app.factories.PaymentTransactionFactory")
+    payment_transaction = factory.SubFactory("harness.factories.app.factories.PaymentTransactionFactory")
     scheme_transaction_id = factory.SelfAttribute("scheme_transaction.id")
-    scheme_transaction = factory.SubFactory("app.factories.SchemeTransactionFactory")
+    scheme_transaction = factory.SubFactory("harness.factories.app.factories.SchemeTransactionFactory")
     extra_fields = generic.json_provider.json()
 
-    pending_exports = factory.RelatedFactoryList(
-        "harness.factories.exports.factories.PendingExportFactory", "matched_transaction", size=3
-    )
+    # pending_exports = factory.RelatedFactoryList(
+    #     "harness.factories.exports.factories.PendingExportFactory", "matched_transaction", size=3
+    # )
 
 
-class MerchantIdentifierFactory(factory.Factory):
+class MerchantIdentifierFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.MerchantIdentifier
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     mid = generic.text.random.randstr(length=50)
     store_id = generic.text.random.randstr(length=50)
     loyalty_scheme_id = factory.SelfAttribute("loyalty_scheme.id")
-    loyalty_scheme = factory.SubFactory("app.factories.LoyaltySchemeFactory", merchant_identifiers=[])
+    loyalty_scheme = factory.SubFactory("harness.factories.app.factories.LoyaltySchemeFactory", merchant_identifiers=[])
     payment_provider_id = factory.SelfAttribute("payment_provider.id")
-    payment_provider = factory.SubFactory("app.factories.PaymentProviderFactory", merchant_identifiers=[])
+    payment_provider = factory.SubFactory(
+        "harness.factories.app.factories.PaymentProviderFactory", merchant_identifiers=[]
+    )
     location = generic.text.random.randstr(length=250)
     postcode = generic.address.zip_code()
 
-    matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "merchant_identifier", size=3)
+    # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "merchant_identifier", size=3)
 
 
-class LoyaltySchemeFactory(factory.Factory):
+class LoyaltySchemeFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.LoyaltyScheme
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
-    slug = generic.text.random.randstr(unique=True, length=50)
-    merchant_identifiers = factory.RelatedFactoryList(MerchantIdentifierFactory, "loyalty_scheme", size=3)
+    slug = fake("uuid4")
+
+    # merchant_identifiers = factory.RelatedFactoryList(MerchantIdentifierFactory, "loyalty_scheme", size=3)
 
 
-class PaymentProviderFactory(factory.Factory):
+class PaymentProviderFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.PaymentProvider
 
     slug = generic.text.random.randstr(unique=True, length=50)
-    merchant_identifiers = factory.RelatedFactoryList(MerchantIdentifierFactory, "payment_provider", size=3)
+    slug = fake("uuid4")
+
+    # merchant_identifiers = factory.RelatedFactoryList(MerchantIdentifierFactory, "payment_provider", size=3)
 
 
-class SchemeTransactionFactory(factory.Factory):
+class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.SchemeTransaction
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     merchant_identifier_ids = generic.numbers.random.randints(amount=5, a=1, b=1000000)
     provider_slug = generic.text.random.randstr(length=50)
@@ -78,12 +92,14 @@ class SchemeTransactionFactory(factory.Factory):
     match_group = generic.text.random.randstr(length=36)
     extra_fields = generic.json_provider.json()
 
-    matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "scheme_transaction", size=3)
+    # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "scheme_transaction", size=3)
 
 
-class PaymentTransactionFactory(factory.Factory):
+class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.PaymentTransaction
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     merchant_identifier_ids = generic.numbers.random.randints(amount=5, a=1, b=1000000)
     provider_slug = generic.text.random.randstr(length=50)
@@ -98,16 +114,18 @@ class PaymentTransactionFactory(factory.Factory):
     status = generic.choice(items=[x.value for x in models.TransactionStatus])
     auth_code = generic.text.random.randstr(length=20)
     user_identity_id = factory.SelfAttribute("user_identity.id")
-    user_identity = factory.SubFactory("app.factories.UserIdentityFactory")
+    user_identity = factory.SubFactory("harness.factories.app.factories.UserIdentityFactory")
     match_group = generic.text.random.randstr(length=36)
     extra_fields = generic.json_provider.json()
 
-    matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "payment_transaction", size=3)
+    # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "payment_transaction", size=3)
 
 
-class UserIdentityFactory(factory.Factory):
+class UserIdentityFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.UserIdentity
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     loyalty_id = generic.text.random.randstr(length=250)
     scheme_account_id = generic.numbers.integer_number(start=1)
@@ -116,4 +134,4 @@ class UserIdentityFactory(factory.Factory):
     first_six = generic.random.generate_string("0123456789", length=6)
     last_four = generic.random.generate_string("0123456789", length=4)
 
-    payment_transaction = factory.RelatedFactoryList(PaymentTransactionFactory, "user_identity", size=3)
+    # payment_transaction = factory.RelatedFactoryList(PaymentTransactionFactory, "user_identity", size=3)

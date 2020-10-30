@@ -1,11 +1,13 @@
 import factory
 from app.imports.models import ImportTransaction
-from harness.factories.common import generic
+from harness.factories.common import generic, session
 
 
-class ImportTransactionFactory(factory.Factory):
+class ImportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = ImportTransaction
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = "commit"
 
     transaction_id = generic.text.random.randstr(unique=True, length=50)
     provider_slug = generic.text.random.randstr(length=50)

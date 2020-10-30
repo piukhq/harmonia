@@ -42,6 +42,8 @@ azure-oidc = "*"
 pytest-factoryboy = "*"
 factory-boy = "*"
 mimesis = "*"
+faker = "*"
+mimesis-factory = "*"
 
 [dev-packages]
 pytest = "*"
