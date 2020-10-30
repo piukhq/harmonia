@@ -47,7 +47,7 @@ class MerchantIdentifierFactory(factory.alchemy.SQLAlchemyModelFactory):
     loyalty_scheme = factory.iterator(loyalty_scheme)
     payment_provider = factory.iterator(payment_provider)
     location = fake("pystr", min_chars=10, max_chars=250)
-    postcode = fake("postcode", locale="en-GB")  # TODO: make into UK style postcode (pass locale?)
+    postcode = fake("postcode", locale="en-GB")
 
     # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "merchant_identifier", size=3)
 
@@ -127,13 +127,13 @@ class UserIdentityFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.UserIdentity
         sqlalchemy_session = session
-        sqlalchemy_session_persistence = "commit"
+        sqlalchemy_session_persistence = None
 
-    loyalty_id = generic.text.random.randstr(length=250)
-    scheme_account_id = generic.numbers.integer_number(start=1)
-    user_id = generic.numbers.integer_number(start=1)
-    credentials = generic.cryptographic.token_urlsafe()
-    first_six = generic.random.generate_string("0123456789", length=6)
-    last_four = generic.random.generate_string("0123456789", length=4)
+    loyalty_id = fake("pystr", min_chars=10, max_chars=250)
+    scheme_account_id = fake("random_int", min=1, max=999999, step=1)
+    user_id = fake("random_int", min=1, max=999999, step=1)
+    credentials = fake("uuid4")
+    first_six = fake("pystr_format", string_format="######", letters="0123456789")
+    last_four = fake("pystr_format", string_format="####", letters="0123456789")
 
     # payment_transaction = factory.RelatedFactoryList(PaymentTransactionFactory, "user_identity", size=3)

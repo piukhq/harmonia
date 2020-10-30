@@ -7,6 +7,7 @@ from harness.factories.common import session
 LOYALTY_SCHEME_COUNT = 10
 PAYMENT_PROVIDER_COUNT = 3
 MERCHANT_IDENTIFIER_COUNT = 200
+USER_IDENTITY_COUNT = 8
 
 
 def bulk_load_db():
@@ -17,9 +18,12 @@ def bulk_load_db():
         PAYMENT_PROVIDER_COUNT, slug=factory.Iterator(["visa", "mastercard", "amex"])
     )
     session.commit()
-    # Create 10000 random merchant ids
+    # Create random merchant ids
     app_factories.MerchantIdentifierFactory.create_batch(MERCHANT_IDENTIFIER_COUNT)
     session.commit()
+    app_factories.UserIdentityFactory.create_batch(USER_IDENTITY_COUNT)
+    session.commit()
+
 
 
 def main():
