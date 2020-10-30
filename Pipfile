@@ -39,11 +39,7 @@ pgpy = "*"
 psycopg2-binary = "*"
 prometheus-client = "*"
 azure-oidc = "*"
-pytest-factoryboy = "*"
 factory-boy = "*"
-mimesis = "*"
-faker = "*"
-mimesis-factory = "*"
 
 [dev-packages]
 pytest = "*"
@@ -59,3 +55,5 @@ ptpython = "*"
 isort = {extras = ["pipfile"],version = "*"}
 rope = "*"
 xenon = "*"
+factory-boy = "*"
+mimesis = "*"

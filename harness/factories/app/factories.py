@@ -1,7 +1,6 @@
 import factory
 from app import models
 from harness.factories.common import fake, generic, session
-from mimesis_factory import MimesisField
 
 
 class MatchedTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -35,18 +34,20 @@ class MerchantIdentifierFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.MerchantIdentifier
         sqlalchemy_session = session
-        sqlalchemy_session_persistence = "commit"
+        sqlalchemy_session_persistence = None
 
-    mid = generic.text.random.randstr(length=50)
-    store_id = generic.text.random.randstr(length=50)
-    loyalty_scheme_id = factory.SelfAttribute("loyalty_scheme.id")
-    loyalty_scheme = factory.SubFactory("harness.factories.app.factories.LoyaltySchemeFactory", merchant_identifiers=[])
-    payment_provider_id = factory.SelfAttribute("payment_provider.id")
-    payment_provider = factory.SubFactory(
-        "harness.factories.app.factories.PaymentProviderFactory", merchant_identifiers=[]
-    )
-    location = generic.text.random.randstr(length=250)
-    postcode = generic.address.zip_code()
+    def loyalty_scheme():
+        yield from session.query(models.LoyaltyScheme).all()
+
+    def payment_provider():
+        yield from session.query(models.PaymentProvider).all()
+
+    mid = fake("uuid4")
+    store_id = fake("uuid4")
+    loyalty_scheme = factory.iterator(loyalty_scheme)
+    payment_provider = factory.iterator(payment_provider)
+    location = fake("pystr", min_chars=10, max_chars=250)
+    postcode = fake("postcode", locale="en-GB")  # TODO: make into UK style postcode (pass locale?)
 
     # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "merchant_identifier", size=3)
 
@@ -55,7 +56,7 @@ class LoyaltySchemeFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.LoyaltyScheme
         sqlalchemy_session = session
-        sqlalchemy_session_persistence = "commit"
+        sqlalchemy_session_persistence = None
 
     slug = fake("uuid4")
 
@@ -65,8 +66,9 @@ class LoyaltySchemeFactory(factory.alchemy.SQLAlchemyModelFactory):
 class PaymentProviderFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.PaymentProvider
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = None
 
-    slug = generic.text.random.randstr(unique=True, length=50)
     slug = fake("uuid4")
 
     # merchant_identifiers = factory.RelatedFactoryList(MerchantIdentifierFactory, "payment_provider", size=3)
