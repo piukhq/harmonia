@@ -78,20 +78,20 @@ class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.SchemeTransaction
         sqlalchemy_session = session
-        sqlalchemy_session_persistence = "commit"
+        sqlalchemy_session_persistence = None
 
-    merchant_identifier_ids = generic.numbers.random.randints(amount=5, a=1, b=1000000)
-    provider_slug = generic.text.random.randstr(length=50)
-    payment_provider_slug = generic.text.random.randstr(length=50)
-    transaction_id = generic.text.random.randstr(unique=True, length=50)
-    transaction_date = generic.datetime.formatted_datetime(fmt="%Y-%m-%d %H:%M:%S")
-    has_time = generic.development.boolean()
-    spend_amount = generic.numbers.integer_number(start=1)
-    spend_multiplier = generic.numbers.integer_number(start=1)
-    spend_currency = generic.business.currency_iso_code(allow_random=True)
-    status = generic.choice(items=[x.value for x in models.TransactionStatus])
-    auth_code = generic.text.random.randstr(length=20)
-    match_group = generic.text.random.randstr(length=36)
+    merchant_identifier_ids = fake("pylist", nb_elements=5, variable_nb_elements=False, value_types=int)
+    provider_slug = fake("pystr", min_chars=10, max_chars=50)
+    payment_provider_slug = fake("pystr", min_chars=10, max_chars=50)
+    transaction_id = fake("uuid4")
+    transaction_date = fake("date_time_this_year", before_now=True, after_now=True)
+    has_time = fake("boolean", chance_of_getting_true=50)
+    spend_amount = fake("random_int", min=1, max=999999, step=1)
+    spend_multiplier = fake("random_int", min=1, max=999, step=1)
+    spend_currency = fake("currency_code")
+    status = fake("transaction_status")
+    auth_code = fake("pystr", min_chars=10, max_chars=20)
+    match_group = fake("pystr", min_chars=10, max_chars=36)
     extra_fields = fake("json", num_rows=5)
 
     # matched_transactions = factory.RelatedFactoryList(MatchedTransactionFactory, "scheme_transaction", size=3)
@@ -104,7 +104,6 @@ class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     merchant_identifier_ids = fake("pylist", nb_elements=5, variable_nb_elements=False, value_types=int)
-
     provider_slug = fake("pystr", min_chars=10, max_chars=50)
     transaction_id = fake("uuid4")
     settlement_key = fake("pystr", min_chars=10, max_chars=100)

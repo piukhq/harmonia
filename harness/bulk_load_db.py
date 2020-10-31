@@ -9,6 +9,7 @@ PAYMENT_PROVIDER_COUNT = 3
 MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 8
 PAYMENT_TRANSACTION_COUNT = 1000
+SCHEME_TRANSACTION_COUNT = 1000
 
 
 def bulk_load_db():
@@ -22,9 +23,14 @@ def bulk_load_db():
     # Create random merchant ids
     app_factories.MerchantIdentifierFactory.create_batch(MERCHANT_IDENTIFIER_COUNT)
     session.commit()
+    # Create random users
     app_factories.UserIdentityFactory.create_batch(USER_IDENTITY_COUNT)
     session.commit()
+    # Create payment transactions, linking to our users
     app_factories.PaymentTransactionFactory.create_batch(PAYMENT_TRANSACTION_COUNT)
+    session.commit()
+    # Create random scheme transactions
+    app_factories.SchemeTransactionFactory.create_batch(SCHEME_TRANSACTION_COUNT)
     session.commit()
 
 
