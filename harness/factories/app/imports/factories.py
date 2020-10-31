@@ -1,6 +1,6 @@
 import factory
 from app.imports.models import ImportTransaction
-from harness.factories.common import generic, session
+from harness.factories.common import fake, generic, session
 
 
 class ImportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -14,4 +14,4 @@ class ImportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     identified = generic.development.boolean()
     match_group = generic.text.random.randstr(length=36)
     source = generic.text.random.randstr(length=500)
-    data = generic.json_provider.json()
+    data = fake("json", num_rows=5)

@@ -8,6 +8,7 @@ LOYALTY_SCHEME_COUNT = 10
 PAYMENT_PROVIDER_COUNT = 3
 MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 8
+PAYMENT_TRANSACTION_COUNT = 1000
 
 
 def bulk_load_db():
@@ -23,7 +24,8 @@ def bulk_load_db():
     session.commit()
     app_factories.UserIdentityFactory.create_batch(USER_IDENTITY_COUNT)
     session.commit()
-
+    app_factories.PaymentTransactionFactory.create_batch(PAYMENT_TRANSACTION_COUNT)
+    session.commit()
 
 
 def main():
