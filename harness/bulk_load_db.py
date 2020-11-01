@@ -10,6 +10,7 @@ MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 8
 PAYMENT_TRANSACTION_COUNT = 1000
 SCHEME_TRANSACTION_COUNT = 1000
+MATCHED_TRANSACTION_COUNT = 100
 
 
 def bulk_load_db():
@@ -31,6 +32,9 @@ def bulk_load_db():
     session.commit()
     # Create random scheme transactions
     app_factories.SchemeTransactionFactory.create_batch(SCHEME_TRANSACTION_COUNT)
+    session.commit()
+    # Create random matched transactions
+    app_factories.MatchedTransactionFactory.create_batch(MATCHED_TRANSACTION_COUNT)
     session.commit()
 
 
