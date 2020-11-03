@@ -56,4 +56,3 @@ isort = {extras = ["pipfile"],version = "*"}
 rope = "*"
 xenon = "*"
 factory-boy = "*"
-mimesis = "*"

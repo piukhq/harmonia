@@ -8,9 +8,14 @@ LOYALTY_SCHEME_COUNT = 10
 PAYMENT_PROVIDER_COUNT = 3
 MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 8
-PAYMENT_TRANSACTION_COUNT = 1000
-SCHEME_TRANSACTION_COUNT = 1000
+PAYMENT_TRANSACTION_COUNT = 200
+SCHEME_TRANSACTION_COUNT = 2000
 MATCHED_TRANSACTION_COUNT = 100
+IMPORT_TRANSACTION_COUNT = 2000
+EXPORT_TRANSACTION_COUNT = 10
+PENDING_EXPORT_COUNT = 10
+FILE_SEQUENCE_COUNT = 5
+
 
 
 def bulk_load_db():
@@ -35,6 +40,18 @@ def bulk_load_db():
     session.commit()
     # Create random matched transactions
     app_factories.MatchedTransactionFactory.create_batch(MATCHED_TRANSACTION_COUNT)
+    session.commit()
+    # Create random import transactions
+    imports_factories.ImportTransactionFactory.create_batch(IMPORT_TRANSACTION_COUNT)
+    session.commit()
+    # Create random export transactions
+    exports_factories.ExportTransactionFactory.create_batch(EXPORT_TRANSACTION_COUNT)
+    session.commit()
+    # Create random pending exports
+    exports_factories.PendingExportFactory.create_batch(PENDING_EXPORT_COUNT)
+    session.commit()
+    # Create random file sequence records
+    exports_factories.FileSequenceNumberFactory.create_batch(FILE_SEQUENCE_COUNT)
     session.commit()
 
 

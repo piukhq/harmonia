@@ -4,7 +4,6 @@ import factory
 from app import models
 from app.db import SessionMaker
 from faker.providers import BaseProvider
-from mimesis import Generic
 from sqlalchemy.orm import scoped_session
 
 session = scoped_session(SessionMaker)
@@ -32,4 +31,3 @@ class MatchingTypeProvider(BaseProvider):
 fake.add_provider(TransactionStatusProvider)
 fake.add_provider(MatchedTransactionStatusProvider)
 fake.add_provider(MatchingTypeProvider)
-generic = Generic("en-gb")
