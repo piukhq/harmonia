@@ -26,8 +26,8 @@ class SFTP:
         credentials: SFTPCredentials,
         skey: t.Optional[str] = None,
         path: t.Optional[str] = None,
-        retry_count: int = 5,
-        retry_sleep: float = 0.5,
+        retry_count: int = 50,  # default=5     TEMPORARILY INCREASED! revert ASAP
+        retry_sleep: float = 5,  # default=0.5   TEMPORARILY INCREASED! revert ASAP
     ):
         self.pkey = paramiko.RSAKey.from_private_key(io.StringIO(skey)) if skey else None
         self.credentials = credentials
