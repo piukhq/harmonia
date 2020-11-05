@@ -3,6 +3,7 @@ import typing as t
 from dataclasses import dataclass
 
 import pendulum
+import settings
 from app import db, models
 from app.models import MatchedTransaction
 from app.reporting import get_logger
@@ -76,7 +77,7 @@ class BaseAgent:
                 content = json.dumps(output)
 
             blob_name = f"{blob_name_prefix}{name}"
-            blob_storage_client.create_blob("exports", blob_name, content)
+            blob_storage_client.create_blob(settings.BLOB_EXPORT_CONTAINER, blob_name, content)
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
