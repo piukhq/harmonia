@@ -1,4 +1,5 @@
-from contextlib import ExitStack
+import typing as t
+from contextlib import ExitStack, contextmanager
 
 import settings
 from app import db, models
@@ -67,7 +68,8 @@ class SingularExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self._update_metrics(export_data=export_data, session=session)
+                with self._update_metrics(export_data=export_data, session=session):
+                    self.export(export_data, session=session)
 
             self._save_export_transactions(export_data, session=session)
 
@@ -79,7 +81,8 @@ class SingularExportAgent(BaseAgent):
 
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
-    def _update_metrics(self, export_data: AgentExportData, session: Session) -> None:
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session: Session) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """
@@ -101,7 +104,7 @@ class SingularExportAgent(BaseAgent):
                 slug=self.provider_slug,
             )
             try:
-                self.export(export_data, session=session)
+                yield
             except Exception:
                 self.bink_prometheus.increment_counter(
                     agent=self,

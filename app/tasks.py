@@ -4,7 +4,8 @@ import rq
 
 from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
-
+from app.prometheus import prometheus_push_manager
+import settings
 
 log = reporting.get_logger("tasks")
 
@@ -120,4 +121,7 @@ def export_singular_transaction(pending_export_id: int) -> None:
     director = export_director.ExportDirector()
 
     with db.session_scope() as session:
-        director.handle_pending_export(pending_export_id, session=session)
+        with prometheus_push_manager(
+            prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB
+        ):
+            director.handle_pending_export(pending_export_id, session=session)

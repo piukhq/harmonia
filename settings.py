@@ -131,6 +131,9 @@ HERMES_SLUG_FORMAT_STRING = getenv("TXM_HERMES_SLUG_FORMAT_STRING", required=Fal
 
 # If set, file-based import agents will talk with blob storage instead.
 BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
+BLOB_IMPORT_CONTAINER = getenv("TXM_BLOB_IMPORT_CONTAINER", default="harmonia-imports")
+BLOB_ARCHIVE_CONTAINER = getenv("TXM_BLOB_ARCHIVE_CONTAINER", default="harmonia-archive")
+BLOB_EXPORT_CONTAINER = getenv("TXM_BLOB_EXPORT_CONTAINER", default="harmonia-exports")
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.

@@ -36,6 +36,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         "Visa": PaymentProviderSlug.VISA,
         "Visa Debit": PaymentProviderSlug.VISA,
         "Mastercard": PaymentProviderSlug.MASTERCARD,
+        "Maestro": PaymentProviderSlug.MASTERCARD,
         "Debit Mastercard": PaymentProviderSlug.MASTERCARD,
         "Bink-Payment": "bink-payment",
     }
@@ -87,6 +88,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:
+            if raw_data["Card Type Name"] not in self.payment_provider_map:
+                continue
             yield {k: v for k, v in raw_data.items()}
 
     @staticmethod
