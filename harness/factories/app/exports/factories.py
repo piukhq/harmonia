@@ -24,8 +24,6 @@ class PendingExportFactory(factory.alchemy.SQLAlchemyModelFactory):
 
     provider_slug = fake("pystr", min_chars=5, max_chars=50)
 
-    # matched_transaction = factory.SubFactory("harness.factories.app.factories.MatchedTransactionFactory")
-    # matched_transaction_id = factory.SelfAttribute("matched_transaction.id")
     def matched_transaction():
         yield from session.query(models.MatchedTransaction).all()
 
