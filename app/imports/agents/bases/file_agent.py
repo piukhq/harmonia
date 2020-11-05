@@ -70,14 +70,16 @@ class BlobFileArchiveMixin:
         if not bbs:
             bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
 
-        archive_container = f"archive-{pendulum.today().to_date_string()}"
+        archive_container = settings.BLOB_ARCHIVE_CONTAINER
         try:
             bbs.create_container(archive_container)
         except ResourceExistsError:
             pass  # this is fine
 
         try:
-            bbs.get_blob_client(archive_container, blob_name).upload_blob(blob_content)
+            bbs.get_blob_client(archive_container, f"{pendulum.today().format('YYYY/MM/DD')}/{blob_name}").upload_blob(
+                blob_content
+            )
         except ResourceExistsError:
             logger.warning(f"Failed to archive {blob_name} as this blob already exists in the archive.")
 
@@ -85,7 +87,7 @@ class BlobFileArchiveMixin:
 
 
 class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
-    container_name = "import"
+    container_name = settings.BLOB_IMPORT_CONTAINER
 
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
         super().__init__(path, logger=logger)
