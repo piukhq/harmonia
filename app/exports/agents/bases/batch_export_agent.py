@@ -1,6 +1,6 @@
 import typing as t
 from sqlalchemy.orm import Load, joinedload
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 
 import settings
 from app import db, models
@@ -57,7 +57,8 @@ class BatchExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self._update_metrics(export_data)
+                with self._update_metrics(export_data):
+                    self.export(export_data, session=session)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
@@ -73,7 +74,8 @@ class BatchExportAgent(BaseAgent):
             delete_pending_exports, session=session, description="delete pending exports",
         )
 
-    def _update_metrics(self, export_data: AgentExportData, session=None) -> None:
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session=None) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """
@@ -95,7 +97,7 @@ class BatchExportAgent(BaseAgent):
                 slug=self.provider_slug,
             )
             try:
-                self.export(export_data, session=session)
+                yield
             except Exception:
                 self.bink_prometheus.increment_counter(
                     agent=self,

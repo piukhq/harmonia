@@ -1,6 +1,7 @@
 import json
 import typing as t
 from dataclasses import dataclass
+from contextlib import contextmanager
 
 import pendulum
 import settings
@@ -102,7 +103,8 @@ class BaseAgent:
 
         db.run_query(add_transactions, session=session, description="save export transactions")
 
-    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> None:
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> t.Iterator[None]:
         """
         Update (optional) Prometheus metrics
         """
