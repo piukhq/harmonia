@@ -1,3 +1,5 @@
+import threading
+
 import click
 
 import factory
@@ -39,6 +41,28 @@ def create_primary_records():
     session.commit()
 
 
+class create_scheme_transactions(threading.Thread):
+    def __init__(self, scheme_transaction_count: int):
+        self.scheme_transaction_count = scheme_transaction_count
+        super().__init__()
+
+    def run(self):
+        # Create random scheme transactions
+        app_factories.SchemeTransactionFactory.create_batch(self.scheme_transaction_count)
+        session.commit()
+
+
+class create_import_transactions(threading.Thread):
+    def __init__(self, import_transaction_count: int):
+        self.import_transaction_count = import_transaction_count
+        super().__init__()
+
+    def run(self):
+        # Create random import transactions
+        imports_factories.ImportTransactionFactory.create_batch(self.import_transaction_count)
+        session.commit()
+
+
 def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool):
     # Create our primary records
     if not skip_primary:
@@ -47,20 +71,27 @@ def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, s
     # Create payment transactions, linking to our users
     app_factories.PaymentTransactionFactory.create_batch(PAYMENT_TRANSACTION_COUNT)
     session.commit()
-    # Create random export transactions
-    exports_factories.ExportTransactionFactory.create_batch(EXPORT_TRANSACTION_COUNT)
-    session.commit()
 
-    # Create random scheme transactions
-    app_factories.SchemeTransactionFactory.create_batch(scheme_transaction_count)
-    session.commit()
-    # Create random import transactions
-    imports_factories.ImportTransactionFactory.create_batch(import_transaction_count)
-    session.commit()
+    # These two tables can be asynchronously appended to
+    threads = []
+    create_scheme_transactions_thread = create_scheme_transactions(scheme_transaction_count=scheme_transaction_count)
+    create_import_transactions_thread = create_import_transactions(import_transaction_count=import_transaction_count)
+    # Start new Threads
+    create_scheme_transactions_thread.start()
+    create_import_transactions_thread.start()
+    # Add threads to thread list
+    threads.append(create_scheme_transactions_thread)
+    threads.append(create_import_transactions_thread)
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
 
     # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
     # and payment_transaction rows being in place
     app_factories.MatchedTransactionFactory.create_batch(MATCHED_TRANSACTION_COUNT)
+    session.commit()
+    # Create random export transactions
+    exports_factories.ExportTransactionFactory.create_batch(EXPORT_TRANSACTION_COUNT)
     session.commit()
     # Create random pending exports
     exports_factories.PendingExportFactory.create_batch(PENDING_EXPORT_COUNT)
@@ -68,7 +99,6 @@ def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, s
     # Create random file sequence records
     exports_factories.FileSequenceNumberFactory.create_batch(FILE_SEQUENCE_COUNT)
     session.commit()
-
 
 
 @click.command()
