@@ -36,12 +36,12 @@ class SFTP:
         self.retry_sleep = retry_sleep
 
     def __enter__(self):
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         for retry in range(self.retry_count):
             try:
-                ssh_client.connect(
+                self.ssh_client.connect(
                     hostname=self.credentials.host,
                     port=self.credentials.port,
                     username=self.credentials.username,
@@ -62,7 +62,7 @@ class SFTP:
             else:
                 break
 
-        self.client = ssh_client.open_sftp()
+        self.client = self.ssh_client.open_sftp()
 
         if self.path:
             self.client.chdir(self.path)
@@ -72,3 +72,5 @@ class SFTP:
     def __exit__(self, exc_type, exc_value, traceback):
         if self.client:
             self.client.close()
+        if self.ssh_client:
+            self.ssh_client.close()
