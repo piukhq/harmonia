@@ -40,7 +40,6 @@ psycopg2-binary = "*"
 prometheus-client = "*"
 azure-oidc = "*"
 factory-boy = "*"
-asyncio = "*"
 
 [dev-packages]
 pytest = "*"

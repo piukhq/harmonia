@@ -1,4 +1,5 @@
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import click
 
@@ -20,6 +21,7 @@ IMPORT_TRANSACTION_COUNT = 2000
 EXPORT_TRANSACTION_COUNT = 10
 PENDING_EXPORT_COUNT = 10
 FILE_SEQUENCE_COUNT = 5
+MAX_WORKERS = 4
 
 
 def create_primary_records():
@@ -41,29 +43,29 @@ def create_primary_records():
     session.commit()
 
 
-class create_scheme_transactions(threading.Thread):
-    def __init__(self, scheme_transaction_count: int):
-        self.scheme_transaction_count = scheme_transaction_count
-        super().__init__()
-
-    def run(self):
-        # Create random scheme transactions
-        app_factories.SchemeTransactionFactory.create_batch(self.scheme_transaction_count)
-        session.commit()
-
-
-class create_import_transactions(threading.Thread):
-    def __init__(self, import_transaction_count: int):
-        self.import_transaction_count = import_transaction_count
-        super().__init__()
-
-    def run(self):
-        # Create random import transactions
-        imports_factories.ImportTransactionFactory.create_batch(self.import_transaction_count)
-        session.commit()
+def create_scheme_transactions(scheme_transaction_count: int):
+    # Create random scheme transactions
+    click.secho(
+        f"Creating {scheme_transaction_count} scheme transactions in thread {threading.current_thread()}",
+        fg="cyan",
+        bold=True,
+    )
+    app_factories.SchemeTransactionFactory.create_batch(scheme_transaction_count)
+    session.commit()
 
 
-def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool):
+def create_import_transactions(import_transaction_count: int):
+    # Create random import transactions
+    click.secho(
+        f"Creating {import_transaction_count} import transactions in thread {threading.current_thread()}",
+        fg="cyan",
+        bold=True,
+    )
+    imports_factories.ImportTransactionFactory.create_batch(import_transaction_count)
+    session.commit()
+
+
+def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool, max_workers: int):
     # Create our primary records
     if not skip_primary:
         create_primary_records()
@@ -73,18 +75,16 @@ def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, s
     session.commit()
 
     # These two tables can be asynchronously appended to
-    threads = []
-    create_scheme_transactions_thread = create_scheme_transactions(scheme_transaction_count=scheme_transaction_count)
-    create_import_transactions_thread = create_import_transactions(import_transaction_count=import_transaction_count)
-    # Start new Threads
-    create_scheme_transactions_thread.start()
-    create_import_transactions_thread.start()
-    # Add threads to thread list
-    threads.append(create_scheme_transactions_thread)
-    threads.append(create_import_transactions_thread)
-    # Wait for all threads to complete
-    for t in threads:
-        t.join()
+    create_import_transactions_executor = ThreadPoolExecutor(max_workers=max_workers)
+    max_create_import_transaction_count = int(import_transaction_count / max_workers)
+    create_import_transaction_counts = [max_create_import_transaction_count for x in range(max_workers)]
+    create_import_transactions_executor.map(create_import_transactions, create_import_transaction_counts)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as create_scheme_transactions_executor:
+        # create_scheme_transactions_executor = ThreadPoolExecutor(max_workers=max_workers)
+        max_create_scheme_transaction_count = int(scheme_transaction_count / max_workers)
+        create_scheme_transaction_counts = [max_create_scheme_transaction_count for x in range(max_workers)]
+        create_scheme_transactions_executor.map(create_scheme_transactions, create_scheme_transaction_counts)
 
     # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
     # and payment_transaction rows being in place
@@ -111,12 +111,14 @@ def bulk_load_db(scheme_transaction_count: int, import_transaction_count: int, s
 @click.option(
     "--skip-primary", is_flag=True, help="Skip creation of base table records", show_default=True, default=False
 )
-def main(scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool):
+@click.option("--max-workers", type=click.INT, default=MAX_WORKERS, show_default=True, required=False)
+def main(scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool, max_workers: int):
 
     bulk_load_db(
         scheme_transaction_count=scheme_transaction_count,
         import_transaction_count=import_transaction_count,
         skip_primary=skip_primary,
+        max_workers=max_workers,
     )
 
 
