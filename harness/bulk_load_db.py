@@ -46,36 +46,25 @@ def create_primary_records():
 
 def create_scheme_transactions(scheme_transaction_count: int, max_threads: int):
     # Create random scheme transactions
-    def run_thread(transaction_count):
-        click.secho(
-            f"Creating {transaction_count} scheme transactions in thread {threading.current_thread()}",
-            fg="cyan",
-            bold=True,
-        )
-        app_factories.SchemeTransactionFactory.create_batch(transaction_count)
-        session.commit()
-
-    thread_executor = ThreadPoolExecutor(max_workers=max_threads)
-    transactions_per_thread = int(scheme_transaction_count / max_threads)
-    transaction_counts = [transactions_per_thread for x in range(max_threads)]
-    thread_executor.map(run_thread, transaction_counts)
+    click.secho(
+        f"Creating {scheme_transaction_count} scheme transactions in thread {threading.current_thread()}",
+        fg="cyan",
+        bold=True,
+    )
+    # TODO: split scheme transaction count up for the number of threads (add that param)
+    app_factories.SchemeTransactionFactory.create_batch(scheme_transaction_count)
+    session.commit()
 
 
 def create_import_transactions(import_transaction_count: int, max_threads: int):
     # Create random import transactions
-    def run_thread(transaction_count):
-        click.secho(
-            f"Creating {transaction_count} import transactions in thread {threading.current_thread()}",
-            fg="cyan",
-            bold=True,
-        )
-        imports_factories.ImportTransactionFactory.create_batch(transaction_count)
-        session.commit()
-
-    thread_executor = ThreadPoolExecutor(max_workers=max_threads)
-    transactions_per_thread = int(import_transaction_count / max_threads)
-    transaction_counts = [transactions_per_thread for x in range(max_threads)]
-    thread_executor.map(run_thread, transaction_counts)
+    click.secho(
+        f"Creating {import_transaction_count} import transactions in thread {threading.current_thread()}",
+        fg="cyan",
+        bold=True,
+    )
+    imports_factories.ImportTransactionFactory.create_batch(import_transaction_count)
+    session.commit()
 
 
 def bulk_load_db(
@@ -96,6 +85,7 @@ def bulk_load_db(
     # These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
     # appended to. import_transactions is a standalone table and data can just be pushed into it
     # i.e. it has no foreign keys in other tables
+    # TODO: max threads as params to the functions, copy below process code to thread code in those funcs
     create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
     import_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
