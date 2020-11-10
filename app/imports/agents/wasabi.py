@@ -35,9 +35,12 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         "American Express": PaymentProviderSlug.AMEX,
         "Visa": PaymentProviderSlug.VISA,
         "Visa Debit": PaymentProviderSlug.VISA,
+        "Visa (Purchasing Card)": PaymentProviderSlug.VISA,
+        "Visa (Enhanced Management Info": PaymentProviderSlug.VISA,
         "Mastercard": PaymentProviderSlug.MASTERCARD,
         "Maestro": PaymentProviderSlug.MASTERCARD,
         "Debit Mastercard": PaymentProviderSlug.MASTERCARD,
+        "Compliments Card": PaymentProviderSlug.MASTERCARD,
         "Bink-Payment": "bink-payment",
     }
 
