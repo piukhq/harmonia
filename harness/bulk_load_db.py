@@ -1,5 +1,4 @@
-import threading
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 import click
 
@@ -21,7 +20,6 @@ IMPORT_TRANSACTION_COUNT = 2000
 EXPORT_TRANSACTION_COUNT = 10
 PENDING_EXPORT_COUNT = 10
 FILE_SEQUENCE_COUNT = 5
-MAX_THREADS = 4
 MAX_PROCESSES = 4
 
 
@@ -44,35 +42,26 @@ def create_primary_records():
     session.commit()
 
 
-def create_scheme_transactions(scheme_transaction_count: int, max_threads: int):
+def create_scheme_transactions(scheme_transaction_count: int):
     # Create random scheme transactions
     click.secho(
-        f"Creating {scheme_transaction_count} scheme transactions in thread {threading.current_thread()}",
-        fg="cyan",
-        bold=True,
+        f"Creating {scheme_transaction_count} scheme transactions", fg="cyan", bold=True,
     )
-    # TODO: split scheme transaction count up for the number of threads (add that param)
     app_factories.SchemeTransactionFactory.create_batch(scheme_transaction_count)
     session.commit()
 
 
-def create_import_transactions(import_transaction_count: int, max_threads: int):
+def create_import_transactions(import_transaction_count: int):
     # Create random import transactions
     click.secho(
-        f"Creating {import_transaction_count} import transactions in thread {threading.current_thread()}",
-        fg="cyan",
-        bold=True,
+        f"Creating {import_transaction_count} import transactions", fg="cyan", bold=True,
     )
     imports_factories.ImportTransactionFactory.create_batch(import_transaction_count)
     session.commit()
 
 
 def bulk_load_db(
-    scheme_transaction_count: int,
-    import_transaction_count: int,
-    skip_primary: bool,
-    max_processes: int,
-    max_threads: int,
+    scheme_transaction_count: int, import_transaction_count: int, skip_primary: bool, max_processes: int,
 ):
     # Create our primary records
     if not skip_primary:
@@ -85,27 +74,20 @@ def bulk_load_db(
     # These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
     # appended to. import_transactions is a standalone table and data can just be pushed into it
     # i.e. it has no foreign keys in other tables
-    # TODO: max threads as params to the functions, copy below process code to thread code in those funcs
     create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
     import_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
-    # Create the params for the task
+    # Create the param for the task
     import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
-    max_import_transaction_threads = [max_threads for x in range(import_transactions_max_processes)]
-    create_import_transactions_executor.map(
-        create_import_transactions, import_transaction_counts, max_import_transaction_threads
-    )
+    create_import_transactions_executor.map(create_import_transactions, import_transaction_counts)
     # scheme_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
     with ProcessPoolExecutor(max_workers=max_processes) as create_scheme_transactions_executor:
         scheme_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
         scheme_transactions_per_process = int(scheme_transaction_count / scheme_transactions_max_processes)
-        # Create the params for the task
+        # Create the param for the task
         scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
-        max_scheme_transaction_threads = [max_threads for x in range(scheme_transactions_max_processes)]
-        create_scheme_transactions_executor.map(
-            create_scheme_transactions, scheme_transaction_counts, max_scheme_transaction_threads
-        )
+        create_scheme_transactions_executor.map(create_scheme_transactions, scheme_transaction_counts)
 
     # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
     # and payment_transaction rows being in place
@@ -133,13 +115,11 @@ def bulk_load_db(
     "--skip-primary", is_flag=True, help="Skip creation of base table records", show_default=True, default=False
 )
 @click.option("--max-processes", type=click.INT, default=MAX_PROCESSES, show_default=True, required=False)
-@click.option("--max-threads", type=click.INT, default=MAX_THREADS, show_default=True, required=False)
 def main(
     scheme_transaction_count: int,
     import_transaction_count: int,
     skip_primary: bool,
     max_processes: int,
-    max_threads: int,
 ):
 
     bulk_load_db(
@@ -147,7 +127,6 @@ def main(
         import_transaction_count=import_transaction_count,
         skip_primary=skip_primary,
         max_processes=max_processes,
-        max_threads=max_threads,
     )
 
 
