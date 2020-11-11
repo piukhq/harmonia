@@ -1,6 +1,6 @@
 import factory
 from app import models
-from harness.factories.common import fake, session
+from harness.factories.common import fake, generic, session
 
 
 class MatchedTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -61,7 +61,7 @@ class LoyaltySchemeFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    slug = fake("uuid4")
+    slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
 
 
 class PaymentProviderFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -70,7 +70,7 @@ class PaymentProviderFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    slug = fake("uuid4")
+    slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
 
 
 class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -79,19 +79,19 @@ class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    merchant_identifier_ids = fake("pylist", nb_elements=5, variable_nb_elements=False, value_types=int)
-    provider_slug = fake("pystr", min_chars=10, max_chars=50)
-    payment_provider_slug = fake("pystr", min_chars=10, max_chars=50)
-    transaction_id = fake("uuid4")
-    transaction_date = fake("date_time_this_year", before_now=True, after_now=True)
-    has_time = fake("boolean", chance_of_getting_true=50)
-    spend_amount = fake("random_int", min=1, max=999999, step=1)
-    spend_multiplier = fake("random_int", min=1, max=999, step=1)
-    spend_currency = fake("currency_code")
-    status = fake("transaction_status")
-    auth_code = fake("pystr", min_chars=10, max_chars=20)
-    match_group = fake("pystr", min_chars=10, max_chars=36)
-    extra_fields = fake("json", num_rows=5)
+    merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numbers.random.randints(amount=5, a=1, b=1000000))
+    provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    payment_provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
+    transaction_date = factory.LazyAttribute(lambda o: generic.datetime.formatted_datetime(fmt="%Y-%m-%d %H:%M:%S"))
+    has_time = factory.LazyAttribute(lambda o: generic.development.boolean())
+    spend_amount = factory.LazyAttribute(lambda o: generic.numbers.integer_number(start=1))
+    spend_multiplier = factory.LazyAttribute(lambda o: generic.numbers.integer_number(start=1))
+    spend_currency = factory.LazyAttribute(lambda o: generic.business.currency_iso_code(allow_random=True))
+    status = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in models.TransactionStatus]))
+    auth_code = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=20))
+    match_group = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=36))
+    extra_fields = factory.LazyAttribute(lambda o: generic.json_provider.json())
 
 
 class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):

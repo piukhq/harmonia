@@ -75,7 +75,7 @@ def create_import_transactions(import_transaction_count: int, batchsize: int):
     chunks = get_batch_chunks(import_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
-            f"Creating chunk of {chunk} scheme transactions", fg="cyan", bold=True,
+            f"Creating chunk of {chunk} import transactions", fg="cyan", bold=True,
         )
         imports_factories.ImportTransactionFactory.create_batch(chunk)
         session.commit()
@@ -88,8 +88,8 @@ def bulk_load_db(
     max_processes: int,
     batchsize: int,
 ):
-    # Create our primary records
     if not transactions_only:
+        # Create our primary records
         create_primary_records()
 
         # Create payment transactions, linking to our users in the primary table
