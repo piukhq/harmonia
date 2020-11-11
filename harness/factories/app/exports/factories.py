@@ -1,7 +1,7 @@
 import factory
 from app import models
 from app.exports.models import ExportTransaction, FileSequenceNumber, PendingExport
-from harness.factories.common import fake, session
+from harness.factories.common import generic, session
 
 
 class ExportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -10,10 +10,10 @@ class ExportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    transaction_id = fake("uuid4")
-    provider_slug = fake("pystr", min_chars=5, max_chars=50)
-    destination = fake("pystr", min_chars=10, max_chars=500)
-    data = fake("json", num_rows=5)
+    transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
+    provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    destination = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=500))
+    data = factory.LazyAttribute(lambda o: generic.json_provider.json())
 
 
 class PendingExportFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -22,11 +22,10 @@ class PendingExportFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    provider_slug = fake("pystr", min_chars=5, max_chars=50)
-
     def matched_transaction():
         yield from session.query(models.MatchedTransaction).all()
 
+    provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     matched_transaction = factory.iterator(matched_transaction)
 
 
@@ -36,5 +35,5 @@ class FileSequenceNumberFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session = session
         sqlalchemy_session_persistence = None
 
-    provider_slug = fake("pystr", min_chars=5, max_chars=50)
-    next_value = fake("random_int", min=1, max=999999, step=1)
+    provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    next_value = factory.LazyAttribute(lambda o: generic.numbers.integer_number(start=1))
