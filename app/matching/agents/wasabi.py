@@ -7,36 +7,45 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class Wasabi(BaseMatchingAgent):
-    def _filter_scheme_transactions_with_auth_code(self, scheme_transactions: Query) -> Query:
-        scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
-            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-        )
-
-        # auth code is an optional field that we use if we have it
+    def _filter_auth_code(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
         if self.payment_transaction.auth_code:
             scheme_transactions = scheme_transactions.filter(
                 models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
             )
 
-        # apply a 10 second fuzzy match on time
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        return scheme_transactions
+        if multiple_returned:
+            match = self._fallback_filters(scheme_transactions)
 
-    def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
+        return match
+
+    def _filter_no_auth_code(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
+        match, multiple_returned = self._check_for_match(scheme_transactions)
+
+        if multiple_returned:
+            match = self._fallback_filters(scheme_transactions)
+
+        return match
+
+    def _fallback_filters(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60 * 3)
+        match, multiple_returned = self._check_for_match(scheme_transactions)
+
+        if multiple_returned:
+            match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
+
+        return match
+
+    def _filter_scheme_transactions(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
-        return scheme_transactions
-
-    def _filter_scheme_transactions(self, scheme_transactions: Query):
         return {
-            "visa": self._filter_scheme_transactions_with_auth_code,
-            "amex": self._filter_scheme_transactions_with_auth_code,
-            "mastercard": self._filter_scheme_transactions_mastercard,
+            "visa": self._filter_auth_code,
+            "amex": self._filter_no_auth_code,
+            "mastercard": self._filter_no_auth_code,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
     def _filter_by_card_number(
@@ -55,11 +64,7 @@ class Wasabi(BaseMatchingAgent):
         return matched_transactions
 
     def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
-        scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
-        match, multiple_returned = self._check_for_match(scheme_transactions)
-
-        if multiple_returned:
-            match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
+        match = self._filter_scheme_transactions(scheme_transactions)
 
         if not match:
             self.log.warning(
