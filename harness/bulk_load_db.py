@@ -2,7 +2,6 @@ from concurrent.futures import ProcessPoolExecutor
 
 import click
 
-import factory
 from harness.factories.app import factories as app_factories
 from harness.factories.app.exports import factories as exports_factories
 from harness.factories.app.imports import factories as imports_factories
@@ -10,7 +9,7 @@ from harness.factories.common import session
 
 # Define some reasonable defaults
 LOYALTY_SCHEME_COUNT = 10
-PAYMENT_PROVIDER_COUNT = 3
+PAYMENT_PROVIDER_COUNT = 4
 MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 8
 PAYMENT_TRANSACTION_COUNT = 200
@@ -21,20 +20,18 @@ EXPORT_TRANSACTION_COUNT = 10
 PENDING_EXPORT_COUNT = 10
 FILE_SEQUENCE_COUNT = 5
 MAX_PROCESSES = 4
-BATCHSIZE = 1000
+BATCHSIZE = 2000
 
 
-def create_primary_records():
+def create_primary_records(loyalty_scheme_count: int):
     """
     Create records in the 'base' tables i.e the records that are foreign keys in other tables, and which
     need to be in place to be looked up during fake record creation in those 'many' side tables
     """
     # Create 10 random loyalty schemes
-    app_factories.LoyaltySchemeFactory.create_batch(LOYALTY_SCHEME_COUNT)
+    app_factories.LoyaltySchemeFactory.create_batch(loyalty_scheme_count)
     # Create our payment providers
-    app_factories.PaymentProviderFactory.create_batch(
-        PAYMENT_PROVIDER_COUNT, slug=factory.Iterator(["visa", "mastercard", "amex"])
-    )
+    app_factories.PaymentProviderFactory.create_batch(PAYMENT_PROVIDER_COUNT)
     # Create random merchant ids
     app_factories.MerchantIdentifierFactory.create_batch(MERCHANT_IDENTIFIER_COUNT)
     # Create random users
@@ -81,24 +78,12 @@ def create_import_transactions(import_transaction_count: int, batchsize: int):
         session.commit()
 
 
-def bulk_load_db(
-    scheme_transaction_count: int,
-    import_transaction_count: int,
-    transactions_only: bool,
-    max_processes: int,
-    batchsize: int,
-):
-    if not transactions_only:
-        # Create our primary records
-        create_primary_records()
-
-        # Create payment transactions, linking to our users in the primary table
-        app_factories.PaymentTransactionFactory.create_batch(PAYMENT_TRANSACTION_COUNT)
-        session.commit()
-
-    # These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
-    # appended to. import_transactions is a standalone table and data can just be pushed into it
-    # i.e. it has no foreign keys in other tables
+def do_async_tables(scheme_transaction_count: int, import_transaction_count: int, max_processes: int, batchsize: int):
+    """
+    These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
+    appended to. import_transactions is a standalone table and data can just be pushed into it
+    i.e. it has no foreign keys in other tables
+    """
     create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
     import_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
@@ -120,6 +105,35 @@ def bulk_load_db(
             create_scheme_transactions, scheme_transaction_counts, scheme_transaction_batchsizes
         )
 
+
+def bulk_load_db(
+    scheme_transaction_count: int,
+    import_transaction_count: int,
+    loyalty_scheme_count: int,
+    payment_transaction_count: int,
+    transactions_only: bool,
+    max_processes: int,
+    batchsize: int,
+):
+    """
+    Main loading function
+    """
+    if not transactions_only:
+        # Create our primary records
+        create_primary_records(loyalty_scheme_count)
+
+        # Create payment transactions, linking to our users in the primary table
+        app_factories.PaymentTransactionFactory.create_batch(payment_transaction_count)
+        session.commit()
+
+    # Do the big transaction tables
+    do_async_tables(
+        scheme_transaction_count=scheme_transaction_count,
+        import_transaction_count=import_transaction_count,
+        max_processes=max_processes,
+        batchsize=batchsize,
+    )
+
     # The remaining tables
     if not transactions_only:
         # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
@@ -139,10 +153,36 @@ def bulk_load_db(
 
 @click.command()
 @click.option(
-    "--scheme-transaction-count", type=click.INT, default=SCHEME_TRANSACTION_COUNT, show_default=True, required=False
+    "--scheme-transaction-count",
+    type=click.INT,
+    default=SCHEME_TRANSACTION_COUNT,
+    show_default=True,
+    required=False,
+    help="Num records for scheme_transaction table",
 )
 @click.option(
-    "--import-transaction-count", type=click.INT, default=IMPORT_TRANSACTION_COUNT, show_default=True, required=False
+    "--import-transaction-count",
+    type=click.INT,
+    default=IMPORT_TRANSACTION_COUNT,
+    show_default=True,
+    required=False,
+    help="Num records for import_transaction table",
+)
+@click.option(
+    "--loyalty-scheme-count",
+    type=click.INT,
+    default=LOYALTY_SCHEME_COUNT,
+    show_default=True,
+    required=False,
+    help="Num records for loyalty_scheme table",
+)
+@click.option(
+    "--payment-transaction-count",
+    type=click.INT,
+    default=PAYMENT_TRANSACTION_COUNT,
+    show_default=True,
+    required=False,
+    help="Num records for payment_transaction table",
 )
 @click.option(
     "--transactions-only",
@@ -151,11 +191,27 @@ def bulk_load_db(
     show_default=True,
     default=False,
 )
-@click.option("--max-processes", type=click.INT, default=MAX_PROCESSES, show_default=True, required=False)
-@click.option("--batchsize", type=click.INT, default=BATCHSIZE, show_default=True, required=False)
+@click.option(
+    "--max-processes",
+    type=click.INT,
+    default=MAX_PROCESSES,
+    show_default=True,
+    required=False,
+    help="Total number of processes to spawn",
+)
+@click.option(
+    "--batchsize",
+    type=click.INT,
+    default=BATCHSIZE,
+    show_default=True,
+    required=False,
+    help="For large tables, num of records to create between commits (recommended: 2000)",
+)
 def main(
     scheme_transaction_count: int,
     import_transaction_count: int,
+    loyalty_scheme_count: int,
+    payment_transaction_count: int,
     transactions_only: bool,
     max_processes: int,
     batchsize: int,
@@ -164,6 +220,8 @@ def main(
     bulk_load_db(
         scheme_transaction_count=scheme_transaction_count,
         import_transaction_count=import_transaction_count,
+        loyalty_scheme_count=loyalty_scheme_count,
+        payment_transaction_count=payment_transaction_count,
         transactions_only=transactions_only,
         max_processes=max_processes,
         batchsize=batchsize,
