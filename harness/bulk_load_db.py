@@ -81,9 +81,10 @@ def create_import_transactions(import_transaction_count: int, batchsize: int):
 def do_async_tables(scheme_transaction_count: int, import_transaction_count: int, max_processes: int, batchsize: int):
     """
     These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
-    appended to. import_transactions is a standalone table and data can just be pushed into it
-    i.e. it has no foreign keys in other tables
+    appended to.
     """
+    #  import_transactions is a standalone table and data can just be pushed into it
+    #  i.e. it has no foreign keys in other tables
     create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
     import_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
