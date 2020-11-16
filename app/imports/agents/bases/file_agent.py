@@ -181,7 +181,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                             )
                     else:
                         self.archive(
-                            file_attr.filename,
+                            f"{self.provider_agent.provider_slug}/{file_attr.filename}",
                             data,
                             delete_callback=partial(sftp.client.remove, file_attr.filename),
                             logger=self.log,
