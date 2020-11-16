@@ -212,11 +212,12 @@ def prometheus_push_manager(prometheus_push_gateway: str, prometheus_job: str):
     try:
         yield
     finally:
-        push_to_gateway(
-            gateway=prometheus_push_gateway,
-            job=prometheus_job,
-            registry=REGISTRY,
-            grouping_key=grouping_key,
-            timeout=push_timeout,
-        )
-        logger.info(f"Pushed metrics to gateway: job:{prometheus_job}, gk:{grouping_key}")
+        if settings.PUSH_PROMETHEUS_METRICS:
+            push_to_gateway(
+                gateway=prometheus_push_gateway,
+                job=prometheus_job,
+                registry=REGISTRY,
+                grouping_key=grouping_key,
+                timeout=push_timeout,
+            )
+            logger.info(f"Pushed metrics to gateway: job:{prometheus_job}, gk:{grouping_key}")
