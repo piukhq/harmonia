@@ -3,7 +3,7 @@ import threading
 import time
 import typing as t
 import urllib.error
-from contextlib import ExitStack
+from contextlib import contextmanager, ExitStack
 
 import settings
 from app.reporting import get_logger
@@ -201,3 +201,23 @@ def get_prometheus_thread():
 
 # Singleton thread
 prometheus_thread = get_prometheus_thread()
+
+
+@contextmanager
+def prometheus_push_manager(prometheus_push_gateway: str, prometheus_job: str):
+    push_timeout = 3  # PushGateway should be running in the same pod
+    grouping_key = {"pid": str(os.getpid())}
+    logger.debug("Prometheus push manager started")
+
+    try:
+        yield
+    finally:
+        if settings.PUSH_PROMETHEUS_METRICS:
+            push_to_gateway(
+                gateway=prometheus_push_gateway,
+                job=prometheus_job,
+                registry=REGISTRY,
+                grouping_key=grouping_key,
+                timeout=push_timeout,
+            )
+            logger.info(f"Pushed metrics to gateway: job:{prometheus_job}, gk:{grouping_key}")
