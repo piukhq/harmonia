@@ -14,11 +14,18 @@ class JSONProvider(mimesis_baseprovider):
     @staticmethod
     def json():
         """
-        Generate some random JSON, we don't care what's in it
+        Generate JSON, we don't care what's in it and it doesn't have to be unique
         """
-        data = {}
-        for _ in range(5):
-            data.update({generic.text.random.randstr(unique=True, length=10): generic.text.random.randstr(length=50)})
+        data = {
+            "offer_id": "0",
+            "TransactionCardFirst6": "370003",
+            "TransactionCardLast4": "0005",
+            "TransactionCardExpiry": "01/80",
+            "TransactionCardSchemeId": 1,
+            "TransactionCardScheme": "Amex",
+            "TransactionCashbackValue": {"__type__": "decimal.Decimal", "repr": "0.00"},
+            "TransactionCashbackUnit": "GBP",
+        }
 
         return json.dumps(data)
 
