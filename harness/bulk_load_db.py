@@ -7,7 +7,7 @@ import factory
 from harness.factories.app import factories as app_factories
 from harness.factories.app.exports import factories as exports_factories
 from harness.factories.app.imports import factories as imports_factories
-from harness.factories.common import session
+from harness.factories.common import generic, session
 
 # Define some reasonable defaults
 LOYALTY_SCHEME_COUNT = 10
@@ -58,12 +58,20 @@ def get_batch_chunks(transaction_count, batchsize):
         transaction_count -= batchsize
 
 
-def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, factory_kwargs: t.Dict):
+def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random scheme transactions
     click.secho(
         f"Creating {scheme_transaction_count} scheme transactions", fg="cyan", bold=True,
     )
     # create batches in chunks of batchsize records, then commit
+    factory_kwargs = {}
+    if scheme_slug:
+        factory_kwargs = {
+            "provider_slug": scheme_slug,
+            "transaction_date": factory.LazyAttribute(
+                lambda o: generic.transaction_date_provider.transaction_date(days=7)
+            ),
+        }
     chunks = get_batch_chunks(scheme_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
@@ -73,11 +81,16 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, fa
         session.commit()
 
 
-def create_import_transactions(import_transaction_count: int, batchsize: int, factory_kwargs: t.Dict):
+def create_import_transactions(import_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random import transactions
     click.secho(
         f"Creating {import_transaction_count} import transactions", fg="cyan", bold=True,
     )
+    factory_kwargs = {}
+    if scheme_slug:
+        factory_kwargs = {
+            "provider_slug": scheme_slug,
+        }
     chunks = get_batch_chunks(import_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
@@ -92,7 +105,7 @@ def do_async_tables(
     import_transaction_count: int,
     max_processes: int,
     batchsize: int,
-    factory_kwargs: t.Dict,
+    scheme_slug: t.Optional[str] = None,
 ):
     """
     These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
@@ -106,12 +119,12 @@ def do_async_tables(
     # Create the params for the task
     import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
     import_transaction_batchsizes = [batchsize for x in range(len(import_transaction_counts))]
-    import_transaction_factory_kwargs = [factory_kwargs for x in range(len(import_transaction_counts))]
+    import_transaction_scheme_slugs = [scheme_slug for x in range(len(import_transaction_counts))]
     create_import_transactions_executor.map(
         create_import_transactions,
         import_transaction_counts,
         import_transaction_batchsizes,
-        import_transaction_factory_kwargs,
+        import_transaction_scheme_slugs,
     )
     # scheme_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
@@ -121,12 +134,12 @@ def do_async_tables(
         # Create the params for the task
         scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
         scheme_transaction_batchsizes = [batchsize for x in range(len(scheme_transaction_counts))]
-        scheme_transaction_factory_kwargs = [factory_kwargs for x in range(len(scheme_transaction_counts))]
+        scheme_transaction_scheme_slugs = [scheme_slug for x in range(len(scheme_transaction_counts))]
         create_scheme_transactions_executor.map(
             create_scheme_transactions,
             scheme_transaction_counts,
             scheme_transaction_batchsizes,
-            scheme_transaction_factory_kwargs,
+            scheme_transaction_scheme_slugs,
         )
 
 
@@ -143,9 +156,6 @@ def bulk_load_db(
     """
     Main loading function
     """
-    factory_kwargs = {}  # params for the factories i.e. factory field overrides
-    if scheme_slug:
-        factory_kwargs = {"provider_slug": scheme_slug}
 
     # First thing, as some of the following tables rely on this one, create loyalty_scheme record/s
     create_loyalty_scheme(loyalty_scheme_count, scheme_slug)
@@ -156,7 +166,15 @@ def bulk_load_db(
         create_base_records()
 
     # Create payment transactions, linking to our users in the base table
-    app_factories.PaymentTransactionFactory.create_batch(payment_transaction_count, **factory_kwargs)
+    payment_factory_kwargs = {}
+    if scheme_slug:
+        payment_factory_kwargs = {
+            "provider_slug": scheme_slug,
+            "transaction_date": factory.LazyAttribute(
+                lambda o: generic.transaction_date_provider.transaction_date(days=7)
+            ),
+        }
+    app_factories.PaymentTransactionFactory.create_batch(payment_transaction_count, **payment_factory_kwargs)
     session.commit()
 
     # Do the big transaction tables
@@ -165,14 +183,30 @@ def bulk_load_db(
         import_transaction_count=import_transaction_count,
         max_processes=max_processes,
         batchsize=batchsize,
-        factory_kwargs=factory_kwargs,
+        scheme_slug=scheme_slug,
     )
 
     # Do the remaining tables
     # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
     # and payment_transaction rows being in place
-    app_factories.MatchedTransactionFactory.create_batch(MATCHED_TRANSACTION_COUNT)
+    matched_transaction_factory_kwargs = {}
+    if scheme_slug:
+        matched_transaction_factory_kwargs = {
+            "transaction_date": factory.LazyAttribute(
+                lambda o: generic.transaction_date_provider.transaction_date(days=7)
+            ),
+        }
+    app_factories.MatchedTransactionFactory.create_batch(
+        MATCHED_TRANSACTION_COUNT, **matched_transaction_factory_kwargs
+    )
     session.commit()
+
+    # The remaining factories can use a common factory kwargs
+    factory_kwargs = {}
+    if scheme_slug:
+        factory_kwargs = {
+            "provider_slug": scheme_slug,
+        }
     # Create random export transactions
     exports_factories.ExportTransactionFactory.create_batch(EXPORT_TRANSACTION_COUNT, **factory_kwargs)
     session.commit()
@@ -220,8 +254,10 @@ def bulk_load_db(
 @click.option(
     "--skip-base-tables",
     is_flag=True,
-    help=("After an initial load, skip the base tables payment_provider, "
-          "merchant_identifier and user_identity to avoid constraint errors"),
+    help=(
+        "After an initial load, skip the base tables payment_provider, "
+        "merchant_identifier and user_identity to avoid constraint errors"
+    ),
     show_default=True,
     default=False,
 )

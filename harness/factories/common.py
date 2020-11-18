@@ -1,4 +1,7 @@
+import datetime
 import json
+import random
+
 from app.db import SessionMaker
 from mimesis import Generic
 from mimesis.providers.base import BaseProvider as mimesis_baseprovider
@@ -30,5 +33,19 @@ class JSONProvider(mimesis_baseprovider):
         return json.dumps(data)
 
 
+class TransactionDateProvider(mimesis_baseprovider):
+    class Meta:
+        name = "transaction_date_provider"
+
+    @staticmethod
+    def transaction_date(days: int):
+        start_date = datetime.datetime.today()
+        random_number_of_days = random.randrange(days)
+        random_date = start_date - datetime.timedelta(days=random_number_of_days)
+
+        return random_date
+
+
 generic = Generic("en-gb")
 generic.add_provider(JSONProvider)
+generic.add_provider(TransactionDateProvider)
