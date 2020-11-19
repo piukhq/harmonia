@@ -102,7 +102,6 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
         "agents": [{"slug": merchant_slug}, {"slug": payment_provider_agent}],
         "users": [],
         "payment_provider": {"slug": payment_provider_slug},
-        "mid": random.choice(MIDS_MAP[merchant_slug][payment_provider_slug]),
     }
     for i, (token, user_info) in enumerate(token_users):
         user_data = {
@@ -124,6 +123,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                         2020, *[random.randint(a, b) for a, b in [(1, 12), (1, 28), (1, 23), (1, 59), (1, 59)]]
                     ),
                     "settlement_key": sha256(str(uuid.uuid4()).encode()).hexdigest(),
+                    "mid": random.choice(MIDS_MAP[merchant_slug][payment_provider_slug]),
                 }
             )
         fixture["users"].append(user_data)

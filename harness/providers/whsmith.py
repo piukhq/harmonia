@@ -50,7 +50,7 @@ class WhSmith(BaseImportDataProvider):
                 _get_card_type(fixture["payment_provider"]["slug"]),
                 "",
                 transaction["auth_code"],
-                "***" + fixture["mid"][3:],
+                "***" + transaction["mid"][3:],
                 "",
                 "GBP",
                 "GB",

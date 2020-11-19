@@ -35,7 +35,7 @@ class Wasabi(BaseImportDataProvider):
                 "1",
                 pendulum.instance(transaction["date"]).in_tz("Europe/London").format(IMPORT_DATE_FORMAT),
                 pendulum.instance(transaction["date"]).in_tz("Europe/London").format(IMPORT_TIME_FORMAT),
-                fixture["mid"],
+                transaction["mid"],
                 f"0000A0{str(randint(0, 10 ** 12)).rjust(13, '0')}",
             )
             for user in fixture["users"]

@@ -148,6 +148,7 @@ class FixtureUserTransactionSchema(Schema):
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
+    mid = fields.String(required=True, allow_none=False)
 
     @pre_load
     def convert_dates(self, data, **kwargs):
@@ -173,7 +174,6 @@ class FixtureProviderSchema(Schema):
 
 
 class FixtureSchema(Schema):
-    mid = fields.String(required=True, allow_none=False)
     store_id = fields.String(required=False, allow_none=True)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
@@ -257,18 +257,20 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     payment_provider, _ = db.get_or_create(
         models.PaymentProvider, session=session, slug=fixture["payment_provider"]["slug"]
     )
-    db.get_or_create(
-        models.MerchantIdentifier,
-        session=session,
-        mid=fixture["mid"],
-        loyalty_scheme_id=loyalty_scheme.id,
-        payment_provider_id=payment_provider.id,
-        defaults={
-            "store_id": fixture.get("store_id"),
-            "location": fixture["location"],
-            "postcode": fixture["postcode"],
-        },
-    )
+    for user in fixture["users"]:
+        for transaction in user["transactions"]:
+            db.get_or_create(
+                models.MerchantIdentifier,
+                session=session,
+                mid=transaction["mid"],
+                loyalty_scheme_id=loyalty_scheme.id,
+                payment_provider_id=payment_provider.id,
+                defaults={
+                    "store_id": fixture.get("store_id"),
+                    "location": fixture["location"],
+                    "postcode": fixture["postcode"],
+                },
+            )
 
 
 def preload_import_transactions(count: int, *, fixture: dict, session: db.Session):

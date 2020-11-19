@@ -1,5 +1,4 @@
 # base fixture data
-mid = "test-mid-123"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -31,5 +30,6 @@ date = 2020-10-27T15:01:59Z
 amount = 1222
 settlement_key = "1111111111"
 auth_code = "666666"
+mid = "test-mid-123"
 [users.transactions.merchant_overrides]
 date = 2020-10-27T15:01:00Z
