@@ -1,3 +1,4 @@
+import time
 import typing as t
 from concurrent.futures import ProcessPoolExecutor
 
@@ -153,11 +154,25 @@ def bulk_load_db(
     skip_base_tables: bool,
     max_processes: int,
     batchsize: int,
+    drop_constraints: bool,
     scheme_slug: t.Optional[str] = None,
 ):
     """
     Main loading function
     """
+
+    # Drop constraints?
+    if drop_constraints:
+        drop_import_transaction_constraints = "ALTER TABLE import_transaction DISABLE TRIGGER ALL"
+        drop_scheme_transaction_constraints = "ALTER TABLE scheme_transaction DISABLE TRIGGER ALL"
+        click.secho(
+            f"Executing {drop_import_transaction_constraints}", fg="cyan", bold=True,
+        )
+        session.execute(drop_import_transaction_constraints)
+        click.secho(
+            f"Executing {drop_scheme_transaction_constraints}", fg="cyan", bold=True,
+        )
+        session.execute(drop_scheme_transaction_constraints)
 
     # First thing, as some of the following tables rely on this one: create loyalty_scheme record/s
     create_loyalty_scheme(loyalty_scheme_count, scheme_slug)
@@ -218,6 +233,19 @@ def bulk_load_db(
     # Create random file sequence records
     exports_factories.FileSequenceNumberFactory.create_batch(FILE_SEQUENCE_COUNT, **factory_kwargs)
     session.commit()
+
+    # Re-enable constraints?
+    if drop_constraints:
+        enable_import_transaction_constraints = "ALTER TABLE import_transaction ENABLE TRIGGER ALL"
+        enable_scheme_transaction_constraints = "ALTER TABLE scheme_transaction ENABLE TRIGGER ALL"
+        click.secho(
+            f"Executing {enable_import_transaction_constraints}", fg="cyan", bold=True,
+        )
+        session.execute(enable_import_transaction_constraints)
+        click.secho(
+            f"Executing {enable_scheme_transaction_constraints}", fg="cyan", bold=True,
+        )
+        session.execute(enable_scheme_transaction_constraints)
 
 
 @click.command()
@@ -282,6 +310,17 @@ def bulk_load_db(
 @click.option(
     "--scheme-slug", type=click.STRING, required=False, help="Loyalty scheme slug e.g. harvey-nichols, wasabi-club",
 )
+@click.option(
+    "--drop-constraints",
+    is_flag=True,
+    help=(
+        "Drop constraints on the two big tables with: "
+        "ALTER TABLE import_transaction DISABLE TRIGGER ALL; "
+        "ALTER TABLE scheme_transaction DISABLE TRIGGER ALL; then re-enable at the end"
+    ),
+    show_default=True,
+    default=False,
+)
 def main(
     scheme_transaction_count: int,
     import_transaction_count: int,
@@ -291,6 +330,7 @@ def main(
     max_processes: int,
     batchsize: int,
     scheme_slug: str,
+    drop_constraints: bool,
 ):
     """
     Run an initial load of ballast fake data with something like:
@@ -302,6 +342,7 @@ def main(
     --batchsize=2000
     --loyalty-scheme-count=1000
     --payment-transaction-count=10000
+    --drop-constraints
 
     Then, to add in additional merchant specific schemes something like:
 
@@ -312,15 +353,19 @@ def main(
     --batchsize=2000
     --loyalty-scheme-count=1000
     --payment-transaction-count=10000
+    --drop-constraints
     --scheme-slug=wasabi-club
     --skip-base-tables
 
     Please note that after the initial run, when the base tables are filled, you MUST pass in --skip-base-tables to
-    avoid constraint errors
+    avoid constraint errors for those tables
 
     As it stands, the script can only do one merchant specific run at a time, so you'll need to pass in
     --scheme-slug for each merchant to create their bulk records
     """
+
+    start_time = int(time.time())
+    print(f"Start time: {start_time}")
 
     bulk_load_db(
         scheme_transaction_count=scheme_transaction_count,
@@ -330,8 +375,13 @@ def main(
         skip_base_tables=skip_base_tables,
         max_processes=max_processes,
         batchsize=batchsize,
+        drop_constraints=drop_constraints,
         scheme_slug=scheme_slug,
     )
+
+    end_time = int(time.time())
+    print(f"End time: {end_time}")
+    print(f"Total run time in seconds: {end_time - start_time}")
 
 
 if __name__ == "__main__":
