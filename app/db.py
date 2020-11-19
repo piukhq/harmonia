@@ -30,7 +30,7 @@ log = get_logger("db")
 
 
 @contextmanager
-def session_scope():
+def session_scope() -> t.Iterator[Session]:
     """Provide a transactional scope around a series of operations."""
     session = SessionMaker()
     sid = str(uuid4())
