@@ -1,7 +1,6 @@
 import requests
 import settings
 
-from urllib.parse import urljoin
 from app.reporting import get_logger
 from app.core.requests_retry import requests_retry_session
 from user_auth_token.core import UserTokenStore
@@ -18,7 +17,7 @@ class HarveyNicholsAPI:
 
     def post(self, endpoint: str, body: dict = None, *, name: str) -> requests.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
-        url = urljoin(self.base_url, endpoint)
+        url = f"{self.base_url}{endpoint}"
         response = self.session.post(url, json=body)
         response.raise_for_status()
         # Save the request and response for billing and audit
@@ -29,7 +28,7 @@ class HarveyNicholsAPI:
         scheme_account_id = extra_data["scheme_account_id"]
 
         token = self.get_token(credentials, scheme_account_id)
-        endpoint = f"{self.base_url}/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
+        endpoint = "/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
         body["CustomerClaimTransactionRequest"]["token"] = token
 
         response = self.post(endpoint, body, name="claim_transaction")
