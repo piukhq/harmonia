@@ -13,7 +13,7 @@ from harness.factories.common import generic, session
 LOYALTY_SCHEME_COUNT = 10
 PAYMENT_PROVIDERS = ["visa", "mastercard", "amex"]
 MERCHANT_IDENTIFIER_COUNT = 200
-USER_IDENTITY_COUNT = 8
+USER_IDENTITY_COUNT = 10
 PAYMENT_TRANSACTION_COUNT = 200
 SCHEME_TRANSACTION_COUNT = 2000
 MATCHED_TRANSACTION_COUNT = 100
@@ -21,7 +21,7 @@ IMPORT_TRANSACTION_COUNT = 2000
 EXPORT_TRANSACTION_COUNT = 10
 PENDING_EXPORT_COUNT = 10
 FILE_SEQUENCE_COUNT = 5
-MAX_PROCESSES = 4
+MAX_PROCESSES = 18
 BATCHSIZE = 2000
 
 
@@ -53,7 +53,7 @@ def get_batch_chunks(transaction_count, batchsize):
     while transaction_count > 0:
         if transaction_count >= batchsize:
             yield batchsize
-        else:
+        else:  # The remainder
             yield transaction_count
         transaction_count -= batchsize
 
@@ -65,7 +65,7 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, sc
     )
     # create batches in chunks of batchsize records, then commit
     factory_kwargs = {}
-    if scheme_slug:
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         factory_kwargs = {
             "provider_slug": scheme_slug,
             "transaction_date": factory.LazyAttribute(
@@ -87,7 +87,7 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
         f"Creating {import_transaction_count} import transactions", fg="cyan", bold=True,
     )
     factory_kwargs = {}
-    if scheme_slug:
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         factory_kwargs = {
             "provider_slug": scheme_slug,
         }
@@ -120,6 +120,7 @@ def do_async_tables(
     import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
     import_transaction_batchsizes = [batchsize for x in range(len(import_transaction_counts))]
     import_transaction_scheme_slugs = [scheme_slug for x in range(len(import_transaction_counts))]
+    # Create task map
     create_import_transactions_executor.map(
         create_import_transactions,
         import_transaction_counts,
@@ -135,6 +136,7 @@ def do_async_tables(
         scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
         scheme_transaction_batchsizes = [batchsize for x in range(len(scheme_transaction_counts))]
         scheme_transaction_scheme_slugs = [scheme_slug for x in range(len(scheme_transaction_counts))]
+        # Create task map
         create_scheme_transactions_executor.map(
             create_scheme_transactions,
             scheme_transaction_counts,
@@ -157,17 +159,17 @@ def bulk_load_db(
     Main loading function
     """
 
-    # First thing, as some of the following tables rely on this one, create loyalty_scheme record/s
+    # First thing, as some of the following tables rely on this one: create loyalty_scheme record/s
     create_loyalty_scheme(loyalty_scheme_count, scheme_slug)
 
-    # Skip these base tables if we've already filled them
+    # Skip these base tables if we've already filled them, to avoid constraint errors
     if not skip_base_tables:
         # Create our primary records
         create_base_records()
 
     # Create payment transactions, linking to our users in the base table
     payment_factory_kwargs = {}
-    if scheme_slug:
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         payment_factory_kwargs = {
             "provider_slug": scheme_slug,
             "transaction_date": factory.LazyAttribute(
@@ -190,7 +192,7 @@ def bulk_load_db(
     # Create random matched transactions. This table relies on merchant_identifier, scheme_transaction
     # and payment_transaction rows being in place
     matched_transaction_factory_kwargs = {}
-    if scheme_slug:
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         matched_transaction_factory_kwargs = {
             "transaction_date": factory.LazyAttribute(
                 lambda o: generic.transaction_date_provider.transaction_date(days=7)
@@ -203,7 +205,7 @@ def bulk_load_db(
 
     # The remaining factories can use a common factory kwargs
     factory_kwargs = {}
-    if scheme_slug:
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         factory_kwargs = {
             "provider_slug": scheme_slug,
         }
@@ -304,4 +306,34 @@ def main(
 
 
 if __name__ == "__main__":
+    """
+    Run an initial load of ballast fake data with something like:
+    
+    pipenv run python harness/bulk_load_db.py 
+    --scheme-transaction-count=250000 
+    --import-transaction-count=250000 
+    --max-processes=18 
+    --batchsize=2000 
+    --loyalty-scheme-count=1000 
+    --payment-transaction-count=10000
+    
+    Then, to add in additional merchant specific schemes something like:
+    
+    pipenv run python harness/bulk_load_db.py 
+    --scheme-transaction-count=250000 
+    --import-transaction-count=250000 
+    --max-processes=18 
+    --batchsize=2000 
+    --loyalty-scheme-count=1000 
+    --payment-transaction-count=10000
+    --scheme-slug=wasabi-club
+    --skip-base-tables
+    
+    Please note that after the initial run, when the base tables are filled, you MUST pass in --skip-base-tables to
+    avoid constraint errors
+    
+    As it stands, the script can only do one merchant specific run at a time, so you'll need to pass in 
+    --scheme-slug for each merchant to create their bulk records
+    """
+
     main()

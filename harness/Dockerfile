@@ -1,7 +1,7 @@
 FROM binkhq/python:3.8
 
 WORKDIR /app
-ADD .. .
+ADD . .
 
 RUN apt-get update && apt-get -y install gnupg1 && \
     apt-get -y install tmux && \
