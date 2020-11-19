@@ -292,6 +292,35 @@ def main(
     batchsize: int,
     scheme_slug: str,
 ):
+    """
+    Run an initial load of ballast fake data with something like:
+
+    pipenv run python harness/bulk_load_db.py
+    --scheme-transaction-count=250000
+    --import-transaction-count=250000
+    --max-processes=18
+    --batchsize=2000
+    --loyalty-scheme-count=1000
+    --payment-transaction-count=10000
+
+    Then, to add in additional merchant specific schemes something like:
+
+    pipenv run python harness/bulk_load_db.py
+    --scheme-transaction-count=250000
+    --import-transaction-count=250000
+    --max-processes=18
+    --batchsize=2000
+    --loyalty-scheme-count=1000
+    --payment-transaction-count=10000
+    --scheme-slug=wasabi-club
+    --skip-base-tables
+
+    Please note that after the initial run, when the base tables are filled, you MUST pass in --skip-base-tables to
+    avoid constraint errors
+
+    As it stands, the script can only do one merchant specific run at a time, so you'll need to pass in
+    --scheme-slug for each merchant to create their bulk records
+    """
 
     bulk_load_db(
         scheme_transaction_count=scheme_transaction_count,
@@ -306,34 +335,4 @@ def main(
 
 
 if __name__ == "__main__":
-    """
-    Run an initial load of ballast fake data with something like:
-    
-    pipenv run python harness/bulk_load_db.py 
-    --scheme-transaction-count=250000 
-    --import-transaction-count=250000 
-    --max-processes=18 
-    --batchsize=2000 
-    --loyalty-scheme-count=1000 
-    --payment-transaction-count=10000
-    
-    Then, to add in additional merchant specific schemes something like:
-    
-    pipenv run python harness/bulk_load_db.py 
-    --scheme-transaction-count=250000 
-    --import-transaction-count=250000 
-    --max-processes=18 
-    --batchsize=2000 
-    --loyalty-scheme-count=1000 
-    --payment-transaction-count=10000
-    --scheme-slug=wasabi-club
-    --skip-base-tables
-    
-    Please note that after the initial run, when the base tables are filled, you MUST pass in --skip-base-tables to
-    avoid constraint errors
-    
-    As it stands, the script can only do one merchant specific run at a time, so you'll need to pass in 
-    --scheme-slug for each merchant to create their bulk records
-    """
-
     main()
