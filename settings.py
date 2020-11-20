@@ -188,10 +188,3 @@ GPG_ARGS = {
 PUSH_PROMETHEUS_METRICS = getenv("TXM_PUSH_PROMETHEUS_METRICS", default="true", conv=boolconv)
 PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
 PROMETHEUS_JOB = "harmonia"
-
-# For data_generation
-AMQP_USER = getenv("TXM_AMQP_USER", default="guest")
-AMQP_PASSWORD = getenv("TXM_AMQP_PASSWORD", default="guest")
-AMQP_HOST = getenv("TXM_AMQP_HOST", default="localhost")
-AMQP_PORT = getenv("TXM_AMQP_PORT", default="5672")
-AMQP_DSN = f"amqp://{AMQP_USER}:{AMQP_PASSWORD}@{AMQP_HOST}:{AMQP_PORT}//"

@@ -89,7 +89,7 @@ class QueueDumper(DataDumper):
         super().dump(data)
         queue_name = f"""{self.agent.provider_slug}-{('auth'
             if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
-        with Connection(settings.AMQP_DSN, connect_timeout=3) as conn:
+        with Connection(settings.RABBITMQ_DSN, connect_timeout=3) as conn:
             q = conn.SimpleQueue(queue_name)
             for message in data:
                 q.put(message, headers={"X-Provider": self.agent.provider_slug})
