@@ -9,7 +9,7 @@ class BinkPayment(BaseImportDataProvider):
         return [
             {
                 "date": transaction["date"].isoformat(),
-                "mid": fixture["mid"],
+                "mid": transaction["mid"],
                 "token": user["token"],
                 "spend": transaction["amount"],
                 "tid": str(uuid4()),

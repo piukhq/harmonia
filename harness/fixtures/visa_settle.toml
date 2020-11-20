@@ -1,5 +1,4 @@
 # Visa settlement fixture data
-mid = "test-mid-234"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -31,6 +30,7 @@ date = 2020-06-02T15:46:00Z
 amount = 1099
 settlement_key = "settle123"
 auth_code = "666665"
+mid = "test-mid-234"
 [users.transactions.payment_provider_overrides]
 auth_code = "6666667"
 
@@ -39,5 +39,6 @@ date = 2020-06-02T17:46:00Z
 amount = 1099
 settlement_key = "settlement-234"
 auth_code = "666666"
+mid = "test-mid-234"
 # [users.transactions.merchant_overrides]
 # date = 2020-06-02T17:46:12Z
