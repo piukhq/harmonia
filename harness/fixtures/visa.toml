@@ -1,5 +1,4 @@
 # Visa auth and settlement fixture data
-mid = "test-mid-123"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -31,9 +30,11 @@ date = 2020-06-02T15:46:00Z
 amount = 1099
 settlement_key = "settlement-123"
 auth_code = "666666"
+mid = "test-mid-123"
 
 [[users.transactions]]
 date = 2020-07-02T15:46:00Z
 amount = 1099
 settlement_key = "settlement-123"
 auth_code = "666667"
+mid = "test-mid-123"
