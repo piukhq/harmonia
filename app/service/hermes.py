@@ -1,5 +1,4 @@
 from enum import Enum
-from urllib.parse import urljoin
 
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
@@ -34,7 +33,7 @@ class Hermes:
 
     def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
         log.debug(f"Posting {name} request with parameters: {body}.")
-        url = urljoin(self.base_url, endpoint)
+        url = f"{self.base_url}{endpoint}"
         response = self.session.post(url, json=body, headers=self._headers)
         response.raise_for_status()
         return response.json()
