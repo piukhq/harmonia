@@ -82,6 +82,7 @@ tag-develop:
   environment: dev
   script:
     - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
+    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia-bulkload:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
   only:
     - develop
 
