@@ -1,5 +1,4 @@
 # Amex settlement fixture data
-mid = "test-mid-234"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -30,4 +29,5 @@ date = 2020-06-02T15:46:00Z
 amount = 2233
 settlement_key = "settle123"
 auth_code = "777777"
+mid = "test-mid-234"
 

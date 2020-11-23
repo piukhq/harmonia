@@ -54,3 +54,6 @@ ptpython = "*"
 isort = {extras = ["pipfile"],version = "*"}
 rope = "*"
 xenon = "*"
+mimesis = "*"
+factory-boy = "*"
+harmonia-perf-fixtures = "*"

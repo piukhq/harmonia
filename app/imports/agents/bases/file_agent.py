@@ -10,7 +10,7 @@ from pathlib import Path
 import humanize
 import pendulum
 import settings
-from app import db, reporting, retry, tasks
+from app import db, models, reporting, retry, tasks
 from app.imports.agents import BaseAgent
 from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
@@ -216,14 +216,36 @@ class FileAgent(BaseAgent):
     def _do_import(self, data: bytes, source: str) -> t.Iterable[None]:
         self.log.info(f"Importing {source}")
 
-        transactions_data = []
-        for transaction in self.yield_transactions_data(data):
-            transactions_data.append(transaction)
-            yield
-
-        # TODO: this is less than ideal, should be keep a session open?
+        # TODO: this is less than ideal, should we keep a session open?
         with db.session_scope() as session:
+
+            def create_import_file_log():
+                import_file_log = models.ImportFileLog(
+                    provider_slug=self.provider_slug, file_name=source, imported=False
+                )
+                session.add(import_file_log)
+                session.commit()
+                return import_file_log
+
+            import_file_log = db.run_query(
+                create_import_file_log, session=session, description="create file log record",
+            )
+
+            transactions_data = []
+            for transaction in self.yield_transactions_data(data):
+                transactions_data.append(transaction)
+                yield
+
             yield from self._import_transactions(transactions_data, session=session, source=source)
+
+            # if we got this far, import completed successfully
+            def update_import_file_log():
+                import_file_log.imported = True
+                session.commit()
+
+            db.run_query(
+                update_import_file_log, session=session, description="mark import file log as imported",
+            )
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError

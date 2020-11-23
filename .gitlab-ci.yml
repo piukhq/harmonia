@@ -56,7 +56,9 @@ build-develop:
   script:
     - docker build --pull -t "$CI_REGISTRY/harmonia:latest" .
     - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:latest" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
+    - docker build --pull -t "$CI_REGISTRY/harmonia-bulkload:latest" -f harness/Dockerfile .
     - docker push "$CI_REGISTRY/harmonia:latest"
+    - docker push "$CI_REGISTRY/harmonia-bulkload:latest"
   only:
     - develop
 
@@ -80,6 +82,7 @@ tag-develop:
   environment: dev
   script:
     - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
+    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia-bulkload:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
   only:
     - develop
 
