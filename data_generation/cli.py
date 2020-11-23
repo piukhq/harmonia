@@ -6,9 +6,10 @@ from concurrent.futures import ProcessPoolExecutor
 from hashlib import sha256
 
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import click
+import pendulum
 
 from azure.storage.blob import BlobServiceClient
 from kombu import Connection
@@ -60,22 +61,23 @@ class DataDumper:
         self.agent = agent_instance
         self.stdout = dump_to_stdout
 
-    def dump(self, data):
-        if self.stdout:
-            print(data)
-            raise SystemExit(0)
-
 
 class SftpDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
+        if self.stdout:
+            print(data)
+            return
+
         with SFTP(self.agent.sftp_credentials, self.agent.skey, str(self.agent.Config.path)) as sftp:
             sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}.csv")
 
 
 class BlobDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
+        if self.stdout:
+            print(data)
+            return
+
         bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
         container_name = settings.BLOB_IMPORT_CONTAINER
         blob_client = bbs.get_blob_client(
@@ -86,7 +88,10 @@ class BlobDumper(DataDumper):
 
 class QueueDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
+        if self.stdout:
+            print(data)
+            return
+
         queue_name = f"""{self.agent.provider_slug}-{('auth'
             if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
         with Connection(settings.RABBITMQ_DSN, connect_timeout=3) as conn:
@@ -119,8 +124,14 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                 {
                     "amount": round(random.randint(100, 9000)),
                     "auth_code": random.randint(100000, 999999),
-                    "date": datetime(
-                        2020, *[random.randint(a, b) for a, b in [(1, 12), (1, 28), (1, 23), (1, 59), (1, 59)]]
+                    "date": pendulum.now()
+                    - timedelta(
+                        **{
+                            "days": random.randint(1, 30 * 3),
+                            "hours": random.randint(0, 23),
+                            "minutes": random.randint(0, 60),
+                            "seconds": random.randint(0, 60),
+                        }
                     ),
                     "settlement_key": sha256(str(uuid.uuid4()).encode()).hexdigest(),
                     "mid": random.choice(MIDS_MAP[merchant_slug][payment_provider_slug]),
