@@ -36,23 +36,30 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex": "amex",
     "amex-auth": "amex",
 }
-MIDS_MAP = {
+STORE_ID_MIDS_MAP = {
     "iceland-bonus-card": {
-        "visa": ["02894183", "02894843", "02900453", "02900873", "02901343", "02902153", "02903043", "02903623"],
-        "mastercard": ["34870233", "34872513", "34873083", "34874053", "34874713", "34875443", "34876093"],
-        "amex": ["8174868976", "8174868968", "8042520049", "8042520320", "8174868984", "8174868992"],
+        None: {  # store_id
+            "visa": ["02894183", "02894843", "02900453", "02900873", "02901343", "02902153", "02903043", "02903623"],
+            "mastercard": ["34870233", "34872513", "34873083", "34874053", "34874713", "34875443", "34876093"],
+            "amex": ["8174868976", "8174868968", "8042520049", "8042520320", "8174868984", "8174868992"],
+        },
     },
     "harvey-nichols": {
-        "amex": ["9421355991", "9423447317", "9425544541", "9448629014"],
-        "visa": ["56742051", "80289201", "80289611", "92040173", "92040913"],
-        "mastercard": ["3553323", "3561503", "3561683", "3561763", "3561843", "3561923", "3562073", "3562233"],
+        "0001017   005682": {  # store_id
+            "amex": ["9421355991", "9423447317", "9425544541", "9448629014"],
+            "mastercard": ["3553323", "3561503", "3561683", "3561763", "3561843", "3561923", "3562073", "3562233"],
+            "visa": ["56742051", "80289201", "80289611", "92040173", "92040913"],
+        },
     },
     "wasabi-club": {
-        "visa": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-        "mastercard": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-        "amex": ["9421717158", "9421721788", "9422065326", "9447911868", "9421724592", "9421724626", "9449137736"],
+        None: {  # store_id
+            "visa": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
+            "mastercard": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
+            "amex": ["9421717158", "9421721788", "9422065326", "9447911868", "9421724592", "9421724626", "9449137736"],
+        },
     },
 }
+
 logger = get_logger("data-generator")
 
 
@@ -120,6 +127,10 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
         if i == 0:
             tx_per_user += remainder
         for _ in range(tx_per_user):
+            store_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) store IDs if required
+                list(STORE_ID_MIDS_MAP[merchant_slug].keys())
+            )
+            mid_map = STORE_ID_MIDS_MAP[merchant_slug][store_id]
             user_data["transactions"].append(
                 {
                     "amount": round(random.randint(100, 9000)),
@@ -134,7 +145,8 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                         }
                     ),
                     "settlement_key": sha256(str(uuid.uuid4()).encode()).hexdigest(),
-                    "mid": random.choice(MIDS_MAP[merchant_slug][payment_provider_slug]),
+                    "mid": random.choice(mid_map[payment_provider_slug]),
+                    "store_id": store_id,
                 }
             )
         fixture["users"].append(user_data)
