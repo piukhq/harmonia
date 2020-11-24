@@ -32,7 +32,7 @@ class HarveyNichols(BaseImportDataProvider):
                             "scheme": scheme_name,
                         },
                         "amount": {"value": float(to_pounds(transaction["amount"])), "unit": "GBP"},
-                        "store_id": "0001017   005682",
+                        "store_id": transaction["store_id"],
                         "timestamp": pendulum.instance(transaction["date"]).in_tz("Europe/London").isoformat(),
                         "id": str(uuid4()),
                         "auth_code": f'00{transaction["auth_code"]}',
