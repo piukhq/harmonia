@@ -1,4 +1,5 @@
 import io
+import logging
 import typing as t
 from time import sleep
 
@@ -6,6 +7,9 @@ import paramiko
 
 from app.reporting import get_logger
 
+# set paramiko logger to critical only
+# this prevents stack traces getting logged into sentry line by line
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
 log = get_logger("sftp")
 
