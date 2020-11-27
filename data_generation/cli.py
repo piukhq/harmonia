@@ -36,7 +36,7 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex": "amex",
     "amex-auth": "amex",
 }
-STORE_ID_MIDS_MAP = {
+STORE_ID_MIDS_MAP = {  # type: t.Dict[str, t.Any]
     "iceland-bonus-card": {
         None: {  # store_id
             "visa": ["02894183", "02894843", "02900453", "02900873", "02901343", "02902153", "02903043", "02903623"],
@@ -64,8 +64,9 @@ logger = get_logger("data-generator")
 
 
 class DataDumper:
-    def __init__(self, agent_instance: BaseAgent, dump_to_stdout: bool = False):
+    def __init__(self, agent_instance: BaseAgent, num_payment_tx: int = None, dump_to_stdout: bool = False):
         self.agent = agent_instance
+        self.num_payment_tx = num_payment_tx
         self.stdout = dump_to_stdout
 
 
@@ -99,12 +100,19 @@ class QueueDumper(DataDumper):
             print(data)
             return
 
-        queue_name = f"""{self.agent.provider_slug}-{('auth'
-            if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
+        if self.agent.feed_type in (ImportFeedTypes.AUTH, ImportFeedTypes.SETTLED):
+            queue_name = f"""{self.agent.provider_slug}-{('auth'
+                if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
+        else:
+            raise Exception(f"Unsupported ImportFeedType: {self.agent.feed_type}")
+        logger.info(
+            f"Adding {min((len(data), self.num_payment_tx))} {self.agent.provider_slug} messages to the queue..."
+        )
         with Connection(settings.RABBITMQ_DSN, connect_timeout=3) as conn:
             q = conn.SimpleQueue(queue_name)
-            for message in data:
-                q.put(message, headers={"X-Provider": self.agent.provider_slug})
+            for i, message in enumerate(data):
+                if i < self.num_payment_tx:
+                    q.put(message, headers={"X-Provider": self.agent.provider_slug})
 
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
@@ -153,7 +161,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     return fixture
 
 
-def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False):
+def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False, num_payment_tx: int = None):
     dumper_class: t.Type[DataDumper]
     if isinstance(agent_instance, FileAgent):
         dumper_class = SftpDumper if isinstance(agent_instance.filesource, SftpFileSource) else BlobDumper
@@ -161,17 +169,32 @@ def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False):
         dumper_class = QueueDumper
     else:
         raise Exception(f"Unhandled agent type: {agent_instance}")
-    return dumper_class(agent_instance, dump_to_stdout=dump_to_stdout)
+    return dumper_class(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=dump_to_stdout)
 
 
 @click.command()
 @click.option("-m", "--merchant-slug", help="merchant slug", required=True)
 @click.option("-p", "--payment-provider-agent", help="payment provider agent", required=True)
-@click.option("-t", "--num-tx", type=int, default=DEFAULT_NUM_TX, help=f"Default: {DEFAULT_NUM_TX}")
+@click.option(
+    "-M",
+    "--num-merchant-tx",
+    type=int,
+    default=DEFAULT_NUM_TX,
+    help=f"Number of merchant transactions to make. Default: {DEFAULT_NUM_TX}",
+)
+@click.option(
+    "-P",
+    "--num-payment-tx",
+    type=int,
+    default=DEFAULT_NUM_TX,
+    help=f"Number of payment transactions to make. Default: {DEFAULT_NUM_TX}",
+)
 @click.option("-o", "--stdout", help="dump to stdout and exit", is_flag=True)
-def generate(merchant_slug: str, payment_provider_agent: str, num_tx: int, stdout: bool = False):
+def generate(
+    merchant_slug: str, payment_provider_agent: str, num_merchant_tx: int, num_payment_tx: int, stdout: bool = False
+):
     logger.info(f"Generating fixture for {merchant_slug} & {payment_provider_agent}...")
-    fixture = make_fixture(merchant_slug, payment_provider_agent, num_tx)
+    fixture = make_fixture(merchant_slug, payment_provider_agent, num_merchant_tx)
     logger.info(f"Finished generating fixture for {merchant_slug} & {payment_provider_agent}")
 
     agent_data = {}
@@ -186,7 +209,7 @@ def generate(merchant_slug: str, payment_provider_agent: str, num_tx: int, stdou
     for agent_slug, data in agent_data.items():
         logger.info(f"Dumping {agent_slug} data...")
         agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
-        dumper = get_data_dumper(agent_instance, dump_to_stdout=stdout)
+        dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
         dumper.dump(data)
         logger.info(f"Finished dumping {agent_slug} data")
 
