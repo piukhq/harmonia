@@ -1,5 +1,4 @@
 # base fixture data
-store_id = "5842"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -31,3 +30,4 @@ amount = 425
 auth_code = "198090"
 settlement_key = "settle123"
 mid = "61584292"
+store_id = "5842"

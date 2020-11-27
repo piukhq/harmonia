@@ -33,7 +33,7 @@ class WhSmith(BaseImportDataProvider):
                 "5842003682292310000",
                 rounded_transaction_date(transaction["date"]),
                 "1579532400",
-                fixture["store_id"],
+                transaction["store_id"],
                 "Reading",
                 "",
                 "3",

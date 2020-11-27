@@ -6,9 +6,10 @@ from concurrent.futures import ProcessPoolExecutor
 from hashlib import sha256
 
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import click
+import pendulum
 
 from azure.storage.blob import BlobServiceClient
 from kombu import Connection
@@ -35,47 +36,56 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex": "amex",
     "amex-auth": "amex",
 }
-MIDS_MAP = {
+STORE_ID_MIDS_MAP = {  # type: t.Dict[str, t.Any]
     "iceland-bonus-card": {
-        "visa": ["2894183", "2894843", "2900453", "2900873", "2901343", "2902153", "2903043", "2903623", "2904273"],
-        "mastercard": ["34870233", "34872513", "34873083", "34874053", "34874713", "34875443", "34876093"],
-        "amex": ["8174868976", "8174868968", "8042520049", "8042520320", "8174868984", "8174868992"],
+        None: {  # store_id
+            "visa": ["02894183", "02894843", "02900453", "02900873", "02901343", "02902153", "02903043", "02903623"],
+            "mastercard": ["34870233", "34872513", "34873083", "34874053", "34874713", "34875443", "34876093"],
+            "amex": ["8174868976", "8174868968", "8042520049", "8042520320", "8174868984", "8174868992"],
+        },
     },
     "harvey-nichols": {
-        "visa": ["19410121", "19410201", "19410381", "19410461"],
-        "mastercard": ["19410121", "19410201", "19410381", "19410461"],
-        "amex": ["19410121", "19410201", "19410381", "19410461"],
+        "0001017   005682": {  # store_id
+            "amex": ["9421355991", "9423447317", "9425544541", "9448629014"],
+            "mastercard": ["3553323", "3561503", "3561683", "3561763", "3561843", "3561923", "3562073", "3562233"],
+            "visa": ["56742051", "80289201", "80289611", "92040173", "92040913"],
+        },
     },
     "wasabi-club": {
-        "visa": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-        "mastercard": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-        "amex": ["9421717158", "9421721788", "9422065326", "9447911868", "9421724592", "9421724626", "9449137736"],
+        None: {  # store_id
+            "visa": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
+            "mastercard": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
+            "amex": ["9421717158", "9421721788", "9422065326", "9447911868", "9421724592", "9421724626", "9449137736"],
+        },
     },
 }
+
 logger = get_logger("data-generator")
 
 
 class DataDumper:
-    def __init__(self, agent_instance: BaseAgent, dump_to_stdout: bool = False):
+    def __init__(self, agent_instance: BaseAgent, num_payment_tx: int = None, dump_to_stdout: bool = False):
         self.agent = agent_instance
+        self.num_payment_tx = num_payment_tx
         self.stdout = dump_to_stdout
-
-    def dump(self, data):
-        if self.stdout:
-            print(data)
-            raise SystemExit(0)
 
 
 class SftpDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
+        if self.stdout:
+            print(data)
+            return
+
         with SFTP(self.agent.sftp_credentials, self.agent.skey, str(self.agent.Config.path)) as sftp:
             sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}.csv")
 
 
 class BlobDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
+        if self.stdout:
+            print(data)
+            return
+
         bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
         container_name = settings.BLOB_IMPORT_CONTAINER
         blob_client = bbs.get_blob_client(
@@ -86,13 +96,23 @@ class BlobDumper(DataDumper):
 
 class QueueDumper(DataDumper):
     def dump(self, data):
-        super().dump(data)
-        queue_name = f"""{self.agent.provider_slug}-{('auth'
-            if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
+        if self.stdout:
+            print(data)
+            return
+
+        if self.agent.feed_type in (ImportFeedTypes.AUTH, ImportFeedTypes.SETTLED):
+            queue_name = f"""{self.agent.provider_slug}-{('auth'
+                if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
+        else:
+            raise Exception(f"Unsupported ImportFeedType: {self.agent.feed_type}")
+        logger.info(
+            f"Adding {min((len(data), self.num_payment_tx))} {self.agent.provider_slug} messages to the queue..."
+        )
         with Connection(settings.RABBITMQ_DSN, connect_timeout=3) as conn:
             q = conn.SimpleQueue(queue_name)
-            for message in data:
-                q.put(message, headers={"X-Provider": self.agent.provider_slug})
+            for i, message in enumerate(data):
+                if i < self.num_payment_tx:
+                    q.put(message, headers={"X-Provider": self.agent.provider_slug})
 
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
@@ -115,22 +135,33 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
         if i == 0:
             tx_per_user += remainder
         for _ in range(tx_per_user):
+            store_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) store IDs if required
+                list(STORE_ID_MIDS_MAP[merchant_slug].keys())
+            )
+            mid_map = STORE_ID_MIDS_MAP[merchant_slug][store_id]
             user_data["transactions"].append(
                 {
                     "amount": round(random.randint(100, 9000)),
                     "auth_code": random.randint(100000, 999999),
-                    "date": datetime(
-                        2020, *[random.randint(a, b) for a, b in [(1, 12), (1, 28), (1, 23), (1, 59), (1, 59)]]
+                    "date": pendulum.now()
+                    - timedelta(
+                        **{
+                            "days": random.randint(1, 30 * 3),
+                            "hours": random.randint(0, 23),
+                            "minutes": random.randint(0, 60),
+                            "seconds": random.randint(0, 60),
+                        }
                     ),
                     "settlement_key": sha256(str(uuid.uuid4()).encode()).hexdigest(),
-                    "mid": random.choice(MIDS_MAP[merchant_slug][payment_provider_slug]),
+                    "mid": random.choice(mid_map[payment_provider_slug]),
+                    "store_id": store_id,
                 }
             )
         fixture["users"].append(user_data)
     return fixture
 
 
-def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False):
+def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False, num_payment_tx: int = None):
     dumper_class: t.Type[DataDumper]
     if isinstance(agent_instance, FileAgent):
         dumper_class = SftpDumper if isinstance(agent_instance.filesource, SftpFileSource) else BlobDumper
@@ -138,17 +169,32 @@ def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False):
         dumper_class = QueueDumper
     else:
         raise Exception(f"Unhandled agent type: {agent_instance}")
-    return dumper_class(agent_instance, dump_to_stdout=dump_to_stdout)
+    return dumper_class(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=dump_to_stdout)
 
 
 @click.command()
 @click.option("-m", "--merchant-slug", help="merchant slug", required=True)
 @click.option("-p", "--payment-provider-agent", help="payment provider agent", required=True)
-@click.option("-t", "--num-tx", type=int, default=DEFAULT_NUM_TX, help=f"Default: {DEFAULT_NUM_TX}")
+@click.option(
+    "-M",
+    "--num-merchant-tx",
+    type=int,
+    default=DEFAULT_NUM_TX,
+    help=f"Number of merchant transactions to make. Default: {DEFAULT_NUM_TX}",
+)
+@click.option(
+    "-P",
+    "--num-payment-tx",
+    type=int,
+    default=DEFAULT_NUM_TX,
+    help=f"Number of payment transactions to make. Default: {DEFAULT_NUM_TX}",
+)
 @click.option("-o", "--stdout", help="dump to stdout and exit", is_flag=True)
-def generate(merchant_slug: str, payment_provider_agent: str, num_tx: int, stdout: bool = False):
+def generate(
+    merchant_slug: str, payment_provider_agent: str, num_merchant_tx: int, num_payment_tx: int, stdout: bool = False
+):
     logger.info(f"Generating fixture for {merchant_slug} & {payment_provider_agent}...")
-    fixture = make_fixture(merchant_slug, payment_provider_agent, num_tx)
+    fixture = make_fixture(merchant_slug, payment_provider_agent, num_merchant_tx)
     logger.info(f"Finished generating fixture for {merchant_slug} & {payment_provider_agent}")
 
     agent_data = {}
@@ -163,7 +209,7 @@ def generate(merchant_slug: str, payment_provider_agent: str, num_tx: int, stdou
     for agent_slug, data in agent_data.items():
         logger.info(f"Dumping {agent_slug} data...")
         agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
-        dumper = get_data_dumper(agent_instance, dump_to_stdout=stdout)
+        dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
         dumper.dump(data)
         logger.info(f"Finished dumping {agent_slug} data")
 
