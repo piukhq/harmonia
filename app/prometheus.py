@@ -180,7 +180,6 @@ class PrometheusPushThread(threading.Thread):
                     grouping_key=self.grouping_key,
                     timeout=self.PUSH_TIMEOUT,
                 )
-                logger.info(f"Pushed metrics to gateway: job:{self.prometheus_job}, gk:{self.grouping_key}")
             except (ConnectionRefusedError, urllib.error.URLError):
                 logger.warning("Failed to push metrics, connection refused")
             except Exception as err:
@@ -220,4 +219,3 @@ def prometheus_push_manager(prometheus_push_gateway: str, prometheus_job: str):
                 grouping_key=grouping_key,
                 timeout=push_timeout,
             )
-            logger.info(f"Pushed metrics to gateway: job:{prometheus_job}, gk:{grouping_key}")
