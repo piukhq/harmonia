@@ -58,7 +58,7 @@ class BatchExportAgent(BaseAgent):
                 self._save_to_blob(export_data)
             else:
                 with self._update_metrics(export_data):
-                    self.export(export_data, session=session)
+                    self.send_export_data(export_data)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
