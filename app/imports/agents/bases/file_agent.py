@@ -249,7 +249,7 @@ class FileAgent(BaseAgent):
 
             self._update_file_metrics(timestamp=import_file_log.created_at.timestamp())
 
-    def _update_file_metrics(self, timestamp) -> None:
+    def _update_file_metrics(self, timestamp: float) -> None:
         """
         Update any Prometheus metrics this agent might have
         """
