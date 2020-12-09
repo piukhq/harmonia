@@ -109,6 +109,11 @@ def test_config_value_with_default(redis, token0, token1):
 
 @pytest.fixture
 def api_client():
+    from app.api import auth
+
+    # replace the requires_auth decorator with a no-op
+    auth.auth_decorator = lambda: lambda *args, **kwargs: lambda fn: fn
+
     from app.api.app import create_app
 
     app = create_app()

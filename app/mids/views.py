@@ -1,4 +1,5 @@
 import csv
+import string
 import typing as t
 from functools import lru_cache
 
@@ -8,11 +9,12 @@ import werkzeug
 
 from app import models, db, reporting
 from app.api.utils import view_session
+from app.api.auth import auth_decorator
 import settings
 
 
 api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
-
+requires_auth = auth_decorator()
 log = reporting.get_logger("mids-api")
 
 
@@ -39,13 +41,14 @@ def get_payment_provider(slug, *, session: db.Session):
 
 
 def create_merchant_identifier_fields(
-    payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, *, session: db.Session
+    payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, *, session: db.Session
 ) -> dict:
     loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug, session=session)
     payment_provider = get_payment_provider(payment_provider_slug, session=session)
 
     return dict(
         mid=mid,
+        store_id=store_id if store_id else None,
         loyalty_scheme_id=loyalty_scheme.id,
         payment_provider_id=payment_provider.id,
         location=location,
@@ -53,7 +56,20 @@ def create_merchant_identifier_fields(
     )
 
 
+def _get_first_character(file_storage: werkzeug.datastructures.FileStorage) -> str:
+    # the `line for line in ...` is required since FileStorage isn't a proper iterable
+    char = next(line for line in file_storage).decode()[0]
+    file_storage.seek(0)
+    return char
+
+
 def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session) -> t.Tuple[int, int]:
+    mark = _get_first_character(file_storage)
+    if mark not in string.printable:
+        raise ValueError(
+            "File starts with an invalid character. Ensure the file has been saved in UTF-8 format with no BOM."
+        )
+
     reader = csv.reader((line.decode() for line in file_storage), dialect=CSVDialect())
 
     log.debug("Processing MIDs...")
@@ -62,15 +78,24 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
     for line, row in enumerate(reader):
         row = [value.strip() for value in row]
         try:
-            payment_provider_slug, mid, loyalty_scheme_slug, loyalty_scheme_name, location, postcode, action = row
+            (
+                payment_provider_slug,
+                mid,
+                loyalty_scheme_slug,
+                store_id,
+                loyalty_scheme_name,
+                location,
+                postcode,
+                action,
+            ) = row
         except ValueError as ex:
-            raise ValueError(f"Expected 7 items at line {line} of file, got {len(row)}") from ex
+            raise ValueError(f"Expected 8 items at line {line} of file, got {len(row)}") from ex
 
         if action.lower() != "a":
             continue
 
         merchant_identifier_fields = create_merchant_identifier_fields(
-            payment_provider_slug, mid, loyalty_scheme_slug, location, postcode, session=session
+            payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, session=session
         )
         merchant_identifiers_fields.append(merchant_identifier_fields)
 
@@ -102,6 +127,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
 
 
 @api.route("/", methods=["POST"])
+@requires_auth(auth_scopes="mids:write")
 @view_session
 def import_mids(*, session: db.Session) -> ResponseType:
     """

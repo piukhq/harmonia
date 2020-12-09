@@ -1,5 +1,4 @@
 # base fixture data
-mid = "92040913"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -30,9 +29,13 @@ date = 2020-05-28T15:46:00Z
 amount = 1099
 settlement_key = "settle123"
 auth_code = "666666"
+mid = "92040913"
+store_id = "0001017   005682"
 
 [[users.transactions]]
 date = 2020-05-28T16:46:00Z
 amount = 2099
 settlement_key = "1111111111"
 auth_code = "666666"
+mid = "92040913"
+store_id = "0001017   005682"

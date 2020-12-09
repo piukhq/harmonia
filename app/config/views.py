@@ -3,12 +3,15 @@ import marshmallow
 
 from app.config import config, schemas
 from app.api.utils import expects_json, ResponseType
+from app.api.auth import auth_decorator
 import settings
 
 api = Blueprint("config_api", __name__, url_prefix=f"{settings.URL_PREFIX}/config")
+requires_auth = auth_decorator()
 
 
 @api.route("/keys")
+@requires_auth(auth_scopes="config:read")
 def list_keys() -> ResponseType:
     """List config keys
     ---
@@ -28,6 +31,7 @@ def list_keys() -> ResponseType:
 
 
 @api.route("/keys/<key>", methods=["PUT"])
+@requires_auth(auth_scopes="config:write")
 @expects_json
 def update_key(key: str) -> ResponseType:
     """Update a config key

@@ -11,5 +11,15 @@ class ImportTransaction(Base, ModelMixin):
     transaction_id = s.Column(s.String(50), nullable=False)
     provider_slug = s.Column(s.String(50), nullable=False)
     identified = s.Column(s.Boolean, nullable=False)
+    match_group = s.Column(s.String(36), nullable=False)
     source = s.Column(s.String(500), nullable=True)
     data = s.Column(s.JSON)
+
+
+@auto_repr
+class ImportFileLog(Base, ModelMixin):
+    __tablename__ = "import_file_log"
+
+    provider_slug = s.Column(s.String(50), nullable=False)
+    file_name = s.Column(s.String(500), nullable=False)
+    imported = s.Column(s.Boolean, nullable=False, default=False)

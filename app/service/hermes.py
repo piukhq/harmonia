@@ -1,5 +1,4 @@
 from enum import Enum
-from urllib.parse import urljoin
 
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
@@ -13,6 +12,7 @@ class PaymentProviderSlug(str, Enum):
     AMEX = "amex"
     VISA = "visa"
     MASTERCARD = "mastercard"
+    BINK_PAYMENT = "bink-payment"
 
 
 class Hermes:
@@ -23,6 +23,8 @@ class Hermes:
         self.base_url = base_url
         self.session = requests_retry_session()
 
+        self._headers = {"Authorization": f"Token {settings.SERVICE_API_KEY}"}
+
     @staticmethod
     def _format_slug(slug: str) -> str:
         if slug in settings.HERMES_SLUGS_TO_FORMAT and settings.HERMES_SLUG_FORMAT_STRING is not None:
@@ -31,8 +33,8 @@ class Hermes:
 
     def post(self, endpoint: str, body: dict = None, *, name: str) -> dict:
         log.debug(f"Posting {name} request with parameters: {body}.")
-        url = urljoin(self.base_url, endpoint)
-        response = self.session.post(url, json=body)
+        url = f"{self.base_url}{endpoint}"
+        response = self.session.post(url, json=body, headers=self._headers)
         response.raise_for_status()
         return response.json()
 

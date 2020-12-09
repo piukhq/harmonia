@@ -1,0 +1,33 @@
+# Amex auth fixture data
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "wasabi-club"
+
+[payment_provider]
+slug = "amex"
+
+[[agents]]
+slug = "wasabi-club"
+
+[[agents]]
+slug = "amex-auth"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-a-123"
+first_six = "423456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+email = "test@binktest.com"
+
+[[users.transactions]]
+date = 2020-04-09T15:46:00Z
+amount = 11199
+auth_code = "666666"
+settlement_key = "settlement-123"
+mid = "test-mid-123"

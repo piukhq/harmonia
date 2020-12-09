@@ -2,6 +2,8 @@ import json
 from uuid import uuid4
 import typing as t
 
+import pendulum
+
 from harness.providers.base import BaseImportDataProvider
 from app.currency import to_pounds
 
@@ -29,11 +31,11 @@ class HarveyNichols(BaseImportDataProvider):
                             "expiry": "0",
                             "scheme": scheme_name,
                         },
-                        "amount": {"value": to_pounds(transaction["amount"]), "unit": "GBP"},
-                        "store_id": "0001017   005682",
-                        "timestamp": transaction["date"].isoformat(),
+                        "amount": {"value": float(to_pounds(transaction["amount"])), "unit": "GBP"},
+                        "store_id": transaction["store_id"],
+                        "timestamp": pendulum.instance(transaction["date"]).in_tz("Europe/London").isoformat(),
                         "id": str(uuid4()),
-                        "auth_code": "00000000",
+                        "auth_code": f'00{transaction["auth_code"]}',
                     }
                     for user in fixture["users"]
                     for transaction in user["transactions"]

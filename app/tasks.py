@@ -1,11 +1,11 @@
 import typing as t
 
-import pendulum
 import rq
 
 from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
-
+from app.prometheus import prometheus_push_manager
+import settings
 
 log = reporting.get_logger("tasks")
 
@@ -38,12 +38,12 @@ class LoggedQueue(rq.Queue):
         return self.count < limit
 
 
-def run_worker(queue_names: t.List[str], *, burst: bool = False):
+def run_worker(queue_names: t.List[str], *, burst: bool = False, workerclass: t.Type[rq.Worker] = rq.Worker):
     if not queue_names:
         log.warning("No queues were passed to tasks.run_worker, exiting early.")
         return  # no queues, nothing to do
     queues = [LoggedQueue(name, connection=db.redis_raw) for name in queue_names]
-    worker = rq.Worker(queues, connection=db.redis_raw, log_job_description=False)
+    worker = workerclass(queues, connection=db.redis_raw, log_job_description=False)
     worker.work(burst=burst)
 
 
@@ -52,15 +52,17 @@ matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
-def import_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction]) -> None:
-    log.debug(f"Task started: import {len(scheme_transactions)} scheme transactions.")
+def import_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str) -> None:
+    log.debug(f"Task started: import {len(scheme_transactions)} scheme transactions in group {match_group}.")
     director = import_director.SchemeImportDirector()
 
     with db.session_scope() as session:
-        director.handle_scheme_transactions(scheme_transactions, session=session)
+        director.handle_scheme_transactions(scheme_transactions, match_group=match_group, session=session)
 
 
-def import_auth_payment_transactions(payment_transactions: t.List[models.PaymentTransaction]) -> None:
+def import_auth_payment_transactions(
+    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
+) -> None:
     log.debug(f"Task started: import {len(payment_transactions)} auth payment transactions.")
     director = import_director.PaymentImportDirector()
 
@@ -70,7 +72,9 @@ def import_auth_payment_transactions(payment_transactions: t.List[models.Payment
             director.handle_auth_payment_transaction(payment_transaction, session=session)
 
 
-def import_settled_payment_transactions(payment_transactions: t.List[models.PaymentTransaction]) -> None:
+def import_settled_payment_transactions(
+    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
+) -> None:
     log.debug(f"Task started: import {len(payment_transactions)} settled payment transactions.")
     director = import_director.PaymentImportDirector()
 
@@ -96,12 +100,12 @@ def match_payment_transaction(payment_transaction_id: int) -> None:
         worker.handle_payment_transaction(payment_transaction_id, session=session)
 
 
-def match_scheme_transactions(from_date: pendulum.DateTime) -> None:
-    log.debug(f"Task started: match scheme transactions from {from_date}")
+def match_scheme_transactions(match_group: str) -> None:
+    log.debug(f"Task started: match scheme transactions in group {match_group}")
     worker = matching_worker.MatchingWorker()
 
     with db.session_scope() as session:
-        worker.handle_scheme_transactions(from_date=from_date, session=session)
+        worker.handle_scheme_transactions(match_group, session=session)
 
 
 def export_matched_transaction(matched_transaction_id: int) -> None:
@@ -117,4 +121,7 @@ def export_singular_transaction(pending_export_id: int) -> None:
     director = export_director.ExportDirector()
 
     with db.session_scope() as session:
-        director.handle_pending_export(pending_export_id, session=session)
+        with prometheus_push_manager(
+            prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB
+        ):
+            director.handle_pending_export(pending_export_id, session=session)

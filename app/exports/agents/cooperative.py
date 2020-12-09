@@ -5,7 +5,6 @@ import os
 import typing as t
 from uuid import uuid4
 
-from soteria.configuration import Configuration
 from soteria.security import get_security_agent
 
 import settings
@@ -14,15 +13,15 @@ from app.config import KEY_PREFIX, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.sequences import batch
-from app.service.atlas import atlas
 from app.service.cooperative import CooperativeAPI
+from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "cooperative"
 SCHEDULE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.schedule"
 MAX_TRANSACTIONS_PER_REQUEST_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.max_transactions_per_request"
 
 
-class Cooperative(BatchExportAgent):
+class Cooperative(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
     class Config:
@@ -37,24 +36,7 @@ class Cooperative(BatchExportAgent):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        if settings.EUROPA_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Europa URL to be set."
-            )
-
-        if settings.VAULT_URL is None or settings.VAULT_TOKEN is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires both the Vault URL and token to be set."
-            )
-
-        self.merchant_config = Configuration(
-            self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
-            settings.VAULT_URL,
-            settings.VAULT_TOKEN,
-            settings.EUROPA_URL,
-        )
-
+        self.merchant_config = self.get_soteria_config()
         self.api = CooperativeAPI(self.merchant_config.merchant_url)
 
     def help(self):
@@ -109,28 +91,9 @@ class Cooperative(BatchExportAgent):
             "X-API-KEY": security_credentials["outbound"]["credentials"][0]["value"]["api_key"],
         }
 
-    def send_to_atlas(self, response, transactions):
-        failed_transactions = []
-        atlas_status_mapping = {
-            "processed": atlas.Status.BINK_ASSIGNED,
-            "alreadyprocessed": atlas.Status.MERCHANT_ASSIGNED,
-            "alreadyclaimed": atlas.Status.MERCHANT_ASSIGNED,
-            "alreadyassigned": atlas.Status.MERCHANT_ASSIGNED,
-            "unfound": atlas.Status.NOT_ASSIGNED,
-        }
-        transaction_id_dict = {t.transaction_id: t for t in transactions}
-        for transaction_response in response.json():
-            transaction_status = str(list(transaction_response.keys())[0])
-            transaction = transaction_id_dict[transaction_response[transaction_status]]
-            atlas_status = atlas_status_mapping[transaction_status.lower()]
-            try:
-                atlas.save_transaction(self.provider_slug, transaction_response, transaction, atlas_status)
-            except Exception:
-                failed_transactions.append(transaction_response)
-        if failed_transactions:
-            self.log.error(f"The following transactions could not be saved to Atlas: {failed_transactions}")
-
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         batch_size = int(self.Config.max_transactions_per_request)
         for transaction_batch in batch(transactions, batch_size):
@@ -146,8 +109,8 @@ class Cooperative(BatchExportAgent):
 
     def send_export_data(self, export_data: AgentExportData):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
-        _, body = export_data.outputs.pop()
-        matched_transactions = export_data.transactions
+        _, body = export_data.outputs[0]
+        # matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(
             body,
@@ -159,4 +122,4 @@ class Cooperative(BatchExportAgent):
         response.raise_for_status()
 
         self.save_backup_file(response)
-        self.send_to_atlas(response, matched_transactions)
+        # self.send_to_atlas(response, matched_transactions)

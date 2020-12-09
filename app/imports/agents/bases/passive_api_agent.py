@@ -6,8 +6,12 @@ import marshmallow
 
 from app import utils, db
 from app.api import utils as api_utils
+from app.api.auth import auth_decorator
 from app.imports.agents import BaseAgent
 import settings
+
+
+requires_auth = auth_decorator()
 
 
 class PassiveAPIAgent(BaseAgent):
@@ -23,6 +27,7 @@ class PassiveAPIAgent(BaseAgent):
         )
 
         @api.route("/", strict_slashes=False, methods=["POST"])
+        @requires_auth(auth_scopes="transactions:write")
         @api_utils.expects_json
         def index() -> t.Tuple[dict, int]:
             """
@@ -44,7 +49,8 @@ class PassiveAPIAgent(BaseAgent):
             transactions_data = self.extract_transactions(data)
 
             with db.session_scope() as session:
-                self._import_transactions(transactions_data, session=session, source="POST /")
+                list(self._import_transactions(transactions_data, session=session, source="POST /"))
+
             return {"ok": True}, 200
 
         index.__doc__ = index.__doc__.format(self.provider_slug, self.provider_slug)

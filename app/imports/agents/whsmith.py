@@ -14,6 +14,7 @@ from app.service.hermes import PaymentProviderSlug
 PROVIDER_SLUG = "whsmith-rewards"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 DATETIME_FORMAT = "YYYY-MM-DDTHH:mm:ss.SSS"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATA_FIELDS = (
     "transaction_uuid",
@@ -43,19 +44,14 @@ DATA_FIELDS = (
     "country",
 )
 
-STORE_ID_TO_MIDS = {
-    # FIXME: Full store ID to MID mapping required
-    "5842": ["942424905", "61584292"]
-}
-
 
 class WhSmith(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "datetime": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="UTC"),
-        "total": lambda x: to_pennies(float(x)),
+        "datetime": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
+        "total": lambda x: to_pennies(x),
     }
 
     payment_provider_map = {
@@ -68,6 +64,7 @@ class WhSmith(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -101,7 +98,6 @@ class WhSmith(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_uuid"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
-        mid = data["store_id"]
-        return STORE_ID_TO_MIDS.get(mid, [mid])
+    def get_mids(self, data: dict) -> t.List[str]:
+        store_id = data["store_id"]
+        return self.storeid_mid_map.get(store_id, [store_id])

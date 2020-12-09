@@ -11,6 +11,7 @@ from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "harvey-nichols"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -136,6 +137,8 @@ payment_provider_map = {
     "DELTA": PaymentProviderSlug.VISA,
     "ELECTRON": PaymentProviderSlug.VISA,
     "VISA": PaymentProviderSlug.VISA,
+    # for end-to-end tests
+    "Bink-Payment": PaymentProviderSlug.BINK_PAYMENT,
 }
 
 
@@ -145,6 +148,16 @@ class HarveyNichols(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["files_received", "transactions"],
+            "gauges": ["last_file_timestamp"],
+        }
 
     """
     Harvey Nichols send transaction data with unrecognised payment providers, EG "ACCESS (NOT USED)"
@@ -167,7 +180,7 @@ class HarveyNichols(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
+        transaction_date = self.pendulum_parse(data["timestamp"], tz="Europe/London")
         return SchemeTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
@@ -175,14 +188,18 @@ class HarveyNichols(FileAgent):
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
+            auth_code=self.process_auth_code(data["auth_code"]),
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},
         )
+
+    def process_auth_code(self, auth_code: str) -> str:
+        auth_code = auth_code.strip()
+        return auth_code[2:] if auth_code.startswith("00") else auth_code
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         return data["id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         mid = data["store_id"]
         return STORE_ID_TO_MIDS.get(mid[:4], [mid])

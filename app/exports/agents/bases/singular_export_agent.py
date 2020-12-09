@@ -1,11 +1,21 @@
+import typing as t
+from contextlib import ExitStack, contextmanager
+
 import settings
 from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
+from app.prometheus import bink_prometheus
 from app.status import status_monitor
+from sqlalchemy.orm import Session
 
 
 class SingularExportAgent(BaseAgent):
+    def __init__(self):
+        super().__init__()
+
+        self.bink_prometheus = bink_prometheus
+
     def run(self):
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
@@ -28,7 +38,7 @@ class SingularExportAgent(BaseAgent):
             return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
 
         matched_transaction = db.run_query(
-            find_transaction, session=session, read_only=True, description="load matched transaction"
+            find_transaction, session=session, read_only=True, description="load matched transaction",
         )
 
         if matched_transaction is None:
@@ -58,7 +68,9 @@ class SingularExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self.export(export_data, session=session)
+                with self._update_metrics(export_data=export_data, session=session):
+                    self.export(export_data, session=session)
+
             self._save_export_transactions(export_data, session=session)
 
         self.log.info(f"Removing pending export {pending_export}.")
@@ -68,6 +80,48 @@ class SingularExportAgent(BaseAgent):
             session.commit()
 
         db.run_query(delete_pending_export, session=session, description="delete pending export")
+
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session: Session) -> t.Iterator[None]:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+        # Use the Prometheus request latency context manager if we have one. This must be the first method
+        # call of course
+        with ExitStack() as stack:
+            self.bink_prometheus.use_histogram_context_manager(
+                agent=self,
+                histogram_name="request_latency",
+                context_manager_stack=stack,
+                process_type="export",
+                slug=self.provider_slug,
+            )
+            self.bink_prometheus.increment_counter(
+                agent=self,
+                counter_name="requests_sent",
+                increment_by=1,
+                process_type="export",
+                slug=self.provider_slug,
+            )
+            try:
+                yield
+            except Exception:
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="failed_requests",
+                    increment_by=1,
+                    process_type="export",
+                    slug=self.provider_slug,
+                )
+                raise
+            else:
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="transactions",
+                    increment_by=1,
+                    process_type="export",
+                    slug=self.provider_slug,
+                )
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

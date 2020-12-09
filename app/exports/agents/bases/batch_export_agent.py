@@ -1,14 +1,20 @@
 import typing as t
-
 from sqlalchemy.orm import Load, joinedload
+from contextlib import ExitStack, contextmanager
 
 import settings
 from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
+from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
 
 
 class BatchExportAgent(BaseAgent):
+    def __init__(self):
+        super().__init__()
+
+        self.bink_prometheus = bink_prometheus
+
     def run(self):
         scheduler = CronScheduler(
             name="batch-export",
@@ -54,7 +60,8 @@ class BatchExportAgent(BaseAgent):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                self.send_export_data(export_data)
+                with self._update_metrics(export_data):
+                    self.send_export_data(export_data)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
@@ -63,13 +70,64 @@ class BatchExportAgent(BaseAgent):
             )
 
         def delete_pending_exports():
-            pending_exports_q.delete()
+            num_deleted = (
+                session.query(models.PendingExport)
+                .filter(models.PendingExport.id.in_([pe.id for pe in pending_exports]))
+                .delete(synchronize_session=False)
+            )
+            self.log.debug(f"Deleted {num_deleted} pending exports.")
             session.commit()
 
-        db.run_query(delete_pending_exports, session=session, description="delete pending exports")
+        db.run_query(
+            delete_pending_exports, session=session, description="delete pending exports",
+        )
 
-    def yield_export_data(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session):
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session=None) -> t.Iterator[None]:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+        # Use the Prometheus request latency context manager if we have one. This must be the first method
+        # call of course
+        with ExitStack() as stack:
+            self.bink_prometheus.use_histogram_context_manager(
+                agent=self,
+                histogram_name="request_latency",
+                context_manager_stack=stack,
+                process_type="export",
+                slug=self.provider_slug,
+            )
+            self.bink_prometheus.increment_counter(
+                agent=self,
+                counter_name="requests_sent",
+                increment_by=1,
+                process_type="export",
+                slug=self.provider_slug,
+            )
+            try:
+                yield
+            except Exception:
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="failed_requests",
+                    increment_by=1,
+                    process_type="export",
+                    slug=self.provider_slug,
+                )
+                raise
+            else:
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="transactions",
+                    increment_by=len(export_data.transactions),
+                    process_type="export",
+                    slug=self.provider_slug,
+                )
+
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData) -> None:
         raise NotImplementedError("Override the send_export_data method in your agent.")

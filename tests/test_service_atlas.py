@@ -1,17 +1,14 @@
 import pendulum
 import pytest
-import requests
-import responses
-
 import settings
+
+from requests.models import Response
+from unittest import mock
 
 from app.service.atlas import Atlas
 
 # this allows the atlas service to work normally.
 settings.SIMULATE_EXPORTS = False
-
-
-TEST_ATLAS_URL = "http://atlas.test"
 
 
 class MockUserIdentity:
@@ -30,53 +27,50 @@ class MockMatchedTransaction:
     transaction_date = pendulum.now()
 
 
-BINK_ASSIGNED = Atlas.Status.BINK_ASSIGNED
-
-
 @pytest.fixture
 def atlas() -> Atlas:
-    return Atlas(TEST_ATLAS_URL)
+    return Atlas()
 
 
-@responses.activate
-def test_save_transaction(atlas: Atlas) -> None:
-    url = f"{TEST_ATLAS_URL}/transaction/save"
-    body = {
-        "TransactionSaved": {
-            "id": 176,
-            "created_date": "2019-08-08T13:25:03.246697Z",
-            "scheme_provider": "test-slug",
-            "response": "{'outcome': 'Success'}",
-            "transaction_id": "000111441144114411441144",
-            "status": "BINK-ASSIGNED",
-            "transaction_date": "2019-08-08T14:24:10Z",
-            "user_id": "1",
-            "amount": 8700,
-        }
-    }
-    responses.add(responses.POST, url, json=body)
-
-    resp = atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
-    assert resp == body
+request_body = (
+    "{"
+    '"CustomerClaimTransactionRequest": {'
+    '"token": "token",'
+    '"customerNumber": credentials["card_number"],'
+    '"id": matched_transaction.transaction_id,'
+    "}"
+    "}"
+)
 
 
-@responses.activate
-def test_save_transaction_bad_500(atlas: Atlas) -> None:
-    url = f"{TEST_ATLAS_URL}/transaction/save"
-    body = {"bad_request": {"outcome": "error"}}
-    responses.add(responses.POST, url, json=body, status=500)
+@mock.patch("app.service.queue.add", autospec=True)
+def test_save_transaction(mocked_queue) -> None:
+    request_timestamp = pendulum.now().to_datetime_string()
+    atlas = Atlas()
+    response = mock.Mock(spec=Response)
+    response.json.return_value = {"outcome": "success"}
+    response.status_code = 200
+    response_timestamp = pendulum.now().to_datetime_string()
 
-    with pytest.raises(requests.HTTPError) as ex:
-        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
-    assert ex.value.response.status_code == 500
+    atlas.save_transaction(
+        "test-slug", response, request_body, [MockMatchedTransaction()], request_timestamp, response_timestamp
+    )
+
+    mocked_queue.assert_called
 
 
-@responses.activate
-def test_save_transaction_bad_400(atlas: Atlas) -> None:
-    url = f"{TEST_ATLAS_URL}/transaction/save"
-    body = {"bad_request": {"outcome": "error"}}
-    responses.add(responses.POST, url, json=body, status=400)
+@mock.patch("app.service.queue.add", autospec=True)
+def test_save_transaction_empty_response(mocked_queue) -> None:
+    request_timestamp = pendulum.now().to_datetime_string()
+    atlas = Atlas()
+    response = mock.Mock(spec=Response)
+    response.json.side_effect = ValueError
+    response.status_code = 204
+    response_timestamp = pendulum.now().to_datetime_string()
 
-    with pytest.raises(requests.HTTPError) as ex:
-        atlas.save_transaction("test-slug", {"outcome": "Success"}, MockMatchedTransaction(), BINK_ASSIGNED)
-    assert ex.value.response.status_code == 400
+    atlas.save_transaction(
+        "test-slug", response, request_body, [MockMatchedTransaction()], request_timestamp, response_timestamp
+    )
+
+    mocked_queue.assert_called
+    assert mocked_queue.call_args[0][0]["response"] == {}

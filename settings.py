@@ -5,6 +5,8 @@ import os
 
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.rq import RqIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 import sentry_sdk
 
 
@@ -107,7 +109,11 @@ SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 SENTRY_ENV = getenv("TXM_SENTRY_ENV", default="unset").lower()
 
 if SENTRY_DSN is not None:
-    sentry_sdk.init(dsn=SENTRY_DSN, environment=SENTRY_ENV, integrations=[FlaskIntegration(), RqIntegration()])
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENV,
+        integrations=[FlaskIntegration(), RqIntegration(), RedisIntegration(), SqlalchemyIntegration()],
+    )
 
 # JSON encoding with custom extensions.
 # Used in queue messages, postgres JSON field storage, et cetera.
@@ -125,6 +131,9 @@ HERMES_SLUG_FORMAT_STRING = getenv("TXM_HERMES_SLUG_FORMAT_STRING", required=Fal
 
 # If set, file-based import agents will talk with blob storage instead.
 BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
+BLOB_IMPORT_CONTAINER = getenv("TXM_BLOB_IMPORT_CONTAINER", default="harmonia-imports")
+BLOB_ARCHIVE_CONTAINER = getenv("TXM_BLOB_ARCHIVE_CONTAINER", default="harmonia-archive")
+BLOB_EXPORT_CONTAINER = getenv("TXM_BLOB_EXPORT_CONTAINER", default="harmonia-exports")
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.
@@ -145,6 +154,10 @@ FLASK = dict(
 # The prefix used on every API endpoint in the project.
 URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
 
+# Azure AD application details
+AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID")
+AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
+
 # API key for service authentication.
 SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 
@@ -162,8 +175,16 @@ VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
 VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
 
+# If set, visa files will be decrypted with GPG
+VISA_ENCRYPTED = getenv("TXM_VISA_ENCRYPTED", default="true", conv=boolconv)
+
 # Arguments to pass to gnupg.GPG(...)
 GPG_ARGS = {
     "gpgbinary": getenv("TXM_GPG1_BINARY", default="gpg1"),
     "gnupghome": getenv("TXM_GPG_HOME", default="keyring"),
 }
+
+# Prometheus settings
+PUSH_PROMETHEUS_METRICS = getenv("TXM_PUSH_PROMETHEUS_METRICS", default="true", conv=boolconv)
+PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
+PROMETHEUS_JOB = "harmonia"

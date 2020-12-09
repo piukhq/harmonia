@@ -14,6 +14,7 @@ from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
@@ -24,7 +25,7 @@ class Iceland(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "TransactionCardSchemeId": int,
-        "TransactionAmountValue": lambda x: to_pennies(float(x)),
+        "TransactionAmountValue": lambda x: to_pennies(x),
         "TransactionCashbackValue": Decimal,
         "TransactionTimestamp": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
     }
@@ -45,6 +46,7 @@ class Iceland(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         fd = io.StringIO(data.decode())
@@ -94,6 +96,5 @@ class Iceland(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["TransactionId"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["TransactionStore_Id"]]

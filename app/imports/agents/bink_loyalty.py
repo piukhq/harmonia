@@ -38,6 +38,5 @@ class BinkLoyalty(PassiveAPIAgent):
     def get_transaction_id(data: dict) -> str:
         return data["tid"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["mid"]]

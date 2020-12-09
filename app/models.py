@@ -6,7 +6,7 @@ from sqlalchemy.dialects import postgresql as psql
 from app.db import Base, ModelMixin, auto_repr, auto_str
 
 # import other module's models here to be recognised by alembic.
-from app.imports.models import ImportTransaction  # noqa
+from app.imports.models import ImportTransaction, ImportFileLog  # noqa
 from app.exports.models import PendingExport, ExportTransaction, FileSequenceNumber  # noqa
 
 
@@ -37,6 +37,7 @@ class MerchantIdentifier(Base, ModelMixin):
     __table_args__ = (s.UniqueConstraint("mid", "payment_provider_id", name="_mid_provider_mi_uc"),)
 
     mid = s.Column(s.String(50), nullable=False)
+    store_id = s.Column(s.String(50), nullable=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
     payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
     location = s.Column(s.String(250), nullable=False)
@@ -51,7 +52,7 @@ class TransactionStatus(Enum):
 
 
 @auto_repr
-@auto_str("id", "transaction_id")
+@auto_str("id", "transaction_id", "provider_slug", "payment_provider_slug")
 class SchemeTransaction(Base, ModelMixin):
     __tablename__ = "scheme_transaction"
 
@@ -59,20 +60,21 @@ class SchemeTransaction(Base, ModelMixin):
     provider_slug = s.Column(s.String(50), nullable=False)  # hermes scheme slug
     payment_provider_slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant
-    transaction_date = s.Column(s.DateTime(timezone=True), nullable=False)  # date this transaction was originally made
+    transaction_date = s.Column(s.DateTime(timezone=True), nullable=False, index=True)  # date the transaction was made
     has_time = s.Column(s.Boolean, nullable=False, default=False)  # indicates if a time is sent with the transaction
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
+    match_group = s.Column(s.String(36), nullable=False, index=True)  # the group this transaction was imported in
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="scheme_transaction")
 
 
 @auto_repr
-@auto_str("id", "transaction_id")
+@auto_str("id", "transaction_id", "provider_slug")
 class PaymentTransaction(Base, ModelMixin):
     __tablename__ = "payment_transaction"
 
@@ -89,6 +91,7 @@ class PaymentTransaction(Base, ModelMixin):
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
     user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
+    match_group = s.Column(s.String(36), nullable=False, index=True)  # currently unused
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
     user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
@@ -100,6 +103,7 @@ class MatchingType(Enum):
     LOYALTY = 1  # payment tx identified with loyalty tx scheme feed available
     NON_LOYALTY = 2  # payment tx identified with non-loyalty tx scheme feed available
     MIXED = 3  # payment tx identified with full tx scheme feed available
+    FORCED = 4  # match was created manually via redress process
 
 
 class MatchedTransactionStatus(Enum):
@@ -130,6 +134,7 @@ class MatchedTransaction(Base, ModelMixin):
 
 
 @auto_repr
+@auto_str("id", "user_id", "scheme_account_id")
 class UserIdentity(Base, ModelMixin):
     __tablename__ = "user_identity"
 

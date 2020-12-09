@@ -13,6 +13,7 @@ from app.currency import to_pennies
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -42,13 +43,14 @@ class MastercardSettled(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "transaction_amount": lambda x: to_pennies(float(x)),
+        "transaction_amount": lambda x: to_pennies(x),
         "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
         "transaction_time": int,
     }
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -106,8 +108,7 @@ class MastercardSettled(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_sequence_number"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_id"]]
 
 
@@ -124,7 +125,7 @@ class MastercardAuth(QueueAgent):
             settlement_key=_make_settlement_key(data["third_party_id"]),
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(data["amount"])),
+            spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             card_token=data["payment_card_token"],
@@ -136,6 +137,5 @@ class MastercardAuth(QueueAgent):
         # TODO: is this alright?
         return str(uuid4())
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["mid"]]

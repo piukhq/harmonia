@@ -9,6 +9,7 @@ import flask_cors
 from app.version import __version__
 import settings
 
+
 spec = APISpec(
     title="Transaction Matching API",
     version=__version__,
@@ -41,15 +42,23 @@ def create_app() -> flask.Flask:
 
     flask_cors.CORS(app)
 
+    from azure_oidc.integrations.flask_decorator import HTTPUnauthorized
+
+    @app.errorhandler(HTTPUnauthorized)
+    def handle_unauthorized(error: HTTPUnauthorized):
+        return {"title": "401 Unauthorized", "description": error.description}, 401
+
     from app.api.views import api as core_api
     from app.config.views import api as config_api
     from app.status.views import api as status_api
     from app.mids.views import api as mids_api
+    from app.matching.views import api as matching_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)
     app.register_blueprint(status_api)
     app.register_blueprint(mids_api)
+    app.register_blueprint(matching_api)
 
     register_import_agent_routes(app)
 

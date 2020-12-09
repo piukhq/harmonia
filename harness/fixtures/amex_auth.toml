@@ -1,5 +1,4 @@
 # Amex auth fixture data
-mid = "test-mid-123"
 location = "Ascot"
 postcode = "SL5 9FE"
 
@@ -30,3 +29,4 @@ date = 2020-04-09T15:46:00Z
 amount = 11199
 auth_code = "666666"
 settlement_key = "settlement-123"
+mid = "test-mid-123"

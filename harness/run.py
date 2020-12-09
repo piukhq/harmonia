@@ -1,27 +1,52 @@
+import time
 import json
 import shutil
 import typing as t
+from contextlib import contextmanager
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
+from uuid import uuid4
+from enum import Enum
 
 import click
-import gnupg
-import soteria.configuration
 import toml
+import gnupg
+import pendulum
+import rq
+import soteria.configuration
+import soteria.security
 from flask import Flask
-from marshmallow import ValidationError, fields, validate
+from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
-import settings
-from app import db, encryption, models, tasks, feeds
-from app.core import key_manager
-from app.exports.agents import BatchExportAgent, export_agents
-from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
-from app.registry import NoSuchAgent
-from app.service.hermes import hermes
-from harness.providers.registry import import_data_providers
+from app.prometheus import prometheus_thread
+from app.api import auth
+
+
+@contextmanager
+def mocked_auth_decorator():
+    # replace the requires_auth decorator with a no-op
+    auth.auth_decorator = lambda: lambda *args, **kwargs: lambda fn: fn
+    yield
+
+
+with mocked_auth_decorator():
+    import settings
+    from app import db, encryption, models, tasks, feeds
+    from app.core import key_manager
+    from app.exports.agents import BatchExportAgent, export_agents
+    from app.imports.agents import (
+        ActiveAPIAgent,
+        BaseAgent,
+        FileAgent,
+        PassiveAPIAgent,
+        QueueAgent,
+        import_agents,
+    )
+    from app.registry import NoSuchAgent
+    from app.service.hermes import hermes
+    from harness.providers.registry import import_data_providers
 
 # most of the export agents need this to be set to something.
 settings.EUROPA_URL = ""
@@ -123,6 +148,17 @@ class FixtureUserTransactionSchema(Schema):
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
+    mid = fields.String(required=True, allow_none=False)
+    store_id = fields.String(required=False, allow_none=True)
+
+    @pre_load
+    def convert_dates(self, data, **kwargs):
+        # TomlTz objects don't have deepcopy support (for fixture overriding)
+        data["date"] = pendulum.instance(data["date"])
+        for override in ("merchant_overrides", "payment_provider_overrides"):
+            if override in data and "date" in data[override]:
+                data[override]["date"] = pendulum.instance(data[override]["date"])
+        return data
 
 
 class FixtureUserSchema(Schema):
@@ -139,7 +175,6 @@ class FixtureProviderSchema(Schema):
 
 
 class FixtureSchema(Schema):
-    mid = fields.String(required=True, allow_none=False)
     location = fields.String(required=True, allow_none=False)
     postcode = fields.String(required=True, allow_none=False)
     loyalty_scheme = fields.Nested(FixtureProviderSchema)
@@ -222,15 +257,55 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     payment_provider, _ = db.get_or_create(
         models.PaymentProvider, session=session, slug=fixture["payment_provider"]["slug"]
     )
-    db.get_or_create(
-        models.MerchantIdentifier,
-        session=session,
-        mid=fixture["mid"],
-        loyalty_scheme=loyalty_scheme,
-        payment_provider=payment_provider,
-        location=fixture["location"],
-        postcode=fixture["postcode"],
+    for user in fixture["users"]:
+        for transaction in user["transactions"]:
+            db.get_or_create(
+                models.MerchantIdentifier,
+                session=session,
+                mid=transaction["mid"],
+                loyalty_scheme_id=loyalty_scheme.id,
+                payment_provider_id=payment_provider.id,
+                defaults={
+                    "store_id": transaction.get("store_id"),
+                    "location": fixture["location"],
+                    "postcode": fixture["postcode"],
+                },
+            )
+
+
+def preload_import_transactions(count: int, *, fixture: dict, session: db.Session):
+    insertions: t.List[t.Dict] = []
+    for _ in range(count):
+        insertions.append(
+            {
+                "transaction_id": str(uuid4()),
+                "provider_slug": fixture["loyalty_scheme"]["slug"],
+                "identified": True,
+                "match_group": str(uuid4()),
+                "source": "end to end test preload",
+                "data": {},
+            }
+        )
+
+    db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
+
+
+def preload_data(count: int, *, fixture: dict, session: db.Session, batch_size: int = 10000):
+    batches = count // batch_size
+    remainder = count % batch_size
+
+    click.secho(
+        f"Preloading {count} transactions in batches of {batch_size}", fg="cyan", bold=True,
     )
+
+    with click.progressbar(length=count, label="import transactions") as bar:
+        for _ in range(batches):
+            preload_import_transactions(batch_size, fixture=fixture, session=session)
+            bar.update(batch_size)
+
+        if remainder > 0:
+            preload_import_transactions(remainder, fixture=fixture, session=session)
+            bar.update(remainder)
 
 
 def patch_hermes_service(fixture: dict):
@@ -241,25 +316,41 @@ def patch_soteria_service():
     class MockSoteriaConfiguration(soteria.configuration.Configuration):
         TRANSACTION_MATCHING_HANDLER = "mock-handler"
 
-        security_credentials = {
-            "outbound": {
-                "credentials": [
-                    {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
-                    {"credential_type": "compound_key", "value": {}},
-                    {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
-                ]
+        data = {
+            "security_credentials": {
+                "outbound": {
+                    "credentials": [
+                        {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
+                        {"credential_type": "compound_key", "value": {}},
+                        {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
+                    ],
+                    "service": soteria.configuration.Configuration.RSA_SECURITY,
+                }
             }
         }
+        merchant_url = ""
 
         def __init__(self, *args, **kwargs):
             click.echo(f"{type(self).__name__} was instantiated!")
             click.echo(f"args: {args}")
             click.echo(f"kwargs: {kwargs}")
 
+        @property
+        def security_credentials(self):
+            return self.data["security_credentials"]
+
         def get_security_credentials(self, key_items):
             return self.security_credentials
 
+    def mock_get_security_agent(*args, **kwargs):
+        class MockSoteriaAgent:
+            def encode(self, body: str) -> dict:
+                return {"body": body}
+
+        return MockSoteriaAgent()
+
     soteria.configuration.Configuration = MockSoteriaConfiguration
+    soteria.security.get_security_agent = mock_get_security_agent
 
 
 def setup_keyring():
@@ -363,7 +454,7 @@ def run_import_agent(slug: str, fixture: dict):
 
 
 def run_rq_worker(queue_name: str):
-    tasks.run_worker([queue_name], burst=True)
+    tasks.run_worker([queue_name], burst=True, workerclass=rq.SimpleWorker)
 
 
 def maybe_run_batch_export_agent(fixture: dict):
@@ -377,10 +468,14 @@ def maybe_run_batch_export_agent(fixture: dict):
         agent.export_all(session=session)
 
 
-def run_transaction_matching(fixture: dict):
+def run_transaction_matching(fixture: dict, *, import_only: bool = False):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
+
+    if import_only:
+        return
+
     run_rq_worker("matching")
     run_rq_worker("export")
 
@@ -421,7 +516,16 @@ def do_file_dump(fixture: dict):
     show_default=True,
 )
 @click.option("--dump-files", is_flag=True, help="Dump import files without running end-to-end.")
-def main(fixture_file: t.IO[str], dump_files: bool):
+@click.option("--import-only", is_flag=True, help="Halt after the import step.")
+@click.option("--with-prometheus", is_flag=True, help="Run the Prometheus push thread as a daemon.")
+@click.option(
+    "--preload",
+    type=int,
+    default=0,
+    help="Load the database with this many transactions before running the test.",
+    show_default=True,
+)
+def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool, preload: int):
     fixture = load_fixture(fixture_file)
 
     if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
@@ -437,7 +541,19 @@ def main(fixture_file: t.IO[str], dump_files: bool):
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)
 
-    run_transaction_matching(fixture)
+        if preload > 0:
+            preload_data(preload, fixture=fixture, session=session)
+
+    # Start up the Prometheus push thread for pushing metrics
+    if with_prometheus:
+        prometheus_thread.start()
+        click.echo("Prometheus push thread started")
+
+    run_transaction_matching(fixture, import_only=import_only)
+
+    if with_prometheus:
+        click.echo("Sleeping for 60 seconds to allow Prometheus push thread to push all stats")
+        time.sleep(60)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from app.currency import to_pennies
 PROVIDER_SLUG = "amex"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
@@ -83,11 +84,12 @@ class Amex(FileAgent):
     field_transforms: t.Dict[str, t.Callable] = {
         "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="Europe/London"),
         "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
-        "transaction_amount": lambda x: to_pennies(float(x)),
+        "transaction_amount": lambda x: to_pennies(x),
     }
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -131,8 +133,7 @@ class Amex(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
 
 
@@ -145,7 +146,7 @@ class AmexAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["transaction_time"], tz="MST")
-        amount = to_pennies(float(data["transaction_amount"]))
+        amount = to_pennies(data["transaction_amount"])
         settlement_key = _make_settlement_key(
             card_token=data["cm_alias"],
             transaction_id=data["transaction_id"],
@@ -170,6 +171,5 @@ class AmexAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]

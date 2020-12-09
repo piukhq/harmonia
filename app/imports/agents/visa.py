@@ -1,20 +1,20 @@
 import inspect
 import typing as t
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
 
 import gnupg
 import pendulum
-
+import settings
 from app.config import KEY_PREFIX, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
-import settings
+from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYYMMDD"
 
@@ -79,6 +79,7 @@ class Visa(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
+        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -113,14 +114,22 @@ class Visa(FileAgent):
         with key_path.open("rb") as f:
             return f.read()
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def _decrypt_data(self, data: bytes) -> str:
         key = self._get_key()
         gpg = gnupg.GPG(**settings.GPG_ARGS)
         gpg.import_keys(key)
         result = gpg.decrypt(data)
         if not result.ok:
             raise self.ImportError(f"Decryption failed: {result.stderr}")
-        lines = str(result).split("\n")
+        return str(result)
+
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        if settings.VISA_ENCRYPTED:
+            file_data = self._decrypt_data(data)
+        else:
+            file_data = data.decode()
+
+        lines = file_data.split("\n")
         for line in lines:
             if not line.startswith("1601"):
                 continue
@@ -133,14 +142,13 @@ class Visa(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["card_acceptor_id"]]
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
-            settlement_key="",
+            settlement_key=_make_settlement_key(data["transaction_id"]),
             transaction_date=data["transaction_date"],
             has_time=True,
             spend_amount=data["transaction_amount"],
@@ -156,6 +164,14 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
 
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
+
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
         queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
@@ -164,8 +180,7 @@ class VisaAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
@@ -174,7 +189,7 @@ class VisaAuth(QueueAgent):
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(get_key_value(data, "Transaction.TransactionAmount"))),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,
@@ -186,7 +201,15 @@ class VisaAuth(QueueAgent):
 
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.AUTH
+    feed_type = ImportFeedTypes.SETTLED
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
@@ -196,8 +219,7 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    @staticmethod
-    def get_mids(data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
@@ -206,7 +228,7 @@ class VisaSettlement(QueueAgent):
         return PaymentTransactionFields(
             transaction_date=transaction_date,
             has_time=True,
-            spend_amount=to_pennies(float(get_key_value(data, "Transaction.SettlementAmount"))),
+            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=ext_user_id,

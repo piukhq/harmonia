@@ -2,6 +2,7 @@ import responses
 
 from app.exports.agents.iceland import Iceland
 import settings
+from app import encryption
 
 settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"
@@ -111,9 +112,10 @@ class ResponseNoContent:
 
 
 class UserIdentity:
-    def __init__(self, scheme_account_id, user_id):
+    def __init__(self, scheme_account_id, user_id, credentials):
         self.scheme_account_id = scheme_account_id
         self.user_id = user_id
+        self.credentials = credentials
 
 
 class MerchantIdentifier:
@@ -127,10 +129,12 @@ class MockPaymentTransaction:
 
 
 class MockMatchedTransaction:
-    def __init__(self, transaction_id, scheme_account_id, user_id, mid):
+    def __init__(self, transaction_id, scheme_account_id, user_id, merchant_identifier):
         self.transaction_id = transaction_id
-        self.payment_transaction = MockPaymentTransaction(UserIdentity(scheme_account_id, user_id))
-        self.merchant_identifier = MerchantIdentifier(mid)
+        mock_credentials = {"card_number": "loyalty-123", "merchant_identifier": merchant_identifier}
+        mock_credentials = encryption.encrypt_credentials(mock_credentials)
+        identity = UserIdentity(scheme_account_id, user_id, mock_credentials)
+        self.payment_transaction = MockPaymentTransaction(identity)
 
 
 @responses.activate
@@ -142,32 +146,3 @@ def test_format_transactions() -> None:
     formatted_transaction = iceland.format_transactions(transactions)
 
     assert formatted_transaction == Expected.formatted_transaction
-
-
-@responses.activate
-def test_check_response_error_codes() -> None:
-    add_mock_routes()
-    response = Response(Expected.response_error_codes)
-    expected = Expected.response_error_codes
-    iceland = Iceland()
-    try:
-        iceland.check_response(response)
-
-    except Exception as error:
-        error_response = error
-
-    assert str(expected["error_codes"]) in str(error_response)
-
-
-@responses.activate
-def test_check_response_error_codes_internal_server_error() -> None:
-    add_mock_routes()
-    response = ResponseNoContent(Expected.response_internal_server_error)
-    iceland = Iceland()
-    try:
-        iceland.check_response(response)
-
-    except Exception as error:
-        error_response = error
-
-    assert "no attribute" in str(error_response)

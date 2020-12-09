@@ -1,14 +1,15 @@
 import json
 import typing as t
 from dataclasses import dataclass
+from contextlib import contextmanager
 
 import pendulum
-
-from app import models, db
-from app.utils import missing_property
+import settings
+from app import db, models
 from app.models import MatchedTransaction
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
+from app.utils import missing_property
 
 
 class AgentExportDataOutput(t.NamedTuple):
@@ -51,7 +52,7 @@ class BaseAgent:
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
-        raise NotImplementedError("This method should be overridden by specicialised base agents.")
+        raise NotImplementedError("This method should be overridden by specialised base agents.")
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
         raise NotImplementedError(
@@ -77,10 +78,11 @@ class BaseAgent:
                 content = json.dumps(output)
 
             blob_name = f"{blob_name_prefix}{name}"
-            blob_storage_client.create_blob("exports", blob_name, content)
+            blob_storage_client.create_blob(settings.BLOB_EXPORT_CONTAINER, blob_name, content)
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
+        self.log.debug(f"Data field comes from index #{self.saved_output_index} of {export_data.outputs}")
 
         def add_transactions():
             session.bulk_save_objects(
@@ -100,3 +102,10 @@ class BaseAgent:
             session.commit()
 
         db.run_query(add_transactions, session=session, description="save export transactions")
+
+    @contextmanager
+    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> t.Iterator[None]:
+        """
+        Update (optional) Prometheus metrics
+        """
+        raise NotImplementedError("This method should be overridden by specialised base agents.")

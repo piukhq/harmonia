@@ -19,8 +19,8 @@ class Iceland(BaseMatchingAgent):
                 models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
             )
 
-        # apply a 10 second fuzzy match on time
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=10)
+        # apply a 60 second fuzzy match on time
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
 
         return scheme_transactions
 
@@ -70,7 +70,7 @@ class Iceland(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self._make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY,
+                **self.make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY,
             ),
             scheme_transaction_id=match.id,
         )
