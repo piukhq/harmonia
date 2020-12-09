@@ -48,6 +48,15 @@ class Iceland(FileAgent):
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["files_received", "transactions"],
+            "gauges": ["last_file_timestamp"],
+        }
+
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
