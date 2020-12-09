@@ -150,6 +150,15 @@ class HarveyNichols(FileAgent):
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
 
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["files_received", "transactions"],
+            "gauges": ["last_file_timestamp"],
+        }
+
     """
     Harvey Nichols send transaction data with unrecognised payment providers, EG "ACCESS (NOT USED)"
     The following generator only yields the valid payment provider transactions, only these are stored.
