@@ -254,11 +254,7 @@ class FileAgent(BaseAgent):
         Update any Prometheus metrics this agent might have
         """
         self.bink_prometheus.increment_counter(
-            agent=self,
-            counter_name="files_received",
-            increment_by=1,
-            process_type="import",
-            slug=self.provider_slug,
+            agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,
         )
         self.bink_prometheus.update_gauge(
             agent=self,
