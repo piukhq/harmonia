@@ -247,6 +247,23 @@ class FileAgent(BaseAgent):
                 update_import_file_log, session=session, description="mark import file log as imported",
             )
 
+            self._update_file_metrics(timestamp=import_file_log.created_at.timestamp())
+
+    def _update_file_metrics(self, timestamp: float) -> None:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+        self.bink_prometheus.increment_counter(
+            agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,
+        )
+        self.bink_prometheus.update_gauge(
+            agent=self,
+            gauge_name="last_file_timestamp",
+            value=timestamp,
+            process_type="import",
+            slug=self.provider_slug,
+        )
+
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError
 
@@ -260,6 +277,7 @@ class FileAgent(BaseAgent):
         self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
         scheduler = CronScheduler(
+            name=f"{self.provider_slug}-import",
             schedule_fn=lambda: self.Config.schedule,  # type: ignore
             callback=self.callback,
             coalesce_jobs=True,
