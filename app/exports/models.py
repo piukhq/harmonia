@@ -10,6 +10,8 @@ class PendingExport(Base, ModelMixin):
 
     provider_slug = s.Column(s.String(50), nullable=False, index=True)
     matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
+    retry_count = s.Column(s.Integer, nullable=False, default=0)
+    retry_at = s.Column(s.DateTime, nullable=True, index=True)
 
 
 @auto_repr

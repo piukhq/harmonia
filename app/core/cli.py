@@ -7,6 +7,7 @@ import settings
 from app import tasks
 from app.core import key_manager
 from app.core.identify_retry_worker import IdentifyRetryWorker
+from app.exports.retry_worker import ExportRetryWorker
 
 
 @click.group()
@@ -19,6 +20,14 @@ def identify_retry() -> None:
     if settings.DEBUG:
         print("Warning: Running in debug mode. Exceptions will not be handled gracefully!")
     worker = IdentifyRetryWorker()
+    worker.run()
+
+
+@cli.command()
+def export_retry() -> None:
+    if settings.DEBUG:
+        print("Warning: Running in debug mode. Exceptions will not be handled gracefully!")
+    worker = ExportRetryWorker()
     worker.run()
 
 
