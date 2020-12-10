@@ -10,7 +10,9 @@ class IdentifyRetryWorker:
 
     def __init__(self):
         self.log = reporting.get_logger("identify-retry")
-        self.scheduler = scheduler.CronScheduler(schedule_fn=self.get_schedule, callback=self.tick, logger=self.log)
+        self.scheduler = scheduler.CronScheduler(
+            name="identify-retry", schedule_fn=self.get_schedule, callback=self.tick, logger=self.log
+        )
 
     def run(self) -> None:
         self.scheduler.run()

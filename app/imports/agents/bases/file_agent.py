@@ -277,6 +277,7 @@ class FileAgent(BaseAgent):
         self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
         scheduler = CronScheduler(
+            name=f"{self.provider_slug}-import",
             schedule_fn=lambda: self.Config.schedule,  # type: ignore
             callback=self.callback,
             coalesce_jobs=True,

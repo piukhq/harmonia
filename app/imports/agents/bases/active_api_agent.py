@@ -9,7 +9,10 @@ from app import db
 class ActiveAPIAgent(BaseAgent):
     def run(self):
         scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule, callback=self.do_import, logger=self.log  # type: ignore
+            name="active-api-agent",
+            schedule_fn=lambda: self.Config.schedule,
+            callback=self.do_import,
+            logger=self.log,  # type: ignore
         )
 
         scheduler.run()
