@@ -109,6 +109,7 @@ class MatchingType(Enum):
 class MatchedTransactionStatus(Enum):
     PENDING = 0  # awaiting export
     EXPORTED = 1  # sent to provider
+    EXPORT_FAILED = 2  # failed to export after retrying
 
 
 @auto_repr
