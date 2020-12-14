@@ -1,6 +1,9 @@
 import typing as t
 from contextlib import ExitStack, contextmanager
 
+import pendulum
+import humanize
+
 import settings
 from app import db, models
 from app.exports.agents import BaseAgent
@@ -15,6 +18,27 @@ class SingularExportAgent(BaseAgent):
         super().__init__()
 
         self.bink_prometheus = bink_prometheus
+
+    @staticmethod
+    def simple_retry(retry_count: int, *, delay: pendulum.Duration, max_tries: int) -> t.Optional[pendulum.DateTime]:
+        """
+        Returns now() + `delay` if retry_count is less than `max_tries`, otherwise null
+        """
+        if retry_count < max_tries:
+            return pendulum.now() + delay
+        else:
+            return None
+
+    def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
+        """
+        Given a number of previous retries, return the timepoint at which an export should be retried.
+        The return value is optional - by returning `None` an agent can indicate that the export should not be retried.
+
+        The default settings are to retry after 20 minutes up to 4 times, and then stop.
+
+        Derived agents may override this method to provide custom retry behaviour.
+        """
+        return SingularExportAgent.simple_retry(retry_count, delay=pendulum.duration(minutes=20), max_tries=4)
 
     def run(self):
         raise NotImplementedError(
@@ -61,18 +85,55 @@ class SingularExportAgent(BaseAgent):
             self.log.warning(
                 f"The export agent failed to load its matched transaction. {pending_export} will be discarded."
             )
-        else:
-            self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
-            export_data = self.make_export_data(matched_transaction)
+            self._delete_pending_export(pending_export, session=session)
+            return
 
+        self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
+        export_data = self.make_export_data(matched_transaction)
+
+        try:
+            self._send_export_data(export_data, session=session)
+        except Exception as ex:
+            retry_at = self.get_retry_datetime(pending_export.retry_count)
+
+            if retry_at:
+                retry_humanized = humanize.naturaltime(retry_at.naive())
+                self.log.warning(
+                    f"Singular export raised exception: {repr(ex)}. "
+                    f"This operation will be retried {retry_humanized} at {retry_at}."
+                )
+                self._retry_pending_export(pending_export, retry_at, session=session)
+                return
+            else:
+                self.log.warning(
+                    f"Singular export raised exception: {repr(ex)}. "
+                    "This operation has exceeded its retry limit and will be discarded."
+                )
+                matched_transaction.status = models.MatchedTransactionStatus.EXPORT_FAILED
+                #  session.commit()     # this is unnecessary as _delete_pending_export will commit right after
+
+        # if we get here, we either exported successfully or have run out of retries.
+        self._delete_pending_export(pending_export, session=session)
+
+    def _retry_pending_export(
+        self, pending_export: models.PendingExport, retry_at: pendulum.DateTime, *, session: db.Session
+    ) -> None:
+        def set_retry_fields():
+            pending_export.retry_at = retry_at
+            session.commit()
+
+        db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
+
+    def _send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
+        with self._update_metrics(export_data=export_data, session=session):
             if settings.SIMULATE_EXPORTS:
                 self._save_to_blob(export_data)
             else:
-                with self._update_metrics(export_data=export_data, session=session):
-                    self.export(export_data, session=session)
+                self.export(export_data, session=session)
 
-            self._save_export_transactions(export_data, session=session)
+        self._save_export_transactions(export_data, session=session)
 
+    def _delete_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
         self.log.info(f"Removing pending export {pending_export}.")
 
         def delete_pending_export():
