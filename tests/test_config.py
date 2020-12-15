@@ -1,3 +1,5 @@
+from app.db import session_scope
+from app.config.models import ConfigItem
 import secrets
 import inspect
 
@@ -58,15 +60,21 @@ def test_get_unset_with_default(redis, token0):
 
 def test_update(redis, token0, token1):
     k = make_key("test-update-0")
-    redis.set(k, token0)
-    assert config.get(k) == token0
-    config.update(k, token1)
-    assert config.get(k) == token1
+    with session_scope() as session:
+        config_item = ConfigItem(key=k, value=token0)
+        session.add(config_item)
+        session.commit()
+
+        assert config.get(k) == token0
+        config.update(k, token1)
+        assert config.get(k) == token1
+
+        session.delete(config_item)
 
 
 def test_update_unset(redis, token0):
     k = make_key("test-update-unset-0")
-    with pytest.raises(KeyError):
+    with pytest.raises(config.ConfigKeyError):
         config.update(k, token0)
 
 
@@ -139,10 +147,16 @@ def test_update_key_api(redis, token0, token1, api_client):
     resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token0})
     assert resp.status_code == 400, resp.json
 
-    redis.set(k, token0)
-    resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token1})
-    assert resp.status_code == 200, resp.json
-    assert redis.get(k) == token1
+    with session_scope() as session:
+        config_item = ConfigItem(key=k, value=token1)
+        session.add(config_item)
+        session.commit()
 
-    resp = api_client.put(url_for("config_api.update_key", key=k), json={"bad": True})
-    assert resp.status_code == 400, resp.json
+        resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token1})
+        assert resp.status_code == 200, resp.json
+        assert config.get(k) == token1
+
+        resp = api_client.put(url_for("config_api.update_key", key=k), json={"bad": True})
+        assert resp.status_code == 400, resp.json
+
+        session.delete(config_item)

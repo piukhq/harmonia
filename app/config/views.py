@@ -1,7 +1,7 @@
 from flask import request, Blueprint
 import marshmallow
 
-from app.config import config, schemas
+from app.config import config, schemas, ConfigKeyError
 from app.api.utils import expects_json, ResponseType
 from app.api.auth import auth_decorator
 import settings
@@ -56,7 +56,7 @@ def update_key(key: str) -> ResponseType:
 
     try:
         config.update(key, data["value"])
-    except KeyError as e:
+    except ConfigKeyError as e:
         return {"error": str(e).strip('"')}, 400
 
     response_schema = schemas.KeyValuePairSchema()
