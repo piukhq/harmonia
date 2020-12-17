@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    op.create_table(
+    table = op.create_table(
         "config_item",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
@@ -31,8 +31,7 @@ def upgrade():
     )
     op.create_index(op.f("ix_config_item_key"), "config_item", ["key"], unique=True)
 
-    for (key, val) in config.all_keys():
-        op.execute(f"INSERT INTO config_item (key, value) VALUES ({key}, {val})")
+    op.bulk_insert(table, [{"key": k, "value": v} for k, v in config.all_keys()])
 
 
 def downgrade():
