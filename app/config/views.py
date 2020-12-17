@@ -1,6 +1,7 @@
 from flask import request, Blueprint
 import marshmallow
 
+from app.db import session_scope
 from app.config import config, schemas, ConfigKeyError
 from app.api.utils import expects_json, ResponseType
 from app.api.auth import auth_decorator
@@ -54,10 +55,12 @@ def update_key(key: str) -> ResponseType:
     except marshmallow.ValidationError as ex:
         return ex.messages, 400
 
-    try:
-        config.update(key, data["value"])
-    except ConfigKeyError as e:
-        return {"error": str(e).strip('"')}, 400
+    with session_scope() as session:
+        try:
+            config.update(key, data["value"], session=session)
+        except ConfigKeyError as e:
+            return {"error": str(e).strip('"')}, 400
 
-    response_schema = schemas.KeyValuePairSchema()
-    return response_schema.dump({"key": key, "value": config.get(key)})
+        else:
+            response_schema = schemas.KeyValuePairSchema()
+            return response_schema.dump({"key": key, "value": config.get(key, session=session)})
