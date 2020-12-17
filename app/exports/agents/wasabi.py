@@ -37,8 +37,8 @@ class Wasabi(SingularExportAgent):
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
         elif retry_count == 1:
-            # second retry at 3 AM the next day.
-            return (pendulum.now("UTC") + pendulum.duration(days=1)).at(6)
+            # second retry at 7 AM the next day.
+            return (pendulum.now("UTC") + pendulum.duration(days=1)).at(7)
         else:
             # after the previous two tries, give up.
             return None
