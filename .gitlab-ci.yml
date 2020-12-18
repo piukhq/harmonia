@@ -10,40 +10,44 @@ default:
 
 tests:
   stage: tests
+  variables: &variables
+    POSTGRES_DB: harmonia
+    POSTGRES_HOST_AUTH_METHOD: trust
+    TXM_POSTGRES_USER: postgres
+    TXM_POSTGRES_HOST: postgres
+    TXM_POSTGRES_DB: harmonia
+    TXM_REDIS_USER: redis
+    TXM_REDIS_HOST: redis
+    TXM_REDIS_DB: 0
+    TXM_HERMES_URL: "http://localhost"
+    TXM_AAD_TENANT_ID: ""
   before_script: &setup
     - pip install pipenv
     - pipenv install --dev --system --deploy --ignore-pipfile
     - pip freeze
   script:
-    - export TXM_POSTGRES_USER=postgres
-    - export TXM_POSTGRES_HOST=${POSTGRES_PORT_5432_TCP_ADDR}
-    - export TXM_POSTGRES_DB=${POSTGRES_NAME}
-    - export TXM_REDIS_USER=redis
-    - export TXM_REDIS_HOST=${REDIS_PORT_6379_TCP_ADDR}
-    - export TXM_REDIS_DB=0
-    - export TXM_HERMES_URL="http://localhost"
-    - export TXM_AAD_TENANT_ID=""
     - pytest --verbose --cov app --cov-report term-missing
   services:
-    - postgres:9.4.4
-    - redis:4
-  variables:
-    POSTGRES_HOST_AUTH_METHOD: trust
+    - postgres:11
+    - redis:5
 
 complexity:
   stage: tests
+  variables: *variables
   before_script: *setup
   script:
     - xenon --max-average A --max-modules B --max-absolute B .
 
 style:
   stage: tests
+  variables: *variables
   before_script: *setup
   script:
     - flake8 && black --line-length 120 --check .
 
 type-check:
   stage: tests
+  variables: *variables
   before_script: *setup
   script:
     - mypy --ignore-missing-imports app
