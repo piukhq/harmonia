@@ -27,6 +27,8 @@ tests:
   services:
     - postgres:9.4.4
     - redis:4
+  variables:
+    POSTGRES_HOST_AUTH_METHOD: trust
 
 complexity:
   stage: tests
