@@ -26,6 +26,7 @@ tests:
     - pipenv install --dev --system --deploy --ignore-pipfile
     - pip freeze
   script:
+    - alembic upgrade head
     - pytest --verbose --cov app --cov-report term-missing
   services:
     - postgres:11
