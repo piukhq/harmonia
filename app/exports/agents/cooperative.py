@@ -25,8 +25,8 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
     class Config:
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
-        max_transactions_per_request = ConfigValue(MAX_TRANSACTIONS_PER_REQUEST_KEY, "10000")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
+        max_transactions_per_request = ConfigValue(MAX_TRANSACTIONS_PER_REQUEST_KEY, default="10000")
 
     def __init__(self):
         super().__init__()

@@ -6,7 +6,7 @@ SCHEDULE_KEY = f"{config.KEY_PREFIX}identify-retry.schedule"
 
 class IdentifyRetryWorker:
     class Config:
-        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = config.ConfigValue(SCHEDULE_KEY, default="* * * * *")
 
     def __init__(self):
         self.log = reporting.get_logger("identify-retry")

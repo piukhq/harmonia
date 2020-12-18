@@ -40,4 +40,4 @@ class FatFace(Ecrebo):
     class Config(EcreboConfig, EcreboSpottingConfigMixin):
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
         receipt_upload_path = config.ConfigValue(RECEIPT_UPLOAD_PATH_KEY, default="upload/staging/receipts")
-        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = config.ConfigValue(SCHEDULE_KEY, default="* * * * *")

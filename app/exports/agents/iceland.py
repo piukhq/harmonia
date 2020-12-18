@@ -31,8 +31,8 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
     class Config:
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
-        batch_size = ConfigValue(BATCH_SIZE_KEY, "200")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
+        batch_size = ConfigValue(BATCH_SIZE_KEY, default="200")
 
     def __init__(self):
         super().__init__()

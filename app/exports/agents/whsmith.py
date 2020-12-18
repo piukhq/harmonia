@@ -15,4 +15,4 @@ class WhSmith(Ecrebo):
 
     class Config(EcreboConfig):
         reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
-        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = config.ConfigValue(SCHEDULE_KEY, default="* * * * *")

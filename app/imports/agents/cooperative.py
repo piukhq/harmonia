@@ -18,7 +18,7 @@ class Cooperative(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         yield from json.loads(data.decode())["transactions"]

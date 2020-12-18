@@ -22,34 +22,13 @@ def _validate_key(key: str) -> None:
         raise ValueError(f"Config key must start with `{KEY_PREFIX}`")
 
 
-def _set_default(key: str, val: str, *, session: Session):
-    config_item, created = get_or_create(ConfigItem, session=session, defaults={"key": key, "value": val}, key=key)
-    if not created and config_item.value != val:
-        config_item.value = val
-    redis.set(key, val, nx=True)
-
-
-def _fetch_and_cache(key: str, *, session: Session):
-    val = None
-    config_item = run_query(
-        lambda: session.query(ConfigItem).filter_by(key=key).one_or_none(),
-        session=session,
-        description=f"get {ConfigItem.__name__} object",
-    )
-    if config_item:
-        val = t.cast(str, config_item.value)
-        redis.set(key, val)
-    return val
-
-
-def get(key: str, *, default=None, session: Session) -> t.Optional[str]:
+def get(key: str, *, default: str = "", session: Session) -> t.Optional[str]:
     _validate_key(key)
-    if default is not None:
-        _set_default(key, default, session=session)
-
     val = t.cast(t.Optional[str], redis.get(key))
-    if not val:
-        val = _fetch_and_cache(key, session=session)
+    if val is None:
+        config_item, _ = get_or_create(ConfigItem, key=key, defaults={"key": key, "value": default}, session=session)
+        val = config_item.value
+        redis.set(key, t.cast(str, val))
     return val
 
 
@@ -74,7 +53,7 @@ def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
 
 
 class ConfigValue:
-    def __init__(self, key: str, default: str = None, session: Session = None) -> None:
+    def __init__(self, key: str, *, default: str, session: Session = None) -> None:
         self.key = key
         self.default = default
         self.session = session

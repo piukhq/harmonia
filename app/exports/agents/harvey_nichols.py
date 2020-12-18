@@ -16,7 +16,7 @@ class HarveyNichols(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
 
     class Config:
-        base_url = ConfigValue(BASE_URL_KEY, "https://localhost")
+        base_url = ConfigValue(BASE_URL_KEY, default="https://localhost")
 
     def __init__(self):
         super().__init__()

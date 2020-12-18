@@ -50,7 +50,7 @@ class MastercardSettled(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -117,7 +117,7 @@ class MastercardAuth(QueueAgent):
     feed_type = ImportFeedTypes.AUTH
 
     class Config:
-        queue_name = ConfigValue(QUEUE_NAME_KEY, "mastercard-auth")
+        queue_name = ConfigValue(QUEUE_NAME_KEY, default="mastercard-auth")
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")

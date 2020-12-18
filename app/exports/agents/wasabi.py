@@ -25,7 +25,7 @@ class Wasabi(SingularExportAgent):
         pass
 
     class Config:
-        base_url = ConfigValue(BASE_URL_KEY, "http://localhost")
+        base_url = ConfigValue(BASE_URL_KEY, default="http://localhost")
 
     def __init__(self):
         super().__init__()

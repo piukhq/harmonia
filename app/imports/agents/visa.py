@@ -79,7 +79,7 @@ class Visa(FileAgent):
 
     class Config:
         path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
 
     def help(self) -> str:
         return inspect.cleandoc(
@@ -174,7 +174,7 @@ class VisaAuth(QueueAgent):
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
-        queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
+        queue_name = ConfigValue(QUEUE_NAME_KEY, default="visa-auth")
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
@@ -213,7 +213,7 @@ class VisaSettlement(QueueAgent):
 
     class Config:
         QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
-        queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-settlement")
+        queue_name = ConfigValue(QUEUE_NAME_KEY, default="visa-settlement")
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

@@ -46,7 +46,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     class Config:
         path = ConfigValue(PATH_KEY, default="/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
 
     def __init__(self):
         super().__init__()

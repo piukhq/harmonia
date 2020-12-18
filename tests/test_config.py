@@ -10,8 +10,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app import db
-from app.config import config
-from app.config.models import ConfigItem
+from app.config import config, models
 
 
 def make_key(suffix):
@@ -36,11 +35,13 @@ token1 = token0
 
 @pytest.fixture
 def session():
-    session = Session(bind=db.engine)
+    connection = db.engine.connect()
+    session = Session(bind=connection)
+    transaction = connection.begin_nested()
     try:
         yield session
     finally:
-        session.rollback()
+        transaction.rollback()
         session.close()
 
 
@@ -52,35 +53,37 @@ def test_validate_key():
 
 def test_get(redis, token0, session):
     k = make_key("test-get-0")
-    config_item = ConfigItem(key=k, value=token0)
+    config_item = models.ConfigItem(key=k, value=token0)
     session.add(config_item)
 
     assert config.get(k, session=session) == token0
     assert redis.get(k) == token0
 
 
+def test_get_unset(redis, session):
+    k = make_key("test-get-unset-0")
+    assert config.get(k, session=session) == ""
+
+
 def test_get_with_default(redis, token0, token1, session):
     k = make_key("test-get-with-default-0")
-    config_item = ConfigItem(key=k, value=token0)
+    config_item = models.ConfigItem(key=k, value=token0)
     session.add(config_item)
     redis.set(k, token0)
     assert config.get(k, default=token1, session=session) == token0
 
 
-def test_get_unset(redis, session):
-    k = make_key("test-get-unset-0")
-    assert config.get(k, session=session) is None
-
-
 def test_get_unset_with_default(redis, token0, session):
     k = make_key("test-get-unset-with-default-0")
+    config_item = models.ConfigItem(key=k, value=token0)
+    session.add(config_item)
     assert config.get(k, default=token0, session=session) == token0
     assert config.get(k, session=session) == token0, "The previous get should have created a new pair in redis"
 
 
 def test_update(redis, token0, token1, session):
     k = make_key("test-update-0")
-    config_item = ConfigItem(key=k, value=token0)
+    config_item = models.ConfigItem(key=k, value=token0)
     session.add(config_item)
     assert config.get(k, session=session) == token0
     config.update(k, token1, session=session)
@@ -107,18 +110,7 @@ def test_all_keys(redis, token0):
     assert realised == [(k, token0)], "there should be a single config key stored"
 
 
-def test_config_value(redis, token0, session):
-    k = make_key("test-config-value-0")
-    cv = config.ConfigValue(k, session=session)
-    assert cv.key == k
-    assert cv.default is None
-    assert cv.__get__(None, None) is None
-
-    redis.set(k, token0)
-    assert cv.__get__(None, None) == token0, "the cv should return the new value"
-
-
-def test_config_value_with_default(redis, token0, token1, session):
+def test_config_value(redis, token0, token1, session):
     k = make_key("test-config-value-with-default-0")
     cv = config.ConfigValue(k, default=token0, session=session)
     assert cv.key == k
@@ -126,7 +118,7 @@ def test_config_value_with_default(redis, token0, token1, session):
     assert cv.__get__(None, None) == token0, "the cv should return its default"
     assert redis.get(k) == token0, "the previous get should have set the default in redis"
 
-    redis.set(k, token1)
+    config.update(k, token1, session=session)
     assert cv.__get__(None, None) == token1, "the cv should return the new value despite its default"
 
 
@@ -163,7 +155,7 @@ def test_update_key_api(redis, token0, token1, api_client, session):
         resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token0})
         assert resp.status_code == 400, resp.json
 
-        config_item = ConfigItem(key=k, value=token1)
+        config_item = models.ConfigItem(key=k, value=token1)
         session.add(config_item)
 
         resp = api_client.put(url_for("config_api.update_key", key=k), json={"value": token1})
