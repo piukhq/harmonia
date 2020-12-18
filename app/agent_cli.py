@@ -26,7 +26,8 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     @click.option("-y", "--no-user-input", is_flag=True, help="bypass the y/N prompt to run the agent")
     @click.option("-N", "--dry-run", is_flag=True, help="print agent information then quit without executing")
     @click.option("-q", "--quiet", is_flag=True, help="skip printing agent information and warnings")
-    def cli(agent: str, no_user_input: bool, dry_run: bool, quiet: bool) -> None:
+    @click.option("--no-prometheus", is_flag=True, help="Run without starting the Prometheus push thread.")
+    def cli(agent: str, no_user_input: bool, dry_run: bool, quiet: bool, no_prometheus: bool) -> None:
         try:
             agent_instance = registry.instantiate(agent)
         except NoSuchAgent as ex:
@@ -69,9 +70,13 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
         if no_user_input or click.confirm("Do you wish to run this agent?"):
             if not no_user_input:
                 click.echo()
-            # Start up the Prometheus push thread for pushing metrics
-            prometheus_thread.start()
-            click.echo("Prometheus push thread started")
+
+            # intentional double negative since the prometheus flag is set by default
+            if not no_prometheus:
+                # Start up the Prometheus push thread for pushing metrics
+                prometheus_thread.start()
+                click.echo("Prometheus push thread started")
+
             agent_instance.run()
 
     return cli

@@ -17,7 +17,10 @@ class BatchExportAgent(BaseAgent):
 
     def run(self):
         scheduler = CronScheduler(
-            schedule_fn=lambda: self.Config.schedule, callback=self.callback, logger=self.log  # type: ignore
+            name="batch-export",
+            schedule_fn=lambda: self.Config.schedule,
+            callback=self.callback,
+            logger=self.log,  # type: ignore
         )
 
         self.log.debug(f"Beginning schedule {scheduler}.")
@@ -58,7 +61,7 @@ class BatchExportAgent(BaseAgent):
                 self._save_to_blob(export_data)
             else:
                 with self._update_metrics(export_data):
-                    self.export(export_data, session=session)
+                    self.send_export_data(export_data)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
@@ -67,7 +70,12 @@ class BatchExportAgent(BaseAgent):
             )
 
         def delete_pending_exports():
-            pending_exports_q.delete()
+            num_deleted = (
+                session.query(models.PendingExport)
+                .filter(models.PendingExport.id.in_([pe.id for pe in pending_exports]))
+                .delete(synchronize_session=False)
+            )
+            self.log.debug(f"Deleted {num_deleted} pending exports.")
             session.commit()
 
         db.run_query(
