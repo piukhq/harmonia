@@ -15,10 +15,12 @@ from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
 from app.encryption import decrypt_credentials
+from app.sequences import batch
 from harness.exporters.iceland_mock import IcelandMockAPI
 
 PROVIDER_SLUG = "iceland-bonus-card"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
+BATCH_SIZE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.batch_size"
 
 hash_ids = Hashids(
     min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
@@ -30,6 +32,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
 
     class Config:
         schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+        batch_size = ConfigValue(BATCH_SIZE_KEY, "200")
 
     def __init__(self):
         super().__init__()
@@ -81,20 +84,25 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
         return security_class.encode(body)
 
-    def yield_export_data(
-        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
-    ) -> t.Iterable[AgentExportData]:
+    def _make_export_data(self, transactions: t.List[models.MatchedTransaction], *, index: int) -> AgentExportData:
         formatted_transactions = self.format_transactions(transactions)
-
-        yield AgentExportData(
+        return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
-                    "export.json", json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}),
+                    f"export-{index + 1:03}.json",
+                    json.dumps({"message_uid": str(uuid4()), "transactions": formatted_transactions}),
                 )
             ],
             transactions=transactions,
             extra_data={},
         )
+
+    def yield_export_data(
+        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+    ) -> t.Iterable[AgentExportData]:
+        batch_size = int(self.Config.batch_size)
+        for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
+            yield self._make_export_data(transaction_set, index=i)
 
     def send_export_data(self, export_data: AgentExportData):
         _, body = export_data.outputs[0]
