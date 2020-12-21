@@ -56,28 +56,30 @@ def test_get(redis, token0, session):
     config_item = models.ConfigItem(key=k, value=token0)
     session.add(config_item)
 
+    assert redis.get(k) is None
     assert config.get(k, session=session) == token0
     assert redis.get(k) == token0
 
 
 def test_get_unset(redis, session):
     k = make_key("test-get-unset-0")
+    assert redis.get(k) is None
     assert config.get(k, session=session) == ""
+    assert redis.get(k) == "", "The previous get should have set this key to empty string"
 
 
 def test_get_with_default(redis, token0, token1, session):
     k = make_key("test-get-with-default-0")
-    config_item = models.ConfigItem(key=k, value=token0)
-    session.add(config_item)
     redis.set(k, token0)
     assert config.get(k, default=token1, session=session) == token0
+    assert config.get(k, session=session) == token0
 
 
-def test_get_unset_with_default(redis, token0, session):
+def test_get_unset_with_default(redis, token0, token1, session):
     k = make_key("test-get-unset-with-default-0")
-    config_item = models.ConfigItem(key=k, value=token0)
-    session.add(config_item)
     assert config.get(k, default=token0, session=session) == token0
+    assert session.query(models.ConfigItem).filter_by(key=k).one_or_none().value == token0
+    assert redis.get(k) == token0
     assert config.get(k, session=session) == token0, "The previous get should have created a new pair in redis"
 
 
@@ -85,9 +87,9 @@ def test_update(redis, token0, token1, session):
     k = make_key("test-update-0")
     config_item = models.ConfigItem(key=k, value=token0)
     session.add(config_item)
-    assert config.get(k, session=session) == token0
+    assert config.get(k, session=session) == redis.get(k) == token0
     config.update(k, token1, session=session)
-    assert config.get(k, session=session) == token1
+    assert config.get(k, session=session) == redis.get(k) == token1
 
 
 def test_update_unset(redis, token0, session):
