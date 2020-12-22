@@ -59,6 +59,29 @@ def get_batch_chunks(transaction_count, batchsize):
         transaction_count -= batchsize
 
 
+def create_payment_transactions(payment_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
+    # Create random payment transactions
+    click.secho(
+        f"Creating {payment_transaction_count} payment transactions", fg="cyan", bold=True,
+    )
+    # create batches in chunks of batchsize records, then commit
+    factory_kwargs = {}
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
+        factory_kwargs = {
+            "provider_slug": scheme_slug,
+            "transaction_date": factory.LazyAttribute(
+                lambda o: generic.transaction_date_provider.transaction_date(days=7)
+            ),
+        }
+    chunks = get_batch_chunks(payment_transaction_count, batchsize=batchsize)
+    for chunk in chunks:
+        click.secho(
+            f"Creating chunk of {chunk} payment transactions", fg="cyan", bold=True,
+        )
+        app_factories.PaymentTransactionFactory.create_batch(chunk, **factory_kwargs)
+        session.commit()
+
+
 def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random scheme transactions
     click.secho(
@@ -104,18 +127,19 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
 def do_async_tables(
     scheme_transaction_count: int,
     import_transaction_count: int,
+    payment_transaction_count: int,
     max_processes: int,
     batchsize: int,
     scheme_slug: t.Optional[str] = None,
 ):
     """
-    These two tables (import_transactions and scheme_transactions) are the big ones and can be asynchronously
-    appended to.
+    These three tables (import_transactions, payment_transactions and scheme_transactions) are the big ones and
+    can be asynchronously appended to.
     """
     #  import_transactions is a standalone table and data can just be pushed into it
     #  i.e. it has no foreign keys in other tables
     create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
-    import_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
+    import_transactions_max_processes = int(max_processes / 3)  # There are 2 tables to divide the processes between
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
     # Create the params for the task
     import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
@@ -128,10 +152,32 @@ def do_async_tables(
         import_transaction_batchsizes,
         import_transaction_scheme_slugs,
     )
+
+    # payment_transactions provides foreign key links for following tables, so we need to wait for it to
+    # complete by using a context manager
+    with ProcessPoolExecutor(max_workers=max_processes) as create_payment_transactions_executor:
+        payment_transactions_max_processes = int(
+            max_processes / 3
+        )  # There are 2 tables to divide the processes between
+        payment_transactions_per_process = int(payment_transaction_count / payment_transactions_max_processes)
+        # Create the params for the task
+        payment_transaction_counts = [
+            payment_transactions_per_process for x in range(payment_transactions_max_processes)
+        ]
+        payment_transaction_batchsizes = [batchsize for x in range(len(payment_transaction_counts))]
+        payment_transaction_scheme_slugs = [scheme_slug for x in range(len(payment_transaction_counts))]
+        # Create task map
+        create_payment_transactions_executor.map(
+            create_payment_transactions,
+            payment_transaction_counts,
+            payment_transaction_batchsizes,
+            payment_transaction_scheme_slugs,
+        )
+
     # scheme_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
     with ProcessPoolExecutor(max_workers=max_processes) as create_scheme_transactions_executor:
-        scheme_transactions_max_processes = int(max_processes / 2)  # There are 2 tables to divide the processes between
+        scheme_transactions_max_processes = int(max_processes / 3)  # There are 2 tables to divide the processes between
         scheme_transactions_per_process = int(scheme_transaction_count / scheme_transactions_max_processes)
         # Create the params for the task
         scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
@@ -182,22 +228,11 @@ def bulk_load_db(
         # Create our primary records
         create_base_records()
 
-    # Create payment transactions, linking to our users in the base table
-    payment_factory_kwargs = {}
-    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
-        payment_factory_kwargs = {
-            "provider_slug": scheme_slug,
-            "transaction_date": factory.LazyAttribute(
-                lambda o: generic.transaction_date_provider.transaction_date(days=7)
-            ),
-        }
-    app_factories.PaymentTransactionFactory.create_batch(payment_transaction_count, **payment_factory_kwargs)
-    session.commit()
-
     # Do the big transaction tables
     do_async_tables(
         scheme_transaction_count=scheme_transaction_count,
         import_transaction_count=import_transaction_count,
+        payment_transaction_count=payment_transaction_count,
         max_processes=max_processes,
         batchsize=batchsize,
         scheme_slug=scheme_slug,
