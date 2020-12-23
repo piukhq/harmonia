@@ -35,11 +35,13 @@ def create_loyalty_scheme(loyalty_scheme_count: int, scheme_slug: t.Optional[str
         app_factories.LoyaltySchemeFactory.create_batch(loyalty_scheme_count)
 
 
-def create_base_records():
+def create_base_records(loyalty_scheme_count: int, scheme_slug: t.Optional[str] = None):
     """
     Create records in the 'base' tables i.e the records that are foreign keys in other tables, and which
     need to be in place to be looked up during fake record creation in those 'many' side tables
     """
+    # First thing, as some of the following tables rely on this one: create loyalty_scheme record/s
+    create_loyalty_scheme(loyalty_scheme_count, scheme_slug)
     # Create our payment providers
     app_factories.PaymentProviderFactory.create_batch(len(PAYMENT_PROVIDERS), slug=factory.Iterator(PAYMENT_PROVIDERS))
     # Create random merchant ids
@@ -220,13 +222,10 @@ def bulk_load_db(
         )
         session.execute(drop_scheme_transaction_constraints)
 
-    # First thing, as some of the following tables rely on this one: create loyalty_scheme record/s
-    create_loyalty_scheme(loyalty_scheme_count, scheme_slug)
-
     # Skip these base tables if we've already filled them, to avoid constraint errors
     if not skip_base_tables:
         # Create our primary records
-        create_base_records()
+        create_base_records(loyalty_scheme_count=loyalty_scheme_count, scheme_slug=scheme_slug)
 
     # Do the big transaction tables
     do_async_tables(
@@ -306,7 +305,7 @@ def bulk_load_db(
     default=LOYALTY_SCHEME_COUNT,
     show_default=True,
     required=False,
-    help="Num records for loyalty_scheme table",
+    help="Num records for loyalty_scheme table. This will have no effect if --skip-base-tables is used.",
 )
 @click.option(
     "--payment-transaction-count",
@@ -320,7 +319,7 @@ def bulk_load_db(
     "--skip-base-tables",
     is_flag=True,
     help=(
-        "After an initial load, skip the base tables payment_provider, "
+        "After an initial load, skip the base tables loyalty_scheme, payment_provider, "
         "merchant_identifier and user_identity to avoid constraint errors"
     ),
     show_default=True,
