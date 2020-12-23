@@ -23,7 +23,7 @@ class PendingExportFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     def matched_transaction():
-        yield from session.query(models.MatchedTransaction).all()
+        yield from session.query(models.MatchedTransaction).limit(500).all()
 
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     matched_transaction = factory.iterator(matched_transaction)
