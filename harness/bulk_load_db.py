@@ -157,9 +157,7 @@ def do_async_tables(
 
     # payment_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
-    payment_transactions_max_processes = int(
-        max_processes / 3
-    )  # There are 3 tables to divide the processes between
+    payment_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
     with ProcessPoolExecutor(max_workers=payment_transactions_max_processes) as create_payment_transactions_executor:
         payment_transactions_per_process = int(payment_transaction_count / payment_transactions_max_processes)
         # Create the params for the task
