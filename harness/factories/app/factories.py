@@ -10,13 +10,13 @@ class MatchedTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     def merchant_identifier():
-        yield from session.query(models.MerchantIdentifier).all()
+        yield from session.query(models.MerchantIdentifier).limit(500).all()
 
     def payment_transaction():
-        yield from session.query(models.PaymentTransaction).all()
+        yield from session.query(models.PaymentTransaction).limit(500).all()
 
     def scheme_transaction():
-        yield from session.query(models.SchemeTransaction).all()
+        yield from session.query(models.SchemeTransaction).limit(500).all()
 
     merchant_identifier = factory.iterator(merchant_identifier)
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=100))
@@ -39,10 +39,10 @@ class MerchantIdentifierFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     def loyalty_scheme():
-        yield from session.query(models.LoyaltyScheme).all()
+        yield from session.query(models.LoyaltyScheme).limit(500).all()
 
     def payment_provider():
-        yield from session.query(models.PaymentProvider).all()
+        yield from session.query(models.PaymentProvider).limit(500).all()
 
     mid = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     store_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
@@ -98,7 +98,7 @@ class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     def user_identity():
-        yield from session.query(models.UserIdentity).all()
+        yield from session.query(models.UserIdentity).limit(500).all()
 
     merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numbers.random.randints(amount=5, a=1, b=1000000))
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))

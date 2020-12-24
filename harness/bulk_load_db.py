@@ -140,8 +140,8 @@ def do_async_tables(
     """
     #  import_transactions is a standalone table and data can just be pushed into it
     #  i.e. it has no foreign keys in other tables
-    create_import_transactions_executor = ProcessPoolExecutor(max_workers=max_processes)
-    import_transactions_max_processes = int(max_processes / 3)  # There are 2 tables to divide the processes between
+    import_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
+    create_import_transactions_executor = ProcessPoolExecutor(max_workers=import_transactions_max_processes)
     import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
     # Create the params for the task
     import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
@@ -157,10 +157,8 @@ def do_async_tables(
 
     # payment_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
-    with ProcessPoolExecutor(max_workers=max_processes) as create_payment_transactions_executor:
-        payment_transactions_max_processes = int(
-            max_processes / 3
-        )  # There are 2 tables to divide the processes between
+    payment_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
+    with ProcessPoolExecutor(max_workers=payment_transactions_max_processes) as create_payment_transactions_executor:
         payment_transactions_per_process = int(payment_transaction_count / payment_transactions_max_processes)
         # Create the params for the task
         payment_transaction_counts = [
@@ -178,8 +176,8 @@ def do_async_tables(
 
     # scheme_transactions provides foreign key links for following tables, so we need to wait for it to
     # complete by using a context manager
-    with ProcessPoolExecutor(max_workers=max_processes) as create_scheme_transactions_executor:
-        scheme_transactions_max_processes = int(max_processes / 3)  # There are 2 tables to divide the processes between
+    scheme_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
+    with ProcessPoolExecutor(max_workers=scheme_transactions_max_processes) as create_scheme_transactions_executor:
         scheme_transactions_per_process = int(scheme_transaction_count / scheme_transactions_max_processes)
         # Create the params for the task
         scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
