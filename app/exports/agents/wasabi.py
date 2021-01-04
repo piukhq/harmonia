@@ -38,10 +38,17 @@ class Wasabi(SingularExportAgent):
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
         elif retry_count == 1:
             # second retry at 7 AM the next day.
-            return (pendulum.now("UTC") + pendulum.duration(days=1)).at(7)
+            return self.next_available_retry_time(7)
         else:
             # after the previous two tries, give up.
             return None
+
+    def next_available_retry_time(self, run_time, timezone="Europe/London") -> t.Optional[pendulum.DateTime]:
+        run_time_today = pendulum.now(timezone).at(run_time)
+        if run_time_today.is_past():
+            return (pendulum.now(timezone) + pendulum.duration(days=1)).at(run_time)
+        else:
+            return run_time_today
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         user_identity = matched_transaction.payment_transaction.user_identity
