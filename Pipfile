@@ -39,6 +39,7 @@ pgpy = "*"
 psycopg2-binary = "*"
 prometheus-client = "*"
 azure-oidc = "*"
+freezegun = "*"
 
 [dev-packages]
 pytest = "*"
