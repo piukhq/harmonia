@@ -98,7 +98,7 @@ class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     def user_identity():
-        yield from session.query(models.UserIdentity).limit(500).all()
+        yield from session.query(models.UserIdentity).limit(100).all()
 
     merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numbers.random.randints(amount=5, a=1, b=1000000))
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
