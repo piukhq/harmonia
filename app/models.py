@@ -94,7 +94,7 @@ class PaymentTransaction(Base, ModelMixin):
     match_group = s.Column(s.String(36), nullable=False, index=True)  # currently unused
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
-    user_identity = s.orm.relationship("UserIdentity", uselist=False, backref="payment_transaction")
+    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
 
 
@@ -145,3 +145,5 @@ class UserIdentity(Base, ModelMixin):
     credentials = s.Column(s.Text, nullable=False)
     first_six = s.Column(s.Text, nullable=False)
     last_four = s.Column(s.Text, nullable=False)
+
+    payment_transaction = s.orm.relationship("PaymentTransaction", uselist=False, back_populates="user_identity")
