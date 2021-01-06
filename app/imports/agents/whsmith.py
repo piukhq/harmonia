@@ -5,7 +5,8 @@ import typing as t
 
 import pendulum
 
-from app.config import KEY_PREFIX, ConfigValue
+from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
@@ -62,16 +63,17 @@ class WhSmith(FileAgent):
         "Bink-Payment": "bink-payment",
     }
 
-    class Config:
-        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the WHSmith scheme transaction file import agent.
 
-            It is currently set up to monitor {self.Config.path} for files to import.
+            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
             """
         )
 

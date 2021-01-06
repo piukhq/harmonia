@@ -5,7 +5,8 @@ from hashlib import sha256
 
 import pendulum
 
-from app.config import KEY_PREFIX, ConfigValue
+from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 from app.currency import to_pennies
@@ -48,9 +49,10 @@ class MastercardSettled(FileAgent):
         "transaction_time": int,
     }
 
-    class Config:
-        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
 
     def parse_line(self, line: str) -> dict:
         idx = 0
@@ -70,12 +72,12 @@ class MastercardSettled(FileAgent):
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the Mastercard payment transaction file import agent.
 
-            It is currently set up to monitor {self.Config.path} for files to import.
+            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
             """
         )
 
@@ -116,8 +118,7 @@ class MastercardAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
 
-    class Config:
-        queue_name = ConfigValue(QUEUE_NAME_KEY, default="mastercard-auth")
+    config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")

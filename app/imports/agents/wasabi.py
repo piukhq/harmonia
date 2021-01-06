@@ -6,7 +6,8 @@ from functools import cached_property
 from pathlib import Path
 
 import pendulum
-from app.config import KEY_PREFIX, ConfigValue
+from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents.bases.base import SchemeTransactionFields
@@ -44,9 +45,9 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         "Bink-Payment": "bink-payment",
     }
 
-    class Config:
-        path = ConfigValue(PATH_KEY, default="/")
-        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default="/"), ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *")
+    )
 
     def __init__(self):
         super().__init__()
@@ -74,15 +75,15 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
     @cached_property
     def filesource(self) -> FileSourceBase:
         return SftpFileSource(
-            self.sftp_credentials, self.skey, Path(self.Config.path), logger=self.log, provider_agent=self
+            self.sftp_credentials, self.skey, Path(self.fileagent_config.path), logger=self.log, provider_agent=self
         )
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the Wasabi scheme transaction SFTP file import agent.
 
-            It is currently set up to monitor {self.Config.path} on SFTP host
+            It is currently set up to monitor {self.config.get("path", session=session)} on SFTP host
             {self.sftp_credentials.host}:{self.sftp_credentials.port} for files to import.
             """
         )

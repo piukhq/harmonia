@@ -9,7 +9,7 @@ from hashids import Hashids
 from soteria.security import get_security_agent
 
 from app import models, db
-from app.config import KEY_PREFIX, ConfigValue
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
@@ -30,9 +30,10 @@ hash_ids = Hashids(
 class Iceland(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
-    class Config:
-        schedule = ConfigValue(SCHEDULE_KEY, default="* * * * *")
-        batch_size = ConfigValue(BATCH_SIZE_KEY, default="200")
+    config = Config(
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+        ConfigValue("batch_size", key=BATCH_SIZE_KEY, default="200"),
+    )
 
     def __init__(self):
         super().__init__()
@@ -55,10 +56,12 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             "histograms": ["request_latency"],
         }
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
-            This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
+            This agent exports {self.provider_slug} transactions on a schedule of {self.config.get(
+                "schedule", session=session
+                )}
             """
         )
 
@@ -100,11 +103,11 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
-        batch_size = int(self.Config.batch_size)
+        batch_size = int(self.config.get("batch_size", session=session))
         for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
             yield self._make_export_data(transaction_set, index=i)
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData, session: db.Session):
         _, body = export_data.outputs[0]
         request = self.make_secured_request(t.cast(str, body))
         request_timestamp = pendulum.now().to_datetime_string()

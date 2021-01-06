@@ -1,10 +1,9 @@
-import contextlib
 import typing as t
 
 from sqlalchemy.orm.session import Session
 
-from app.config.models import ConfigItem
-from app.db import get_or_create, redis, run_query, session_scope
+from app.config import models
+from app.db import get_or_create, redis, run_query
 from app.reporting import get_logger
 import settings
 
@@ -26,7 +25,9 @@ def get(key: str, *, default: str = "", session: Session) -> t.Optional[str]:
     _validate_key(key)
     val = t.cast(t.Optional[str], redis.get(key))
     if val is None:
-        config_item, _ = get_or_create(ConfigItem, key=key, defaults={"key": key, "value": default}, session=session)
+        config_item, _ = get_or_create(
+            models.ConfigItem, key=key, defaults={"key": key, "value": default}, session=session
+        )
         val = config_item.value
         redis.set(key, t.cast(str, val))
     return val
@@ -35,9 +36,9 @@ def get(key: str, *, default: str = "", session: Session) -> t.Optional[str]:
 def update(key: str, value: str, *, session: Session) -> None:
     _validate_key(key)
     config_item = run_query(
-        lambda: session.query(ConfigItem).filter_by(key=key).one_or_none(),
+        lambda: session.query(models.ConfigItem).filter_by(key=key).one_or_none(),
         session=session,
-        description=f"get {ConfigItem.__name__} object",
+        description=f"get {models.ConfigItem.__name__} object",
     )
     if not config_item:
         raise ConfigKeyError(f"Can't update key `{key}` as it doesn't exist")
@@ -52,13 +53,22 @@ def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
         yield (key, val)
 
 
-class ConfigValue:
-    def __init__(self, key: str, *, default: str, session: Session = None) -> None:
-        self.key = key
-        self.default = default
-        self.session = session
+class ConfigValue(t.NamedTuple):
+    name: str
+    key: str
+    default: str
 
-    def __get__(self, instance, owner):
-        cm = contextlib.nullcontext(enter_result=self.session) if self.session else session_scope()
-        with cm as session:
-            return get(self.key, default=self.default, session=session)
+
+class ConfigError(Exception):
+    pass
+
+
+class Config:
+    def __init__(self, *args: ConfigValue):
+        self._name_val_map = {arg.name: arg for arg in args}
+
+    def get(self, name: str, session: Session):
+        config_value = self._name_val_map.get(name)
+        if config_value is None:
+            raise ConfigError(f"{Config.__name__} contains no {ConfigValue.__name__} with name {name}.")
+        return get(config_value.key, default=config_value.default, session=session)

@@ -1,6 +1,8 @@
 import typing as t
-from sqlalchemy.orm import Load, joinedload
 from contextlib import ExitStack, contextmanager
+from functools import cached_property
+
+from sqlalchemy.orm import Load, joinedload
 
 import settings
 from app import db, models
@@ -15,10 +17,16 @@ class BatchExportAgent(BaseAgent):
 
         self.bink_prometheus = bink_prometheus
 
+    @cached_property
+    def schedule(self):
+        with db.session_scope() as session:
+            schedule = self.config.get("schedule", session=session)
+        return schedule
+
     def run(self):
         scheduler = CronScheduler(
             name="batch-export",
-            schedule_fn=lambda: self.Config.schedule,
+            schedule_fn=lambda: self.schedule,
             callback=self.callback,
             logger=self.log,  # type: ignore
         )
@@ -61,7 +69,7 @@ class BatchExportAgent(BaseAgent):
                 self._save_to_blob(export_data)
             else:
                 with self._update_metrics(export_data):
-                    self.send_export_data(export_data)
+                    self.send_export_data(export_data, session=session)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
@@ -129,5 +137,5 @@ class BatchExportAgent(BaseAgent):
     ) -> t.Iterable[AgentExportData]:
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
-    def send_export_data(self, export_data: AgentExportData) -> None:
+    def send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
         raise NotImplementedError("Override the send_export_data method in your agent.")

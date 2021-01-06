@@ -2,7 +2,7 @@ import typing as t
 
 from marshmallow import Schema, fields
 
-from app import feeds
+from app import db, feeds
 from app.imports.agents import PassiveAPIAgent, PaymentTransactionFields
 from app.serialization import PendulumField
 
@@ -21,7 +21,7 @@ class BinkPayment(PassiveAPIAgent):
     feed_type = feeds.ImportFeedTypes.SETTLED
     schema = TransactionSchema()
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return self._help(__name__)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:

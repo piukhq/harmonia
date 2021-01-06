@@ -112,16 +112,21 @@ def test_all_keys(redis, token0):
     assert realised == [(k, token0)], "there should be a single config key stored"
 
 
-def test_config_value(redis, token0, token1, session):
+def test_config(redis, token0, token1, session):
     k = make_key("test-config-value-with-default-0")
-    cv = config.ConfigValue(k, default=token0, session=session)
+    cv = config.ConfigValue("cv-name", key=k, default=token0)
     assert cv.key == k
     assert cv.default == token0
-    assert cv.__get__(None, None) == token0, "the cv should return its default"
+
+    config_obj = config.Config(cv)
+    assert config_obj.get("cv-name", session=session) == token0
     assert redis.get(k) == token0, "the previous get should have set the default in redis"
 
     config.update(k, token1, session=session)
-    assert cv.__get__(None, None) == token1, "the cv should return the new value despite its default"
+    assert config_obj.get("cv-name", session=session) == token1, "the config should return the new value"
+
+    with pytest.raises(config.ConfigError):
+        config_obj.get("unknown", session=session)
 
 
 @pytest.fixture
