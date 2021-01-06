@@ -5,15 +5,11 @@ from concurrent.futures import ProcessPoolExecutor
 import click
 
 import factory
-import settings
-import sqlalchemy
-from app import db, encoding
+from app import db
 from harness.factories.app import factories as app_factories
 from harness.factories.app.exports import factories as exports_factories
 from harness.factories.app.imports import factories as imports_factories
 from harness.factories.common import generic, session
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.pool import NullPool
 
 # Define some reasonable defaults
 LOYALTY_SCHEME_COUNT = 10
