@@ -5,10 +5,15 @@ from concurrent.futures import ProcessPoolExecutor
 import click
 
 import factory
+import settings
+import sqlalchemy
+from app import encoding
 from harness.factories.app import factories as app_factories
 from harness.factories.app.exports import factories as exports_factories
 from harness.factories.app.imports import factories as imports_factories
 from harness.factories.common import generic, session
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 # Define some reasonable defaults
 LOYALTY_SCHEME_COUNT = 10
@@ -24,6 +29,21 @@ PENDING_EXPORT_COUNT = 10
 FILE_SEQUENCE_COUNT = 5
 MAX_PROCESSES = 18
 BATCHSIZE = 2000
+
+
+def get_new_session():
+    engine = sqlalchemy.create_engine(
+        settings.POSTGRES_DSN,
+        poolclass=NullPool,
+        json_serializer=encoding.dumps,
+        json_deserializer=encoding.loads,
+        echo=settings.TRACE_QUERY_SQL,
+    )
+
+    SessionMaker = sessionmaker(bind=engine)
+    session = scoped_session(SessionMaker)
+
+    return session
 
 
 def create_loyalty_scheme(loyalty_scheme_count: int, scheme_slug: t.Optional[str] = None):
@@ -75,13 +95,18 @@ def create_payment_transactions(payment_transaction_count: int, batchsize: int, 
                 lambda o: generic.transaction_date_provider.transaction_date(days=7)
             ),
         }
+    # Get new session for this process
+    new_session = get_new_session()
+    app_factories.PaymentTransactionFactory._meta.sqlalchemy_session = new_session
     chunks = get_batch_chunks(payment_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
             f"Creating chunk of {chunk} payment transactions", fg="cyan", bold=True,
         )
         app_factories.PaymentTransactionFactory.create_batch(chunk, **factory_kwargs)
-        session.commit()
+        new_session.commit()
+
+    new_session.close()
 
 
 def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
@@ -98,13 +123,18 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, sc
                 lambda o: generic.transaction_date_provider.transaction_date(days=7)
             ),
         }
+    # Get new session for this process
+    new_session = get_new_session()
+    app_factories.SchemeTransactionFactory._meta.sqlalchemy_session = new_session
     chunks = get_batch_chunks(scheme_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
             f"Creating chunk of {chunk} scheme transactions", fg="cyan", bold=True,
         )
         app_factories.SchemeTransactionFactory.create_batch(chunk, **factory_kwargs)
-        session.commit()
+        new_session.commit()
+
+    new_session.close()
 
 
 def create_import_transactions(import_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
@@ -117,13 +147,18 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
         factory_kwargs = {
             "provider_slug": scheme_slug,
         }
+    # Get new session for this process
+    new_session = get_new_session()
+    imports_factories.ImportTransactionFactory._meta.sqlalchemy_session = new_session
     chunks = get_batch_chunks(import_transaction_count, batchsize=batchsize)
     for chunk in chunks:
         click.secho(
             f"Creating chunk of {chunk} import transactions", fg="cyan", bold=True,
         )
         imports_factories.ImportTransactionFactory.create_batch(chunk, **factory_kwargs)
-        session.commit()
+        new_session.commit()
+
+    new_session.close()
 
 
 def do_async_tables(
@@ -278,6 +313,8 @@ def bulk_load_db(
             f"Executing {enable_scheme_transaction_constraints}", fg="cyan", bold=True,
         )
         session.execute(enable_scheme_transaction_constraints)
+
+    session.close()
 
 
 @click.command()
