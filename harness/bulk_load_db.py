@@ -85,6 +85,7 @@ def create_payment_transactions(payment_transaction_count: int, batchsize: int, 
                 f"Creating chunk of {chunk} payment transactions", fg="cyan", bold=True,
             )
             app_factories.PaymentTransactionFactory.create_batch(chunk, **factory_kwargs)
+            new_session.commit()
 
 
 def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
@@ -110,6 +111,7 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, sc
                 f"Creating chunk of {chunk} scheme transactions", fg="cyan", bold=True,
             )
             app_factories.SchemeTransactionFactory.create_batch(chunk, **factory_kwargs)
+            new_session.commit()
 
 
 def create_import_transactions(import_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
@@ -131,6 +133,7 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
                 f"Creating chunk of {chunk} import transactions", fg="cyan", bold=True,
             )
             imports_factories.ImportTransactionFactory.create_batch(chunk, **factory_kwargs)
+            new_session.commit()
 
 
 def do_async_tables(
