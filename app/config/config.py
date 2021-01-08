@@ -1,5 +1,6 @@
 import typing as t
 
+from redis.exceptions import RedisError
 from sqlalchemy.orm.session import Session
 
 from app.config import models
@@ -23,13 +24,27 @@ def _validate_key(key: str) -> None:
 
 def get(key: str, *, default: str = "", session: Session) -> t.Optional[str]:
     _validate_key(key)
-    val = t.cast(t.Optional[str], redis.get(key))
+    try:
+        val = t.cast(t.Optional[str], redis.get(key))
+    except RedisError as ex:
+        log.warning(f"Error getting key {key} from redis: '{ex}'. Trying the database...")
+        config_item = run_query(
+            lambda: session.query(models.ConfigItem).filter_by(key=key).one_or_none(),
+            session=session,
+            description=f"get {models.ConfigItem.__name__} object",
+        )
+        val = config_item.value if config_item else None
+
     if val is None:
         config_item, _ = get_or_create(
             models.ConfigItem, key=key, defaults={"key": key, "value": default}, session=session
         )
         val = config_item.value
-        redis.set(key, t.cast(str, val))
+        try:
+            redis.set(key, t.cast(str, val))
+        except RedisError as ex:
+            log.warning(f"Error setting key {key} in redis: {ex}")
+
     return val
 
 
