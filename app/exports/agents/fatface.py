@@ -1,7 +1,8 @@
 import string
 
-from app import config, models
-from app.exports.agents.bases.ecrebo import Ecrebo, EcreboConfig, EcreboSpottingConfigMixin
+from app import models
+from app.config import Config, ConfigValue, KEY_PREFIX
+from app.exports.agents.bases.ecrebo import Ecrebo
 
 PROVIDER_SLUG = "fatface"
 
@@ -26,9 +27,9 @@ RECEIPT_XML_TEMPLATE = string.Template(
 )
 
 
-REWARD_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path"
-RECEIPT_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.receipt_upload_path"
-SCHEDULE_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.schedule"
+REWARD_UPLOAD_PATH_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path"
+RECEIPT_UPLOAD_PATH_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.receipt_upload_path"
+SCHEDULE_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 
 
 class FatFace(Ecrebo):
@@ -37,7 +38,8 @@ class FatFace(Ecrebo):
     receipt_xml_template = RECEIPT_XML_TEMPLATE
     provider_short_code = "FF"
 
-    class Config(EcreboConfig, EcreboSpottingConfigMixin):
-        reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
-        receipt_upload_path = config.ConfigValue(RECEIPT_UPLOAD_PATH_KEY, default="upload/staging/receipts")
-        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
+    config = Config(
+        ConfigValue("reward_upload_path", key=REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards"),
+        ConfigValue("receipt_upload_path", key=RECEIPT_UPLOAD_PATH_KEY, default="upload/staging/receipts"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )

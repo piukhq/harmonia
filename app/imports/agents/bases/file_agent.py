@@ -10,7 +10,7 @@ from pathlib import Path
 import humanize
 import pendulum
 import settings
-from app import db, models, reporting, retry, tasks
+from app import config, db, models, reporting, retry, tasks
 from app.imports.agents import BaseAgent
 from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
@@ -213,6 +213,8 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
 
 
 class FileAgent(BaseAgent):
+    config = config.Config()  # override this
+
     def _do_import(self, data: bytes, source: str) -> t.Iterable[None]:
         self.log.info(f"Importing {source}")
 
@@ -267,18 +269,26 @@ class FileAgent(BaseAgent):
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         raise NotImplementedError
 
+    _FileAgentConfig = t.NamedTuple("_FileAgentConfig", [("path", str), ("schedule", str)])
+
+    @cached_property
+    def fileagent_config(self) -> _FileAgentConfig:
+        with db.session_scope() as session:
+            path = self.config.get("path", session=session)
+            schedule = self.config.get("schedule", session=session)
+        return self._FileAgentConfig(path, schedule)
+
     @cached_property
     def filesource(self) -> FileSourceBase:
         filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource)
-        path = self.Config.path  # type: ignore
-        return filesource_class(Path(path), logger=self.log)
+        return filesource_class(Path(self.fileagent_config.path), logger=self.log)
 
     def run(self) -> None:
         self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
         scheduler = CronScheduler(
             name=f"{self.provider_slug}-import",
-            schedule_fn=lambda: self.Config.schedule,  # type: ignore
+            schedule_fn=lambda: self.fileagent_config.schedule,
             callback=self.callback,
             coalesce_jobs=True,
             logger=self.log,

@@ -6,7 +6,8 @@ from pathlib import Path
 import gnupg
 import pendulum
 import settings
-from app.config import KEY_PREFIX, ConfigValue
+from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.core import key_manager
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
@@ -77,16 +78,17 @@ class Visa(FileAgent):
         "acquirer_transaction_amount": int,
     }
 
-    class Config:
-        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the Visa payment transaction file import agent.
 
-            It is currently set up to monitor {self.Config.path} for files to import.
+            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
             """
         )
 
@@ -172,9 +174,11 @@ class VisaAuth(QueueAgent):
             "counters": ["transactions"],
         }
 
-    class Config:
-        QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
-        queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-auth")
+    config = Config(
+        ConfigValue(
+            "queue_name", key=f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name", default="visa-auth"
+        )
+    )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
@@ -211,9 +215,13 @@ class VisaSettlement(QueueAgent):
             "counters": ["transactions"],
         }
 
-    class Config:
-        QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
-        queue_name = ConfigValue(QUEUE_NAME_KEY, "visa-settlement")
+    config = Config(
+        ConfigValue(
+            "queue_name",
+            key=f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name",
+            default="visa-settlement",
+        )
+    )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

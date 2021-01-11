@@ -9,7 +9,7 @@ from soteria.security import get_security_agent
 
 import settings
 from app import models, db
-from app.config import KEY_PREFIX, ConfigValue
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.sequences import batch
@@ -24,9 +24,10 @@ MAX_TRANSACTIONS_PER_REQUEST_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.
 class Cooperative(BatchExportAgent, SoteriaConfigMixin):
     provider_slug = PROVIDER_SLUG
 
-    class Config:
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
-        max_transactions_per_request = ConfigValue(MAX_TRANSACTIONS_PER_REQUEST_KEY, "10000")
+    config = Config(
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+        ConfigValue("max_transactions_per_request", key=MAX_TRANSACTIONS_PER_REQUEST_KEY, default="10000"),
+    )
 
     def __init__(self):
         super().__init__()
@@ -36,13 +37,14 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        self.merchant_config = self.get_soteria_config()
-        self.api = CooperativeAPI(self.merchant_config.merchant_url)
+        self.soteria_config = self.get_soteria_config()
+        self.api = CooperativeAPI(self.soteria_config.merchant_url)
 
-    def help(self):
+    def help(self, session: db.Session):
         return inspect.cleandoc(
             f"""
-            This agent exports {self.provider_slug} transactions on a schedule of {self.Config.schedule}
+            This agent exports {self.provider_slug} transactions on a schedule of {self.config.get(
+                "schedule", session=session)}
             """
         )
 
@@ -95,7 +97,7 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
-        batch_size = int(self.Config.max_transactions_per_request)
+        batch_size = int(self.config.get("max_transactions_per_request", session=session))
         for transaction_batch in batch(transactions, batch_size):
             self.log.debug(f"Found a batch of {len(transaction_batch)} transactions to export.")
             transactions = self.serialize_transactions(transaction_batch)
@@ -107,15 +109,15 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
                 extra_data={},
             )
 
-    def send_export_data(self, export_data: AgentExportData):
+    def send_export_data(self, export_data: AgentExportData, session: db.Session):
         self.log.debug(f"Starting {self.provider_slug} batch export loop.")
         _, body = export_data.outputs[0]
         # matched_transactions = export_data.transactions
 
         headers = self.get_security_headers(
             body,
-            security_service=self.merchant_config.data["security_credentials"]["outbound"]["service"],
-            security_credentials=self.merchant_config.data["security_credentials"],
+            security_service=self.soteria_config.data["security_credentials"]["outbound"]["service"],
+            security_credentials=self.soteria_config.data["security_credentials"],
         )
 
         response = self.api.export_transactions(body, headers)

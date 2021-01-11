@@ -10,8 +10,9 @@ from soteria.encryption import PGP
 
 import settings
 from app import models, db, xml_utils
+from app.config import Config
 from app.soteria import SoteriaConfigMixin
-from app.utils import classproperty, missing_property
+from app.utils import missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service.atlas import atlas
@@ -48,27 +49,10 @@ class next_sequence_number:
             self.sequencer.set_next_value(self.start + self.delta, session=self.session)
 
 
-class EcreboConfig:
-    @classproperty
-    def reward_upload_path(self):
-        return missing_property(self, "reward_upload_path")
-
-    @classproperty
-    def schedule(self):
-        return missing_property(self, "schedule")
-
-
-class EcreboSpottingConfigMixin:
-    @classproperty
-    def receipt_upload_path(self):
-        return missing_property(self, "receipt_upload_path")
-
-
 class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
     saved_output_index = 2  # save rewards CSV to export_transaction table
 
-    class Config(EcreboConfig):
-        pass
+    config = Config()
 
     def __init__(self):
         super().__init__()
@@ -78,9 +62,9 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
                 f"The {self.provider_slug} export agent requires the Atlas URL to be set."
             )
 
-        config = self.get_soteria_config()
+        soteria_config = self.get_soteria_config()
         security_credentials = {
-            c["credential_type"]: c["value"] for c in config.security_credentials["outbound"]["credentials"]
+            c["credential_type"]: c["value"] for c in soteria_config.security_credentials["outbound"]["credentials"]
         }
 
         self.pgp = PGP(security_credentials["merchant_public_key"].encode())
@@ -206,20 +190,22 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         else:
             return (output.key, io.BytesIO(t.cast(str, output.data).encode()))
 
-    def send_export_data(self, export_data: AgentExportData) -> None:
+    def send_export_data(self, export_data: AgentExportData, session: db.Session) -> None:
         # place output data into BytesIO objects for SFTP usage.
         # this will also encrypt the .base64 and .csv files with PGP and append `.gpg` to the key
         buffered_outputs = list(map(self._prepare_for_sftp, export_data.outputs))
 
         # we have to send the files in a very specific order.
         if self.matching_type == models.MatchingType.SPOTTED:
-            with SFTP(self.sftp_credentials, self.skey, self.Config.receipt_upload_path) as sftp:  # type: ignore
+            with SFTP(
+                self.sftp_credentials, self.skey, self.config.get("receipt_upload_path", session=session)
+            ) as sftp:  # type: ignore
                 name, buf = buffered_outputs[0]
                 sftp.client.putfo(buf, name)
                 name, buf = buffered_outputs[1]
                 sftp.client.putfo(buf, name)
 
-        with SFTP(self.sftp_credentials, self.skey, self.Config.reward_upload_path) as sftp:
+        with SFTP(self.sftp_credentials, self.skey, self.config.get("reward_upload_path", session=session)) as sftp:
             name, buf = buffered_outputs[2]
             sftp.client.putfo(buf, name)
             name, buf = buffered_outputs[3]

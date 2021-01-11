@@ -1,10 +1,11 @@
-from app import config, models
-from app.exports.agents.bases.ecrebo import Ecrebo, EcreboConfig
+from app import models
+from app.config import Config, ConfigValue, KEY_PREFIX
+from app.exports.agents.bases.ecrebo import Ecrebo
 
 PROVIDER_SLUG = "whsmith-rewards"
 
-REWARD_UPLOAD_PATH_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path"
-SCHEDULE_KEY = f"{config.KEY_PREFIX}{PROVIDER_SLUG}.schedule"
+REWARD_UPLOAD_PATH_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.reward_upload_path"
+SCHEDULE_KEY = f"{KEY_PREFIX}{PROVIDER_SLUG}.schedule"
 
 
 class WhSmith(Ecrebo):
@@ -13,6 +14,7 @@ class WhSmith(Ecrebo):
     saved_output_index = 0  # No receipt file in outputs
     provider_short_code = "WHS"
 
-    class Config(EcreboConfig):
-        reward_upload_path = config.ConfigValue(REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards")
-        schedule = config.ConfigValue(SCHEDULE_KEY, "* * * * *")
+    config = Config(
+        ConfigValue("reward_upload_path", key=REWARD_UPLOAD_PATH_KEY, default="upload/staging/rewards"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )

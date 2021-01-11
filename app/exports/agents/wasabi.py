@@ -4,7 +4,7 @@ import typing as t
 import pendulum
 
 from app import db, models
-from app.config import KEY_PREFIX, ConfigValue
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
@@ -24,13 +24,11 @@ class Wasabi(SingularExportAgent):
     class ReceiptNumberNotFound(Exception):
         pass
 
-    class Config:
-        base_url = ConfigValue(BASE_URL_KEY, "http://localhost")
+    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
 
     def __init__(self):
         super().__init__()
-        api_class = ActeolMockAPI if settings.DEVELOPMENT else ActeolAPI
-        self.api = api_class(self.Config.base_url)
+        self.api_class = ActeolMockAPI if settings.DEVELOPMENT else ActeolAPI
 
     def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
         if retry_count == 0:
@@ -70,7 +68,8 @@ class Wasabi(SingularExportAgent):
     def export(self, export_data: AgentExportData, *, session: db.Session):
         _, body = export_data.outputs[0]
         request_timestamp = pendulum.now().to_datetime_string()
-        response = self.api.post_matched_transaction(body)
+        api = self.api_class(self.config.get("base_url", session=session))
+        response = api.post_matched_transaction(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
         if msg := response.json().get("Message"):
