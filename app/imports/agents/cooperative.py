@@ -2,9 +2,10 @@ import json
 import inspect
 import typing as t
 
+from app import db
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
-from app.config import KEY_PREFIX, ConfigValue
+from app.config import KEY_PREFIX, ConfigValue, Config
 from app.currency import to_pennies
 
 PROVIDER_SLUG = "cooperative"
@@ -15,20 +16,20 @@ SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 class Cooperative(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
-
-    class Config:
-        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         yield from json.loads(data.decode())["transactions"]
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the Cooperative scheme transaction file import agent.
 
-            It is currently set up to monitor {self.Config.path} for files to import.
+            It is currently set up to monitor {self.config.get('path', session=session)} for files to import.
             """
         )
 

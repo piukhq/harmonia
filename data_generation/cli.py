@@ -3,6 +3,7 @@ import typing as t
 import uuid
 
 from concurrent.futures import ProcessPoolExecutor
+from functools import cached_property
 from hashlib import sha256
 
 from io import BytesIO
@@ -19,6 +20,7 @@ import settings
 from harmonia_fixtures.payment_cards import token_user_info_map
 from harness.providers.registry import import_data_providers
 
+from app import db
 from app.feeds import ImportFeedTypes
 from app.imports.agents import QueueAgent
 from app.imports.agents.bases.base import BaseAgent
@@ -63,6 +65,14 @@ STORE_ID_MIDS_MAP = {  # type: t.Dict[str, t.Any]
 logger = get_logger("data-generator")
 
 
+class PathConfigMixin:
+    @cached_property
+    def path(self):
+        with db.session_scope() as session:
+            path = self.agent.config.get("path", session=session)
+        return path
+
+
 class DataDumper:
     def __init__(self, agent_instance: BaseAgent, num_payment_tx: int = None, dump_to_stdout: bool = False):
         self.agent = agent_instance
@@ -70,17 +80,17 @@ class DataDumper:
         self.stdout = dump_to_stdout
 
 
-class SftpDumper(DataDumper):
+class SftpDumper(DataDumper, PathConfigMixin):
     def dump(self, data):
         if self.stdout:
             print(data)
             return
 
-        with SFTP(self.agent.sftp_credentials, self.agent.skey, str(self.agent.Config.path)) as sftp:
+        with SFTP(self.agent.sftp_credentials, self.agent.skey, self.path) as sftp:
             sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}.csv")
 
 
-class BlobDumper(DataDumper):
+class BlobDumper(DataDumper, PathConfigMixin):
     def dump(self, data):
         if self.stdout:
             print(data)
@@ -89,7 +99,7 @@ class BlobDumper(DataDumper):
         bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
         container_name = settings.BLOB_IMPORT_CONTAINER
         blob_client = bbs.get_blob_client(
-            container_name, f"{self.agent.Config.path}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
+            container_name, f"{self.path}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
         )
         blob_client.upload_blob(data)
 
@@ -206,12 +216,13 @@ def generate(
             data = future.result()
             agent_data[agent_slug] = data
 
-    for agent_slug, data in agent_data.items():
-        logger.info(f"Dumping {agent_slug} data...")
-        agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
-        dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
-        dumper.dump(data)
-        logger.info(f"Finished dumping {agent_slug} data")
+    with db.session_scope() as session:
+        for agent_slug, data in agent_data.items():
+            logger.info(f"Dumping {agent_slug} data...")
+            agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
+            dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
+            dumper.dump(data, session=session)
+            logger.info(f"Finished dumping {agent_slug} data")
 
 
 if __name__ == "__main__":

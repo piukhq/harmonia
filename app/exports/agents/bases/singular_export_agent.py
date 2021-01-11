@@ -10,7 +10,6 @@ from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.prometheus import bink_prometheus
 from app.status import status_monitor
-from sqlalchemy.orm import Session
 
 
 class SingularExportAgent(BaseAgent):
@@ -143,7 +142,7 @@ class SingularExportAgent(BaseAgent):
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
     @contextmanager
-    def _update_metrics(self, export_data: AgentExportData, session: Session) -> t.Iterator[None]:
+    def _update_metrics(self, export_data: AgentExportData, session: db.Session) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """

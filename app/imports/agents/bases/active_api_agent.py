@@ -1,16 +1,24 @@
 import requests
 import marshmallow
 
+from functools import cached_property
+
 from app.imports.agents import BaseAgent
 from app.scheduler import CronScheduler
 from app import db
 
 
 class ActiveAPIAgent(BaseAgent):
+    @cached_property
+    def schedule(self):
+        with db.session_scope() as session:
+            schedule = self.config.get("schedule", session=session)
+        return schedule
+
     def run(self):
         scheduler = CronScheduler(
             name="active-api-agent",
-            schedule_fn=lambda: self.Config.schedule,
+            schedule_fn=lambda: self.schedule,
             callback=self.do_import,
             logger=self.log,  # type: ignore
         )

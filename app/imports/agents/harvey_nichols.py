@@ -2,7 +2,8 @@ import typing as t
 import inspect
 import json
 
-from app.config import KEY_PREFIX, ConfigValue
+from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
 from app.currency import to_pennies
@@ -145,10 +146,10 @@ payment_provider_map = {
 class HarveyNichols(FileAgent):
     feed_type = ImportFeedTypes.MERCHANT
     provider_slug = PROVIDER_SLUG
-
-    class Config:
-        path = ConfigValue(PATH_KEY, default=f"{PROVIDER_SLUG}/")
-        schedule = ConfigValue(SCHEDULE_KEY, "* * * * *")
+    config = Config(
+        ConfigValue("path", PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", SCHEDULE_KEY, default="* * * * *"),
+    )
 
     def __init__(self):
         super().__init__()
@@ -170,12 +171,12 @@ class HarveyNichols(FileAgent):
             if transaction["card"]["scheme"] in payment_provider_map:
                 yield transaction
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return inspect.cleandoc(
             f"""
             This is the Harvey Nichols scheme transaction file import agent.
 
-            It is currently set up to monitor {self.Config.path} for files to import.
+            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
             """
         )
 

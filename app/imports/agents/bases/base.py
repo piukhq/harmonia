@@ -101,7 +101,7 @@ class BaseAgent:
     def feed_type(self) -> ImportFeedTypes:
         return missing_property(type(self), "feed_type")
 
-    def help(self) -> str:
+    def help(self, session: db.Session) -> str:
         return (
             "This is a new import agent.\n"
             "Implement all the required methods (see agent base classes) "
