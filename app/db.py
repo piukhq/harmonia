@@ -8,7 +8,7 @@ from redis import Redis
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound  # noqa
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.pool import NullPool
 
 from app import postgres, encoding
@@ -74,15 +74,19 @@ def run_query(fn, *, session: Session, attempts: int = 2, read_only: bool = Fals
                 raise
 
 
-def get_or_create(
-    model: t.Type[Base], *, session: Session, defaults: t.Optional[dict] = None, **kwargs
-) -> t.Tuple[Base, bool]:
-    instance = run_query(
+def _get_one_or_none(model: t.Type[Base], *, session: Session, **kwargs) -> t.Optional[Base]:
+    return run_query(
         lambda: session.query(model).filter_by(**kwargs).one_or_none(),
         session=session,
         read_only=True,
         description=f"find {model.__name__} object for get_or_create",
     )
+
+
+def get_or_create(
+    model: t.Type[Base], *, session: Session, defaults: t.Optional[dict] = None, **kwargs
+) -> t.Tuple[Base, bool]:
+    instance = _get_one_or_none(model, session=session, **kwargs)
     if instance:
         return instance, False
     else:
@@ -96,10 +100,15 @@ def get_or_create(
             session.commit()
             return instance
 
-        return (
-            run_query(add_instance, session=session, description=f"create {model.__name__} object for get_or_create"),
-            True,
-        )
+        try:
+            return (
+                run_query(
+                    add_instance, session=session, description=f"create {model.__name__} object for get_or_create"
+                ),
+                True,
+            )
+        except IntegrityError:
+            return _get_one_or_none(model, session=session, **kwargs), False
 
 
 def auto_repr(cls):
