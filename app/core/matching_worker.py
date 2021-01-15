@@ -200,11 +200,19 @@ class MatchingWorker:
         )
 
         if payment_transactions:
+            matching_queue = tasks.matching_queue
+            # Enqueue Iceland transactions to the slow queue
+            if scheme_transactions:
+                provider_slug = scheme_transactions[0].provider_slug
+                if provider_slug in ["iceland-bonus-card"]:
+                    matching_queue = tasks.matching_slow_queue
+
             self.log.debug(
-                f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs."
+                (f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs "
+                 f"to {matching_queue.name} queue.")
             )
             for payment_transaction in payment_transactions:
-                tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
+                matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
         else:
             self.log.debug("Found no matching payment transactions. Exiting matching job.")
 
