@@ -477,6 +477,7 @@ def run_transaction_matching(fixture: dict, *, import_only: bool = False):
         return
 
     run_rq_worker("matching")
+    run_rq_worker("matching_slow")
     run_rq_worker("export")
 
     # at this point, the event-driven singular exports have already happened.
