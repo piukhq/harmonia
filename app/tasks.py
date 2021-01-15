@@ -52,6 +52,7 @@ def run_worker(queue_names: t.List[str], *, burst: bool = False, workerclass: t.
 
 import_queue = LoggedQueue(name="import", connection=db.redis_raw)
 matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
+matching_slow_queue = LoggedQueue(name="matching_slow", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
