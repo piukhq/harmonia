@@ -14,7 +14,6 @@ from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExpo
 from app.service.atlas import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
-from app.encryption import decrypt_credentials
 from app.sequences import batch
 from harness.exporters.iceland_mock import IcelandMockAPI
 
@@ -65,15 +64,18 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             """
         )
 
+    @staticmethod
+    def get_merchant_identifier(matched_transaction: models.MatchedTransaction):
+        return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
+
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
             user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
-            credential_values = decrypt_credentials(user_identity.credentials)
             formatted_transaction = {
                 "record_uid": hash_ids.encode(user_identity.scheme_account_id),
                 "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
-                "merchant_scheme_id2": credential_values["merchant_identifier"],
+                "merchant_scheme_id2": self.get_merchant_identifier(transaction),
                 "transaction_id": transaction.transaction_id,
             }
             formatted.append(formatted_transaction)
@@ -114,6 +116,13 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response = self.api.merchant_request(request)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.save_transaction(
-            self.provider_slug, response, request, export_data.transactions, request_timestamp, response_timestamp,
+        atlas.save_transactions(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier
+            ),
+            request=body,
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
         )

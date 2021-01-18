@@ -117,6 +117,10 @@ class UserIdentity:
         self.user_id = user_id
         self.credentials = credentials
 
+    @property
+    def decrypted_credentials(self):
+        return encryption.decrypt_credentials(self.credentials)
+
 
 class MerchantIdentifier:
     def __init__(self, mid):
