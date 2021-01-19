@@ -134,6 +134,7 @@ BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
 BLOB_IMPORT_CONTAINER = getenv("TXM_BLOB_IMPORT_CONTAINER", default="harmonia-imports")
 BLOB_ARCHIVE_CONTAINER = getenv("TXM_BLOB_ARCHIVE_CONTAINER", default="harmonia-archive")
 BLOB_EXPORT_CONTAINER = getenv("TXM_BLOB_EXPORT_CONTAINER", default="harmonia-exports")
+BLOB_AUDIT_CONTAINER = getenv("TXM_BLOB_AUDIT_CONTAINER", default="harmonia-atlas")
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.

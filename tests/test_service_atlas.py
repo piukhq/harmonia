@@ -1,11 +1,10 @@
 import pendulum
-import pytest
 import settings
 
 from requests.models import Response
 from unittest import mock
 
-from app.service.atlas import Atlas
+from app.service import atlas
 
 # this allows the atlas service to work normally.
 settings.SIMULATE_EXPORTS = False
@@ -29,11 +28,6 @@ class MockMatchedTransaction:
         self.transaction_date = transaction_date
 
 
-@pytest.fixture
-def atlas() -> Atlas:
-    return Atlas()
-
-
 request_body = (
     "{"
     '"CustomerClaimTransactionRequest": {'
@@ -46,18 +40,19 @@ request_body = (
 
 
 @mock.patch("app.service.queue.add", autospec=True)
-def test_save_transaction(mocked_queue) -> None:
+def test_queue_audit_data(mocked_queue) -> None:
     dt = pendulum.now()
     request_timestamp = pendulum.now().to_datetime_string()
-    atlas = Atlas()
     response = mock.Mock(spec=Response)
     response.json.return_value = {"outcome": "success"}
     response.status_code = 200
     response_timestamp = dt.to_datetime_string()
 
-    atlas.save_transactions(
+    atlas.queue_audit_data(
         "test-slug",
-        atlas.make_audit_transactions([MockMatchedTransaction(dt)], lambda mt: "customer-number"),
+        atlas.make_audit_transactions(
+            [MockMatchedTransaction(dt)], tx_merchant_ident_callback=lambda mt: "customer-number"
+        ),
         request=request_body,
         request_timestamp=request_timestamp,
         response=response,
@@ -75,6 +70,7 @@ def test_save_transaction(mocked_queue) -> None:
                 "spend_amount": 1500,
                 "transaction_date": dt.to_datetime_string(),
                 "merchant_identifier": "customer-number",
+                "record_uid": None,
             }
         ],
         "audit_data": {
@@ -90,19 +86,20 @@ def test_save_transaction(mocked_queue) -> None:
 
 
 @mock.patch("app.service.queue.add", autospec=True)
-def test_save_transaction_non_json_response(mocked_queue) -> None:
+def test_queue_audit_data_non_json_response(mocked_queue) -> None:
     dt = pendulum.now()
     request_timestamp = dt.to_datetime_string()
-    atlas = Atlas()
     response = mock.Mock(spec=Response)
     response.json.side_effect = ValueError
     response.content = "some other content"
     response.status_code = 204
     response_timestamp = dt.to_datetime_string()
 
-    atlas.save_transactions(
+    atlas.queue_audit_data(
         "test-slug",
-        atlas.make_audit_transactions([MockMatchedTransaction(dt)], lambda mt: "customer-number"),
+        atlas.make_audit_transactions(
+            [MockMatchedTransaction(dt)], tx_merchant_ident_callback=lambda mt: "customer-number"
+        ),
         request=request_body,
         request_timestamp=request_timestamp,
         response=response,

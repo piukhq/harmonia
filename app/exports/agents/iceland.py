@@ -11,7 +11,7 @@ from soteria.security import get_security_agent
 from app import models, db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
-from app.service.atlas import atlas
+from app.service import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
 from app.sequences import batch
@@ -68,12 +68,16 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     def get_merchant_identifier(matched_transaction: models.MatchedTransaction):
         return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
 
+    @staticmethod
+    def get_record_uid(matched_transaction: models.MatchedTransaction):
+        return hash_ids.encode(matched_transaction.payment_transaction.user_identity.scheme_account_id)
+
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
             user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
             formatted_transaction = {
-                "record_uid": hash_ids.encode(user_identity.scheme_account_id),
+                "record_uid": self.get_record_uid(transaction),
                 "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
                 "merchant_scheme_id2": self.get_merchant_identifier(transaction),
                 "transaction_id": transaction.transaction_id,
@@ -116,7 +120,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response = self.api.merchant_request(request)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.save_transactions(
+        atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier

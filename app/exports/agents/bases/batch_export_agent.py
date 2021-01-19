@@ -66,7 +66,7 @@ class BatchExportAgent(BaseAgent):
 
         for export_data in self.yield_export_data(transactions, session=session):
             if settings.SIMULATE_EXPORTS:
-                self._save_to_blob(export_data)
+                self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
             else:
                 with self._update_metrics(export_data):
                     self.send_export_data(export_data, session=session)

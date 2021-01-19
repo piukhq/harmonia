@@ -8,7 +8,7 @@ from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service.acteol import ActeolAPI
-from app.service.atlas import atlas
+from app.service import atlas
 from harness.exporters.acteol_mock import ActeolMockAPI
 import settings
 
@@ -85,7 +85,7 @@ class Wasabi(SingularExportAgent):
 
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        atlas.save_transactions(
+        atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier

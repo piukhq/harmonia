@@ -3,7 +3,7 @@ import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
-from app.service.atlas import atlas
+from app.service import atlas
 from app.service.harvey_nichols import HarveyNicholsAPI
 from harness.exporters.harvey_nichols_mock import HarveyNicholsMockAPI
 
@@ -58,7 +58,7 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.save_transactions(
+        atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier

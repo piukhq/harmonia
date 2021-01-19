@@ -126,7 +126,7 @@ class SingularExportAgent(BaseAgent):
     def _send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
         with self._update_metrics(export_data=export_data, session=session):
             if settings.SIMULATE_EXPORTS:
-                self._save_to_blob(export_data)
+                self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
             else:
                 self.export(export_data, session=session)
 
