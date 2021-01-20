@@ -65,7 +65,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
 
     @staticmethod
-    def get_merchant_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
         return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
 
     @staticmethod
@@ -79,7 +79,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             formatted_transaction = {
                 "record_uid": self.get_record_uid(transaction),
                 "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
-                "merchant_scheme_id2": self.get_merchant_identifier(transaction),
+                "merchant_scheme_id2": self.get_loyalty_identifier(transaction),
                 "transaction_id": transaction.transaction_id,
             }
             formatted.append(formatted_transaction)
@@ -123,7 +123,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
-                export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
             ),
             request=body,
             request_timestamp=request_timestamp,

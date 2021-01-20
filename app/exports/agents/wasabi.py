@@ -48,7 +48,7 @@ class Wasabi(SingularExportAgent):
             return run_time_today
 
     @staticmethod
-    def get_merchant_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
         return (
             hashlib.sha1(
                 "Bink-Wasabi-"
@@ -62,7 +62,7 @@ class Wasabi(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "origin_id": self.get_merchant_identifier(matched_transaction),
+                        "origin_id": self.get_loyalty_identifier(matched_transaction),
                         "ReceiptNo": matched_transaction.transaction_id,
                     },
                 )
@@ -88,7 +88,7 @@ class Wasabi(SingularExportAgent):
         atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
-                export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
             ),
             body=body,
             request_timestamp=request_timestamp,

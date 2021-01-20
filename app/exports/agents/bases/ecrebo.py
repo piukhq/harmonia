@@ -115,7 +115,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         return buf.getvalue()
 
     @staticmethod
-    def get_merchant_identifier(matched_transaction: models.MatchedTransaction) -> str:
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
         return matched_transaction.payment_transaction.user_identity.loyalty_id
 
     @staticmethod
@@ -129,7 +129,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         for sequence_number, transaction in enumerate(transactions, start=sequence_number):
             transaction_id = self._get_transaction_id(transaction, sequence_number)
             record_uid = self.get_record_uid(transaction)
-            loyalty_id = self.get_merchant_identifier(transaction)
+            loyalty_id = self.get_loyalty_identifier(transaction)
             if not loyalty_id:
                 error_msg = (
                     f"No loyalty card ID saved on transaction. Skipping transaction ID: {transaction.transaction_id}."
@@ -211,7 +211,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions,
-                tx_merchant_ident_callback=self.get_merchant_identifier,
+                tx_loyalty_ident_callback=self.get_loyalty_identifier,
                 tx_record_uid_callback=self.get_record_uid,
             ),
             blob_names=blob_names,

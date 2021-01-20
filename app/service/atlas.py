@@ -16,7 +16,7 @@ class AuditTransaction(t.TypedDict):
     user_id: str
     spend_amount: int
     transaction_date: str
-    merchant_identifier: str
+    loyalty_identifier: str
     record_uid: t.Optional[str]
 
 
@@ -27,7 +27,7 @@ class AuditData(t.TypedDict, total=False):
 
 
 class AtlasPayload(t.TypedDict):
-    scheme_provider: str
+    provider_slug: str
     transactions: t.List[AuditTransaction]
     audit_data: AuditData
 
@@ -35,7 +35,7 @@ class AtlasPayload(t.TypedDict):
 def make_audit_transactions(
     transactions: t.List[models.MatchedTransaction],
     *,
-    tx_merchant_ident_callback: t.Callable[[models.MatchedTransaction], str],
+    tx_loyalty_ident_callback: t.Callable[[models.MatchedTransaction], str],
     tx_record_uid_callback: t.Optional[t.Callable[[models.MatchedTransaction], t.Optional[str]]] = None,
 ):
     return [
@@ -44,7 +44,7 @@ def make_audit_transactions(
             user_id=tx.payment_transaction.user_identity.user_id,
             spend_amount=tx.spend_amount,
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
-            merchant_identifier=tx_merchant_ident_callback(tx),
+            loyalty_identifier=tx_loyalty_ident_callback(tx),
             record_uid=tx_record_uid_callback(tx) if tx_record_uid_callback else None,
         )
         for tx in transactions
@@ -78,7 +78,7 @@ def queue_audit_data(
     if blob_names:
         audit_data["file_names"] = blob_names
 
-    payload = AtlasPayload(scheme_provider=provider_slug, transactions=transactions, audit_data=audit_data)
+    payload = AtlasPayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data)
     if settings.SIMULATE_EXPORTS:
         log.warning(f"Not saving {provider_slug} transaction(s) because SIMULATE_EXPORTS is enabled.")
         log.debug(f"Simulated audit request with payload:\n{payload}")

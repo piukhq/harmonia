@@ -51,7 +51,7 @@ def test_queue_audit_data(mocked_queue) -> None:
     atlas.queue_audit_data(
         "test-slug",
         atlas.make_audit_transactions(
-            [MockMatchedTransaction(dt)], tx_merchant_ident_callback=lambda mt: "customer-number"
+            [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
         ),
         request=request_body,
         request_timestamp=request_timestamp,
@@ -62,14 +62,14 @@ def test_queue_audit_data(mocked_queue) -> None:
     mocked_queue.assert_called()
 
     assert mocked_queue.call_args[0][0] == {
-        "scheme_provider": "test-slug",
+        "provider_slug": "test-slug",
         "transactions": [
             {
                 "transaction_id": 1,
                 "user_id": 10,
                 "spend_amount": 1500,
                 "transaction_date": dt.to_datetime_string(),
-                "merchant_identifier": "customer-number",
+                "loyalty_identifier": "customer-number",
                 "record_uid": None,
             }
         ],
@@ -98,7 +98,7 @@ def test_queue_audit_data_non_json_response(mocked_queue) -> None:
     atlas.queue_audit_data(
         "test-slug",
         atlas.make_audit_transactions(
-            [MockMatchedTransaction(dt)], tx_merchant_ident_callback=lambda mt: "customer-number"
+            [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
         ),
         request=request_body,
         request_timestamp=request_timestamp,

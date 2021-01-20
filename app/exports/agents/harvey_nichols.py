@@ -27,7 +27,7 @@ class HarveyNichols(SingularExportAgent):
         }
 
     @staticmethod
-    def get_merchant_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
         return matched_transaction.payment_transaction.user_identity.decrypted_credentials["card_number"]
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
@@ -41,7 +41,7 @@ class HarveyNichols(SingularExportAgent):
                     {
                         "CustomerClaimTransactionRequest": {
                             "token": "token",
-                            "customerNumber": self.get_merchant_identifier(matched_transaction),
+                            "customerNumber": self.get_loyalty_identifier(matched_transaction),
                             "id": matched_transaction.transaction_id,
                         }
                     },
@@ -61,7 +61,7 @@ class HarveyNichols(SingularExportAgent):
         atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
-                export_data.transactions, tx_merchant_ident_callback=self.get_merchant_identifier
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
             ),
             request=body,
             request_timestamp=request_timestamp,
