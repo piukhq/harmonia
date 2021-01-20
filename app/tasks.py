@@ -29,7 +29,7 @@ class LoggedQueue(rq.Queue):
 
     def enqueue(self, f, *args, **kwargs):
         log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
-        return super().enqueue(f, *args, **kwargs)
+        return super().enqueue(f, retry=rq.Retry(max=3, interval=[10, 30, 60]), *args, **kwargs)
 
     @cached_property
     def queue_limit(self) -> int:
