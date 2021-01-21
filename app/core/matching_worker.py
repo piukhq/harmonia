@@ -128,6 +128,17 @@ class MatchingWorker:
 
         tasks.export_queue.enqueue(tasks.export_matched_transaction, match_result.matched_transaction.id)
 
+    def _choose_matching_queue(self, scheme_transactions: t.List[models.SchemeTransaction]):
+        """
+        Potentially enqueue iceland transactions to the slow matching queue
+        """
+        matching_queue = tasks.matching_queue  # default queue
+        provider_slug = scheme_transactions[0].provider_slug
+        if provider_slug in ["iceland-bonus-card"]:
+            matching_queue = tasks.matching_slow_queue
+
+        return matching_queue
+
     def handle_payment_transaction(self, payment_transaction_id: int, *, session: db.Session) -> None:
         """Runs the matching process for a single payment transaction."""
         status_monitor.checkin(self)
@@ -200,11 +211,15 @@ class MatchingWorker:
         )
 
         if payment_transactions:
+            matching_queue = self._choose_matching_queue(scheme_transactions)
             self.log.debug(
-                f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching jobs."
+                (
+                    f"Found {len(payment_transactions)} potential matching payment transactions. Enqueueing matching "
+                    f"jobs on {matching_queue.name} queue."
+                )
             )
             for payment_transaction in payment_transactions:
-                tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
+                matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
         else:
             self.log.debug("Found no matching payment transactions. Exiting matching job.")
 
