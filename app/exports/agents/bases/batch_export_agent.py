@@ -65,10 +65,10 @@ class BatchExportAgent(BaseAgent):
         self.log.debug(f"Exporting {len(pending_exports)} transactions.")
 
         for export_data in self.yield_export_data(transactions, session=session):
-            if settings.SIMULATE_EXPORTS:
-                self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
-            else:
-                with self._update_metrics(export_data):
+            with self._update_metrics(export_data):
+                if settings.SIMULATE_EXPORTS:
+                    self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
+                else:
                     self.send_export_data(export_data, session=session)
 
             db.run_query(
