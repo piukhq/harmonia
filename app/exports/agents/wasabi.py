@@ -5,11 +5,10 @@ import pendulum
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
-from app.encryption import decrypt_credentials
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service.acteol import ActeolAPI
-from app.service.atlas import atlas
+from app.service import atlas
 from harness.exporters.acteol_mock import ActeolMockAPI
 import settings
 
@@ -48,27 +47,34 @@ class Wasabi(SingularExportAgent):
         else:
             return run_time_today
 
+    @staticmethod
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
+        return (
+            hashlib.sha1(
+                "Bink-Wasabi-"
+                f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
+            ).hexdigest(),
+        )
+
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
-        user_identity = matched_transaction.payment_transaction.user_identity
-        credentials = decrypt_credentials(user_identity.credentials)
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "origin_id": hashlib.sha1(f'Bink-Wasabi-{credentials["email"]}'.encode()).hexdigest(),
+                        "origin_id": self.get_loyalty_identifier(matched_transaction),
                         "ReceiptNo": matched_transaction.transaction_id,
                     },
                 )
             ],
             transactions=[matched_transaction],
-            extra_data={"credentials": credentials},
+            extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session):
         _, body = export_data.outputs[0]
-        request_timestamp = pendulum.now().to_datetime_string()
         api = self.api_class(self.config.get("base_url", session=session))
+        request_timestamp = pendulum.now().to_datetime_string()
         response = api.post_matched_transaction(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
@@ -79,6 +85,13 @@ class Wasabi(SingularExportAgent):
 
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        atlas.save_transaction(
-            self.provider_slug, response, body, export_data.transactions, request_timestamp, response_timestamp
+        atlas.queue_audit_data(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+            ),
+            body=body,
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
         )

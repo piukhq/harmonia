@@ -3,7 +3,7 @@ import io
 import typing as t
 from base64 import b64encode
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid3
 
 import pendulum
 from soteria.encryption import PGP
@@ -15,7 +15,7 @@ from app.soteria import SoteriaConfigMixin
 from app.utils import missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
-from app.service.atlas import atlas
+from app.service import atlas
 from app.service.sftp import SFTP, SFTPCredentials
 
 
@@ -114,38 +114,36 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
 
         return buf.getvalue()
 
-    def _create_reward_data(
-        self, transactions: t.List[models.MatchedTransaction], sequence_number: int
-    ) -> t.Tuple[str, t.List[dict]]:
+    @staticmethod
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
+        return matched_transaction.payment_transaction.user_identity.loyalty_id
+
+    @staticmethod
+    def get_record_uid(matched_transaction: models.MatchedTransaction) -> str:
+        return str(uuid3(UUID(int=matched_transaction.id), matched_transaction.transaction_id))
+
+    def _create_reward_data(self, transactions: t.List[models.MatchedTransaction], sequence_number: int) -> str:
         buf = io.StringIO()
         writer = csv.writer(buf, delimiter="|")
 
-        atlas_calls: t.List[dict] = []
-
         for sequence_number, transaction in enumerate(transactions, start=sequence_number):
             transaction_id = self._get_transaction_id(transaction, sequence_number)
-            record_uid = str(uuid4())
-            loyalty_id = transaction.payment_transaction.user_identity.loyalty_id
+            record_uid = self.get_record_uid(transaction)
+            loyalty_id = self.get_loyalty_identifier(transaction)
             if not loyalty_id:
-                error_msg = f"No loyalty card ID saved on transaction. Transaction ID: {transaction.transaction_id}"
-                self.log.error(error_msg)
-                atlas_calls.append(
-                    {"response": error_msg, "transaction": transaction, "status": atlas.Status.NOT_ASSIGNED}
+                error_msg = (
+                    f"No loyalty card ID saved on transaction. Skipping transaction ID: {transaction.transaction_id}."
                 )
+                self.log.error(error_msg)
             else:
                 writer.writerow((loyalty_id, transaction_id, record_uid))
-                atlas_calls.append(
-                    {"response": "success", "transaction": transaction, "status": atlas.Status.BINK_ASSIGNED}
-                )
-        return buf.getvalue(), atlas_calls
+        return buf.getvalue()
 
-    def _create_fileset(
-        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
-    ) -> t.Tuple[ExportFileSet, t.List[dict]]:
+    def _create_fileset(self, transactions: t.List[models.MatchedTransaction], *, session: db.Session) -> ExportFileSet:
         transactions = [tx for tx in transactions if tx.spend_amount > 0]
 
         with next_sequence_number(self.sequencer, self.matching_type, len(transactions), session) as sequence_number:
-            reward_data, atlas_calls = self._create_reward_data(transactions, sequence_number)
+            reward_data = self._create_reward_data(transactions, sequence_number)
             receipt_data = (
                 self._create_receipt_data(transactions, sequence_number)
                 if self.matching_type == models.MatchingType.SPOTTED
@@ -154,12 +152,12 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             fileset = ExportFileSet(
                 receipt_data=receipt_data, reward_data=reward_data, transaction_count=len(transactions),
             )
-        return fileset, atlas_calls
+        return fileset
 
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
-        fileset, atlas_calls = self._create_fileset(transactions, session=session)
+        fileset = self._create_fileset(transactions, session=session)
         ts = pendulum.now().int_timestamp
 
         # the order of these outputs is used to upload to SFTP in sequence.
@@ -180,9 +178,6 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             ]
         )
         yield AgentExportData(outputs=outputs, transactions=transactions, extra_data={})
-
-    #        for atlas_call in atlas_calls:
-    #            atlas.save_transaction(provider_slug=self.provider_slug, **atlas_call)
 
     def _prepare_for_sftp(self, output: AgentExportDataOutput) -> t.Tuple[str, io.BytesIO]:
         if output.key.endswith((".base64", ".csv")):
@@ -210,3 +205,14 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             sftp.client.putfo(buf, name)
             name, buf = buffered_outputs[3]
             sftp.client.putfo(buf, name)
+
+        blob_names = self.save_to_blob(settings.BLOB_AUDIT_CONTAINER, export_data)
+        atlas.queue_audit_data(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions,
+                tx_loyalty_ident_callback=self.get_loyalty_identifier,
+                tx_record_uid_callback=self.get_record_uid,
+            ),
+            blob_names=blob_names,
+        )

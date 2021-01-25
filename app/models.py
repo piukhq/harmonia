@@ -4,6 +4,7 @@ import sqlalchemy as s
 from sqlalchemy.dialects import postgresql as psql
 
 from app.db import Base, ModelMixin, auto_repr, auto_str
+from app.encryption import decrypt_credentials
 
 # import other module's models here to be recognised by alembic.
 from app.config.models import ConfigItem  # noqa
@@ -148,3 +149,7 @@ class UserIdentity(Base, ModelMixin):
     last_four = s.Column(s.Text, nullable=False)
 
     payment_transaction = s.orm.relationship("PaymentTransaction", uselist=False, back_populates="user_identity")
+
+    @property
+    def decrypted_credentials(self):
+        return decrypt_credentials(self.credentials)
