@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 import pendulum
-import settings
+import sentry_sdk
+
 from app import db, models
 from app.models import MatchedTransaction
 from app.reporting import get_logger
@@ -64,13 +65,14 @@ class BaseAgent:
             "Override the export_all method in your agent to act as the entry point into the batch export process."
         )
 
-    def _save_to_blob(self, export_data: AgentExportData):
+    def save_to_blob(self, container: str, export_data: AgentExportData) -> t.List[str]:
         self.log.info(
             f"Saving {self.provider_slug} export data to blob storage with {len(export_data.outputs)} outputs."
         )
         blob_name_prefix = f"{self.provider_slug}/export-{pendulum.now().isoformat()}/"
         blob_storage_client = BlobStorageClient()
 
+        blob_names: t.List[str] = []
         for name, output in export_data.outputs:
             if isinstance(output, str):
                 content = output
@@ -78,7 +80,14 @@ class BaseAgent:
                 content = json.dumps(output)
 
             blob_name = f"{blob_name_prefix}{name}"
-            blob_storage_client.create_blob(settings.BLOB_EXPORT_CONTAINER, blob_name, content)
+            try:
+                blob_storage_client.create_blob(container, blob_name, content)
+            except Exception as ex:
+                sentry_sdk.capture_exception()
+                self.log.error(f"Failed to save blob {blob_name}: {ex}")
+            else:
+                blob_names.append(blob_name)
+        return blob_names
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")

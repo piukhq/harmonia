@@ -134,6 +134,7 @@ BLOB_STORAGE_DSN = getenv("TXM_BLOB_STORAGE_DSN", required=False)
 BLOB_IMPORT_CONTAINER = getenv("TXM_BLOB_IMPORT_CONTAINER", default="harmonia-imports")
 BLOB_ARCHIVE_CONTAINER = getenv("TXM_BLOB_ARCHIVE_CONTAINER", default="harmonia-archive")
 BLOB_EXPORT_CONTAINER = getenv("TXM_BLOB_EXPORT_CONTAINER", default="harmonia-exports")
+BLOB_AUDIT_CONTAINER = getenv("TXM_BLOB_AUDIT_CONTAINER", default="harmonia-atlas")
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.
@@ -141,10 +142,10 @@ if not BLOB_STORAGE_DSN:
 else:
     LOCAL_IMPORT_BASE_PATH = None
 
-# If set, export agents will not send data to external services:
-# No transactions will be sent to merchant APIs.
-# No requests will be sent to Atlas.
+# If set, no transactions will be sent to merchant APIs.
 SIMULATE_EXPORTS = getenv("TXM_SIMULATE_EXPORTS", default="true", conv=boolconv)
+# If set, messages will be queued for Atlas consumption.
+AUDIT_EXPORTS = getenv("TXM_AUDIT_EXPORTS", default="true", conv=boolconv)
 
 # This dictionary is passed to `Flask.config.from_mapping`.
 FLASK = dict(
