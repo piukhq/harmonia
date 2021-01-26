@@ -123,7 +123,9 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         atlas.queue_audit_data(
             self.provider_slug,
             atlas.make_audit_transactions(
-                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+                export_data.transactions,
+                tx_loyalty_ident_callback=self.get_loyalty_identifier,
+                tx_record_uid_callback=self.get_record_uid,
             ),
             request=body,
             request_timestamp=request_timestamp,
