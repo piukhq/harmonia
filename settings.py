@@ -186,6 +186,7 @@ GPG_ARGS = {
 }
 
 # Prometheus settings
+PROMETHEUS_PUSH_GATEWAY = getenv("TXM_PROMETHEUS_PUSH_GATEWAY", default="http://localhost:9100")
 PUSH_PROMETHEUS_METRICS = getenv("TXM_PUSH_PROMETHEUS_METRICS", default="true", conv=boolconv)
-PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
+PROMETHEUS_SEND_PID = getenv("TXM_PROMETHEUS_SEND_PID", default="true", conv=boolconv)
 PROMETHEUS_JOB = "harmonia"
