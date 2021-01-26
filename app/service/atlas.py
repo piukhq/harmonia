@@ -40,7 +40,7 @@ def make_audit_transactions(
 ):
     return [
         AuditTransaction(
-            transaction_id=tx.id,
+            transaction_id=tx.transaction_id,
             user_id=tx.payment_transaction.user_identity.user_id,
             spend_amount=tx.spend_amount,
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
