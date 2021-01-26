@@ -65,7 +65,7 @@ def test_queue_audit_data(mocked_queue) -> None:
         "provider_slug": "test-slug",
         "transactions": [
             {
-                "transaction_id": 1,
+                "transaction_id": 125,
                 "user_id": 10,
                 "spend_amount": 1500,
                 "transaction_date": dt.to_datetime_string(),
