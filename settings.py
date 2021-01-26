@@ -142,10 +142,10 @@ if not BLOB_STORAGE_DSN:
 else:
     LOCAL_IMPORT_BASE_PATH = None
 
-# If set, export agents will not send data to external services:
-# No transactions will be sent to merchant APIs.
-# No requests will be sent to Atlas.
+# If set, no transactions will be sent to merchant APIs.
 SIMULATE_EXPORTS = getenv("TXM_SIMULATE_EXPORTS", default="true", conv=boolconv)
+# If set, no messages will be queued for Atlas consumption.
+AUDIT_EXPORTS = getenv("TXM_AUDIT_EXPORTS", default="true", conv=boolconv)
 
 # This dictionary is passed to `Flask.config.from_mapping`.
 FLASK = dict(

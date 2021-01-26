@@ -79,8 +79,8 @@ def queue_audit_data(
         audit_data["file_names"] = blob_names
 
     payload = AtlasPayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data)
-    if settings.SIMULATE_EXPORTS:
-        log.warning(f"Not saving {provider_slug} transaction(s) because SIMULATE_EXPORTS is enabled.")
-        log.debug(f"Simulated audit request with payload:\n{payload}")
+    if not settings.AUDIT_EXPORTS:
+        log.warning(f"Not queueing {provider_slug} audit because AUDIT_EXPORTS is disabled.")
+        log.debug(f"Audit payload:\n{payload}")
     else:
         queue.add(payload, provider=provider_slug, queue_name="tx_matching")
