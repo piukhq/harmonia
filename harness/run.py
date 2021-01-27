@@ -60,7 +60,50 @@ settings.AUDIT_EXPORTS = False
 KEYRING_REQUIRED = ["visa"]
 
 
-PGP_TEST_KEY = """-----BEGIN PGP PRIVATE KEY BLOCK-----
+PGP_PUBLIC_KEY = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+Qo5m6KbOs+AhyFcnj/yGlLeqbA==
+=BryC
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+
+PGP_PRIVATE_KEY = """-----BEGIN PGP PRIVATE KEY BLOCK-----
 
 lQOYBF5pAP0BCACrBzzer9XSuz/wUVvkLUSEaFzmvVaqU7peSruaDF38skVRQQh/
 pSsHP2bl6deyghVcm/VWlPEZGwARimWFRkPGYb//xJturHn0zqmihGrP9QiwV876
@@ -321,9 +364,9 @@ def patch_soteria_service():
             "security_credentials": {
                 "outbound": {
                     "credentials": [
-                        {"credential_type": "merchant_public_key", "value": PGP_TEST_KEY},
+                        {"credential_type": "merchant_public_key", "value": PGP_PUBLIC_KEY},
                         {"credential_type": "compound_key", "value": {}},
-                        {"credential_type": "bink_private_key", "value": PGP_TEST_KEY},
+                        {"credential_type": "bink_private_key", "value": PGP_PRIVATE_KEY},
                     ],
                     "service": soteria.configuration.Configuration.RSA_SECURITY,
                 }

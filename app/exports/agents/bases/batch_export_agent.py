@@ -9,6 +9,7 @@ from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
 from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
+from app.service import atlas
 
 
 class BatchExportAgent(BaseAgent):
@@ -66,10 +67,9 @@ class BatchExportAgent(BaseAgent):
 
         for export_data in self.yield_export_data(transactions, session=session):
             with self._update_metrics(export_data):
-                if settings.SIMULATE_EXPORTS:
-                    self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
-                else:
-                    self.send_export_data(export_data, session=session)
+                audit_message = self.send_export_data(export_data, session=session)
+                if settings.AUDIT_EXPORTS:
+                    atlas.queue_audit_message(audit_message)
 
             db.run_query(
                 lambda: self._save_export_transactions(export_data, session=session),
@@ -137,5 +137,5 @@ class BatchExportAgent(BaseAgent):
     ) -> t.Iterable[AgentExportData]:
         raise NotImplementedError("Override the yield_export_data method in your agent.")
 
-    def send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
+    def send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
         raise NotImplementedError("Override the send_export_data method in your agent.")

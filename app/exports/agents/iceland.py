@@ -43,7 +43,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             )
 
         self.merchant_config = self.get_soteria_config()
-        if settings.DEVELOPMENT is True:
+        if settings.DEBUG is True:
             # Use mocked Iceland endpoints
             self.api = IcelandMockAPI(self.merchant_config.merchant_url)
         else:
@@ -113,14 +113,14 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
             yield self._make_export_data(transaction_set, index=i)
 
-    def send_export_data(self, export_data: AgentExportData, session: db.Session):
+    def send_export_data(self, export_data: AgentExportData, session: db.Session) -> atlas.MessagePayload:
         _, body = export_data.outputs[0]
         request = self.make_secured_request(t.cast(str, body))
         request_timestamp = pendulum.now().to_datetime_string()
         response = self.api.merchant_request(request)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.queue_audit_data(
+        audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions,
@@ -132,3 +132,4 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             response=response,
             response_timestamp=response_timestamp,
         )
+        return audit_message
