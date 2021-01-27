@@ -1,13 +1,9 @@
 import pendulum
-import settings
 
 from requests.models import Response
 from unittest import mock
 
 from app.service import atlas
-
-# this allows the atlas service to work normally.
-settings.SIMULATE_EXPORTS = False
 
 
 class MockUserIdentity:
@@ -40,7 +36,7 @@ request_body = (
 
 
 @mock.patch("app.service.queue.add", autospec=True)
-def test_queue_audit_data(mocked_queue) -> None:
+def test_queue_audit_message(mocked_queue):
     dt = pendulum.now()
     request_timestamp = pendulum.now().to_datetime_string()
     response = mock.Mock(spec=Response)
@@ -48,7 +44,7 @@ def test_queue_audit_data(mocked_queue) -> None:
     response.status_code = 200
     response_timestamp = dt.to_datetime_string()
 
-    atlas.queue_audit_data(
+    audit_message = atlas.make_audit_message(
         "test-slug",
         atlas.make_audit_transactions(
             [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
@@ -59,9 +55,8 @@ def test_queue_audit_data(mocked_queue) -> None:
         response_timestamp=response_timestamp,
         blob_names=["blob1", "blob2"],
     )
-    mocked_queue.assert_called()
 
-    assert mocked_queue.call_args[0][0] == {
+    assert audit_message == {
         "provider_slug": "test-slug",
         "transactions": [
             {
@@ -83,10 +78,12 @@ def test_queue_audit_data(mocked_queue) -> None:
             "file_names": ["blob1", "blob2"],
         },
     }
+    atlas.queue_audit_message(audit_message)
+    mocked_queue.assert_called()
+    assert mocked_queue.call_args[0][0] == audit_message
 
 
-@mock.patch("app.service.queue.add", autospec=True)
-def test_queue_audit_data_non_json_response(mocked_queue) -> None:
+def test_make_audit_message_non_json_response():
     dt = pendulum.now()
     request_timestamp = dt.to_datetime_string()
     response = mock.Mock(spec=Response)
@@ -95,7 +92,7 @@ def test_queue_audit_data_non_json_response(mocked_queue) -> None:
     response.status_code = 204
     response_timestamp = dt.to_datetime_string()
 
-    atlas.queue_audit_data(
+    audit_message = atlas.make_audit_message(
         "test-slug",
         atlas.make_audit_transactions(
             [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
@@ -105,5 +102,4 @@ def test_queue_audit_data_non_json_response(mocked_queue) -> None:
         response=response,
         response_timestamp=response_timestamp,
     )
-    mocked_queue.assert_called
-    assert mocked_queue.call_args[0][0]["audit_data"]["response"]["body"] == "some other content"
+    assert audit_message["audit_data"]["response"]["body"] == "some other content"

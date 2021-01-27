@@ -26,7 +26,7 @@ class AuditData(t.TypedDict, total=False):
     file_names: t.Optional[t.List[str]]
 
 
-class AtlasPayload(t.TypedDict):
+class MessagePayload(t.TypedDict):
     provider_slug: str
     transactions: t.List[AuditTransaction]
     audit_data: AuditData
@@ -37,7 +37,7 @@ def make_audit_transactions(
     *,
     tx_loyalty_ident_callback: t.Callable[[models.MatchedTransaction], str],
     tx_record_uid_callback: t.Optional[t.Callable[[models.MatchedTransaction], t.Optional[str]]] = None,
-):
+) -> t.List[AuditTransaction]:
     return [
         AuditTransaction(
             transaction_id=tx.transaction_id,
@@ -51,7 +51,7 @@ def make_audit_transactions(
     ]
 
 
-def queue_audit_data(
+def make_audit_message(
     provider_slug: str,
     transactions: t.List[AuditTransaction],
     *,
@@ -60,7 +60,7 @@ def queue_audit_data(
     response: t.Optional[requests.Response] = None,
     response_timestamp: t.Optional[str] = None,
     blob_names: t.Optional[t.List[str]] = None,
-):
+) -> MessagePayload:
     audit_data = AuditData()
     if request is not None:
         audit_data["request"] = {"body": request, "timestamp": request_timestamp}
@@ -78,9 +78,13 @@ def queue_audit_data(
     if blob_names:
         audit_data["file_names"] = blob_names
 
-    payload = AtlasPayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data)
+    return MessagePayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data)
+
+
+def queue_audit_message(message: MessagePayload) -> None:
+    provider_slug = message["provider_slug"]
     if not settings.AUDIT_EXPORTS:
         log.warning(f"Not queueing {provider_slug} audit because AUDIT_EXPORTS is disabled.")
-        log.debug(f"Audit payload:\n{payload}")
+        log.debug(f"Audit payload:\n{message}")
     else:
-        queue.add(payload, provider=provider_slug, queue_name="tx_matching")
+        queue.add(message, provider=provider_slug, queue_name="tx_matching")

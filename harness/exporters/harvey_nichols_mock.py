@@ -15,10 +15,7 @@ class HarveyNicholsMockAPI:
     This is a mock claim transaction method to allow testing of the Harvey Nichols ClaimTransaction
     endpoint process, without actually calling Harvey Nichols's services.
 
-    Ensure your .env file has the follwoing settings for using the mock:
-    TXM_SIMULATE_EXPORTS=false
-    TXM_DEVELOPMENT=true
-
+    Ensure your .env file has TXM_DEBUG=true to use the mock
     """
 
     def __init__(self, base_url: str) -> None:

@@ -18,7 +18,7 @@ class HarveyNichols(SingularExportAgent):
 
     def __init__(self):
         super().__init__()
-        self.api_class = HarveyNicholsMockAPI if settings.DEVELOPMENT is True else HarveyNicholsAPI
+        self.api_class = HarveyNicholsMockAPI if settings.DEBUG is True else HarveyNicholsAPI
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
@@ -51,14 +51,14 @@ class HarveyNichols(SingularExportAgent):
             extra_data={"credentials": user_identity.decrypted_credentials, "scheme_account_id": scheme_account_id},
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session):
+    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
         _, body = export_data.outputs[0]
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        atlas.queue_audit_data(
+        audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
@@ -68,3 +68,4 @@ class HarveyNichols(SingularExportAgent):
             response=response,
             response_timestamp=response_timestamp,
         )
+        return audit_message

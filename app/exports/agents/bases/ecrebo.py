@@ -17,6 +17,7 @@ from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExpo
 from app.exports.sequencing import Sequencer
 from app.service import atlas
 from app.service.sftp import SFTP, SFTPCredentials
+from harness.exporters.sftp_mock import MockSFTP
 
 
 class ExportFileSet(t.NamedTuple):
@@ -69,6 +70,7 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
 
         self.pgp = PGP(security_credentials["merchant_public_key"].encode())
         compound_key = security_credentials["compound_key"]
+        self.sftp_class = SFTP if not settings.DEBUG else MockSFTP
         self.sftp_credentials = SFTPCredentials(**{k: compound_key.get(k) for k in SFTPCredentials._fields})
         self.skey = security_credentials.get("bink_private_key")
 
@@ -185,14 +187,14 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
         else:
             return (output.key, io.BytesIO(t.cast(str, output.data).encode()))
 
-    def send_export_data(self, export_data: AgentExportData, session: db.Session) -> None:
+    def send_export_data(self, export_data: AgentExportData, session: db.Session) -> atlas.MessagePayload:
         # place output data into BytesIO objects for SFTP usage.
         # this will also encrypt the .base64 and .csv files with PGP and append `.gpg` to the key
         buffered_outputs = list(map(self._prepare_for_sftp, export_data.outputs))
 
         # we have to send the files in a very specific order.
         if self.matching_type == models.MatchingType.SPOTTED:
-            with SFTP(
+            with self.sftp_class(
                 self.sftp_credentials, self.skey, self.config.get("receipt_upload_path", session=session)
             ) as sftp:  # type: ignore
                 name, buf = buffered_outputs[0]
@@ -200,14 +202,16 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
                 name, buf = buffered_outputs[1]
                 sftp.client.putfo(buf, name)
 
-        with SFTP(self.sftp_credentials, self.skey, self.config.get("reward_upload_path", session=session)) as sftp:
+        with self.sftp_class(
+            self.sftp_credentials, self.skey, self.config.get("reward_upload_path", session=session)
+        ) as sftp:
             name, buf = buffered_outputs[2]
             sftp.client.putfo(buf, name)
             name, buf = buffered_outputs[3]
             sftp.client.putfo(buf, name)
 
         blob_names = self.save_to_blob(settings.BLOB_AUDIT_CONTAINER, export_data)
-        atlas.queue_audit_data(
+        audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions,
@@ -216,3 +220,4 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             ),
             blob_names=blob_names,
         )
+        return audit_message
