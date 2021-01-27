@@ -27,7 +27,7 @@ class Wasabi(SingularExportAgent):
 
     def __init__(self):
         super().__init__()
-        self.api_class = ActeolMockAPI if settings.DEVELOPMENT else ActeolAPI
+        self.api_class = ActeolMockAPI if settings.DEBUG else ActeolAPI
 
     def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
         if retry_count == 0:
@@ -85,13 +85,14 @@ class Wasabi(SingularExportAgent):
 
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        atlas.queue_audit_data(
+        audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
                 export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
             ),
-            body=body,
+            request=body,
             request_timestamp=request_timestamp,
             response=response,
             response_timestamp=response_timestamp,
         )
+        return audit_message

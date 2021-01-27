@@ -9,6 +9,7 @@ from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.prometheus import bink_prometheus
+from app.service import atlas
 from app.status import status_monitor
 
 
@@ -44,7 +45,7 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session):
+    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -125,10 +126,9 @@ class SingularExportAgent(BaseAgent):
 
     def _send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
         with self._update_metrics(export_data=export_data, session=session):
-            if settings.SIMULATE_EXPORTS:
-                self.save_to_blob(settings.BLOB_EXPORT_CONTAINER, export_data)
-            else:
-                self.export(export_data, session=session)
+            audit_message = self.export(export_data, session=session)
+            if settings.AUDIT_EXPORTS:
+                atlas.queue_audit_message(audit_message)
 
         self._save_export_transactions(export_data, session=session)
 

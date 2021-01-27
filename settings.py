@@ -142,8 +142,6 @@ if not BLOB_STORAGE_DSN:
 else:
     LOCAL_IMPORT_BASE_PATH = None
 
-# If set, no transactions will be sent to merchant APIs.
-SIMULATE_EXPORTS = getenv("TXM_SIMULATE_EXPORTS", default="true", conv=boolconv)
 # If set, messages will be queued for Atlas consumption.
 AUDIT_EXPORTS = getenv("TXM_AUDIT_EXPORTS", default="true", conv=boolconv)
 
