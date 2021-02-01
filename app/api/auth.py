@@ -1,3 +1,5 @@
+import typing as t
+
 from azure_oidc import OIDCConfig
 from azure_oidc.integrations.flask_decorator import FlaskOIDCAuthDecorator
 
@@ -13,7 +15,10 @@ oidc_config = OIDCConfig(
 _requires_auth = None
 
 
-def auth_decorator() -> FlaskOIDCAuthDecorator:
+def auth_decorator() -> t.Callable:
+    if settings.API_AUTH_ENABLED is False:
+        return lambda x: x  # no-op decorator
+
     global _requires_auth
     if _requires_auth is None:
         _requires_auth = FlaskOIDCAuthDecorator(oidc_config)
