@@ -14,6 +14,9 @@ slug = "iceland-bonus-card"
 [[agents]]
 slug = "mastercard-auth"
 
+[[agents]]
+slug = "mastercard-settled"
+
 # first user
 [[users]]
 loyalty_id = "loyalty-123"
