@@ -177,7 +177,7 @@ class PrometheusPushThread(threading.Thread):
                     gateway=self.prometheus_push_gateway,
                     job=self.prometheus_job,
                     registry=REGISTRY,
-                    grouping_key=self.grouping_key,
+                    grouping_key=self.grouping_key if settings.PROMETHEUS_SEND_PID else None,
                     timeout=self.PUSH_TIMEOUT,
                 )
             except (ConnectionRefusedError, urllib.error.URLError):
@@ -216,6 +216,6 @@ def prometheus_push_manager(prometheus_push_gateway: str, prometheus_job: str):
                 gateway=prometheus_push_gateway,
                 job=prometheus_job,
                 registry=REGISTRY,
-                grouping_key=grouping_key,
+                grouping_key=grouping_key if settings.PROMETHEUS_SEND_PID else None,
                 timeout=push_timeout,
             )
