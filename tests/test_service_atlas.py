@@ -88,7 +88,7 @@ def test_make_audit_message_non_json_response():
     request_timestamp = dt.to_datetime_string()
     response = mock.Mock(spec=Response)
     response.json.side_effect = ValueError
-    response.content = "some other content"
+    response.text = "some other content"
     response.status_code = 204
     response_timestamp = dt.to_datetime_string()
 
