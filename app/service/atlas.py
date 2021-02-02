@@ -69,7 +69,11 @@ def make_audit_message(
         try:
             body = response.json()
         except ValueError:
-            body = response.content
+            # we assume no binary responses from merchant APIs.
+            # if we do get a binary response, we will need to consider base64 encoding
+            # to make it json serializable.
+            body = response.text
+
         audit_data["response"] = {
             "body": body,
             "status_code": response.status_code,
