@@ -27,7 +27,7 @@ class HarveyNichols(SingularExportAgent):
         }
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
         return matched_transaction.payment_transaction.user_identity.decrypted_credentials["card_number"]
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:

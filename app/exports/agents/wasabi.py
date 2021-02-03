@@ -48,7 +48,7 @@ class Wasabi(SingularExportAgent):
             return run_time_today
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
         return hashlib.sha1(
             "Bink-Wasabi-"
             f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
@@ -69,7 +69,7 @@ class Wasabi(SingularExportAgent):
             extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session):
+    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
         _, body = export_data.outputs[0]
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
