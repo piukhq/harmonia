@@ -49,12 +49,10 @@ class Wasabi(SingularExportAgent):
 
     @staticmethod
     def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
-        return (
-            hashlib.sha1(
-                "Bink-Wasabi-"
-                f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
-            ).hexdigest(),
-        )
+        return hashlib.sha1(
+            "Bink-Wasabi-"
+            f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
+        ).hexdigest()
 
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         return AgentExportData(
