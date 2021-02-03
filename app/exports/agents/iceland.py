@@ -65,11 +65,11 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction):
+    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
         return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
 
     @staticmethod
-    def get_record_uid(matched_transaction: models.MatchedTransaction):
+    def get_record_uid(matched_transaction: models.MatchedTransaction) -> str:
         return hash_ids.encode(matched_transaction.payment_transaction.user_identity.scheme_account_id)
 
     def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
