@@ -17,6 +17,8 @@ QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYYMMDD"
+TIME_FORMAT = "HHmm"
+DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
 def _make_settlement_key(third_party_id: str):
@@ -45,8 +47,6 @@ class MastercardSettled(FileAgent):
 
     field_transforms: t.Dict[str, t.Callable] = {
         "transaction_amount": lambda x: to_pennies(x),
-        "transaction_date": lambda x: pendulum.from_format(x, DATE_FORMAT),
-        "transaction_time": int,
     }
 
     config = Config(
@@ -83,10 +83,11 @@ class MastercardSettled(FileAgent):
 
     @staticmethod
     def to_transaction_fields(data: dict) -> PaymentTransactionFields:
+        date_string = f"{data['transaction_date']} {data['transaction_time']}"
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
-            transaction_date=data["transaction_date"],
-            has_time=False,
+            transaction_date=pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London"),
+            has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",

@@ -153,10 +153,6 @@ FLASK = dict(
 # The prefix used on every API endpoint in the project.
 URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
 
-# Azure AD application details
-AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID")
-AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
-
 # API key for service authentication.
 SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 
@@ -184,6 +180,14 @@ GPG_ARGS = {
 }
 
 # Prometheus settings
+PROMETHEUS_PUSH_GATEWAY = getenv("TXM_PROMETHEUS_PUSH_GATEWAY", default="http://localhost:9100")
 PUSH_PROMETHEUS_METRICS = getenv("TXM_PUSH_PROMETHEUS_METRICS", default="true", conv=boolconv)
-PROMETHEUS_PUSH_GATEWAY = "http://localhost:9100"
+PROMETHEUS_SEND_PID = getenv("TXM_PROMETHEUS_SEND_PID", default="true", conv=boolconv)
 PROMETHEUS_JOB = "harmonia"
+
+# Management API settings
+API_AUTH_ENABLED = getenv("TXM_API_AUTH_ENABLED", default="true", conv=boolconv)
+
+# Azure AD application details
+AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID")
+AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
