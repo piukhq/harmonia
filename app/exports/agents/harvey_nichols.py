@@ -52,7 +52,8 @@ class HarveyNichols(SingularExportAgent):
         )
 
     def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
-        _, body = export_data.outputs[0]
+        body: dict
+        _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.claim_transaction(export_data.extra_data, body)

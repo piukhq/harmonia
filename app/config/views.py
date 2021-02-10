@@ -53,7 +53,7 @@ def update_key(key: str) -> ResponseType:
     try:
         data = request_schema.load(request.json)
     except marshmallow.ValidationError as ex:
-        return ex.messages, 400
+        return {"messages": ex.messages}, 400
 
     with session_scope() as session:
         try:
