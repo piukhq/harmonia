@@ -30,6 +30,13 @@ def get_key_value(data: dict, key: str):
             return d["Value"]
 
 
+def try_convert_settlement_mid(mid: str) -> str:
+    prefix = "0000000"
+    if mid.startswith(prefix):
+        return mid[len(prefix) :]
+    return mid
+
+
 class Visa(FileAgent):
     feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
@@ -228,7 +235,7 @@ class VisaSettlement(QueueAgent):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
-        return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
+        return [try_convert_settlement_mid(get_key_value(data, "Transaction.MerchantCardAcceptorId"))]
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
