@@ -25,6 +25,13 @@ def _make_settlement_key(third_party_id: str):
     return sha256(f"mastercard.{third_party_id}".encode()).hexdigest()
 
 
+def try_convert_settlement_mid(mid: str) -> str:
+    prefix = "0000000"
+    if mid.startswith(prefix):
+        return mid[len(prefix) :]
+    return mid
+
+
 class MastercardSettled(FileAgent):
     feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
@@ -112,7 +119,7 @@ class MastercardSettled(FileAgent):
         return data["transaction_sequence_number"]
 
     def get_mids(self, data: dict) -> t.List[str]:
-        return [data["merchant_id"]]
+        return [try_convert_settlement_mid(data["merchant_id"])]
 
 
 class MastercardAuth(QueueAgent):
