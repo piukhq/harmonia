@@ -70,13 +70,14 @@ class BaseMatchingAgent:
         )
 
     def _find_applicable_scheme_transactions(self, *, session: db.Session):
+        since = pendulum.now().date().add(days=-14)
         return db.run_query(
             lambda: session.query(models.SchemeTransaction).filter(
                 models.SchemeTransaction.merchant_identifier_ids.overlap(
                     self.payment_transaction.merchant_identifier_ids
                 ),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
-                models.SchemeTransaction.created_at >= pendulum.now().add(days=-14).isoformat(),
+                models.SchemeTransaction.created_at >= since.isoformat(),
             ),
             read_only=True,
             session=session,
