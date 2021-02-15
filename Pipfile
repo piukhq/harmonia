@@ -44,7 +44,7 @@ freezegun = "*"
 [dev-packages]
 pytest = "*"
 pytest-cov = "*"
-mypy = "*"
+mypy = "==0.790"
 responses = "*"
 flake8 = "*"
 black = "==19.10b0"
