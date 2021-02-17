@@ -89,7 +89,7 @@ class Identifier:
         try:
             user_info = self.payment_card_user_info(payment_transaction, session=session)
         except SchemeAccountNotFound:
-            log.debug(f"Hermes was unable to find a scheme amount matching {payment_transaction}")
+            log.debug(f"Hermes was unable to find a scheme account matching {payment_transaction}")
             return
         except requests.RequestException:
             event_id = sentry_sdk.capture_exception()

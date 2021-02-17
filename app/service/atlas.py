@@ -55,7 +55,7 @@ def make_audit_message(
     provider_slug: str,
     transactions: t.List[AuditTransaction],
     *,
-    request: t.Optional[dict] = None,
+    request: t.Optional[t.Union[dict, str]] = None,
     request_timestamp: t.Optional[str] = None,
     response: t.Optional[requests.Response] = None,
     response_timestamp: t.Optional[str] = None,
@@ -91,4 +91,4 @@ def queue_audit_message(message: MessagePayload) -> None:
         log.warning(f"Not queueing {provider_slug} audit because AUDIT_EXPORTS is disabled.")
         log.debug(f"Audit payload:\n{message}")
     else:
-        queue.add(message, provider=provider_slug, queue_name="tx_matching")
+        queue.add(t.cast(dict, message), provider=provider_slug, queue_name="tx_matching")

@@ -1,6 +1,7 @@
 import typing as t
 
 import sentry_sdk
+import pendulum
 
 from app.matching.agents.registry import matching_agents
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
@@ -197,12 +198,14 @@ class MatchingWorker:
 
         mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.merchant_identifier_ids}
 
+        since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(
                 models.PaymentTransaction.merchant_identifier_ids.overlap(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.user_identity_id.isnot(None),
+                models.PaymentTransaction.created_at >= since.isoformat(),
             )
             .all(),
             session=session,

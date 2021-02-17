@@ -1,6 +1,5 @@
 import time
 import json
-import shutil
 import typing as t
 from contextlib import contextmanager
 from datetime import datetime
@@ -10,7 +9,6 @@ from enum import Enum
 
 import click
 import toml
-import gnupg
 import pendulum
 import rq
 import soteria.configuration
@@ -34,7 +32,6 @@ def mocked_auth_decorator():
 with mocked_auth_decorator():
     import settings
     from app import db, encryption, models, tasks, feeds
-    from app.core import key_manager
     from app.exports.agents import BatchExportAgent, export_agents
     from app.imports.agents import (
         ActiveAPIAgent,
@@ -54,10 +51,6 @@ settings.ATLAS_URL = ""
 settings.VAULT_URL = ""
 settings.VAULT_TOKEN = ""
 settings.AUDIT_EXPORTS = False
-
-
-# payment provider slugs that will trigger a keyring being set up
-KEYRING_REQUIRED = ["visa"]
 
 
 PGP_PUBLIC_KEY = """-----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -397,20 +390,6 @@ def patch_soteria_service():
     soteria.security.get_security_agent = mock_get_security_agent
 
 
-def setup_keyring():
-    gpg_home = Path(settings.GPG_ARGS["gnupghome"])
-    if gpg_home.exists():
-        shutil.rmtree(gpg_home)
-    gpg_home.mkdir(parents=True)
-
-    gpg = gnupg.GPG(**settings.GPG_ARGS)
-    input_data = gpg.gen_key_input(name_email="harmonia@bink.dev")
-    key = gpg.gen_key(input_data)
-    priv_key_data = gpg.export_keys(key.fingerprint, secret=True, armor=False)
-    manager = key_manager.KeyManager()
-    manager.write_key("visa", priv_key_data)
-
-
 ImportDataType = t.Union[bytes, t.List[dict]]
 
 
@@ -572,9 +551,6 @@ def do_file_dump(fixture: dict):
 )
 def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool, preload: int):
     fixture = load_fixture(fixture_file)
-
-    if any(agent["slug"] in KEYRING_REQUIRED for agent in fixture["agents"]):
-        setup_keyring()
 
     if dump_files:
         do_file_dump(fixture)

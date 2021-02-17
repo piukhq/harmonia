@@ -114,7 +114,8 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             yield self._make_export_data(transaction_set, index=i)
 
     def send_export_data(self, export_data: AgentExportData, session: db.Session) -> atlas.MessagePayload:
-        _, body = export_data.outputs[0]
+        body: str
+        _, body = export_data.outputs[0]  # type: ignore
         request = self.make_secured_request(t.cast(str, body))
         request_timestamp = pendulum.now().to_datetime_string()
         response = self.api.merchant_request(request)
