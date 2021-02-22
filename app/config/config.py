@@ -4,7 +4,7 @@ from redis.exceptions import RedisError
 from sqlalchemy.orm.session import Session
 
 from app.config import models
-from app.db import get_or_create, redis, run_query
+from app.db import get_or_create, run_query, redis, redis_scan
 from app.reporting import get_logger
 import settings
 
@@ -63,7 +63,7 @@ def update(key: str, value: str, *, session: Session) -> None:
 
 
 def all_keys() -> t.Iterable[t.Tuple[str, t.Optional[str]]]:
-    for key in redis.scan_iter(f"{KEY_PREFIX}*"):
+    for key in redis_scan(f"{KEY_PREFIX}*"):
         val = t.cast(t.Optional[str], redis.get(key))
         yield (key, val)
 

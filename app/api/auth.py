@@ -15,9 +15,13 @@ oidc_config = OIDCConfig(
 _requires_auth = None
 
 
+def _nop_decorator(*args, **kwargs):
+    return lambda fn: fn
+
+
 def auth_decorator() -> t.Callable:
     if settings.API_AUTH_ENABLED is False:
-        return lambda x: x  # no-op decorator
+        return _nop_decorator
 
     global _requires_auth
     if _requires_auth is None:
