@@ -20,7 +20,10 @@ def upgrade():
         "import_file_log",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"), nullable=True,
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("TIMEZONE('utc', CURRENT_TIMESTAMP)"),
+            nullable=True,
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("provider_slug", sa.String(length=50), nullable=False),

@@ -65,7 +65,9 @@ def get_batch_chunks(transaction_count, batchsize):
 def create_payment_transactions(payment_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random payment transactions
     click.secho(
-        f"Creating {payment_transaction_count} payment transactions", fg="cyan", bold=True,
+        f"Creating {payment_transaction_count} payment transactions",
+        fg="cyan",
+        bold=True,
     )
     # create batches in chunks of batchsize records, then commit
     factory_kwargs = {}
@@ -82,7 +84,9 @@ def create_payment_transactions(payment_transaction_count: int, batchsize: int, 
         chunks = get_batch_chunks(payment_transaction_count, batchsize=batchsize)
         for chunk in chunks:
             click.secho(
-                f"Creating chunk of {chunk} payment transactions", fg="cyan", bold=True,
+                f"Creating chunk of {chunk} payment transactions",
+                fg="cyan",
+                bold=True,
             )
             app_factories.PaymentTransactionFactory.create_batch(chunk, **factory_kwargs)
             new_session.commit()
@@ -91,7 +95,9 @@ def create_payment_transactions(payment_transaction_count: int, batchsize: int, 
 def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random scheme transactions
     click.secho(
-        f"Creating {scheme_transaction_count} scheme transactions", fg="cyan", bold=True,
+        f"Creating {scheme_transaction_count} scheme transactions",
+        fg="cyan",
+        bold=True,
     )
     # create batches in chunks of batchsize records, then commit
     factory_kwargs = {}
@@ -108,7 +114,9 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, sc
         chunks = get_batch_chunks(scheme_transaction_count, batchsize=batchsize)
         for chunk in chunks:
             click.secho(
-                f"Creating chunk of {chunk} scheme transactions", fg="cyan", bold=True,
+                f"Creating chunk of {chunk} scheme transactions",
+                fg="cyan",
+                bold=True,
             )
             app_factories.SchemeTransactionFactory.create_batch(chunk, **factory_kwargs)
             new_session.commit()
@@ -117,7 +125,9 @@ def create_scheme_transactions(scheme_transaction_count: int, batchsize: int, sc
 def create_import_transactions(import_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
     # Create random import transactions
     click.secho(
-        f"Creating {import_transaction_count} import transactions", fg="cyan", bold=True,
+        f"Creating {import_transaction_count} import transactions",
+        fg="cyan",
+        bold=True,
     )
     factory_kwargs = {}
     if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
@@ -130,7 +140,9 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
         chunks = get_batch_chunks(import_transaction_count, batchsize=batchsize)
         for chunk in chunks:
             click.secho(
-                f"Creating chunk of {chunk} import transactions", fg="cyan", bold=True,
+                f"Creating chunk of {chunk} import transactions",
+                fg="cyan",
+                bold=True,
             )
             imports_factories.ImportTransactionFactory.create_batch(chunk, **factory_kwargs)
             new_session.commit()
@@ -222,11 +234,15 @@ def bulk_load_db(
         drop_import_transaction_constraints = "ALTER TABLE import_transaction DISABLE TRIGGER ALL"
         drop_scheme_transaction_constraints = "ALTER TABLE scheme_transaction DISABLE TRIGGER ALL"
         click.secho(
-            f"Executing {drop_import_transaction_constraints}", fg="cyan", bold=True,
+            f"Executing {drop_import_transaction_constraints}",
+            fg="cyan",
+            bold=True,
         )
         session.execute(drop_import_transaction_constraints)
         click.secho(
-            f"Executing {drop_scheme_transaction_constraints}", fg="cyan", bold=True,
+            f"Executing {drop_scheme_transaction_constraints}",
+            fg="cyan",
+            bold=True,
         )
         session.execute(drop_scheme_transaction_constraints)
 
@@ -281,11 +297,15 @@ def bulk_load_db(
         enable_import_transaction_constraints = "ALTER TABLE import_transaction ENABLE TRIGGER ALL"
         enable_scheme_transaction_constraints = "ALTER TABLE scheme_transaction ENABLE TRIGGER ALL"
         click.secho(
-            f"Executing {enable_import_transaction_constraints}", fg="cyan", bold=True,
+            f"Executing {enable_import_transaction_constraints}",
+            fg="cyan",
+            bold=True,
         )
         session.execute(enable_import_transaction_constraints)
         click.secho(
-            f"Executing {enable_scheme_transaction_constraints}", fg="cyan", bold=True,
+            f"Executing {enable_scheme_transaction_constraints}",
+            fg="cyan",
+            bold=True,
         )
         session.execute(enable_scheme_transaction_constraints)
 
@@ -352,7 +372,10 @@ def bulk_load_db(
     help="For large tables, num of records to create between commits (recommended: 2000)",
 )
 @click.option(
-    "--scheme-slug", type=click.STRING, required=False, help="Loyalty scheme slug e.g. harvey-nichols, wasabi-club",
+    "--scheme-slug",
+    type=click.STRING,
+    required=False,
+    help="Loyalty scheme slug e.g. harvey-nichols, wasabi-club",
 )
 @click.option(
     "--drop-constraints",

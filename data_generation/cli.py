@@ -99,7 +99,8 @@ class BlobDumper(DataDumper, PathConfigMixin):
         bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
         container_name = settings.BLOB_IMPORT_CONTAINER
         blob_client = bbs.get_blob_client(
-            container_name, f"{self.path}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
+            container_name,
+            f"{self.path}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
         )
         blob_client.upload_blob(data)
 

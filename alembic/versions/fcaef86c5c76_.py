@@ -97,8 +97,14 @@ def upgrade():
         sa.Column("payment_provider_id", sa.Integer(), nullable=True),
         sa.Column("location", sa.String(length=250), nullable=False),
         sa.Column("postcode", sa.String(length=16), nullable=False),
-        sa.ForeignKeyConstraint(["loyalty_scheme_id"], ["loyalty_scheme.id"],),
-        sa.ForeignKeyConstraint(["payment_provider_id"], ["payment_provider.id"],),
+        sa.ForeignKeyConstraint(
+            ["loyalty_scheme_id"],
+            ["loyalty_scheme.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["payment_provider_id"],
+            ["payment_provider.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("mid", "payment_provider_id", name="_mid_provider_mi_uc"),
     )
@@ -120,7 +126,10 @@ def upgrade():
         sa.Column("status", sa.Enum("PENDING", "MATCHED", name="transactionstatus"), nullable=False),
         sa.Column("user_identity_id", sa.Integer(), nullable=True),
         sa.Column("extra_fields", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.ForeignKeyConstraint(["user_identity_id"], ["user_identity.id"],),
+        sa.ForeignKeyConstraint(
+            ["user_identity_id"],
+            ["user_identity.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -146,9 +155,18 @@ def upgrade():
         sa.Column("payment_transaction_id", sa.Integer(), nullable=True),
         sa.Column("scheme_transaction_id", sa.Integer(), nullable=True),
         sa.Column("extra_fields", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.ForeignKeyConstraint(["merchant_identifier_id"], ["merchant_identifier.id"],),
-        sa.ForeignKeyConstraint(["payment_transaction_id"], ["payment_transaction.id"],),
-        sa.ForeignKeyConstraint(["scheme_transaction_id"], ["scheme_transaction.id"],),
+        sa.ForeignKeyConstraint(
+            ["merchant_identifier_id"],
+            ["merchant_identifier.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["payment_transaction_id"],
+            ["payment_transaction.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["scheme_transaction_id"],
+            ["scheme_transaction.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -163,7 +181,10 @@ def upgrade():
         sa.Column("provider_slug", sa.String(length=50), nullable=False),
         sa.Column("destination", sa.String(length=500), nullable=True),
         sa.Column("data", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(["matched_transaction_id"], ["matched_transaction.id"],),
+        sa.ForeignKeyConstraint(
+            ["matched_transaction_id"],
+            ["matched_transaction.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_et_uc"),
     )
@@ -176,7 +197,10 @@ def upgrade():
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("provider_slug", sa.String(length=50), nullable=False),
         sa.Column("matched_transaction_id", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["matched_transaction_id"], ["matched_transaction.id"],),
+        sa.ForeignKeyConstraint(
+            ["matched_transaction_id"],
+            ["matched_transaction.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_pending_export_provider_slug"), "pending_export", ["provider_slug"], unique=False)

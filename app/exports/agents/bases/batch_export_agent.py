@@ -87,7 +87,9 @@ class BatchExportAgent(BaseAgent):
             session.commit()
 
         db.run_query(
-            delete_pending_exports, session=session, description="delete pending exports",
+            delete_pending_exports,
+            session=session,
+            description="delete pending exports",
         )
 
     @contextmanager
