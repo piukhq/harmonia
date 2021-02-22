@@ -83,12 +83,7 @@ POSTGRES_DSN = "".join(
 
 # Connection details for Redis.
 # Redis is used as a configuration store that can be updated at runtime.
-REDIS_HOST = getenv("TXM_REDIS_HOST")
-REDIS_PORT = getenv("TXM_REDIS_PORT", default="6379")
-REDIS_USER = getenv("TXM_REDIS_USER", required=False)
-REDIS_PASS = getenv("TXM_REDIS_PASS", required=False)
-REDIS_DB = getenv("TXM_REDIS_DB", conv=int)
-REDIS_URL = f"redis://:{REDIS_PASS}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+REDIS_URL = getenv("TXM_REDIS_URL")
 
 # The prefix used on every Redis key.
 REDIS_KEY_PREFIX = "txmatch"
