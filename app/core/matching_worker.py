@@ -227,7 +227,11 @@ class MatchingWorker:
             self.log.debug("Found no matching payment transactions. Exiting matching job.")
 
     def find_transaction_for_redress(
-        self, model: t.Type[TransactionType], id: int, *, session: db.Session,
+        self,
+        model: t.Type[TransactionType],
+        id: int,
+        *,
+        session: db.Session,
     ) -> TransactionType:
         model_name = model.__name__
         transaction: TransactionType = db.run_query(

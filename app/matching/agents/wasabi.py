@@ -73,7 +73,8 @@ class Wasabi(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self.make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY,
+                **self.make_matched_transaction_fields(match),
+                matching_type=models.MatchingType.LOYALTY,
             ),
             scheme_transaction_id=match.id,
         )

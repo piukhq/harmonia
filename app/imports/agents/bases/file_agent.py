@@ -168,7 +168,8 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
 
                     try:
                         for _ in callback(
-                            data=data, source=f"{self.credentials.host}:{self.credentials.port}/{file_attr.filename}",
+                            data=data,
+                            source=f"{self.credentials.host}:{self.credentials.port}/{file_attr.filename}",
                         ):
                             pass  # callback is a generator object
                     except Exception as ex:
@@ -230,7 +231,9 @@ class FileAgent(BaseAgent):
                 return import_file_log
 
             import_file_log = db.run_query(
-                create_import_file_log, session=session, description="create file log record",
+                create_import_file_log,
+                session=session,
+                description="create file log record",
             )
 
             transactions_data = []
@@ -246,7 +249,9 @@ class FileAgent(BaseAgent):
                 session.commit()
 
             db.run_query(
-                update_import_file_log, session=session, description="mark import file log as imported",
+                update_import_file_log,
+                session=session,
+                description="mark import file log as imported",
             )
 
             self._update_file_metrics(timestamp=import_file_log.created_at.timestamp())
@@ -256,7 +261,11 @@ class FileAgent(BaseAgent):
         Update any Prometheus metrics this agent might have
         """
         self.bink_prometheus.increment_counter(
-            agent=self, counter_name="files_received", increment_by=1, process_type="import", slug=self.provider_slug,
+            agent=self,
+            counter_name="files_received",
+            increment_by=1,
+            process_type="import",
+            slug=self.provider_slug,
         )
         self.bink_prometheus.update_gauge(
             agent=self,
@@ -280,7 +289,7 @@ class FileAgent(BaseAgent):
 
     @cached_property
     def filesource(self) -> FileSourceBase:
-        filesource_class: t.Type[FileSourceBase] = (BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource)
+        filesource_class: t.Type[FileSourceBase] = BlobFileSource if settings.BLOB_STORAGE_DSN else LocalFileSource
         return filesource_class(Path(self.fileagent_config.path), logger=self.log)
 
     def run(self) -> None:

@@ -152,7 +152,9 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
                 else None
             )
             fileset = ExportFileSet(
-                receipt_data=receipt_data, reward_data=reward_data, transaction_count=len(transactions),
+                receipt_data=receipt_data,
+                reward_data=reward_data,
+                transaction_count=len(transactions),
             )
         return fileset
 

@@ -147,11 +147,20 @@ class ModelMixin:
 
 
 redis = Redis.from_url(
-    settings.REDIS_URL, socket_connect_timeout=3, socket_keepalive=True, retry_on_timeout=False, decode_responses=True,
+    settings.REDIS_URL,
+    socket_connect_timeout=3,
+    socket_keepalive=True,
+    retry_on_timeout=False,
+    decode_responses=True,
 )
 
 # Same as above but does not decode responses. Used as the RQ connection.
-redis_raw = Redis.from_url(settings.REDIS_URL, socket_connect_timeout=3, socket_keepalive=True, retry_on_timeout=False,)
+redis_raw = Redis.from_url(
+    settings.REDIS_URL,
+    socket_connect_timeout=3,
+    socket_keepalive=True,
+    retry_on_timeout=False,
+)
 
 
 def redis_scan(pattern: str) -> t.Iterator[str]:
