@@ -27,7 +27,6 @@ def _make_settlement_key(
     card_token: str,
     transaction_id: t.Optional[str] = None,
     mid: t.Optional[str] = None,
-    approval_code: t.Optional[str] = None,
     amount: t.Optional[str] = None,
 ):
     """
@@ -37,18 +36,12 @@ def _make_settlement_key(
     settlement key = card token + transaction ID
 
     if transaction ID is blank:
-    settlement key = card token + approval code + MID
-
-    if approval code is blank:
     settlement key = card token + amount + MID
     """
 
     parts = ["amex", card_token]
     if transaction_id:
         parts.append(transaction_id)
-    elif approval_code and mid:
-        parts.append(approval_code)
-        parts.append(mid)
     elif amount and mid:
         parts.append(amount)
         parts.append(mid)
@@ -56,8 +49,7 @@ def _make_settlement_key(
         raise SettlementKeyError(
             "Failed to generate a settlement key. "
             "At least one of the following combinations must be provided: "
-            "card token + transaction ID, "
-            "card token + approval code + mid, or"
+            "card token + transaction ID, or"
             "card_token + amount + mid. "
             "This transaction has not been imported."
         )
@@ -151,7 +143,6 @@ class AmexAuth(QueueAgent):
             card_token=data["cm_alias"],
             transaction_id=data["transaction_id"],
             mid=data["merchant_number"],
-            approval_code=data["approval_code"],
             amount=str(amount),
         )
 
