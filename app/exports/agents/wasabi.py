@@ -69,7 +69,9 @@ class Wasabi(SingularExportAgent):
             extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> atlas.MessagePayload:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
@@ -78,7 +80,7 @@ class Wasabi(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         if msg := response.json().get("Message"):
-            if msg.lower() == "receipt no not found":
+            if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
                 # fail the export for it to be retried later
                 raise self.ReceiptNumberNotFound
 

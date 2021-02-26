@@ -55,7 +55,7 @@ class BaseAgent:
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
-    def export(self, export_data: AgentExportData, *, session: db.Session):
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
