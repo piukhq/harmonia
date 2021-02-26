@@ -51,7 +51,9 @@ class HarveyNichols(SingularExportAgent):
             extra_data={"credentials": user_identity.decrypted_credentials, "scheme_account_id": scheme_account_id},
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> atlas.MessagePayload:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))

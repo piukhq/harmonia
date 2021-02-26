@@ -5,7 +5,7 @@ import humanize
 import pendulum
 
 from app.reporting import get_logger
-from app.db import redis
+from app.db import redis, redis_scan
 import settings
 
 
@@ -47,18 +47,16 @@ class StatusMonitor:
         }
 
     def _get_postgres_health(self) -> dict:
-        from psycopg2 import connect
+        from app import db
 
         errors = []
         try:
-            with connect(settings.POSTGRES_DSN) as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT 1")
-                    cur.fetchone()
-                    healthy = True
+            db.engine.execute("SELECT 1").fetchone()
         except Exception as ex:
             healthy = False
             errors.append(ex)
+        else:
+            healthy = True
 
         return {
             "connection": {
@@ -81,12 +79,7 @@ class StatusMonitor:
             errors.append(ex)
 
         return {
-            "connection": {
-                "host": settings.REDIS_HOST,
-                "port": settings.REDIS_PORT,
-                "user": settings.REDIS_USER,
-                "db": settings.REDIS_DB,
-            },
+            "connection": {"url": settings.REDIS_URL},
             "healthy": healthy,
             "errors": errors,
         }
@@ -97,7 +90,7 @@ class StatusMonitor:
         if redis_health["healthy"]:
             checkins = [
                 {"key": key, **self._get_checkin_details(key)}
-                for key in redis.scan_iter(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
+                for key in redis_scan(f"{settings.REDIS_KEY_PREFIX}:status:checkins:*")
             ]
         else:
             checkins = []

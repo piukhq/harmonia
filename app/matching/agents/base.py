@@ -56,7 +56,8 @@ class BaseMatchingAgent:
             # this risk is known & accepted at the time of writing.
             return scheme_transactions.filter(
                 models.SchemeTransaction.transaction_date.between(
-                    transaction_date.date().isoformat(), transaction_date.add(days=1).date().isoformat(),
+                    transaction_date.date().isoformat(),
+                    transaction_date.add(days=1).date().isoformat(),
                 )
             )
 
@@ -123,7 +124,13 @@ class BaseMatchingAgent:
 
         st_fields = {
             k: getattr(scheme_transaction, k)
-            for k in ("transaction_id", "transaction_date", "spend_amount", "spend_multiplier", "spend_currency",)
+            for k in (
+                "transaction_id",
+                "transaction_date",
+                "spend_amount",
+                "spend_multiplier",
+                "spend_currency",
+            )
         }
         return {
             "merchant_identifier_id": matching_merchant_identifier_ids[0],

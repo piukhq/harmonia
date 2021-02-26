@@ -38,7 +38,7 @@ class BatchExportAgent(BaseAgent):
     def handle_pending_export(self, pending_export, *, session: db.Session):
         self.log.debug(f"Ignoring {pending_export} for singular export.")
 
-    def export(self, export_data: AgentExportData, *, session: db.Session):
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         pass
 
     def callback(self):
@@ -87,7 +87,9 @@ class BatchExportAgent(BaseAgent):
             session.commit()
 
         db.run_query(
-            delete_pending_exports, session=session, description="delete pending exports",
+            delete_pending_exports,
+            session=session,
+            description="delete pending exports",
         )
 
     @contextmanager

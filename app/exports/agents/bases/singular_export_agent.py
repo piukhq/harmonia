@@ -45,7 +45,9 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
         )
 
-    def export(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> atlas.MessagePayload:
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -62,7 +64,10 @@ class SingularExportAgent(BaseAgent):
             return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
 
         matched_transaction = db.run_query(
-            find_transaction, session=session, read_only=True, description="load matched transaction",
+            find_transaction,
+            session=session,
+            read_only=True,
+            description="load matched transaction",
         )
 
         if matched_transaction is None:
@@ -92,7 +97,7 @@ class SingularExportAgent(BaseAgent):
         export_data = self.make_export_data(matched_transaction)
 
         try:
-            self._send_export_data(export_data, session=session)
+            self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
         except Exception as ex:
             retry_at = self.get_retry_datetime(pending_export.retry_count)
 
@@ -124,9 +129,9 @@ class SingularExportAgent(BaseAgent):
 
         db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
 
-    def _send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> None:
+    def _send_export_data(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         with self._update_metrics(export_data=export_data, session=session):
-            audit_message = self.export(export_data, session=session)
+            audit_message = self.export(export_data, retry_count=retry_count, session=session)
             if settings.AUDIT_EXPORTS:
                 atlas.queue_audit_message(audit_message)
 

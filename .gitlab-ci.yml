@@ -16,9 +16,7 @@ tests:
     TXM_POSTGRES_USER: postgres
     TXM_POSTGRES_HOST: postgres
     TXM_POSTGRES_DB: harmonia
-    TXM_REDIS_USER: redis
-    TXM_REDIS_HOST: redis
-    TXM_REDIS_DB: 0
+    TXM_REDIS_URL: redis://redis:6379/0
     TXM_HERMES_URL: "http://localhost"
     TXM_AAD_TENANT_ID: ""
   before_script: &setup

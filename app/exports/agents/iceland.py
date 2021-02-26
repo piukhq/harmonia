@@ -22,7 +22,9 @@ SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
 BATCH_SIZE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.batch_size"
 
 hash_ids = Hashids(
-    min_length=32, salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM", alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
+    min_length=32,
+    salt="GJgCh--VgsonCWacO5-MxAuMS9hcPeGGxj5tGsT40FM",
+    alphabet="abcdefghijklmnopqrstuvwxyz1234567890",
 )
 
 

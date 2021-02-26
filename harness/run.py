@@ -332,7 +332,9 @@ def preload_data(count: int, *, fixture: dict, session: db.Session, batch_size: 
     remainder = count % batch_size
 
     click.secho(
-        f"Preloading {count} transactions in batches of {batch_size}", fg="cyan", bold=True,
+        f"Preloading {count} transactions in batches of {batch_size}",
+        fg="cyan",
+        bold=True,
     )
 
     with click.progressbar(length=count, label="import transactions") as bar:
@@ -416,7 +418,9 @@ def run_passive_api_import_agent(agent_slug: str, agent: PassiveAPIAgent, fixtur
 
     for import_data in import_data_list:
         click.secho(
-            f"Importing {agent_slug} transaction #{agent.get_transaction_id(import_data)}", fg="cyan", bold=True,
+            f"Importing {agent_slug} transaction #{agent.get_transaction_id(import_data)}",
+            fg="cyan",
+            bold=True,
         )
         click.echo(f"POST {url}")
         cpprint(import_data)
@@ -438,7 +442,9 @@ def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
     data = t.cast(bytes, make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
 
     click.secho(
-        f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
+        f"Importing {agent_slug} transaction data",
+        fg="cyan",
+        bold=True,
     )
 
     # file agents run as a coroutine
@@ -450,7 +456,9 @@ def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
     import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
 
     click.secho(
-        f"Importing {agent_slug} transaction data", fg="cyan", bold=True,
+        f"Importing {agent_slug} transaction data",
+        fg="cyan",
+        bold=True,
     )
     for transaction in import_data_list:
         agent._do_import(transaction)

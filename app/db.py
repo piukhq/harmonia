@@ -146,11 +146,8 @@ class ModelMixin:
     updated_at = s.Column(s.DateTime, onupdate=postgres.utcnow())
 
 
-redis = Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB,
-    password=settings.REDIS_PASS,
+redis = Redis.from_url(
+    settings.REDIS_URL,
     socket_connect_timeout=3,
     socket_keepalive=True,
     retry_on_timeout=False,
@@ -158,12 +155,17 @@ redis = Redis(
 )
 
 # Same as above but does not decode responses. Used as the RQ connection.
-redis_raw = Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB,
-    password=settings.REDIS_PASS,
+redis_raw = Redis.from_url(
+    settings.REDIS_URL,
     socket_connect_timeout=3,
     socket_keepalive=True,
     retry_on_timeout=False,
 )
+
+
+def redis_scan(pattern: str) -> t.Iterator[str]:
+    """
+    simply wraps `redis.scan_iter(pattern)` to provide correct type hints.
+    scan_iter should return `str` as long as decode_responses is True
+    """
+    yield from redis.scan_iter(pattern)  # type: ignore

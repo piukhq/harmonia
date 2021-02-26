@@ -30,7 +30,10 @@ class ExportRetryWorker:
                 )
 
             pending_exports = db.run_query(
-                find_pending_exports, session=session, read_only=True, description="find pending exports for retry",
+                find_pending_exports,
+                session=session,
+                read_only=True,
+                description="find pending exports for retry",
             )
 
             if not pending_exports:

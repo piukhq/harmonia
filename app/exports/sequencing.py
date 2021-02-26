@@ -25,5 +25,7 @@ class Sequencer:
             session.commit()
 
         db.run_query(
-            update_next_value, session=session, description=f"update next {self.provider_slug} sequence value",
+            update_next_value,
+            session=session,
+            description=f"update next {self.provider_slug} sequence value",
         )
