@@ -163,7 +163,6 @@ class AmexAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
-            auth_code=data["approval_code"],
             extra_fields={"offer_id": data["offer_id"]},
         )
 
