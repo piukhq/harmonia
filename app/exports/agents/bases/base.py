@@ -113,7 +113,9 @@ class BaseAgent:
         db.run_query(add_transactions, session=session, description="save export transactions")
 
     @contextmanager
-    def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> t.Iterator[None]:
+    def _update_metrics(
+        self, export_data: AgentExportData, session: t.Optional[db.Session], retry_count: t.Optional[int]
+    ) -> t.Iterator[None]:
         """
         Update (optional) Prometheus metrics
         """

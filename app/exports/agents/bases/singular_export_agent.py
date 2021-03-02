@@ -14,6 +14,9 @@ from app.status import status_monitor
 
 
 class SingularExportAgent(BaseAgent):
+    class ReceiptNumberNotFound(Exception):
+        pass
+
     def __init__(self):
         super().__init__()
 
@@ -64,10 +67,7 @@ class SingularExportAgent(BaseAgent):
             return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
 
         matched_transaction = db.run_query(
-            find_transaction,
-            session=session,
-            read_only=True,
-            description="load matched transaction",
+            find_transaction, session=session, read_only=True, description="load matched transaction",
         )
 
         if matched_transaction is None:
@@ -130,7 +130,7 @@ class SingularExportAgent(BaseAgent):
         db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
 
     def _send_export_data(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
-        with self._update_metrics(export_data=export_data, session=session):
+        with self._update_metrics(export_data=export_data, session=session, retry_count=retry_count):
             audit_message = self.export(export_data, retry_count=retry_count, session=session)
             if settings.AUDIT_EXPORTS:
                 atlas.queue_audit_message(audit_message)
@@ -147,7 +147,7 @@ class SingularExportAgent(BaseAgent):
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
     @contextmanager
-    def _update_metrics(self, export_data: AgentExportData, session: db.Session) -> t.Iterator[None]:
+    def _update_metrics(self, export_data: AgentExportData, session: db.Session, retry_count: int) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """
@@ -170,7 +170,17 @@ class SingularExportAgent(BaseAgent):
             )
             try:
                 yield
-            except Exception:
+            except self.ReceiptNumberNotFound:  # Log the more specific exception first
+                self.bink_prometheus.increment_counter(
+                    agent=self,
+                    counter_name="failed_retried_transactions",
+                    increment_by=1,
+                    process_type="export",
+                    slug=self.provider_slug,
+                    retry_count=retry_count,
+                )
+                raise
+            except Exception:  # Log generic exceptions as failed requests
                 self.bink_prometheus.increment_counter(
                     agent=self,
                     counter_name="failed_requests",

@@ -54,6 +54,11 @@ class BinkPrometheus:
                     documentation="Number of files received",
                     labelnames=("transaction_type", "process_type", "slug"),
                 ),
+                "failed_retried_transactions": Counter(
+                    name="failed_retried_transactions",
+                    documentation="Number of transactions that have been retried and the retry count",
+                    labelnames=("transaction_type", "process_type", "slug", "retry_count"),
+                ),
             },
             "histograms": {
                 "request_latency": Histogram(
@@ -81,6 +86,7 @@ class BinkPrometheus:
         transaction_type: t.Optional[str] = "",
         process_type: t.Optional[str] = "",
         slug: t.Optional[str] = "",
+        retry_count: t.Optional[int] = 0,
     ) -> None:
         """
         Useful method for getting an instance's counter, if it exists,
@@ -92,13 +98,14 @@ class BinkPrometheus:
         :param transaction_type: e.g auth or settlement
         :param process_type: e.g import or export
         :param slug: e.g wasabi-club, visa
+        :param retry_count: Number of transaction retries, for example
         """
 
         agent_metrics = getattr(agent, "prometheus_metrics", None)
         if agent_metrics:
-            if counter_name in agent_metrics["counters"]:
+            if counter_name in agent_metrics.get("counters", []):
                 self.metric_types["counters"][counter_name].labels(
-                    transaction_type=transaction_type, process_type=process_type, slug=slug
+                    transaction_type=transaction_type, process_type=process_type, slug=slug, retry_count=retry_count
                 ).inc(increment_by)
 
     def update_gauge(
@@ -121,7 +128,7 @@ class BinkPrometheus:
         """
         agent_metrics = getattr(agent, "prometheus_metrics", None)
         if agent_metrics:
-            if gauge_name in agent_metrics["gauges"]:
+            if gauge_name in agent_metrics.get("gauges", []):
                 self.metric_types["gauges"][gauge_name].labels(process_type=process_type, slug=slug).set(value)
 
     def use_histogram_context_manager(
@@ -144,7 +151,7 @@ class BinkPrometheus:
         """
         agent_metrics = getattr(agent, "prometheus_metrics", None)
         if agent_metrics:
-            if histogram_name in agent_metrics["histograms"]:
+            if histogram_name in agent_metrics.get("histograms", []):
                 context_manager = self.metric_types["histograms"]["request_latency"]
                 context_manager_stack.enter_context(context_manager.labels(process_type=process_type, slug=slug).time())
 
@@ -191,8 +198,7 @@ class PrometheusPushThread(threading.Thread):
 def get_prometheus_thread():
     # The PrometheusPushThread class may well end up in an imported common lib, hence this helper function
     prometheus_thread = PrometheusPushThread(
-        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-        prometheus_job=settings.PROMETHEUS_JOB,
+        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB,
     )
     prometheus_thread.daemon = True
 

@@ -20,14 +20,16 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 class Wasabi(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
 
-    class ReceiptNumberNotFound(Exception):
-        pass
-
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
 
     def __init__(self):
         super().__init__()
         self.api_class = ActeolMockAPI if settings.DEBUG else ActeolAPI
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["failed_retried_transactions"],
+        }
 
     def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
         if retry_count == 0:
