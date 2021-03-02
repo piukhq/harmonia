@@ -52,18 +52,20 @@ type-check:
     - mypy --ignore-missing-imports app
 
 build-develop:
-  stage: build
+  stage: dev
   image: docker:latest
   services:
     - docker:dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
-    - docker build --pull -t "$CI_REGISTRY/harmonia:latest" .
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:latest" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
-    - docker build --pull -t "$CI_REGISTRY/harmonia-bulkload:latest" -f harness/Dockerfile .
-    - docker push "$CI_REGISTRY/harmonia:latest"
-    - docker push "$CI_REGISTRY/harmonia-bulkload:latest"
+    - export CTAG="develop-$(date +%F-%H%M%S)"
+    - docker build --pull -t "$CI_REGISTRY/harmonia:$CTAG" .
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
+    - docker build --pull -t "$CI_REGISTRY/harmonia-bulkload:$CTAG" -f harness/Dockerfile .
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia-bulkload:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
+    - docker push "$CI_REGISTRY/harmonia:$CTAG"
+    - docker push "$CI_REGISTRY/harmonia-bulkload:$CTAG"
   only:
     - develop
 
@@ -80,16 +82,6 @@ build-master:
     - docker push "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG"
   only:
     - tags
-
-tag-develop:
-  stage: dev
-  image: binkops.azurecr.io/tagbot:latest
-  environment: dev
-  script:
-    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
-    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia-bulkload:latest" --tag "develop-$CI_COMMIT_SHORT_SHA"
-  only:
-    - develop
 
 tag-staging:
   stage: staging
