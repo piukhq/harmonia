@@ -17,7 +17,7 @@ class TestWasabiPrometheusCalls(TestCase):
         wasabi = Wasabi()
         mock_export.side_effect = wasabi.ReceiptNumberNotFound
         agent_export_data = AgentExportData(
-            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None, }, )],
+            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],
             extra_data={},
         )
@@ -66,7 +66,7 @@ class TestWasabiPrometheusCalls(TestCase):
         wasabi = Wasabi()
         mock_export.side_effect = KeyError
         agent_export_data = AgentExportData(
-            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None, }, )],
+            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],
             extra_data={},
         )
@@ -118,14 +118,14 @@ class TestWasabiPrometheusCalls(TestCase):
             "provider_slug": wasabi.provider_slug,
             "transactions": [],
             "audit_data": {
-                "request": {"body": {"origin_id": ANY, "ReceiptNo": None}, "timestamp": ANY, },
-                "response": {"body": {"Message": ANY}, "status_code": ANY, "timestamp": ANY, },
+                "request": {"body": {"origin_id": ANY, "ReceiptNo": None}, "timestamp": ANY},
+                "response": {"body": {"Message": ANY}, "status_code": ANY, "timestamp": ANY},
             },
         }
         mock_save_export_transactions.return_value = None
         mock_settings.AUDIT_EXPORTS = False
         agent_export_data = AgentExportData(
-            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None, }, )],
+            outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],
             extra_data={},
         )

@@ -114,7 +114,7 @@ class BaseAgent:
 
     @contextmanager
     def _update_metrics(
-        self, export_data: AgentExportData, session: t.Optional[db.Session], retry_count: t.Optional[int]
+        self, export_data: AgentExportData, session: t.Optional[db.Session], retry_count: int
     ) -> t.Iterator[None]:
         """
         Update (optional) Prometheus metrics
