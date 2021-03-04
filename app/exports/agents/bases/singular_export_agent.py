@@ -14,9 +14,6 @@ from app.status import status_monitor
 
 
 class SingularExportAgent(BaseAgent):
-    class ReceiptNumberNotFound(Exception):
-        pass
-
     def __init__(self):
         super().__init__()
 
@@ -130,7 +127,7 @@ class SingularExportAgent(BaseAgent):
         db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
 
     def _send_export_data(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
-        with self._update_metrics(export_data=export_data, session=session, retry_count=retry_count):
+        with self._update_metrics(export_data=export_data, session=session):
             audit_message = self.export(export_data, retry_count=retry_count, session=session)
             if settings.AUDIT_EXPORTS:
                 atlas.queue_audit_message(audit_message)
@@ -147,7 +144,7 @@ class SingularExportAgent(BaseAgent):
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
     @contextmanager
-    def _update_metrics(self, export_data: AgentExportData, session: db.Session, retry_count: int) -> t.Iterator[None]:
+    def _update_metrics(self, export_data: AgentExportData, session: db.Session) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """
@@ -170,17 +167,7 @@ class SingularExportAgent(BaseAgent):
             )
             try:
                 yield
-            except self.ReceiptNumberNotFound:  # Log the more specific exception first
-                self.bink_prometheus.increment_counter(
-                    agent=self,
-                    counter_name="failed_retried_transactions",
-                    increment_by=1,
-                    process_type="export",
-                    slug=self.provider_slug,
-                    retry_count=retry_count,
-                )
-                raise
-            except Exception:  # Log generic exceptions as failed requests
+            except Exception:
                 self.bink_prometheus.increment_counter(
                     agent=self,
                     counter_name="failed_requests",

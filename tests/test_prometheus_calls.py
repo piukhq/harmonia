@@ -2,20 +2,21 @@ from unittest import TestCase, mock
 from unittest.mock import ANY, MagicMock, call
 from uuid import uuid4
 
+import pendulum
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.wasabi import Wasabi
 
 
 class TestWasabiPrometheusCalls(TestCase):
-    @mock.patch.object(Wasabi, "export")
-    def test_send_export_data_receipt_number_not_found(self, mock_export) -> None:
+    @mock.patch("app.exports.agents.wasabi.atlas")
+    @mock.patch("app.exports.agents.wasabi.Wasabi.config")
+    def test_send_export_data_receipt_number_not_found(self, mock_config, mock_atlas) -> None:
         """
         Test that a ReceiptNumberNotFound exception raised from export() calls the expected prometheus metrics
         """
 
         # GIVEN
         wasabi = Wasabi()
-        mock_export.side_effect = wasabi.ReceiptNumberNotFound
         agent_export_data = AgentExportData(
             outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],
@@ -26,14 +27,7 @@ class TestWasabiPrometheusCalls(TestCase):
         expected_calls = [
             call(
                 agent=wasabi,
-                counter_name="requests_sent",
-                increment_by=1,
-                process_type="export",
-                slug=wasabi.provider_slug,
-            ),
-            call(
-                agent=wasabi,
-                counter_name="failed_retried_transactions",
+                counter_name="receipt_number_not_found",
                 increment_by=1,
                 process_type="export",
                 slug=wasabi.provider_slug,
@@ -43,18 +37,26 @@ class TestWasabiPrometheusCalls(TestCase):
 
         # WHEN
         with mock.patch.object(wasabi, "bink_prometheus"):
-            self.assertRaises(
-                wasabi.ReceiptNumberNotFound,
-                wasabi._send_export_data,
-                export_data=agent_export_data,
-                retry_count=mock_retry_count,
-                session=mock_session,
-            )
+            with mock.patch.object(wasabi, "get_retry_datetime") as mock_get_retry_datetime:
+                with mock.patch.object(wasabi, "api_class") as mock_api_class:
+                    mock_get_retry_datetime.return_value = pendulum.now("UTC")
+                    mock_api = MagicMock()
+                    mock_response = MagicMock()
+                    mock_response.json.return_value = {"Message": "receipt no not found"}
+                    mock_api.post_matched_transaction.return_value = mock_response
+                    mock_api_class.return_value = mock_api
+                    self.assertRaises(
+                        wasabi.ReceiptNumberNotFound,
+                        wasabi.export,
+                        export_data=agent_export_data,
+                        retry_count=mock_retry_count,
+                        session=mock_session,
+                    )
 
-            # THEN
-            self.assertTrue(wasabi.bink_prometheus.increment_counter.called)
-            self.assertEqual(2, wasabi.bink_prometheus.increment_counter.call_count)
-            wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_calls)
+                    # THEN
+                    self.assertTrue(wasabi.bink_prometheus.increment_counter.called)
+                    self.assertEqual(1, wasabi.bink_prometheus.increment_counter.call_count)
+                    wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_calls)
 
     @mock.patch.object(Wasabi, "export")
     def test_send_export_data_generic_exception(self, mock_export) -> None:

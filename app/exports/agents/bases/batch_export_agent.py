@@ -93,7 +93,7 @@ class BatchExportAgent(BaseAgent):
         )
 
     @contextmanager
-    def _update_metrics(self, export_data: AgentExportData, session=None, retry_count=None) -> t.Iterator[None]:
+    def _update_metrics(self, export_data: AgentExportData, session=None) -> t.Iterator[None]:
         """
         Update any Prometheus metrics this agent might have
         """

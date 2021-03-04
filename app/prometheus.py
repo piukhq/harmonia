@@ -54,9 +54,9 @@ class BinkPrometheus:
                     documentation="Number of files received",
                     labelnames=("transaction_type", "process_type", "slug"),
                 ),
-                "failed_retried_transactions": Counter(
-                    name="failed_retried_transactions",
-                    documentation="Number of transactions that have been retried and the retry count",
+                "receipt_number_not_found": Counter(
+                    name="receipt_number_not_found",
+                    documentation="Number of transactions where receipt number is not found, and the retry count",
                     labelnames=("transaction_type", "process_type", "slug", "retry_count"),
                 ),
             },
