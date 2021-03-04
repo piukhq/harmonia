@@ -1,16 +1,16 @@
 import hashlib
 import typing as t
+from contextlib import contextmanager
 
 import pendulum
-
+import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
-from app.service.acteol import ActeolAPI
 from app.service import atlas
+from app.service.acteol import ActeolAPI
 from harness.exporters.acteol_mock import ActeolMockAPI
-import settings
 
 PROVIDER_SLUG = "wasabi-club"
 
@@ -18,16 +18,21 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
 
 class Wasabi(SingularExportAgent):
-    provider_slug = PROVIDER_SLUG
-
     class ReceiptNumberNotFound(Exception):
         pass
+
+    provider_slug = PROVIDER_SLUG
 
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
 
     def __init__(self):
         super().__init__()
         self.api_class = ActeolMockAPI if settings.DEBUG else ActeolAPI
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["receipt_number_not_found"],
+        }
 
     def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
         if retry_count == 0:
@@ -80,9 +85,10 @@ class Wasabi(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         if msg := response.json().get("Message"):
-            if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
-                # fail the export for it to be retried later
-                raise self.ReceiptNumberNotFound
+            with self._update_wasabi_metrics(retry_count=retry_count):
+                if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
+                    # fail the export for it to be retried later
+                    raise self.ReceiptNumberNotFound
 
             self.log.warn(f"Acteol API response contained message: {msg}")
 
@@ -97,3 +103,22 @@ class Wasabi(SingularExportAgent):
             response_timestamp=response_timestamp,
         )
         return audit_message
+
+    @contextmanager
+    def _update_wasabi_metrics(self, retry_count: int) -> t.Iterator[None]:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+
+        try:
+            yield
+        except self.ReceiptNumberNotFound:
+            self.bink_prometheus.increment_counter(
+                agent=self,
+                counter_name="receipt_number_not_found",
+                increment_by=1,
+                process_type="export",
+                slug=self.provider_slug,
+                retry_count=retry_count,
+            )
+            raise
