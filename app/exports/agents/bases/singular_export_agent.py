@@ -64,7 +64,10 @@ class SingularExportAgent(BaseAgent):
             return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
 
         matched_transaction = db.run_query(
-            find_transaction, session=session, read_only=True, description="load matched transaction",
+            find_transaction,
+            session=session,
+            read_only=True,
+            description="load matched transaction",
         )
 
         if matched_transaction is None:
