@@ -86,7 +86,7 @@ class BinkPrometheus:
         transaction_type: t.Optional[str] = "",
         process_type: t.Optional[str] = "",
         slug: t.Optional[str] = "",
-        retry_count: t.Optional[int] = 0,
+        **kwargs
     ) -> None:
         """
         Useful method for getting an instance's counter, if it exists,
@@ -104,9 +104,10 @@ class BinkPrometheus:
         agent_metrics = getattr(agent, "prometheus_metrics", None)
         if agent_metrics:
             if counter_name in agent_metrics.get("counters", []):
-                self.metric_types["counters"][counter_name].labels(
-                    transaction_type=transaction_type, process_type=process_type, slug=slug, retry_count=retry_count
-                ).inc(increment_by)
+                labels = {"transaction_type": transaction_type, "process_type": process_type, "slug": slug}
+                if "retry_count" in kwargs:
+                    labels["retry_count"] = kwargs["retry_count"]
+                self.metric_types["counters"][counter_name].labels(**labels).inc(increment_by)
 
     def update_gauge(
         self,
@@ -198,8 +199,7 @@ class PrometheusPushThread(threading.Thread):
 def get_prometheus_thread():
     # The PrometheusPushThread class may well end up in an imported common lib, hence this helper function
     prometheus_thread = PrometheusPushThread(
-        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-        prometheus_job=settings.PROMETHEUS_JOB,
+        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB,
     )
     prometheus_thread.daemon = True
 
