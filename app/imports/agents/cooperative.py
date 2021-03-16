@@ -1,6 +1,7 @@
 import json
 import inspect
 import typing as t
+import pendulum
 
 from app import db
 from app.feeds import ImportFeedTypes
@@ -34,10 +35,8 @@ class Cooperative(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date = self.pendulum_parse(data["timestamp"], tz="GMT")
-
         return SchemeTransactionFields(
-            transaction_date=transaction_date,
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             payment_provider_slug="",
             spend_amount=to_pennies(data["amount"]["value"]),
@@ -52,3 +51,6 @@ class Cooperative(FileAgent):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["store_id"]]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        return self.pendulum_parse(data["timestamp"], tz="GMT")

@@ -96,13 +96,10 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
                 continue
             yield {k: v for k, v in raw_data.items()}
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
-        transaction_date_time = f"{data['Date']} {data['Time']}"
-        transaction_date = pendulum.from_format(transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London")
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
-            transaction_date=transaction_date,
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=to_pennies(data["Amount"]),
             spend_multiplier=100,
@@ -120,3 +117,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["EFT Merchant No_"]]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        transaction_date_time = f"{data['Date']} {data['Time']}"
+        transaction_date = pendulum.from_format(transaction_date_time, TXN_DATETIME_FORMAT, tz="Europe/London")
+        return transaction_date

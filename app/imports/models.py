@@ -23,3 +23,6 @@ class ImportFileLog(Base, ModelMixin):
     provider_slug = s.Column(s.String(50), nullable=False)
     file_name = s.Column(s.String(500), nullable=False)
     imported = s.Column(s.Boolean, nullable=False, default=False)
+    date_range_from = s.Column(s.DateTime, nullable=True)
+    date_range_to = s.Column(s.DateTime, nullable=True)
+    transaction_count = s.Column(s.Integer, nullable=True)
