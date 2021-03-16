@@ -15,7 +15,7 @@ class SoteriaConfigMixin:
 
         return Configuration(
             self.provider_slug,
-            Configuration.TRANSACTION_MATCHING_HANDLER,
+            Configuration.TRANSACTION_MATCHING,
             settings.VAULT_URL,
             settings.VAULT_TOKEN,
             settings.EUROPA_URL,

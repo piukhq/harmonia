@@ -353,7 +353,7 @@ def patch_hermes_service(fixture: dict):
 
 def patch_soteria_service():
     class MockSoteriaConfiguration(soteria.configuration.Configuration):
-        TRANSACTION_MATCHING_HANDLER = "mock-handler"
+        TRANSACTION_MATCHING = "mock-handler"
 
         data = {
             "security_credentials": {
