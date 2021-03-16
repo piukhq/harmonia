@@ -11,6 +11,7 @@ from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 from app.currency import to_pennies
 
+
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
@@ -88,12 +89,10 @@ class MastercardSettled(FileAgent):
             """
         )
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> PaymentTransactionFields:
-        date_string = f"{data['transaction_date']} {data['transaction_time']}"
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         return PaymentTransactionFields(
             settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
-            transaction_date=pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London"),
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -120,6 +119,10 @@ class MastercardSettled(FileAgent):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(data["merchant_id"])]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        date_string = f"{data['transaction_date']} {data['transaction_time']}"
+        return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
 
 
 class MastercardAuth(QueueAgent):

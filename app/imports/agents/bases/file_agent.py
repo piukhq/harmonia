@@ -237,8 +237,10 @@ class FileAgent(BaseAgent):
             )
 
             transactions_data = []
+            all_timestamps = []
             for transaction in self.yield_transactions_data(data):
                 transactions_data.append(transaction)
+                all_timestamps.append(self.get_transaction_date(transaction))
                 yield
 
             yield from self._import_transactions(transactions_data, session=session, source=source)
@@ -246,6 +248,9 @@ class FileAgent(BaseAgent):
             # if we got this far, import completed successfully
             def update_import_file_log():
                 import_file_log.imported = True
+                import_file_log.transaction_count = len(transactions_data)
+                import_file_log.date_range_from = min(all_timestamps)
+                import_file_log.date_range_to = max(all_timestamps)
                 session.commit()
 
             db.run_query(
@@ -276,6 +281,9 @@ class FileAgent(BaseAgent):
         )
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        raise NotImplementedError
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         raise NotImplementedError
 
     _FileAgentConfig = t.NamedTuple("_FileAgentConfig", [("path", str), ("schedule", str)])

@@ -1,6 +1,7 @@
 import typing as t
 import inspect
 import json
+import pendulum
 
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -181,9 +182,8 @@ class HarveyNichols(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        transaction_date = self.pendulum_parse(data["timestamp"], tz="Europe/London")
         return SchemeTransactionFields(
-            transaction_date=transaction_date,
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             payment_provider_slug=payment_provider_map[data["card"]["scheme"]],
             spend_amount=to_pennies(data["amount"]["value"]),
@@ -204,3 +204,6 @@ class HarveyNichols(FileAgent):
     def get_mids(self, data: dict) -> t.List[str]:
         mid = data["store_id"]
         return STORE_ID_TO_MIDS.get(mid[:4], [mid])
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        return self.pendulum_parse(data["timestamp"], tz="Europe/London")
