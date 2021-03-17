@@ -82,7 +82,7 @@ class Iceland(FileAgent):
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
-            transaction_date=data["TransactionTimestamp"],
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             payment_provider_slug=Iceland.payment_provider_map[data["TransactionCardScheme"]],
             spend_amount=data["TransactionAmountValue"],
@@ -109,3 +109,6 @@ class Iceland(FileAgent):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["TransactionStore_Id"]]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        return data["TransactionTimestamp"]

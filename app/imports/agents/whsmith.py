@@ -83,11 +83,10 @@ class WhSmith(FileAgent):
         for raw_data in reader:
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
-    @staticmethod
-    def to_transaction_fields(data: dict) -> SchemeTransactionFields:
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             payment_provider_slug=WhSmith.payment_provider_map[data["card_type"]],
-            transaction_date=data["datetime"],
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=data["total"],
             spend_multiplier=100,
@@ -103,3 +102,6 @@ class WhSmith(FileAgent):
     def get_mids(self, data: dict) -> t.List[str]:
         store_id = data["store_id"]
         return self.storeid_mid_map.get(store_id, [store_id])
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        return data["datetime"]

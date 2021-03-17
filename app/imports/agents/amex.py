@@ -111,7 +111,7 @@ class Amex(FileAgent):
         )
         return PaymentTransactionFields(
             settlement_key=settlement_key,
-            transaction_date=data["transaction_date"],
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
@@ -128,6 +128,9 @@ class Amex(FileAgent):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        return data["transaction_date"]
 
 
 class AmexAuth(QueueAgent):

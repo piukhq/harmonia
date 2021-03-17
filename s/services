@@ -17,7 +17,7 @@ docker run \
 	-d \
 	-p51234:51234 \
 	--name txm-pgbouncer \
-	-e DATABASES_HOST=$(ifconfig en0 | grep 'inet ' | cut -d' ' -f2) \
+	-e DATABASES_HOST=host.docker.internal \
 	-e DATABASES_PORT=51235 \
 	-e DATABASES_USER=postgres \
 	-e DATABASES_PASSWORD= \

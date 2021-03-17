@@ -62,10 +62,10 @@ build-develop:
     - export CTAG="develop-$(date +%F-%H%M%S)"
     - docker build --pull -t "$CI_REGISTRY/harmonia:$CTAG" .
     - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
-    - docker build --pull -t "$CI_REGISTRY/harmonia-bulkload:$CTAG" -f harness/Dockerfile .
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia-bulkload:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
+    - docker build --pull -t "$CI_REGISTRY/harmonia_bulkload:$CTAG" -f harness/Dockerfile .
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia_bulkload:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
     - docker push "$CI_REGISTRY/harmonia:$CTAG"
-    - docker push "$CI_REGISTRY/harmonia-bulkload:$CTAG"
+    - docker push "$CI_REGISTRY/harmonia_bulkload:$CTAG"
   only:
     - develop
 
