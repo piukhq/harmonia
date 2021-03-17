@@ -21,7 +21,7 @@ class Hermes:
             raise settings.ConfigVarRequiredError("Use of the Hermes service class requires that HERMES_URL is set.")
 
         self.base_url = base_url
-        self.session = requests_retry_session()
+        self.session = requests_retry_session(retries=5)
 
         self._headers = {"Authorization": f"Token {settings.SERVICE_API_KEY}"}
 
