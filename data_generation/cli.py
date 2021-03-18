@@ -3,7 +3,6 @@ import typing as t
 import uuid
 
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property
 from hashlib import sha256
 
 from io import BytesIO
@@ -14,6 +13,7 @@ import pendulum
 
 from azure.storage.blob import BlobServiceClient
 from kombu import Connection
+from sqlalchemy.orm.session import Session
 
 import settings
 
@@ -66,11 +66,8 @@ logger = get_logger("data-generator")
 
 
 class PathConfigMixin:
-    @cached_property
-    def path(self):
-        with db.session_scope() as session:
-            path = self.agent.config.get("path", session=session)
-        return path
+    def get_path(self, session: Session):
+        return self.agent.config.get("path", session=session)
 
 
 class DataDumper:
@@ -81,17 +78,17 @@ class DataDumper:
 
 
 class SftpDumper(DataDumper, PathConfigMixin):
-    def dump(self, data):
+    def dump(self, data, *, session: Session):
         if self.stdout:
             print(data)
             return
 
-        with SFTP(self.agent.sftp_credentials, self.agent.skey, self.path) as sftp:
+        with SFTP(self.agent.sftp_credentials, self.agent.skey, self.get_path(session=session)) as sftp:
             sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}.csv")
 
 
 class BlobDumper(DataDumper, PathConfigMixin):
-    def dump(self, data):
+    def dump(self, data, *, session: Session):
         if self.stdout:
             print(data)
             return
@@ -100,13 +97,13 @@ class BlobDumper(DataDumper, PathConfigMixin):
         container_name = settings.BLOB_IMPORT_CONTAINER
         blob_client = bbs.get_blob_client(
             container_name,
-            f"{self.path}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
+            f"{self.get_path(session=session)}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
         )
         blob_client.upload_blob(data)
 
 
 class QueueDumper(DataDumper):
-    def dump(self, data):
+    def dump(self, data, *, session: Session):
         if self.stdout:
             print(data)
             return

@@ -102,12 +102,14 @@ SENTRY_DSN = getenv("TXM_SENTRY_DSN", required=False)
 
 # Environment identifier to file issues under in Sentry.
 SENTRY_ENV = getenv("TXM_SENTRY_ENV", default="unset").lower()
+SENTRY_SAMPLE_RATE = getenv("SENTRY_SAMPLE_RATE", default="0.0", conv=float)
 
 if SENTRY_DSN is not None:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=SENTRY_ENV,
         integrations=[FlaskIntegration(), RqIntegration(), RedisIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=SENTRY_SAMPLE_RATE,
     )
 
 # JSON encoding with custom extensions.
