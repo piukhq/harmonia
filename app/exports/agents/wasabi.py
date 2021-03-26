@@ -31,7 +31,8 @@ class Wasabi(SingularExportAgent):
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
-            "counters": ["receipt_number_not_found"],
+            "counters": ["receipt_number_not_found", "requests_sent", "failed_requests", "transactions"],
+            "histograms": ["request_latency"],
         }
 
     def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:

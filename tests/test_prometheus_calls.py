@@ -4,10 +4,10 @@ from uuid import uuid4
 
 import pendulum
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
-from app.exports.agents.wasabi import Wasabi
+from app.exports.agents.wasabi import Wasabi as export_wasabi
 
 
-class TestWasabiPrometheusCalls(TestCase):
+class TestExportWasabiPrometheusCalls(TestCase):
     @mock.patch("app.exports.agents.wasabi.atlas")
     @mock.patch("app.exports.agents.wasabi.Wasabi.config")
     def test_send_export_data_receipt_number_not_found(self, mock_config, mock_atlas) -> None:
@@ -16,7 +16,7 @@ class TestWasabiPrometheusCalls(TestCase):
         """
 
         # GIVEN
-        wasabi = Wasabi()
+        wasabi = export_wasabi()
         agent_export_data = AgentExportData(
             outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],
@@ -24,7 +24,7 @@ class TestWasabiPrometheusCalls(TestCase):
         )
         mock_session = MagicMock()
         mock_retry_count = 3
-        expected_calls = [
+        expected_counter_calls = [
             call(
                 agent=wasabi,
                 counter_name="receipt_number_not_found",
@@ -56,16 +56,16 @@ class TestWasabiPrometheusCalls(TestCase):
                     # THEN
                     self.assertTrue(wasabi.bink_prometheus.increment_counter.called)
                     self.assertEqual(1, wasabi.bink_prometheus.increment_counter.call_count)
-                    wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_calls)
+                    wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_counter_calls)
 
-    @mock.patch.object(Wasabi, "export")
+    @mock.patch.object(export_wasabi, "export")
     def test_send_export_data_generic_exception(self, mock_export) -> None:
         """
         Test that an Exception exception raised from export() calls the expected prometheus metrics
         """
 
         # GIVEN
-        wasabi = Wasabi()
+        wasabi = export_wasabi()
         mock_export.side_effect = KeyError
         agent_export_data = AgentExportData(
             outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
@@ -74,7 +74,7 @@ class TestWasabiPrometheusCalls(TestCase):
         )
         mock_session = MagicMock()
         mock_retry_count = 1
-        expected_calls = [
+        expected_counter_calls = [
             call(
                 agent=wasabi,
                 counter_name="requests_sent",
@@ -90,6 +90,15 @@ class TestWasabiPrometheusCalls(TestCase):
                 slug=wasabi.provider_slug,
             ),
         ]
+        expected_histogram_calls = [
+            call(
+                agent=wasabi,
+                histogram_name="request_latency",
+                context_manager_stack=ANY,
+                process_type="export",
+                slug=wasabi.provider_slug,
+            )
+        ]
 
         # WHEN
         with mock.patch.object(wasabi, "bink_prometheus"):
@@ -104,18 +113,19 @@ class TestWasabiPrometheusCalls(TestCase):
             # THEN
             self.assertTrue(wasabi.bink_prometheus.increment_counter.called)
             self.assertEqual(2, wasabi.bink_prometheus.increment_counter.call_count)
-            wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_calls)
+            wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_counter_calls)
+            wasabi.bink_prometheus.use_histogram_context_manager.assert_has_calls(expected_histogram_calls)
 
     @mock.patch("app.exports.agents.bases.singular_export_agent.settings")
-    @mock.patch.object(Wasabi, "_save_export_transactions")
-    @mock.patch.object(Wasabi, "export")
+    @mock.patch.object(export_wasabi, "_save_export_transactions")
+    @mock.patch.object(export_wasabi, "export")
     def test_send_export_data_ok(self, mock_export, mock_save_export_transactions, mock_settings) -> None:
         """
         Test that a successful call to export() calls the expected prometheus metrics
         """
 
         # GIVEN
-        wasabi = Wasabi()
+        wasabi = export_wasabi()
         mock_export.return_value = {
             "provider_slug": wasabi.provider_slug,
             "transactions": [],
@@ -133,7 +143,7 @@ class TestWasabiPrometheusCalls(TestCase):
         )
         mock_session = MagicMock()
         mock_retry_count = 2
-        expected_calls = [
+        expected_counter_calls = [
             call(
                 agent=wasabi,
                 counter_name="requests_sent",
@@ -149,6 +159,15 @@ class TestWasabiPrometheusCalls(TestCase):
                 slug=wasabi.provider_slug,
             ),
         ]
+        expected_histogram_calls = [
+            call(
+                agent=wasabi,
+                histogram_name="request_latency",
+                context_manager_stack=ANY,
+                process_type="export",
+                slug=wasabi.provider_slug,
+            )
+        ]
 
         # WHEN
         with mock.patch.object(wasabi, "bink_prometheus"):
@@ -157,4 +176,5 @@ class TestWasabiPrometheusCalls(TestCase):
             # THEN
             self.assertTrue(wasabi.bink_prometheus.increment_counter.called)
             self.assertEqual(2, wasabi.bink_prometheus.increment_counter.call_count)
-            wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_calls)
+            wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_counter_calls)
+            wasabi.bink_prometheus.use_histogram_context_manager.assert_has_calls(expected_histogram_calls)
