@@ -249,8 +249,9 @@ class FileAgent(BaseAgent):
             def update_import_file_log():
                 import_file_log.imported = True
                 import_file_log.transaction_count = len(transactions_data)
-                import_file_log.date_range_from = min(all_timestamps)
-                import_file_log.date_range_to = max(all_timestamps)
+                if all_timestamps:
+                    import_file_log.date_range_from = min(all_timestamps)
+                    import_file_log.date_range_to = max(all_timestamps)
                 session.commit()
 
             db.run_query(
