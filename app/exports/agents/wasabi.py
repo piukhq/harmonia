@@ -39,7 +39,7 @@ class Wasabi(SingularExportAgent):
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
-        elif retry_count >= 6:
+        elif retry_count <= 6:
             # second retry at 7 AM the next day.
             return self.next_available_retry_time(7)
         else:
