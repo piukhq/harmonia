@@ -9,9 +9,14 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 class HarveyNichols(BaseMatchingAgent):
     def _filter_scheme_transactions_with_auth_code(self, scheme_transactions: Query) -> Query:
+        transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+            models.SchemeTransaction.transaction_date.between(
+                transaction_date.date().isoformat(),
+                transaction_date.add(days=1).date().isoformat(),
+            ),
         )
         if self.payment_transaction.auth_code:
             scheme_transactions = scheme_transactions.filter(
