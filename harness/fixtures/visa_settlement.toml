@@ -12,6 +12,9 @@ slug = "visa"
 slug = "iceland-bonus-card"
 
 [[agents]]
+slug = "visa-auth"
+
+[[agents]]
 slug = "visa-settlement"
 
 # first user

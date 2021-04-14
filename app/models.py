@@ -90,6 +90,8 @@ class PaymentTransaction(Base, ModelMixin):
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
+    first_six = s.Column(s.Text, nullable=True)  # first six digits of card number, if present
+    last_four = s.Column(s.Text, nullable=True)  # last four digits of card number, if present
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
     user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))

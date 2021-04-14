@@ -50,7 +50,7 @@ class VisaAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return get_key_value(data, "Transaction.VipTransactionId")
+        return f'{get_key_value(data, "Transaction.VipTransactionId")}-auth'
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
@@ -93,7 +93,7 @@ class VisaSettlement(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return get_key_value(data, "Transaction.VipTransactionId")
+        return f'{get_key_value(data, "Transaction.VipTransactionId")}-settlement'
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(get_key_value(data, "Transaction.MerchantCardAcceptorId"))]

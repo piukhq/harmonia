@@ -1,6 +1,5 @@
 import typing as t
 from datetime import datetime
-from uuid import uuid4
 
 import pendulum
 
@@ -23,10 +22,6 @@ def format_time(date: datetime) -> str:
     return pendulum.instance(date).format("hhmm")
 
 
-def get_transaction_id() -> str:
-    return str(uuid4())
-
-
 class VisaAuth(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
         return [
@@ -39,7 +34,7 @@ class VisaAuth(BaseImportDataProvider):
                     {"Key": "Transaction.MerchantCardAcceptorId", "Value": transaction["mid"]},
                     {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                     {"Key": "Transaction.TransactionAmount", "Value": str(to_pounds(transaction["amount"]))},
-                    {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
+                    {"Key": "Transaction.VipTransactionId", "Value": transaction["settlement_key"]},
                     {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "Transaction.VisaMerchantId", "Value": transaction["mid"]},
                     {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
@@ -82,7 +77,7 @@ class VisaSettlement(BaseImportDataProvider):
                     {"Key": "Transaction.MerchantCardAcceptorId", "Value": transaction["mid"]},
                     {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                     {"Key": "Transaction.TransactionAmount", "Value": str(to_pounds(transaction["amount"]))},
-                    {"Key": "Transaction.VipTransactionId", "Value": get_transaction_id()},
+                    {"Key": "Transaction.VipTransactionId", "Value": transaction["settlement_key"]},
                     {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "Transaction.VisaMerchantId", "Value": transaction["mid"]},
                     {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
