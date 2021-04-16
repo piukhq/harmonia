@@ -9,6 +9,7 @@ import_data_providers.add("harvey-nichols", "harness.providers.harvey_nichols.Ha
 import_data_providers.add("iceland-bonus-card", "harness.providers.iceland.Iceland")
 import_data_providers.add("whsmith-rewards", "harness.providers.whsmith.WhSmith")
 import_data_providers.add("amex", "harness.providers.amex.Amex")
+import_data_providers.add("amex-settlement", "harness.providers.amex.AmexSettlement")
 import_data_providers.add("amex-auth", "harness.providers.amex.AmexAuth")
 import_data_providers.add("mastercard-settled", "harness.providers.mastercard.MastercardSettled")
 import_data_providers.add("mastercard-auth", "harness.providers.mastercard.MastercardAuth")
