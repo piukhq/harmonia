@@ -11,7 +11,8 @@ from app.currency import to_pennies
 
 PROVIDER_SLUG = "amex"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
-QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
+AUTH_QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
+SETTLEMENT_QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settlement.queue_name"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYY-MM-DD"
@@ -137,20 +138,14 @@ class AmexAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = ImportFeedTypes.AUTH
 
-    config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="amex-auth"))
+    config = Config(ConfigValue("queue_name", key=AUTH_QUEUE_NAME_KEY, default="amex-auth"))
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["transaction_time"], tz="MST")
         amount = to_pennies(data["transaction_amount"])
-        settlement_key = _make_settlement_key(
-            card_token=data["cm_alias"],
-            transaction_id=data["transaction_id"],
-            mid=data["merchant_number"],
-            amount=str(amount),
-        )
 
         return PaymentTransactionFields(
-            settlement_key=settlement_key,
+            settlement_key=data["transaction_id"],
             transaction_date=transaction_date,
             has_time=True,
             spend_amount=amount,
@@ -162,7 +157,45 @@ class AmexAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return data["transaction_id"]
+        # we have to modify the transaction ID slightly to stop it clashing with the settlement transaction.
+        return f'{data["transaction_id"]}-auth'
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
+
+
+class AmexSettlement(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = ImportFeedTypes.SETTLED
+
+    config = Config(ConfigValue("queue_name", key=SETTLEMENT_QUEUE_NAME_KEY, default="amex-settlement"))
+
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.pendulum_parse(data["transactionDate"], tz="Europe/London")
+        amount = to_pennies(data["transactionAmount"])
+
+        if data["dpan"]:
+            first_six, last_four = data["dpan"].split("XXXXX")
+        else:
+            first_six, last_four = None, None
+
+        return PaymentTransactionFields(
+            settlement_key=data["transactionId"],
+            transaction_date=transaction_date,
+            has_time=True,
+            spend_amount=amount,
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=data["cardToken"],
+            first_six=first_six,
+            last_four=last_four,
+            extra_fields={"offerId": data["offerId"]},
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        # we have to modify the transaction ID slightly to stop it clashing with the auth transaction.
+        return f'{data["transactionId"]}-settlement'
+
+    def get_mids(self, data: dict) -> t.List[str]:
+        return [data["merchantNumber"]]

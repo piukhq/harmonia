@@ -36,6 +36,8 @@ class PaymentTransactionFields(t.NamedTuple):
     card_token: str
     settlement_key: str
     extra_fields: dict
+    first_six: t.Optional[str] = None
+    last_four: t.Optional[str] = None
     auth_code: str = ""
 
 
