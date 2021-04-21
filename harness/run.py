@@ -446,6 +446,7 @@ def run_file_import_agent(agent_slug: str, agent: FileAgent, fixture: dict):
         fg="cyan",
         bold=True,
     )
+    cpprint(data)
 
     # file agents run as a coroutine
     for _ in agent._do_import(data, "end-to-end test file"):
@@ -461,6 +462,7 @@ def run_queue_import_agent(agent_slug: str, agent: QueueAgent, fixture: dict):
         bold=True,
     )
     for transaction in import_data_list:
+        cpprint(transaction)
         agent._do_import(transaction)
 
 

@@ -57,6 +57,13 @@ class PaymentImportDirector:
             # TODO: what other fields need to be updated?
             auth_transaction.spend_amount = settled_transaction.spend_amount
             auth_transaction.transaction_id = settled_transaction.transaction_id
+
+            if not auth_transaction.first_six and settled_transaction.first_six:
+                auth_transaction.first_six = settled_transaction.first_six
+
+            if not auth_transaction.last_four and settled_transaction.last_four:
+                auth_transaction.last_four = settled_transaction.last_four
+
             session.commit()
 
         db.run_query(update_transaction, session=session, description="override auth transaction fields")

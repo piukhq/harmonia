@@ -24,6 +24,24 @@ class Iceland(BaseMatchingAgent):
 
         return scheme_transactions
 
+    def _filter_scheme_transactions_amex(self, scheme_transactions: Query) -> Query:
+        scheme_transactions = scheme_transactions.filter(
+            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+        )
+
+        # dpan is an optional field that we use if we have it
+        if self.payment_transaction.first_six and self.payment_transaction.last_four:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.first_six == self.payment_transaction.first_six,
+                models.SchemeTransaction.last_four == self.payment_transaction.last_four,
+            )
+
+        # apply a 60 second fuzzy match on time
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
+
+        return scheme_transactions
+
     def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
@@ -35,7 +53,7 @@ class Iceland(BaseMatchingAgent):
     def _filter_scheme_transactions(self, scheme_transactions: Query):
         return {
             "visa": self._filter_scheme_transactions_with_auth_code,
-            "amex": self._filter_scheme_transactions_with_auth_code,
+            "amex": self._filter_scheme_transactions_amex,
             "mastercard": self._filter_scheme_transactions_mastercard,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
@@ -58,7 +76,8 @@ class Iceland(BaseMatchingAgent):
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        if multiple_returned:
+        # we only want to filter by card number if the dpan isn't present.
+        if multiple_returned and not self.payment_transaction.first_six:
             match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
 
         if not match:
