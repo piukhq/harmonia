@@ -67,6 +67,8 @@ class SchemeTransaction(Base, ModelMixin):
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_multiplier = s.Column(s.Integer, nullable=False)  # amount that spend_amount was multiplied by
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
+    first_six = s.Column(s.Text, nullable=True)  # first six digits of card number, if present
+    last_four = s.Column(s.Text, nullable=True)  # last four digits of card number, if present
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
     match_group = s.Column(s.String(36), nullable=False, index=True)  # the group this transaction was imported in
