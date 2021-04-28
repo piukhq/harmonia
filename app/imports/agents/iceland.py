@@ -89,11 +89,11 @@ class Iceland(FileAgent):
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
             auth_code=data["TransactionAuthCode"],
+            first_six=data["TransactionCardFirst6"],
+            last_four=data["TransactionCardLast4"],
             extra_fields={
                 k: data[k]
                 for k in (
-                    "TransactionCardFirst6",
-                    "TransactionCardLast4",
                     "TransactionCardExpiry",
                     "TransactionCardSchemeId",
                     "TransactionCardScheme",

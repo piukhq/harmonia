@@ -24,6 +24,8 @@ class SchemeTransactionFields(t.NamedTuple):
     spend_multiplier: int
     spend_currency: str
     extra_fields: dict
+    first_six: t.Optional[str] = None
+    last_four: t.Optional[str] = None
     auth_code: str = ""
 
 

@@ -3,7 +3,6 @@ import typing as t
 import uuid
 
 from concurrent.futures import ProcessPoolExecutor
-from hashlib import sha256
 
 from io import BytesIO
 from datetime import datetime, timedelta
@@ -160,7 +159,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                             "seconds": random.randint(0, 60),
                         }
                     ),
-                    "settlement_key": sha256(str(uuid.uuid4()).encode()).hexdigest(),
+                    "settlement_key": str(uuid.uuid4()),
                     "mid": random.choice(mid_map[payment_provider_slug]),
                     "store_id": store_id,
                 }
