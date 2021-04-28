@@ -20,7 +20,7 @@ class ExportTransaction(Base, ModelMixin):
     __table_args__ = (s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_et_uc"),)
 
     matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
-    transaction_id = s.Column(s.String(50), nullable=False)
+    transaction_id = s.Column(s.String(100), nullable=False)
     provider_slug = s.Column(s.String(50), nullable=False)
     destination = s.Column(s.String(500), nullable=True)
     data = s.Column(s.JSON)
