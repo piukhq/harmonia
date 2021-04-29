@@ -89,11 +89,8 @@ class HarveyNichols(BaseMatchingAgent):
             transaction
             for transaction in scheme_transactions
             if (
-                transaction.extra_fields["card"]["last_4"] == user_identity.last_four
-                and (
-                    transaction.extra_fields["card"]["first_6"] == user_identity.first_six
-                    or transaction.extra_fields["card"]["first_6"] == "000000"
-                )
+                transaction.last_four == user_identity.last_four
+                and (transaction.first_six == user_identity.first_six or transaction.first_six == "000000")
             )
         ]
         return matched_transactions

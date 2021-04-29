@@ -65,10 +65,7 @@ class Wasabi(BaseMatchingAgent):
         matched_transactions = [
             transaction
             for transaction in scheme_transactions
-            if (
-                transaction.extra_fields["first_six"] == user_identity.first_six
-                and transaction.extra_fields["last_four"] == user_identity.last_four
-            )
+            if (transaction.first_six == user_identity.first_six and transaction.last_four == user_identity.last_four)
         ]
         return matched_transactions
 
