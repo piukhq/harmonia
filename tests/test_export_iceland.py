@@ -6,7 +6,7 @@ from app import encryption
 
 settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"
-settings.VAULT_URL = "http://vault"
+settings.VAULT_URL = "https://vault"
 settings.VAULT_TOKEN = ""
 
 MOCK_URL = "http://iceland.test"
@@ -30,8 +30,16 @@ def add_mock_routes():
         },
     )
 
-    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test1", json={"data": {"data": {"value": "test3"}}})
-    responses.add("GET", f"{settings.VAULT_URL}/v1/secret/data/test2", json={"data": {"data": {"value": "test4"}}})
+    responses.add(
+        "GET",
+        f"{settings.VAULT_URL}/secrets/test1/",
+        json={"id": "https://test5/a/b/c", "value": '{"data": {"value": "test3"}}'},
+    )
+    responses.add(
+        "GET",
+        f"{settings.VAULT_URL}/secrets/test2/",
+        json={"id": "https://test6/a/b/c", "value": '{"data": {"value": "test4"}}'},
+    )
 
 
 class Expected:
