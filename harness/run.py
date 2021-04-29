@@ -49,7 +49,6 @@ with mocked_auth_decorator():
 settings.EUROPA_URL = ""
 settings.ATLAS_URL = ""
 settings.VAULT_URL = ""
-settings.VAULT_TOKEN = ""
 settings.AUDIT_EXPORTS = False
 
 
