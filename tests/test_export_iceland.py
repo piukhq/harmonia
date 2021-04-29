@@ -7,7 +7,6 @@ from app import encryption
 settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"
 settings.VAULT_URL = "https://vault"
-settings.VAULT_TOKEN = ""
 
 MOCK_URL = "http://iceland.test"
 
