@@ -21,11 +21,22 @@ class Wasabi(BaseMatchingAgent):
 
         return match
 
+    def _filter_amex(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
+        # dpan is an optional field that we use if we have it
+        if self.payment_transaction.first_six and self.payment_transaction.last_four:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.first_six == self.payment_transaction.first_six,
+                models.SchemeTransaction.last_four == self.payment_transaction.last_four,
+            )
+
+        return self._filter_other(scheme_transactions)
+
     def _filter_other(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
         scheme_transactions = self._time_filter(scheme_transactions, tolerance=60 * 3)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        if multiple_returned:
+        # we only want to filter by card number if the dpan isn't present.
+        if multiple_returned and not self.payment_transaction.first_six:
             match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
 
         return match
@@ -42,7 +53,7 @@ class Wasabi(BaseMatchingAgent):
                 )
             ),
         )
-        return {"visa": self._filter_visa, "amex": self._filter_other, "mastercard": self._filter_other}[
+        return {"visa": self._filter_visa, "amex": self._filter_amex, "mastercard": self._filter_other}[
             self.payment_transaction.provider_slug
         ](scheme_transactions)
 

@@ -190,6 +190,8 @@ class HarveyNichols(FileAgent):
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
             auth_code=self.process_auth_code(data["auth_code"]),
+            first_six=data["card"]["first_6"],
+            last_four=data["card"]["last_4"],
             extra_fields={k: data[k] for k in ("alt_id", "card", "auth_code")},
         )
 
