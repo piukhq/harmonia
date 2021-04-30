@@ -58,9 +58,7 @@ class WhSmith(BaseMatchingAgent):
     def _filter_by_last_four(self, scheme_transactions: Query) -> Query:
         user_identity = self.payment_transaction.user_identity
         matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if transaction.last_four == user_identity.last_four
+            transaction for transaction in scheme_transactions if transaction.last_four == user_identity.last_four
         ]
         return matched_transactions
 
@@ -68,7 +66,7 @@ class WhSmith(BaseMatchingAgent):
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        if multiple_returned  and not self.payment_transaction.last_four:
+        if multiple_returned and not self.payment_transaction.last_four:
             match = self._filter(scheme_transactions.all(), [self._filter_by_last_four])
 
         if not match:
