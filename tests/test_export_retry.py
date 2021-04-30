@@ -7,8 +7,7 @@ from app.exports.agents.wasabi import Wasabi
 
 settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"
-settings.VAULT_URL = "http://vault"
-settings.VAULT_TOKEN = ""
+settings.VAULT_URL = "https://vault"
 
 
 # Tests that the next available retry time, in this case 7AM on the same day, works for a 5AM transaction.
