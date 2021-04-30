@@ -24,6 +24,22 @@ class HarveyNichols(BaseMatchingAgent):
             )
         return scheme_transactions
 
+    def _filter_scheme_transactions_with_dpan(self, scheme_transactions: Query) -> Query:
+        scheme_transactions = scheme_transactions.filter(
+            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+        )
+
+        # dpan is an optional field that we use if we have it
+        if self.payment_transaction.first_six and self.payment_transaction.last_four:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.first_six.in_([self.payment_transaction.first_six, "000000"]),
+                models.SchemeTransaction.last_four == self.payment_transaction.last_four,
+            )
+
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=30)
+        return scheme_transactions
+
     def _filter_scheme_transactions_with_time(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
@@ -35,7 +51,7 @@ class HarveyNichols(BaseMatchingAgent):
     def _filter_scheme_transactions(self, scheme_transactions: Query) -> Query:
         return {
             "visa": self._filter_scheme_transactions_with_auth_code,
-            "amex": self._filter_scheme_transactions_with_time,
+            "amex": self._filter_scheme_transactions_with_dpan,
             "mastercard": self._filter_scheme_transactions_with_time,
             # for end to end testing
             "bink-payment": self._filter_scheme_transactions_with_time,
@@ -46,7 +62,8 @@ class HarveyNichols(BaseMatchingAgent):
 
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        if multiple_returned:
+        # we only want to filter by card number if the dpan isn't present.
+        if multiple_returned and not self.payment_transaction.first_six:
             match = self._filter(scheme_transactions.all(), [self._filter_by_time, self._filter_by_card_number])
 
         if not match:
@@ -72,11 +89,8 @@ class HarveyNichols(BaseMatchingAgent):
             transaction
             for transaction in scheme_transactions
             if (
-                transaction.extra_fields["card"]["last_4"] == user_identity.last_four
-                and (
-                    transaction.extra_fields["card"]["first_6"] == user_identity.first_six
-                    or transaction.extra_fields["card"]["first_6"] == "000000"
-                )
+                transaction.last_four == user_identity.last_four
+                and (transaction.first_six == user_identity.first_six or transaction.first_six == "000000")
             )
         ]
         return matched_transactions

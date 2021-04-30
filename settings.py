@@ -164,7 +164,6 @@ EUROPA_URL = getenv("TXM_EUROPA_URL", required=False)
 
 # Hashicorp Vault connection details
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
-VAULT_TOKEN = getenv("TXM_VAULT_TOKEN", required=False)
 VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
 
 # Prometheus settings
