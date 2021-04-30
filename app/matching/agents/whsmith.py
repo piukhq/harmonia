@@ -20,11 +20,29 @@ class WhSmith(BaseMatchingAgent):
         )
         return scheme_transactions
 
+    def _filter_scheme_transactions_amex(self, scheme_transactions: Query) -> Query:
+        scheme_transactions = scheme_transactions.filter(
+            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+        )
+
+        # dpan is an optional field that we use if we have it
+        if self.payment_transaction.last_four:
+            scheme_transactions = scheme_transactions.filter(
+                models.SchemeTransaction.last_four == self.payment_transaction.last_four,
+            )
+
+        scheme_transactions = self._time_filter(
+            scheme_transactions, tolerance=30, scheme_timestamp_precision=TimestampPrecision.MINUTES
+        )
+        return scheme_transactions
+
     def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
+
         scheme_transactions = self._time_filter(
             scheme_transactions, tolerance=30, scheme_timestamp_precision=TimestampPrecision.MINUTES
         )
@@ -42,7 +60,7 @@ class WhSmith(BaseMatchingAgent):
         matched_transactions = [
             transaction
             for transaction in scheme_transactions
-            if transaction.extra_fields["last_four"] == user_identity.last_four
+            if transaction.last_four == user_identity.last_four
         ]
         return matched_transactions
 
@@ -50,7 +68,7 @@ class WhSmith(BaseMatchingAgent):
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
-        if multiple_returned:
+        if multiple_returned  and not self.payment_transaction.last_four:
             match = self._filter(scheme_transactions.all(), [self._filter_by_last_four])
 
         if not match:

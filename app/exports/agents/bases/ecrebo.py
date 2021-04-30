@@ -199,17 +199,17 @@ class Ecrebo(BatchExportAgent, SoteriaConfigMixin):
             with self.sftp_class(
                 self.sftp_credentials, self.skey, self.config.get("receipt_upload_path", session=session)
             ) as sftp:  # type: ignore
-                name, buf = buffered_outputs[0]
+                name, buf = buffered_outputs.pop(0)
                 sftp.client.putfo(buf, name)
-                name, buf = buffered_outputs[1]
+                name, buf = buffered_outputs.pop(0)
                 sftp.client.putfo(buf, name)
 
         with self.sftp_class(
             self.sftp_credentials, self.skey, self.config.get("reward_upload_path", session=session)
         ) as sftp:
-            name, buf = buffered_outputs[2]
+            name, buf = buffered_outputs.pop(0)
             sftp.client.putfo(buf, name)
-            name, buf = buffered_outputs[3]
+            name, buf = buffered_outputs.pop(0)
             sftp.client.putfo(buf, name)
 
         blob_names = self.save_to_blob(settings.BLOB_AUDIT_CONTAINER, export_data)
