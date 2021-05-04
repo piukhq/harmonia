@@ -51,7 +51,7 @@ class WhSmith(BaseMatchingAgent):
     def _filter_scheme_transactions(self, scheme_transactions: Query):
         return {
             "visa": self._filter_scheme_transactions_with_auth_code,
-            "amex": self._filter_scheme_transactions_with_auth_code,
+            "amex": self._filter_scheme_transactions_amex,
             "mastercard": self._filter_scheme_transactions_mastercard,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
