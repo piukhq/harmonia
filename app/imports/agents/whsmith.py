@@ -92,7 +92,8 @@ class WhSmith(FileAgent):
             spend_multiplier=100,
             spend_currency=data["currency"],
             auth_code=data["auth_no"],
-            extra_fields={"last_four": data["card_masked_pan"]},
+            last_four=data["card_masked_pan"],
+            extra_fields={},
         )
 
     @staticmethod
