@@ -22,6 +22,12 @@ TIME_FORMAT = "HHmm"
 DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
+class FixedWidthField(t.NamedTuple):
+    name: str
+    start: int
+    length: int
+
+
 def _make_settlement_key(third_party_id: str):
     return sha256(f"mastercard.{third_party_id}".encode()).hexdigest()
 
@@ -33,7 +39,7 @@ def try_convert_settlement_mid(mid: str) -> str:
     return mid
 
 
-class MastercardSettled(FileAgent):
+class MastercardTS44Settlement(FileAgent):
     feed_type = ImportFeedTypes.SETTLED
     provider_slug = PROVIDER_SLUG
 
@@ -122,6 +128,69 @@ class MastercardSettled(FileAgent):
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['transaction_date']} {data['transaction_time']}"
+        return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
+
+
+class MastercardTGX2Settlement(FileAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = ImportFeedTypes.SETTLED
+
+    config = Config(
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
+
+    # the "start" of these fields must be one less than in the documentation, because the lines are 0-indexed.
+    fields = [
+        FixedWidthField(name="record_type", start=0, length=1),
+        FixedWidthField(name="mid", start=451, length=15),
+        FixedWidthField(name="amount", start=518, length=12),
+        FixedWidthField(name="date", start=102, length=8),
+        FixedWidthField(name="time", start=563, length=4),
+        FixedWidthField(name="token", start=21, length=30),
+        FixedWidthField(name="transaction_id", start=761, length=9),
+        FixedWidthField(name="auth_code", start=567, length=6),
+    ]
+
+    field_transforms: t.Dict[str, t.Callable] = {
+        "amount": lambda x: to_pennies(x),
+    }
+
+    def parse_line(self, line: str) -> dict:
+        return {field.name: line[field.start : field.start + field.length].strip() for field in self.fields}
+
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+        lines = data.decode().split("\n")[1:]  # the header line is discarded
+        for line in lines:
+            raw_data = self.parse_line(line)
+
+            if raw_data["record_type"] != "D":
+                continue
+
+            yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
+
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        return PaymentTransactionFields(
+            settlement_key=_make_settlement_key(data["transaction_id"]),
+            transaction_date=self.get_transaction_date(data),
+            has_time=True,
+            spend_amount=data["amount"],
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=data["token"],
+            auth_code=data["auth_code"],
+            extra_fields={},
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        return f"settlement-{data['transaction_id']}"
+
+    def get_mids(self, data: dict) -> t.List[str]:
+        return [try_convert_settlement_mid(data["mid"])]
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        date_string = f"{data['date']} {data['time']}"
         return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
 
 
