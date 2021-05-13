@@ -18,7 +18,7 @@ def join(*args: WidthField) -> str:
     return "".join(str(value).ljust(length) for value, length in args)
 
 
-class MastercardSettled(BaseImportDataProvider):
+class MastercardTS44Settlement(BaseImportDataProvider):
     def provide(self, fixture: dict) -> bytes:
         now = pendulum.now()
         lines = []
@@ -61,6 +61,56 @@ class MastercardSettled(BaseImportDataProvider):
                 (str(len(lines) - 1).rjust(12, "0"), 12),  # record count
                 ("00000017597", 11),  # member ICA
                 ("", 176),  # filler
+            )
+        )
+
+        return "\n".join(lines).encode()
+
+
+class MastercardTGX2Settlement(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> bytes:
+        now = pendulum.now()
+        lines = []
+
+        # header
+        lines.append(
+            join(
+                ("H", 1),  # header record
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),  # filler
+            )
+        )
+
+        # detail
+        lines.extend(
+            join(
+                ("D", 1),
+                ("", 20),
+                (user["token"], 30),
+                ("", 51),
+                (pendulum.instance(transaction["date"]).format("YYYYMMDD"), 8),
+                ("", 341),
+                (transaction["mid"], 15),
+                ("", 52),
+                (str(to_pounds(transaction["amount"])).rjust(12, "0"), 12),
+                ("", 33),
+                (pendulum.instance(transaction["date"]).format("HHmm"), 4),
+                (transaction["auth_code"], 6),
+                ("", 188),
+                (transaction["settlement_key"][:9], 9),  # tx id
+            )
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        )
+
+        # trailer
+        lines.append(
+            join(
+                ("T", 1),  # header record
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),  # filler
             )
         )
 
