@@ -1,6 +1,7 @@
 import typing as t
 
 from sqlalchemy.orm.query import Query
+import pendulum
 
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
@@ -20,7 +21,9 @@ class Iceland(BaseMatchingAgent):
             )
 
         # apply a 60 second fuzzy match on time
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
+        # TEMPORARY: this is only need for visa, a ticket is coming to remove this for visa too
+        if self.payment_transaction.provider_slug == "visa":
+            scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
 
         return scheme_transactions
 
@@ -42,32 +45,12 @@ class Iceland(BaseMatchingAgent):
 
         return scheme_transactions
 
-    def _filter_scheme_transactions_mastercard(self, scheme_transactions: Query) -> Query:
-        scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
-            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-        )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
-        return scheme_transactions
-
     def _filter_scheme_transactions(self, scheme_transactions: Query):
         return {
             "visa": self._filter_scheme_transactions_with_auth_code,
             "amex": self._filter_scheme_transactions_amex,
-            "mastercard": self._filter_scheme_transactions_mastercard,
+            "mastercard": self._filter_scheme_transactions_with_auth_code,
         }[self.payment_transaction.provider_slug](scheme_transactions)
-
-    def _filter_by_card_number(
-        self, scheme_transactions: t.List[models.SchemeTransaction]
-    ) -> t.List[models.SchemeTransaction]:
-        user_identity = self.payment_transaction.user_identity
-
-        matched_transactions = [
-            transaction
-            for transaction in scheme_transactions
-            if (transaction.first_six == user_identity.first_six and transaction.last_four == user_identity.last_four)
-        ]
-        return matched_transactions
 
     def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
@@ -75,7 +58,7 @@ class Iceland(BaseMatchingAgent):
 
         # we only want to filter by card number if the dpan isn't present.
         if multiple_returned and not self.payment_transaction.first_six:
-            match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
+            match = self._filter(scheme_transactions.all(), [self._filter_by_time, self._filter_by_card_number])
 
         if not match:
             self.log.warning(
@@ -91,3 +74,26 @@ class Iceland(BaseMatchingAgent):
             ),
             scheme_transaction_id=match.id,
         )
+
+    def _filter_by_card_number(
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
+        user_identity = self.payment_transaction.user_identity
+
+        matched_transactions = [
+            transaction
+            for transaction in scheme_transactions
+            if (transaction.first_six == user_identity.first_six and transaction.last_four == user_identity.last_four)
+        ]
+        return matched_transactions
+
+    def _filter_by_time(
+        self, scheme_transactions: t.List[models.SchemeTransaction]
+    ) -> t.List[models.SchemeTransaction]:
+        date = pendulum.instance(self.payment_transaction.transaction_date)
+        before = date.subtract(seconds=60)
+        after = date.add(seconds=60)
+        matched_transactions = [
+            transaction for transaction in scheme_transactions if before <= transaction.transaction_date <= after
+        ]
+        return matched_transactions

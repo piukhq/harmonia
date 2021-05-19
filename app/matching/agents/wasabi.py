@@ -8,7 +8,7 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class Wasabi(BaseMatchingAgent):
-    def _filter_visa(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
+    def _filter_with_auth_code(self, scheme_transactions: Query) -> t.Optional[models.SchemeTransaction]:
         if self.payment_transaction.auth_code:
             scheme_transactions = scheme_transactions.filter(
                 models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
@@ -53,9 +53,11 @@ class Wasabi(BaseMatchingAgent):
                 )
             ),
         )
-        return {"visa": self._filter_visa, "amex": self._filter_amex, "mastercard": self._filter_other}[
-            self.payment_transaction.provider_slug
-        ](scheme_transactions)
+        return {
+            "visa": self._filter_with_auth_code,
+            "amex": self._filter_amex,
+            "mastercard": self._filter_with_auth_code,
+        }[self.payment_transaction.provider_slug](scheme_transactions)
 
     def _filter_by_card_number(
         self, scheme_transactions: t.List[models.SchemeTransaction]
