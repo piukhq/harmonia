@@ -64,6 +64,9 @@ class PaymentImportDirector:
             if not auth_transaction.last_four and settled_transaction.last_four:
                 auth_transaction.last_four = settled_transaction.last_four
 
+            if not auth_transaction.auth_code and settled_transaction.auth_code:
+                auth_transaction.auth_code = settled_transaction.auth_code
+
             session.commit()
 
         db.run_query(update_transaction, session=session, description="override auth transaction fields")

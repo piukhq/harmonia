@@ -8,6 +8,10 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class HarveyNichols(BaseMatchingAgent):
+    @property
+    def time_tolerance(self):
+        return 60 if self.payment_transaction.provider_slug == "mastercard" else 30
+
     def _filter_scheme_transactions_with_auth_code(self, scheme_transactions: Query) -> Query:
         transaction_date = pendulum.instance(self.payment_transaction.transaction_date)
         scheme_transactions = scheme_transactions.filter(
@@ -37,24 +41,14 @@ class HarveyNichols(BaseMatchingAgent):
                 models.SchemeTransaction.last_four == self.payment_transaction.last_four,
             )
 
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=30)
-        return scheme_transactions
-
-    def _filter_scheme_transactions_with_time(self, scheme_transactions: Query) -> Query:
-        scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
-            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-        )
-        scheme_transactions = self._time_filter(scheme_transactions, tolerance=30)
+        scheme_transactions = self._time_filter(scheme_transactions, tolerance=self.time_tolerance)
         return scheme_transactions
 
     def _filter_scheme_transactions(self, scheme_transactions: Query) -> Query:
         return {
             "visa": self._filter_scheme_transactions_with_auth_code,
             "amex": self._filter_scheme_transactions_with_dpan,
-            "mastercard": self._filter_scheme_transactions_with_time,
-            # for end to end testing
-            "bink-payment": self._filter_scheme_transactions_with_time,
+            "mastercard": self._filter_scheme_transactions_with_auth_code,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
     def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
@@ -99,8 +93,8 @@ class HarveyNichols(BaseMatchingAgent):
         self, scheme_transactions: t.List[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
         date = pendulum.instance(self.payment_transaction.transaction_date)
-        before = date.subtract(seconds=30)
-        after = date.add(seconds=30)
+        before = date.subtract(seconds=self.time_tolerance)
+        after = date.add(seconds=self.time_tolerance)
         matched_transactions = [
             transaction for transaction in scheme_transactions if before <= transaction.transaction_date <= after
         ]
