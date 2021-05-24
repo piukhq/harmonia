@@ -1,3 +1,4 @@
+from datetime import datetime, time
 import typing as t
 
 from sqlalchemy.orm.query import Query
@@ -12,6 +13,12 @@ class Iceland(BaseMatchingAgent):
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
+            models.SchemeTransaction.transaction_date.between(
+                *(
+                    datetime.combine(self.payment_transaction.transaction_date.date(), time_parts).isoformat()
+                    for time_parts in (time.min, time.max)
+                )
+            ),
         )
 
         # auth code is an optional field that we use if we have it
