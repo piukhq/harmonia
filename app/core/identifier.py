@@ -93,7 +93,8 @@ class Identifier:
             return
         except requests.RequestException:
             event_id = sentry_sdk.capture_exception()
-            log.debug(f"Failed to get user info from Hermes. Sentry event ID: {event_id}")
+            log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
+            tasks.matching_queue.enqueue(tasks.identify_payment_transaction, payment_transaction_id)
             return
 
         if "card_information" not in user_info:
