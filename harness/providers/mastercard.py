@@ -93,7 +93,7 @@ class MastercardTGX2Settlement(BaseImportDataProvider):
                 ("", 341),
                 (transaction["mid"], 15),
                 ("", 52),
-                (str(to_pounds(transaction["amount"])).rjust(12, "0"), 12),
+                (str(transaction["amount"]).rjust(12, "0"), 12),
                 ("", 33),
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("HHmm"), 4),
                 (transaction["auth_code"], 6),
