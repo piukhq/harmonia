@@ -153,7 +153,7 @@ class MastercardTGX2Settlement(FileAgent):
     ]
 
     field_transforms: t.Dict[str, t.Callable] = {
-        "amount": lambda x: to_pennies(x),
+        "amount": int,
     }
 
     def parse_line(self, line: str) -> dict:
