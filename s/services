@@ -7,23 +7,10 @@ s/rmservices
 p 'creating postgres'
 docker run \
 	-d \
-	-p51235:5432 \
+	-p51234:5432 \
 	--name txm-postgres \
 	-e POSTGRES_HOST_AUTH_METHOD=trust \
 	postgres
-
-p 'creating pgbouncer'
-docker run \
-	-d \
-	-p51234:51234 \
-	--name txm-pgbouncer \
-	-e DATABASES_HOST=host.docker.internal \
-	-e DATABASES_PORT=51235 \
-	-e DATABASES_USER=postgres \
-	-e DATABASES_PASSWORD= \
-	-e DATABASES_DBNAME=harmonia \
-	-e PGBOUNCER_LISTEN_PORT=51234 \
-	pgbouncer/pgbouncer
 
 p 'creating redis'
 docker run \
