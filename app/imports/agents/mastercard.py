@@ -28,8 +28,14 @@ class FixedWidthField(t.NamedTuple):
     length: int
 
 
-def _make_settlement_key(third_party_id: str):
-    return sha256(f"mastercard.{third_party_id}".encode()).hexdigest()
+def _make_settlement_key(*, third_party_id: t.Optional[str], transaction_date: pendulum.DateTime, mid: str, token: str):
+    hash_parts = [
+        third_party_id if third_party_id else str(uuid4()),
+        transaction_date.date().isoformat(),
+        mid,
+        token,
+    ]
+    return sha256(f"mastercard.{'.'.join(hash_parts)}".encode()).hexdigest()
 
 
 def try_convert_settlement_mid(mid: str) -> str:
@@ -96,14 +102,21 @@ class MastercardTS44Settlement(FileAgent):
         )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.get_transaction_date(data)
+        card_token = data["bank_customer_number"]
         return PaymentTransactionFields(
-            settlement_key=_make_settlement_key(data["bank_net_ref_number"]),
-            transaction_date=self.get_transaction_date(data),
+            settlement_key=_make_settlement_key(
+                third_party_id=data["bank_net_ref_number"],
+                transaction_date=transaction_date,
+                mid=data["merchant_id"],
+                token=card_token,
+            ),
+            transaction_date=transaction_date,
             has_time=True,
             spend_amount=data["transaction_amount"],
             spend_multiplier=100,
             spend_currency="GBP",
-            card_token=data["bank_customer_number"],
+            card_token=card_token,
             extra_fields={
                 k: data[k]
                 for k in (
@@ -170,21 +183,31 @@ class MastercardTGX2Settlement(FileAgent):
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.get_transaction_date(data)
+        card_token = data["token"]
         return PaymentTransactionFields(
-            settlement_key=_make_settlement_key(data["transaction_id"]),
-            transaction_date=self.get_transaction_date(data),
+            settlement_key=_make_settlement_key(
+                third_party_id=data["transaction_id"],
+                transaction_date=transaction_date,
+                mid=data["mid"],
+                token=card_token,
+            ),
+            transaction_date=transaction_date,
             has_time=True,
             spend_amount=data["amount"],
             spend_multiplier=100,
             spend_currency="GBP",
-            card_token=data["token"],
+            card_token=card_token,
             auth_code=data["auth_code"],
             extra_fields={},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return f"settlement-{data['transaction_id']}"
+        if data["transaction_id"]:
+            return f"settlement-{data['transaction_id']}"
+        else:
+            return f"settlement-{uuid4()}"
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(data["mid"])]
@@ -202,21 +225,26 @@ class MastercardAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
+        card_token = data["payment_card_token"]
         return PaymentTransactionFields(
-            settlement_key=_make_settlement_key(data["third_party_id"]),
+            settlement_key=_make_settlement_key(
+                third_party_id=data["third_party_id"],
+                transaction_date=transaction_date,
+                mid=data["mid"],
+                token=card_token,
+            ),
             transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
-            card_token=data["payment_card_token"],
+            card_token=card_token,
             extra_fields={"third_party_id": data["third_party_id"]},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        # TODO: is this alright?
-        return str(uuid4())
+        return f"auth-{str(uuid4())}"
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["mid"]]
