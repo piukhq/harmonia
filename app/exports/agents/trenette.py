@@ -22,12 +22,15 @@ class Trenette(SingularExportAgent):
         pass
 
     provider_slug = PROVIDER_SLUG
-
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
+    loyalty_id = None
 
     def __init__(self):
         super().__init__()
-        self.api_class = BplMockAPI if settings.DEBUG else BplAPI
+        if settings.DEBUG:
+            self.api_class = BplMockAPI
+        else:
+            self.api_class = BplAPI
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
@@ -53,15 +56,11 @@ class Trenette(SingularExportAgent):
         else:
             return run_time_today
 
-    @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
-        return hashlib.sha1(
-            "Bink-Trenette-"
-            f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
-        ).hexdigest()
-
     def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
         transaction_datetime = pendulum.instance(matched_transaction.transaction_date)
+        user_identity = matched_transaction.payment_transaction.user_identity
+        self.loyalty_id = user_identity.decrypted_credentials['merchant_identifier']
+
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
@@ -70,8 +69,8 @@ class Trenette(SingularExportAgent):
                         "id": matched_transaction.transaction_id,
                         "transaction_total": matched_transaction.spend_amount,
                         "datetime": transaction_datetime.int_timestamp,
-                        "MID": matched_transaction.merchant_identifier_id,
-                        "loyalty_id": self.get_loyalty_identifier(matched_transaction)
+                        "MID": matched_transaction.merchant_identifier.mid,
+                        "loyalty_id": self.loyalty_id
                     },
                 )
             ],
@@ -84,46 +83,23 @@ class Trenette(SingularExportAgent):
     ) -> atlas.MessagePayload:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
-        api = self.api_class(self.config.get("base_url", session=session))
+        api = self.api_class(self.config.get("base_url", session=session), self.provider_slug)
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.post_matched_transaction(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        if msg := response.json().get("Message"):
-            with self._update_wasabi_metrics(retry_count=retry_count):
-                if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
-                    # fail the export for it to be retried later
-                    raise self.ReceiptNumberNotFound
-
-            self.log.warn(f"Bpl API response contained message: {msg}")
-
-        audit_message = atlas.make_audit_message(
-            self.provider_slug,
-            atlas.make_audit_transactions(
-                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-            ),
-            request=body,
-            request_timestamp=request_timestamp,
-            response=response,
-            response_timestamp=response_timestamp,
-        )
-        return audit_message
-
-    @contextmanager
-    def _update_wasabi_metrics(self, retry_count: int) -> t.Iterator[None]:
-        """
-        Update any Prometheus metrics this agent might have
-        """
-
-        try:
-            yield
-        except self.ReceiptNumberNotFound:
-            self.bink_prometheus.increment_counter(
-                agent=self,
-                counter_name="receipt_number_not_found",
-                increment_by=1,
-                process_type="export",
-                slug=self.provider_slug,
-                retry_count=retry_count,
+        if (200 <= response.status_code <= 299) or (400 <= response.status_code <= 499):
+            audit_message = atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=self.loyalty_id
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
             )
-            raise
+            return audit_message
+
+        if (300 <= response.status_code <= 399) or (response.status_code >= 500):
+            raise Exception("BPL: retry error raised")

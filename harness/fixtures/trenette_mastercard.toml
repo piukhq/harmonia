@@ -27,6 +27,7 @@ last_four = "7890"
 [users.credentials]
 card_number = "loyalty-123"
 email = "test@binktest.com"
+merchant_identifier = "88899966"
 
 [[users.transactions]]
 date = 2020-08-05T16:28:52Z
