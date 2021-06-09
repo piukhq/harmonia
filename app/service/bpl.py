@@ -26,5 +26,6 @@ class BplAPI():
         return self.post(endpoint, body, name="post_matched_transaction")
 
     def get_security_token(self):
-        conf = Configuration(self.scheme_slug, Configuration.TRANSACTION_MATCHING, settings.VAULT_URL, None, settings.EUROPA_URL)
+        handler = Configuration.TRANSACTION_MATCHING
+        conf = Configuration(self.scheme_slug, handler, settings.VAULT_URL, None, settings.EUROPA_URL)
         return conf.security_credentials["outbound"]["credentials"][0]["value"]["token"]
