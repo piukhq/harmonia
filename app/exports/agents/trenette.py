@@ -1,13 +1,11 @@
 from hashlib import sha1
 import pendulum
-import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas
 from app.service.bpl import BplAPI
-from harness.exporters.bpl_mock import BplMockAPI
 
 PROVIDER_SLUG = "bpl-trenette"
 
@@ -20,10 +18,7 @@ class Trenette(SingularExportAgent):
 
     def __init__(self):
         super().__init__()
-        if settings.DEBUG:
-            self.api_class = BplMockAPI
-        else:
-            self.api_class = BplAPI
+        self.api_class = BplAPI
 
     @staticmethod
     def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
