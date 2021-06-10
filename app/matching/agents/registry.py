@@ -10,3 +10,4 @@ matching_agents.add("burger-king-rewards", "app.matching.agents.generic_spotted.
 matching_agents.add("fatface", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("whsmith-rewards", "app.matching.agents.whsmith.WhSmith")
 matching_agents.add("wasabi-club", "app.matching.agents.wasabi.Wasabi")
+matching_agents.add("bpl-trenette", "app.matching.agents.generic_spotted.GenericSpotted")

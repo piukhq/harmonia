@@ -10,3 +10,4 @@ export_agents.add("burger-king-rewards", "app.exports.agents.burger_king.BurgerK
 export_agents.add("fatface", "app.exports.agents.fatface.FatFace")
 export_agents.add("whsmith-rewards", "app.exports.agents.whsmith.WhSmith")
 export_agents.add("wasabi-club", "app.exports.agents.wasabi.Wasabi")
+export_agents.add("bpl-trenette", "app.exports.agents.trenette.Trenette")
