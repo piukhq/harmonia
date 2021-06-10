@@ -32,6 +32,6 @@ email = "test-123@testbink.com"
 [[users.transactions]]
 date = 2020-10-27T15:01:59Z
 amount = 1222
-settlement_key = "1111111511"
-auth_code = "666566"
+settlement_key = "1111111611"
+auth_code = "666766"
 mid = "test-mid-123"

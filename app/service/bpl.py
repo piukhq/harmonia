@@ -7,7 +7,7 @@ from app.core.requests_retry import requests_retry_session
 log = get_logger("bpl")
 
 
-class BplAPI():
+class BplAPI:
     def __init__(self, base_url: str, scheme_slug: str) -> None:
         self.base_url = base_url
         self.scheme_slug = scheme_slug

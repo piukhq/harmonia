@@ -10,6 +10,6 @@ class BplMockAPI:
 
     def post_matched_transaction(self, body: dict) -> requests.models.Response:
         response = Mock(spec=Response)
-        response.json.return_value = {"Message": "Stamp awarded"}
+        response.json.return_value = {"transaction_id": "BPL1234567890", "transaction_status": "awarded"}
         response.status_code = 200
         return response
