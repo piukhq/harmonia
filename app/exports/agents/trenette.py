@@ -1,3 +1,4 @@
+from hashlib import sha1
 import pendulum
 import settings
 from app import db, models
@@ -16,7 +17,6 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 class Trenette(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
-    loyalty_id = ""
 
     def __init__(self):
         super().__init__()
@@ -37,7 +37,7 @@ class Trenette(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "id": matched_transaction.transaction_id,
+                        "id": f"BPL{sha1(matched_transaction.transaction_id.encode()).hexdigest()}",
                         "transaction_total": matched_transaction.spend_amount,
                         "datetime": transaction_datetime.int_timestamp,
                         "MID": matched_transaction.merchant_identifier.mid,
@@ -46,7 +46,7 @@ class Trenette(SingularExportAgent):
                 )
             ],
             transactions=[matched_transaction],
-            extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
+            extra_data={},
         )
 
     def export(
@@ -60,7 +60,7 @@ class Trenette(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
-            raise Exception("BPL: retry error raised")
+            raise Exception(f"BPL transaction endpoint returned {response.status_code}")
 
         audit_message = atlas.make_audit_message(
             self.provider_slug,

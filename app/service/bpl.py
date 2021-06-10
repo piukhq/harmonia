@@ -18,10 +18,10 @@ class BplAPI:
         url = f"{self.base_url}{endpoint}"
         headers = {"Authorization": f"Token {self.get_security_token()}"}
         response = self.session.post(url, headers=headers, json=body)
-        response.raise_for_status()
         return response
 
     def post_matched_transaction(self, body: dict) -> requests.models.Response:
+        # TODO: get this endpoint from a map based on scheme slug
         endpoint = "/trenette/transaction"
         return self.post(endpoint, body, name="post_matched_transaction")
 
