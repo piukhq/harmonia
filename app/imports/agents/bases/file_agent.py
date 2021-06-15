@@ -243,12 +243,15 @@ class FileAgent(BaseAgent):
                 all_timestamps.append(self.get_transaction_date(transaction))
                 yield
 
-            yield from self._import_transactions(transactions_data, session=session, source=source)
+            total_unique_transactions = yield from self._import_transactions(
+                transactions_data, session=session, source=source
+            )
 
             # if we got this far, import completed successfully
             def update_import_file_log():
                 import_file_log.imported = True
                 import_file_log.transaction_count = len(transactions_data)
+                import_file_log.unique_transaction_count = total_unique_transactions
                 if all_timestamps:
                     import_file_log.date_range_from = min(all_timestamps)
                     import_file_log.date_range_to = max(all_timestamps)

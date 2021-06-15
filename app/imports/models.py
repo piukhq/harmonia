@@ -26,3 +26,4 @@ class ImportFileLog(Base, ModelMixin):
     date_range_from = s.Column(s.DateTime, nullable=True)
     date_range_to = s.Column(s.DateTime, nullable=True)
     transaction_count = s.Column(s.Integer, nullable=True)
+    unique_transaction_count = s.Column(s.Integer, nullable=True)
