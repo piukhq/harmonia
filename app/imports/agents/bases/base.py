@@ -215,7 +215,7 @@ class BaseAgent:
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
-    ) -> t.Iterable[None]:
+    ) -> t.Generator[None, None, int]:
         """
         Imports the given list of deserialized provider transactions.
         Creates ImportTransaction instances in the database, and enqueues the
@@ -289,6 +289,8 @@ class BaseAgent:
 
         if queue_transactions:
             tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
+
+        return len(new)
 
     def _update_metrics(self, n_insertions: int) -> None:
         """
