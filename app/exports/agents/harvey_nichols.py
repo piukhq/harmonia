@@ -1,5 +1,8 @@
 import pendulum
 import settings
+import typing as t
+from contextlib import contextmanager
+
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
@@ -61,6 +64,11 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        outcome = response.json().get("outcome").lower()
+        if outcome != "success":
+            with self._update_agent_metrics(response_code=outcome):
+                raise Exception
+
         audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
@@ -72,3 +80,22 @@ class HarveyNichols(SingularExportAgent):
             response_timestamp=response_timestamp,
         )
         return audit_message
+
+    @contextmanager
+    def _update_agent_metrics(self, response_code: str) -> t.Iterator[None]:
+        """
+        Update any Prometheus metrics this agent might have
+        """
+
+        try:
+            yield
+        except Exception:
+            self.bink_prometheus.increment_counter(
+                agent=self,
+                counter_name="failed_requests",
+                increment_by=1,
+                process_type="export",
+                slug=self.provider_slug,
+                response_code=response_code,
+            )
+            raise

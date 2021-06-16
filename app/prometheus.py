@@ -47,7 +47,7 @@ class BinkPrometheus:
                 "failed_requests": Counter(
                     name="failed_requests",
                     documentation="Number of failed requests",
-                    labelnames=("transaction_type", "process_type", "slug"),
+                    labelnames=("transaction_type", "process_type", "slug", "response_code"),
                 ),
                 "files_received": Counter(
                     name="files_received",
@@ -99,6 +99,7 @@ class BinkPrometheus:
         :param process_type: e.g import or export
         :param slug: e.g wasabi-club, visa
         :param retry_count: Number of transaction retries, for example
+        :param response_code: The response code returned from merchant receiving txns
         """
 
         agent_metrics = getattr(agent, "prometheus_metrics", None)
@@ -107,6 +108,8 @@ class BinkPrometheus:
                 labels = {"transaction_type": transaction_type, "process_type": process_type, "slug": slug}
                 if "retry_count" in kwargs:
                     labels["retry_count"] = kwargs["retry_count"]
+                if "response_code" in kwargs:
+                    labels["response_code"] = kwargs["response_code"]
                 self.metric_types["counters"][counter_name].labels(**labels).inc(increment_by)
 
     def update_gauge(
