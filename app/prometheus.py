@@ -106,10 +106,7 @@ class BinkPrometheus:
         if agent_metrics:
             if counter_name in agent_metrics.get("counters", []):
                 labels = {"transaction_type": transaction_type, "process_type": process_type, "slug": slug}
-                if "retry_count" in kwargs:
-                    labels["retry_count"] = kwargs["retry_count"]
-                if "response_code" in kwargs:
-                    labels["response_code"] = kwargs["response_code"]
+                labels.update(kwargs)
                 self.metric_types["counters"][counter_name].labels(**labels).inc(increment_by)
 
     def update_gauge(

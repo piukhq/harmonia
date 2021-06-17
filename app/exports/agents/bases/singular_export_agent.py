@@ -1,5 +1,6 @@
 import typing as t
 from contextlib import ExitStack, contextmanager
+from requests import RequestException, Response
 
 import pendulum
 import humanize
@@ -146,6 +147,12 @@ class SingularExportAgent(BaseAgent):
 
         db.run_query(delete_pending_export, session=session, description="delete pending export")
 
+    def get_response_result(self, response: Response) -> t.Optional[str]:
+        """
+        Override in your agent to get an error code/message from the given response.
+        """
+        return None
+
     @contextmanager
     def _update_metrics(self, export_data: AgentExportData, session: db.Session) -> t.Iterator[None]:
         """
@@ -170,13 +177,20 @@ class SingularExportAgent(BaseAgent):
             )
             try:
                 yield
-            except Exception:
+            except Exception as ex:
+                labels = {}
+                if isinstance(ex, RequestException) and ex.response is not None:
+                    response_result = self.get_response_result(ex.response)
+                    if response_result is not None:
+                        labels["response_code"] = response_result
+
                 self.bink_prometheus.increment_counter(
                     agent=self,
                     counter_name="failed_requests",
                     increment_by=1,
                     process_type="export",
                     slug=self.provider_slug,
+                    **labels,
                 )
                 raise
             else:
