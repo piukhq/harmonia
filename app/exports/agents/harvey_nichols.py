@@ -1,5 +1,10 @@
 import pendulum
+from requests import Response, RequestException
+
 import settings
+import typing as t
+
+
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
@@ -61,6 +66,9 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        if self.get_response_result(response) != "success":
+            raise RequestException(response=response)
+
         audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
@@ -72,3 +80,6 @@ class HarveyNichols(SingularExportAgent):
             response_timestamp=response_timestamp,
         )
         return audit_message
+
+    def get_response_result(self, response: Response) -> t.Optional[str]:
+        return response.json().get("outcome").lower()
