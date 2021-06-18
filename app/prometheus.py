@@ -47,7 +47,7 @@ class BinkPrometheus:
                 "failed_requests": Counter(
                     name="failed_requests",
                     documentation="Number of failed requests",
-                    labelnames=("transaction_type", "process_type", "slug", "response_code"),
+                    labelnames=("transaction_type", "process_type", "slug", "response_result"),
                 ),
                 "files_received": Counter(
                     name="files_received",
@@ -99,7 +99,7 @@ class BinkPrometheus:
         :param process_type: e.g import or export
         :param slug: e.g wasabi-club, visa
         :param retry_count: Number of transaction retries, for example
-        :param response_code: The response code returned from merchant receiving txns
+        :param response_result: The response code returned from merchant receiving txns
         """
 
         agent_metrics = getattr(agent, "prometheus_metrics", None)

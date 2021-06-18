@@ -182,7 +182,7 @@ class SingularExportAgent(BaseAgent):
                 if isinstance(ex, RequestException) and ex.response is not None:
                     response_result = self.get_response_result(ex.response)
                     if response_result is not None:
-                        labels["response_code"] = response_result
+                        labels["response_result"] = response_result
 
                 self.bink_prometheus.increment_counter(
                     agent=self,

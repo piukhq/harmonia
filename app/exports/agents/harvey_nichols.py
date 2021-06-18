@@ -82,7 +82,4 @@ class HarveyNichols(SingularExportAgent):
         return audit_message
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
-        """
-        Override in your agent to get an error code outcome/message from the given response.
-        """
         return response.json().get("outcome").lower()
