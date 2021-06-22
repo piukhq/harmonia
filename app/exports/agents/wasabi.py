@@ -1,6 +1,5 @@
 import hashlib
 import typing as t
-from contextlib import contextmanager
 from requests import Response, RequestException
 
 import pendulum
