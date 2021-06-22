@@ -1,7 +1,6 @@
 import hashlib
 import typing as t
 from requests import Response, RequestException
-
 import pendulum
 import settings
 from app import db, models
@@ -18,8 +17,6 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
 
 class Wasabi(SingularExportAgent):
-    class ReceiptNumberNotFound(Exception):
-        pass
 
     provider_slug = PROVIDER_SLUG
 
@@ -86,8 +83,9 @@ class Wasabi(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         if msg := response.json().get("Message"):
-            if (msg.lower() == "receipt no not found" or msg.lower() == "origin id not found")\
-                    and self.get_retry_datetime(retry_count):
+            if (
+                msg.lower() == "receipt no not found" or msg.lower() == "origin id not found"
+            ) and self.get_retry_datetime(retry_count):
                 # fail the export for it to be retried later
                 raise RequestException(response=response)
 
