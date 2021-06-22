@@ -1,6 +1,7 @@
 import hashlib
 import typing as t
 from contextlib import contextmanager
+from requests import Response, RequestException
 
 import pendulum
 import settings
@@ -31,7 +32,7 @@ class Wasabi(SingularExportAgent):
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
-            "counters": ["receipt_number_not_found", "requests_sent", "failed_requests", "transactions"],
+            "counters": ["requests_sent", "failed_requests", "transactions"],
             "histograms": ["request_latency"],
         }
 
@@ -86,12 +87,12 @@ class Wasabi(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         if msg := response.json().get("Message"):
-            with self._update_wasabi_metrics(retry_count=retry_count):
-                if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
-                    # fail the export for it to be retried later
-                    raise self.ReceiptNumberNotFound
+            if (msg.lower() == "receipt no not found" or msg.lower() == "origin id not found")\
+                    and self.get_retry_datetime(retry_count):
+                # fail the export for it to be retried later
+                raise RequestException(response=response)
 
-            self.log.warn(f"Acteol API response contained message: {msg}")
+        self.log.warn(f"Acteol API response contained message: {msg}")
 
         audit_message = atlas.make_audit_message(
             self.provider_slug,
@@ -105,21 +106,5 @@ class Wasabi(SingularExportAgent):
         )
         return audit_message
 
-    @contextmanager
-    def _update_wasabi_metrics(self, retry_count: int) -> t.Iterator[None]:
-        """
-        Update any Prometheus metrics this agent might have
-        """
-
-        try:
-            yield
-        except self.ReceiptNumberNotFound:
-            self.bink_prometheus.increment_counter(
-                agent=self,
-                counter_name="receipt_number_not_found",
-                increment_by=1,
-                process_type="export",
-                slug=self.provider_slug,
-                retry_count=retry_count,
-            )
-            raise
+    def get_response_result(self, response: Response) -> t.Optional[str]:
+        return response.json().get("Message").lower()

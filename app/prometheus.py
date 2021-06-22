@@ -54,11 +54,6 @@ class BinkPrometheus:
                     documentation="Number of files received",
                     labelnames=("transaction_type", "process_type", "slug"),
                 ),
-                "receipt_number_not_found": Counter(
-                    name="receipt_number_not_found",
-                    documentation="Number of transactions where receipt number is not found, and the retry count",
-                    labelnames=("transaction_type", "process_type", "slug", "retry_count"),
-                ),
             },
             "histograms": {
                 "request_latency": Histogram(
