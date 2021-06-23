@@ -65,10 +65,9 @@ class TestExportWasabiPrometheusCalls(TestCase):
             wasabi.bink_prometheus.increment_counter.assert_has_calls(expected_counter_calls)
             wasabi.bink_prometheus.use_histogram_context_manager.assert_has_calls(expected_histogram_calls)
 
-    @mock.patch("app.exports.agents.bases.singular_export_agent.settings")
     @mock.patch.object(export_wasabi, "_save_export_transactions")
     @mock.patch.object(export_wasabi, "export")
-    def test_send_export_data_ok(self, mock_export, mock_save_export_transactions, mock_settings) -> None:
+    def test_send_export_data_ok(self, mock_export, mock_save_export_transactions) -> None:
         """
         Test that a successful call to export() calls the expected prometheus metrics
         """
@@ -84,7 +83,6 @@ class TestExportWasabiPrometheusCalls(TestCase):
             },
         }
         mock_save_export_transactions.return_value = None
-        mock_settings.AUDIT_EXPORTS = False
         agent_export_data = AgentExportData(
             outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],
             transactions=[],

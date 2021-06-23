@@ -93,7 +93,6 @@ class BinkPrometheus:
         :param transaction_type: e.g auth or settlement
         :param process_type: e.g import or export
         :param slug: e.g wasabi-club, visa
-        :param retry_count: Number of transaction retries, for example
         :param response_result: The response code returned from merchant receiving txns
         """
 

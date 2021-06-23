@@ -5,12 +5,10 @@ from requests import RequestException, Response
 import pendulum
 import humanize
 
-import settings
 from app import db, models
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.prometheus import bink_prometheus
-from app.service import atlas
 from app.status import status_monitor
 
 
@@ -30,7 +28,9 @@ class SingularExportAgent(BaseAgent):
         else:
             return None
 
-    def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
+    def get_retry_datetime(
+        self, retry_count: int, *, exception: t.Optional[Exception] = None
+    ) -> t.Optional[pendulum.DateTime]:
         """
         Given a number of previous retries, return the timepoint at which an export should be retried.
         The return value is optional - by returning `None` an agent can indicate that the export should not be retried.
@@ -46,9 +46,7 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
         )
 
-    def export(
-        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> atlas.MessagePayload:
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -100,7 +98,7 @@ class SingularExportAgent(BaseAgent):
         try:
             self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
         except Exception as ex:
-            retry_at = self.get_retry_datetime(pending_export.retry_count)
+            retry_at = self.get_retry_datetime(pending_export.retry_count, exception=ex)
 
             if retry_at:
                 retry_humanized = humanize.naturaltime(retry_at.naive())
@@ -132,9 +130,7 @@ class SingularExportAgent(BaseAgent):
 
     def _send_export_data(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         with self._update_metrics(export_data=export_data, session=session):
-            audit_message = self.export(export_data, retry_count=retry_count, session=session)
-            if settings.AUDIT_EXPORTS:
-                atlas.queue_audit_message(audit_message)
+            self.export(export_data, retry_count=retry_count, session=session)
 
         self._save_export_transactions(export_data, session=session)
 
