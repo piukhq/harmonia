@@ -64,7 +64,6 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -77,7 +76,6 @@ class HarveyNichols(SingularExportAgent):
                 response_timestamp=response_timestamp,
             )
         )
-        
         if self.get_response_result(response) != "success":
             raise RequestException(response=response)
 
