@@ -93,7 +93,7 @@ class Wasabi(SingularExportAgent):
 
         # raise exception for first 7 retries
         if msg := self.get_response_result(response):
-            if msg.lower() == RECEIPT_NO_NOT_FOUND and self.get_retry_datetime(retry_count):
+            if msg == RECEIPT_NO_NOT_FOUND and self.get_retry_datetime(retry_count):
                 # fail the export for it to be retried later
                 raise RequestException(response=response)
             self.log.warn(f"Acteol API response contained message: {msg}")
@@ -113,8 +113,11 @@ class Wasabi(SingularExportAgent):
 
         # count the final receipt no not found
         if msg := self.get_response_result(response):
-            if msg.lower() in (RECEIPT_NO_NOT_FOUND, ORIGIN_ID_NOT_FOUND):
+            if msg in (RECEIPT_NO_NOT_FOUND, ORIGIN_ID_NOT_FOUND):
                 raise RequestException(response=response)
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
-        return response.json().get("Message").lower()
+        if msg := response.json().get("Message"):
+            return msg.lower()
+        else:
+            return None
