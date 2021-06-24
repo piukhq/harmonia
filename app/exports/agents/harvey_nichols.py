@@ -56,9 +56,7 @@ class HarveyNichols(SingularExportAgent):
             extra_data={"credentials": user_identity.decrypted_credentials, "scheme_account_id": scheme_account_id},
         )
 
-    def export(
-        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> atlas.MessagePayload:
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
@@ -66,20 +64,20 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        atlas.queue_audit_message(
+            atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
+            )
+        )
         if self.get_response_result(response) != "success":
             raise RequestException(response=response)
-
-        audit_message = atlas.make_audit_message(
-            self.provider_slug,
-            atlas.make_audit_transactions(
-                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-            ),
-            request=body,
-            request_timestamp=request_timestamp,
-            response=response,
-            response_timestamp=response_timestamp,
-        )
-        return audit_message
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
         return response.json().get("outcome").lower()
