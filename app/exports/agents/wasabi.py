@@ -1,7 +1,6 @@
 import hashlib
 import typing as t
-from contextlib import contextmanager
-
+from requests import Response, RequestException
 import pendulum
 import settings
 from app import db, models
@@ -15,11 +14,12 @@ from harness.exporters.acteol_mock import ActeolMockAPI
 PROVIDER_SLUG = "wasabi-club"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
+RECEIPT_NO_NOT_FOUND = "receipt no not found"
+ORIGIN_ID_NOT_FOUND = "origin id not found"
+retryable_messages = [RECEIPT_NO_NOT_FOUND]
 
 
 class Wasabi(SingularExportAgent):
-    class ReceiptNumberNotFound(Exception):
-        pass
 
     provider_slug = PROVIDER_SLUG
 
@@ -31,11 +31,19 @@ class Wasabi(SingularExportAgent):
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
-            "counters": ["receipt_number_not_found", "requests_sent", "failed_requests", "transactions"],
+            "counters": ["requests_sent", "failed_requests", "transactions"],
             "histograms": ["request_latency"],
         }
 
-    def get_retry_datetime(self, retry_count: int) -> t.Optional[pendulum.DateTime]:
+    def get_retry_datetime(
+        self, retry_count: int, *, exception: t.Optional[Exception] = None
+    ) -> t.Optional[pendulum.DateTime]:
+        # TEMPORARY: remove when implementing signals
+        if (
+            isinstance(exception, RequestException)
+            and self.get_response_result(exception.response) not in retryable_messages
+        ):
+            return None
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
@@ -75,9 +83,7 @@ class Wasabi(SingularExportAgent):
             extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
         )
 
-    def export(
-        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> atlas.MessagePayload:
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
@@ -85,41 +91,33 @@ class Wasabi(SingularExportAgent):
         response = api.post_matched_transaction(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        if msg := response.json().get("Message"):
-            with self._update_wasabi_metrics(retry_count=retry_count):
-                if msg.lower() == "receipt no not found" and self.get_retry_datetime(retry_count):
-                    # fail the export for it to be retried later
-                    raise self.ReceiptNumberNotFound
-
+        # raise exception for first 7 retries
+        if msg := self.get_response_result(response):
+            if msg == RECEIPT_NO_NOT_FOUND and self.get_retry_datetime(retry_count):
+                # fail the export for it to be retried later
+                raise RequestException(response=response)
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        audit_message = atlas.make_audit_message(
-            self.provider_slug,
-            atlas.make_audit_transactions(
-                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-            ),
-            request=body,
-            request_timestamp=request_timestamp,
-            response=response,
-            response_timestamp=response_timestamp,
-        )
-        return audit_message
-
-    @contextmanager
-    def _update_wasabi_metrics(self, retry_count: int) -> t.Iterator[None]:
-        """
-        Update any Prometheus metrics this agent might have
-        """
-
-        try:
-            yield
-        except self.ReceiptNumberNotFound:
-            self.bink_prometheus.increment_counter(
-                agent=self,
-                counter_name="receipt_number_not_found",
-                increment_by=1,
-                process_type="export",
-                slug=self.provider_slug,
-                retry_count=retry_count,
+        atlas.queue_audit_message(
+            atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
             )
-            raise
+        )
+
+        # count the final receipt no not found
+        if msg := self.get_response_result(response):
+            if msg in (RECEIPT_NO_NOT_FOUND, ORIGIN_ID_NOT_FOUND):
+                raise RequestException(response=response)
+
+    def get_response_result(self, response: Response) -> t.Optional[str]:
+        if msg := response.json().get("Message"):
+            return msg.lower()
+        else:
+            return None

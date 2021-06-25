@@ -54,11 +54,6 @@ class BinkPrometheus:
                     documentation="Number of files received",
                     labelnames=("transaction_type", "process_type", "slug"),
                 ),
-                "receipt_number_not_found": Counter(
-                    name="receipt_number_not_found",
-                    documentation="Number of transactions where receipt number is not found, and the retry count",
-                    labelnames=("transaction_type", "process_type", "slug", "retry_count"),
-                ),
             },
             "histograms": {
                 "request_latency": Histogram(
@@ -98,7 +93,6 @@ class BinkPrometheus:
         :param transaction_type: e.g auth or settlement
         :param process_type: e.g import or export
         :param slug: e.g wasabi-club, visa
-        :param retry_count: Number of transaction retries, for example
         :param response_result: The response code returned from merchant receiving txns
         """
 

@@ -26,7 +26,7 @@ class HarveyNicholsMockAPI:
         export_data = export_data
         body = body
         response = Mock(spec=Response)
-        response.json.return_value = {"outcome": "NotFound"}
+        response.json.return_value = {"outcome": "success"}
         response.status_code = 200
 
         """Sample AlreadyAssigned response
