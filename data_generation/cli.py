@@ -126,7 +126,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())
     payment_provider_slug = PAYMENT_AGENT_TO_PROVIDER_SLUG[payment_provider_agent]
     fixture: t.Dict[str, t.Any] = {
-        "agents": [{"slug": merchant_slug}, {"slug": payment_provider_agent}],
+        "agents": [{"slug": payment_provider_agent}, {"slug": merchant_slug}],
         "users": [],
         "payment_provider": {"slug": payment_provider_slug},
     }
@@ -206,15 +206,24 @@ def generate(
 
     agent_data = {}
     with ProcessPoolExecutor(max_workers=len(fixture["agents"])) as process_pool:
+        futures = {}
+        logger.info("Starting data generation.")
         for agent in fixture["agents"]:
             agent_slug = agent["slug"]
             data_provider = import_data_providers.instantiate(agent_slug)
-            future = process_pool.submit(data_provider.provide, fixture)
+            futures[agent_slug] = process_pool.submit(data_provider.provide, fixture)
+            logger.info(f"Task queued for {agent_slug}.")
+
+        logger.info("Waiting for data generation to complete...")
+        for agent_slug, future in futures.items():
             data = future.result()
             agent_data[agent_slug] = data
+            logger.info(f"{agent_slug} data generation completed.")
 
     with db.session_scope() as session:
         for agent_slug, data in agent_data.items():
+            if not click.confirm(f"\nConfirm {agent_slug} data dump", default=True):
+                break
             logger.info(f"Dumping {agent_slug} data...")
             agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
             dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
