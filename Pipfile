@@ -28,7 +28,6 @@ azure-storage-blob = "*"
 marshmallow-sqlalchemy = "*"
 sentry-sdk = {extras = ["flask"],version = "*"}
 user-token-store = "*"
-soteria = "*"
 paramiko = "*"
 kombu = "*"
 hashids = "*"
@@ -36,6 +35,7 @@ pgpy = "*"
 psycopg2-binary = "*"
 prometheus-client = "*"
 azure-oidc = "*"
+soteria = "*"
 
 [dev-packages]
 pytest = "*"
