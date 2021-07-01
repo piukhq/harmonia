@@ -51,7 +51,7 @@ def update_key(key: str) -> ResponseType:
     request_schema = schemas.UpdateKeyRequestSchema()
 
     try:
-        data = request_schema.load(request.json)
+        data = request_schema.load(request.json)  # type: ignore
     except marshmallow.ValidationError as ex:
         return {"messages": ex.messages}, 400
 

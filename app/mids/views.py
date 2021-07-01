@@ -59,7 +59,7 @@ def create_merchant_identifier_fields(
 def _get_first_character(file_storage: werkzeug.datastructures.FileStorage) -> str:
     # the `line for line in ...` is required since FileStorage isn't a proper iterable
     char = next(line for line in file_storage).decode()[0]
-    file_storage.seek(0)
+    file_storage.stream.seek(0)
     return char
 
 
