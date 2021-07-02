@@ -23,7 +23,7 @@ def clean_abort():
 
 def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     @click.command()
-    @click.option("-a", "--agent", type=click.Choice(registry._entries.keys()), required=True)
+    @click.option("-a", "--agent", type=click.Choice(list(registry._entries.keys())), required=True)
     @click.option("-y", "--no-user-input", is_flag=True, help="bypass the y/N prompt to run the agent")
     @click.option("-N", "--dry-run", is_flag=True, help="print agent information then quit without executing")
     @click.option("-q", "--quiet", is_flag=True, help="skip printing agent information and warnings")
