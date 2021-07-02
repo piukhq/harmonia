@@ -3,6 +3,11 @@ import typing as t
 from functools import cached_property
 
 import rq
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from app import models, db, reporting, config
 from app.core import import_director, matching_worker, export_director, identifier
@@ -27,9 +32,15 @@ class LoggedQueue(rq.Queue):
             config.ConfigValue("queue_limit", key=f"{config.KEY_PREFIX}:queue:{self.name}:limit", default="5000")
         )
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=5, min=5),
+        reraise=True,
+    )
     def enqueue(self, f, *args, **kwargs):
+        result = super().enqueue(f, retry=rq.Retry(max=3, interval=[10, 30, 60]), *args, **kwargs)
         log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
-        return super().enqueue(f, retry=rq.Retry(max=3, interval=[10, 30, 60]), *args, **kwargs)
+        return result
 
     @cached_property
     def queue_limit(self) -> int:
@@ -47,7 +58,7 @@ def run_worker(queue_names: t.List[str], *, burst: bool = False, workerclass: t.
         return  # no queues, nothing to do
     queues = [LoggedQueue(name, connection=db.redis_raw) for name in queue_names]
     worker = workerclass(queues, connection=db.redis_raw, log_job_description=False)
-    worker.work(burst=burst)
+    worker.work(burst=burst, with_scheduler=True)
 
 
 import_queue = LoggedQueue(name="import", connection=db.redis_raw)
