@@ -1,103 +1,119 @@
 stages:
-  - tests
+  - test
   - build
-  - dev
-  - staging
-  - prod
+  - deploy
 
 default:
-  image: binkhq/python:3.8
+  image: ghcr.io/binkhq/python:3.8
 
-tests:
-  stage: tests
-  variables: &variables
-    POSTGRES_DB: harmonia
-    POSTGRES_HOST_AUTH_METHOD: trust
-    TXM_POSTGRES_USER: postgres
-    TXM_POSTGRES_HOST: postgres
-    TXM_POSTGRES_DB: harmonia
-    TXM_REDIS_URL: redis://redis:6379/0
-    TXM_HERMES_URL: "http://localhost"
-    TXM_AAD_TENANT_ID: ""
-  before_script: &setup
-    - pip install pipenv
+variables:
+  POSTGRES_DB: harmonia
+  POSTGRES_HOST_AUTH_METHOD: trust
+  TXM_POSTGRES_USER: postgres
+  TXM_POSTGRES_HOST: postgres
+  TXM_POSTGRES_DB: harmonia
+  TXM_REDIS_URL: redis://redis:6379/0
+  TXM_HERMES_URL: "http://localhost"
+  TXM_AAD_TENANT_ID: ""
+
+test:pytest: &test
+  stage: test
+  before_script:
     - pipenv install --dev --system --deploy --ignore-pipfile
     - pip freeze
   script:
     - alembic upgrade head
     - pytest --verbose --cov app --cov-report term-missing
   services:
-    - postgres:11
-    - redis:5
+    - postgres:latest
+    - redis:latest
 
-complexity:
-  stage: tests
-  variables: *variables
-  before_script: *setup
+test:complexity:
+  <<: *test
   script:
     - xenon --max-average A --max-modules B --max-absolute B .
 
-style:
-  stage: tests
-  variables: *variables
-  before_script: *setup
+test:style:
+  <<: *test
   script:
-    - flake8 && black --line-length 120 --check .
+    - flake8
+    - black --line-length 120 --check .
 
-type-check:
-  stage: tests
-  variables: *variables
-  before_script: *setup
+test:type-check:
+  <<: *test
   script:
     - mypy --ignore-missing-imports app
 
-build-develop:
-  stage: dev
+build:develop: &build
+  stage: build
+  needs: ["test:pytest", "test:complexity", "test:style", "test:type-check"]
   image: docker:latest
   services:
     - docker:dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - export CTAG=$(echo -n "$CI_PIPELINE_CREATED_AT" | sed s/\://g)
   script:
-    - export CTAG="develop-$(date +%F-%H%M%S)"
-    - docker build --pull -t "$CI_REGISTRY/harmonia:$CTAG" .
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
-    - docker build --pull -t "$CI_REGISTRY/harmonia_bulkload:$CTAG" -f harness/Dockerfile .
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia_bulkload:$CTAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
-    - docker push "$CI_REGISTRY/harmonia:$CTAG"
-    - docker push "$CI_REGISTRY/harmonia_bulkload:$CTAG"
+    - docker build --pull --tag "$CI_REGISTRY/$CI_PROJECT_NAME:$CTAG" .
+    - docker push "$CI_REGISTRY/$CI_PROJECT_NAME:$CTAG"
   only:
     - develop
 
-build-master:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
+build:develop:bulkload:
+  <<: *build
+  script:
+    - docker build --pull --tag "$CI_REGISTRY/${CI_PROJECT_NAME}_bulkload:$CTAG" -f harness/Dockerfile .
+    - docker push "$CI_REGISTRY/${CI_PROJECT_NAME}_bulkload:$CTAG"
+  only:
+    - develop
+
+build:tag:
+  <<: *build
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-  script:
-    - docker build --pull -t "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG" .
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY/aqua-scanner:5.0" scan --local "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG" --host https://aqua.uksouth.bink.sh:30001/ --user scanner --password $AQUA_PASSWORD --show-negligible --policies Bink --text
-    - docker push "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG"
+    - export CTAG=$CI_COMMIT_TAG
   only:
     - tags
 
-tag-staging:
-  stage: staging
-  image: binkops.azurecr.io/tagbot:latest
-  environment: staging
+deploy:dev: &deploy
+  stage: deploy
+  needs: ["build:develop"]
+  image: binkcore.azurecr.io/tagbot:latest
+  environment:
+    name: dev
+  before_script:
+    - export CTAG=$(echo -n "$CI_PIPELINE_CREATED_AT" | sed s/\://g)
   script:
-    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG" --tag "staging-$CI_COMMIT_TAG"
+    - tagbot
+      --username "$CI_REGISTRY_USER"
+      --password "$CI_REGISTRY_PASSWORD"
+      --source "$CI_REGISTRY/$CI_PROJECT_NAME:$CTAG"
+      --tag "$CI_ENVIRONMENT_NAME-$CTAG"
+    - tagbot
+      --username "$CI_REGISTRY_USER"
+      --password "$CI_REGISTRY_PASSWORD"
+      --source "$CI_REGISTRY/$CI_PROJECT_NAME:$CTAG"
+      --tag "$CI_ENVIRONMENT_NAME"
+  only:
+    - develop
+
+deploy:staging:
+  <<: *deploy
+  needs: ["build:tag"]
+  environment:
+    name: staging
+  before_script:
+    - export CTAG=$CI_COMMIT_TAG
   only:
     - tags
 
-tag-prod:
-  stage: prod
-  image: binkops.azurecr.io/tagbot:latest
-  environment: prod
-  script:
-    - tagbot --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" --source "$CI_REGISTRY/harmonia:$CI_COMMIT_TAG" --tag "prod-$CI_COMMIT_TAG"
+deploy:prod:
+  <<: *deploy
+  needs: ["build:tag"]
+  environment:
+    name: prod
+  before_script:
+    - export CTAG=$CI_COMMIT_TAG
   when: manual
   only:
     - tags
