@@ -4,6 +4,7 @@ from requests import RequestException, Response
 
 import pendulum
 import humanize
+import sentry_sdk
 
 from app import db, models
 from app.exports.agents import BaseAgent
@@ -98,19 +99,21 @@ class SingularExportAgent(BaseAgent):
         try:
             self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
         except Exception as ex:
+            event_id = sentry_sdk.capture_exception()
+
             retry_at = self.get_retry_datetime(pending_export.retry_count, exception=ex)
 
             if retry_at:
                 retry_humanized = humanize.naturaltime(retry_at.naive())
                 self.log.warning(
-                    f"Singular export raised exception: {repr(ex)}. "
+                    f"Singular export raised exception: {repr(ex)}. Sentry event ID: {event_id} "
                     f"This operation will be retried {retry_humanized} at {retry_at}."
                 )
                 self._retry_pending_export(pending_export, retry_at, session=session)
                 return
             else:
                 self.log.warning(
-                    f"Singular export raised exception: {repr(ex)}. "
+                    f"Singular export raised exception: {repr(ex)}. Sentry event ID: {event_id} "
                     "This operation has exceeded its retry limit and will be discarded."
                 )
                 matched_transaction.status = models.MatchedTransactionStatus.EXPORT_FAILED
