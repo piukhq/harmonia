@@ -15,6 +15,9 @@ from harness.exporters.harvey_nichols_mock import HarveyNicholsMockAPI
 PROVIDER_SLUG = "harvey-nichols"
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
+SUCCESS = "success"
+ALREADY_ASSIGNED = "alreadyassigned"
+
 
 class HarveyNichols(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
@@ -76,7 +79,7 @@ class HarveyNichols(SingularExportAgent):
                 response_timestamp=response_timestamp,
             )
         )
-        if self.get_response_result(response) != "success":
+        if self.get_response_result(response) not in [SUCCESS, ALREADY_ASSIGNED]:
             raise RequestException(response=response)
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
