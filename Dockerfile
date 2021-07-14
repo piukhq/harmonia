@@ -1,11 +1,10 @@
-FROM binkhq/python:3.8
+FROM ghcr.io/binkhq/python:3.8
 
 WORKDIR /app
 ADD . .
 
-RUN pip install --no-cache-dir pipenv gunicorn && \
-    pipenv install --system --deploy --ignore-pipfile && \
-    pip uninstall -y pipenv
+RUN pipenv install --system --deploy --ignore-pipfile
 
+ENTRYPOINT [ "linkerd-await", "--" ]
 CMD [ "gunicorn", "--workers=2", "--threads=2", "--error-logfile=-", \
-                  "--access-logfile=-", "--bind=0.0.0.0:9000", "app.api.app:app" ]
+    "--access-logfile=-", "--bind=0.0.0.0:9000", "app.api.app:app" ]
