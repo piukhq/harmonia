@@ -13,23 +13,20 @@ class Iceland(BaseMatchingAgent):
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-            models.SchemeTransaction.transaction_date.between(
-                *(
-                    datetime.combine(self.payment_transaction.transaction_date.date(), time_parts).isoformat()
-                    for time_parts in (time.min, time.max)
-                )
-            ),
         )
 
         # auth code is an optional field that we use if we have it
         if self.payment_transaction.auth_code:
             scheme_transactions = scheme_transactions.filter(
-                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code
+                models.SchemeTransaction.auth_code == self.payment_transaction.auth_code,
+                models.SchemeTransaction.transaction_date.between(
+                    *(
+                        datetime.combine(self.payment_transaction.transaction_date.date(), time_parts).isoformat()
+                        for time_parts in (time.min, time.max)
+                    )
+                ),
             )
-
-        # apply a 60 second fuzzy match on time
-        # TEMPORARY: this is only need for visa, a ticket is coming to remove this for visa too
-        if self.payment_transaction.provider_slug == "visa":
+        else:
             scheme_transactions = self._time_filter(scheme_transactions, tolerance=60)
 
         return scheme_transactions
