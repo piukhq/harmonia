@@ -40,12 +40,12 @@ class MastercardTS44Settlement(BaseImportDataProvider):
                 (str(randint(0, 10 ** 12)).rjust(13, "0"), 13),  # tx sequence number
                 ("", 19),  # bank account number
                 (str(to_pounds(transaction["amount"])).rjust(13, "0"), 13),
-                (pendulum.instance(transaction["date"]).format("YYYYMMDD"), 8),
+                (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYYMMDD"), 8),
                 (fixture["loyalty_scheme"]["slug"].upper(), 60),
                 (transaction["mid"], 22),
                 (str(randint(0, 10 ** 8)).rjust(9, "0"), 9),  # location ID
                 (str(randint(0, 10 ** 5)).rjust(6, "0"), 6),  # issuer ICA code
-                (pendulum.instance(transaction["date"]).format("HHmm"), 4),  # transaction time
+                (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("HHmm"), 4),  # transaction time
                 (transaction["settlement_key"][:9], 9),  # banknet ref number
                 (user["token"], 30),  # bank customer number
                 (str(randint(0, 10 ** 5)).rjust(6, "0"), 6),  # aggregate merchant ID
