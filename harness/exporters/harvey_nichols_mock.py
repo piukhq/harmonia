@@ -26,13 +26,18 @@ class HarveyNicholsMockAPI:
         export_data = export_data
         body = body
         response = Mock(spec=Response)
-        response.json.return_value = {"outcome": "success"}
-        response.status_code = 200
 
-        """Sample AlreadyAssigned response
-        ---
-        response = {"errorDetails": {"messageText":
-        "Transaction already assigned to the customer", "errorCode": "AlreadyAssigned"}, "outcome": "AlreadyAssigned"}
-        ---
-        """
+        response.json.return_value = {"CustomerClaimTransactionResponse": {"outcome": "Success"}}
+
+        # response.json.return_value = {
+        #     "CustomerClaimTransactionResponse": {
+        #         "errorDetails": {
+        #             "errorCode": "AlreadyAssigned",
+        #             "messageText": "Transaction already assigned to the customer"
+        #         },
+        #         "outcome": "AlreadyAssigned"
+        #     }
+        # }
+
+        response.status_code = 200
         return response
