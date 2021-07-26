@@ -37,6 +37,7 @@ class TestExportWasabiPrometheusCalls(TestCase):
                 increment_by=1,
                 process_type="export",
                 slug=wasabi.provider_slug,
+                response_result="",
             ),
         ]
         expected_histogram_calls = [

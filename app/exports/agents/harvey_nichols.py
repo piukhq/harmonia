@@ -83,4 +83,4 @@ class HarveyNichols(SingularExportAgent):
             raise RequestException(response=response)
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
-        return response.json().get("outcome").lower()
+        return response.json()["CustomerClaimTransactionResponse"]["outcome"].lower()
