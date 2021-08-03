@@ -169,7 +169,6 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                     try:
                         for _ in callback(
                             data=data,
-
                             source=f"{self.credentials.host}:{self.credentials.port}/{file_attr.filename}",
                         ):
                             pass  # callback is a generator object
@@ -185,8 +184,9 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                         self.archive(
                             f"{self.provider_agent.provider_slug}/{file_attr.filename}",
                             data,
-                            delete_callback=self.move_delete(sftp,
-                                                             self.provider_agent.provider_slug, file_attr.filename),
+                            delete_callback=self.move_delete(
+                                sftp, self.provider_agent.provider_slug, file_attr.filename
+                            ),
                             logger=self.log,
                         )
 
@@ -215,7 +215,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         )
 
     def move_delete(self, sftp, provider_slug, filename):
-        if ("archive" in sftp.client.listdir("/uploads")):
+        if "archive" in sftp.client.listdir("/uploads"):
             sftp.client.rename(f"/uploads/{provider_slug}/{filename}", f"/uploads/archive/{filename}")
         else:
             sftp.client.mkdir("/uploads/archive")
