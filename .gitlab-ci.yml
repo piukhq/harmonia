@@ -97,6 +97,23 @@ deploy:dev: &deploy
   only:
     - develop
 
+deploy:dev:bulkload:
+  <<: *deploy
+  needs: ["build:develop"]
+  script:
+    - tagbot
+      --username "$CI_REGISTRY_USER"
+      --password "$CI_REGISTRY_PASSWORD"
+      --source "$CI_REGISTRY/${CI_PROJECT_NAME}_bulkload:$CTAG"
+      --tag "$CI_ENVIRONMENT_NAME-$CTAG"
+    - tagbot
+      --username "$CI_REGISTRY_USER"
+      --password "$CI_REGISTRY_PASSWORD"
+      --source "$CI_REGISTRY/${CI_PROJECT_NAME}_bulkload:$CTAG"
+      --tag "$CI_ENVIRONMENT_NAME"
+  only:
+    - develop
+
 deploy:staging:
   <<: *deploy
   needs: ["build:tag"]
