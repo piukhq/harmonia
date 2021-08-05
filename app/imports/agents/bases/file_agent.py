@@ -144,7 +144,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         *,
         logger: logging.Logger,
         provider_agent: "FileAgent",
-        archive_path: str = None
+        archive_path: str = None,
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
@@ -186,9 +186,9 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                         self.archive(
                             f"{self.provider_agent.provider_slug}/{file_attr.filename}",
                             data,
-                            delete_callback=partial(self.move_delete, sftp, self.path,
-                                                    file_attr.filename, self.archive_path),
-
+                            delete_callback=partial(
+                                self.move_delete, sftp, self.path, file_attr.filename, self.archive_path
+                            ),
                             logger=self.log,
                         )
 
