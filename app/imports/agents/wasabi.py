@@ -75,7 +75,12 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
     @cached_property
     def filesource(self) -> FileSourceBase:
         return SftpFileSource(
-            self.sftp_credentials, self.skey, Path(self.fileagent_config.path), logger=self.log, provider_agent=self
+            self.sftp_credentials,
+            self.skey,
+            Path(self.fileagent_config.path),
+            logger=self.log,
+            provider_agent=self,
+            archive_path="archive",
         )
 
     def help(self, session: db.Session) -> str:
