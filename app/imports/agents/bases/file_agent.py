@@ -144,7 +144,7 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         *,
         logger: logging.Logger,
         provider_agent: "FileAgent",
-        archive_path: Optional[str] = None,
+        archive_path: t.Optional[str] = None,
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
