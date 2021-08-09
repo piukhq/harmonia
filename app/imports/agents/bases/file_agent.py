@@ -219,11 +219,9 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
     def move_delete(self, sftp, path: str, filename: str, archive_path: str = None):
 
         if archive_path:
-            if archive_path in sftp.client.listdir("/"):
-                sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}")
-            else:
+            if archive_path not in sftp.client.listdir("/"):
                 sftp.client.mkdir(f"/{archive_path}")
-                sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}")
+            sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}")
         else:
             sftp.client.remove(filename)
 
