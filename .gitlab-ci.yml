@@ -16,22 +16,30 @@ variables:
   TXM_HERMES_URL: "http://localhost"
   TXM_AAD_TENANT_ID: ""
 
-test:pytest: &test
+test:complexity: &test
   stage: test
+  variables:
+    PIPENV_PYPI_MIRROR: http://172.17.0.1:8080/simple/
   before_script:
     - pipenv install --dev --system --deploy --ignore-pipfile
     - pip freeze
   script:
+    - xenon --max-average A --max-modules B --max-absolute B .
+
+test:pytest:
+  <<: *test
+  script:
     - alembic upgrade head
-    - pytest --verbose --cov app --cov-report term-missing
+    - pytest --verbose --cov app --cov-report=xml --junitxml=report.xml
   services:
     - postgres:latest
     - redis:latest
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      cobertura: coverage.xml
 
-test:complexity:
-  <<: *test
-  script:
-    - xenon --max-average A --max-modules B --max-absolute B .
 
 test:style:
   <<: *test
