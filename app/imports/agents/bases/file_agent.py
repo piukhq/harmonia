@@ -144,12 +144,14 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         *,
         logger: logging.Logger,
         provider_agent: "FileAgent",
+        archive_path: t.Optional[str] = None,
     ) -> None:
         super().__init__(path, logger=logger)
         self.credentials = credentials
         self.skey = skey
         self.log = reporting.get_logger("sftp-file-source")
         self.provider_agent = provider_agent
+        self.archive_path = archive_path
 
     def provide(self, callback: t.Callable[..., t.Iterable[None]]) -> None:
         with SFTP(self.credentials, self.skey, str(self.path)) as sftp:
@@ -184,7 +186,9 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                         self.archive(
                             f"{self.provider_agent.provider_slug}/{file_attr.filename}",
                             data,
-                            delete_callback=partial(sftp.client.remove, file_attr.filename),
+                            delete_callback=partial(
+                                self.move_delete, sftp, self.path, file_attr.filename, self.archive_path
+                            ),
                             logger=self.log,
                         )
 
@@ -211,6 +215,15 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
             process_type="import",
             slug=provider_slug,
         )
+
+    def move_delete(self, sftp, path: str, filename: str, archive_path: str = None):
+
+        if archive_path:
+            if archive_path not in sftp.client.listdir("/"):
+                sftp.client.mkdir(f"/{archive_path}")
+            sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}")
+        else:
+            sftp.client.remove(filename)
 
 
 class FileAgent(BaseAgent):
