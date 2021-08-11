@@ -14,11 +14,10 @@ from azure.storage.blob import BlobServiceClient
 from kombu import Connection
 from sqlalchemy.orm.session import Session
 
-import settings
-
 from harmonia_fixtures.payment_cards import token_user_info_map
-from harness.providers.registry import import_data_providers
+from harness.providers.registry import import_data_providers, BaseImportDataProvider
 
+import settings
 from app import db
 from app.feeds import ImportFeedTypes
 from app.imports.agents import QueueAgent
@@ -77,34 +76,40 @@ class DataDumper:
 
 
 class SftpDumper(DataDumper, PathConfigMixin):
-    def dump(self, data, *, session: Session):
+    def dump(self, dataset: list[bytes], *, session: Session):
         if self.stdout:
-            print(data)
+            for data in dataset:
+                print(data)
             return
 
         with SFTP(self.agent.sftp_credentials, self.agent.skey, self.get_path(session=session)) as sftp:
-            sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}.csv")
+            for i, data in enumerate(dataset):
+                sftp.client.putfo(BytesIO(data), f"{self.agent.provider_slug}-{datetime.now().isoformat()}-{i}.csv")
 
 
 class BlobDumper(DataDumper, PathConfigMixin):
-    def dump(self, data, *, session: Session):
+    def dump(self, dataset: list[bytes], *, session: Session):
         if self.stdout:
-            print(data)
+            for data in dataset:
+                print(data)
             return
 
         bbs = BlobServiceClient.from_connection_string(settings.BLOB_STORAGE_DSN)
         container_name = settings.BLOB_IMPORT_CONTAINER
-        blob_client = bbs.get_blob_client(
-            container_name,
-            f"{self.get_path(session=session)}{self.agent.provider_slug}-{datetime.now().isoformat()}.csv",
-        )
-        blob_client.upload_blob(data)
+
+        for i, data in enumerate(dataset):
+            blob_client = bbs.get_blob_client(
+                container_name,
+                f"{self.get_path(session=session)}{self.agent.provider_slug}-{datetime.now().isoformat()}-{i}.csv",
+            )
+            blob_client.upload_blob(data)
 
 
 class QueueDumper(DataDumper):
-    def dump(self, data, *, session: Session):
+    def dump(self, dataset: list[list[dict]], *, session: Session):
         if self.stdout:
-            print(data)
+            for data in dataset:
+                print(data)
             return
 
         if self.agent.feed_type in (ImportFeedTypes.AUTH, ImportFeedTypes.SETTLED):
@@ -112,14 +117,65 @@ class QueueDumper(DataDumper):
                 if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
         else:
             raise Exception(f"Unsupported ImportFeedType: {self.agent.feed_type}")
-        logger.info(
-            f"Adding {min((len(data), self.num_payment_tx))} {self.agent.provider_slug} messages to the queue..."
-        )
+
+        data = (message for message_list in dataset for message in message_list)
+
+        logger.info(f"Adding up to {self.num_payment_tx} {self.agent.provider_slug} messages to the queue...")
+
         with Connection(settings.RABBITMQ_DSN, connect_timeout=3) as conn:
             q = conn.SimpleQueue(queue_name)
             for i, message in enumerate(data):
-                if i < self.num_payment_tx:
-                    q.put(message, headers={"X-Provider": self.agent.provider_slug})
+                if i >= self.num_payment_tx:
+                    break
+                q.put(message, headers={"X-Provider": self.agent.provider_slug})
+
+
+def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_size: int) -> list[bytes]:
+    dataset = []
+
+    def produce_file(fixture: dict):
+        dataset.append(data_provider.provide(fixture))
+
+    def make_blank_fixture_users():
+        return [
+            {
+                "loyalty_id": user["loyalty_id"],
+                "token": user["token"],
+                "first_six": user["first_six"],
+                "last_four": user["last_four"],
+                "transactions": [],
+            }
+            for user in fixture["users"]
+        ]
+
+    def make_blank_fixture():
+        return {
+            "agents": fixture["agents"],
+            "payment_provider": fixture["payment_provider"],
+            "users": make_blank_fixture_users(),
+        }
+
+    def reset(fixture: dict):
+        for user in fixture["users"]:
+            user["transactions"] = []
+
+    batch_fixture = make_blank_fixture()
+    batch_counter = 0
+    for user_idx, user in enumerate(fixture["users"]):
+        for transaction in user["transactions"]:
+            batch_fixture["users"][user_idx]["transactions"].append(transaction)
+
+            batch_counter += 1
+            if batch_counter >= batch_size:
+                produce_file(batch_fixture)
+                reset(batch_fixture)
+                batch_counter = 0
+
+    # clear up any stragglers
+    if batch_counter > 0:
+        produce_file(batch_fixture)
+
+    return dataset
 
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
@@ -196,9 +252,21 @@ def get_data_dumper(agent_instance: BaseAgent, dump_to_stdout: bool = False, num
     default=DEFAULT_NUM_TX,
     help=f"Number of payment transactions to make. Default: {DEFAULT_NUM_TX}",
 )
+@click.option(
+    "-b",
+    "--batch-size",
+    type=int,
+    default=DEFAULT_NUM_TX,
+    help=f"File batch size. Default: {DEFAULT_NUM_TX}",
+)
 @click.option("-o", "--stdout", help="dump to stdout and exit", is_flag=True)
 def generate(
-    merchant_slug: str, payment_provider_agent: str, num_merchant_tx: int, num_payment_tx: int, stdout: bool = False
+    merchant_slug: str,
+    payment_provider_agent: str,
+    num_merchant_tx: int,
+    num_payment_tx: int,
+    batch_size: int,
+    stdout: bool = False,
 ):
     logger.info(f"Generating fixture for {merchant_slug} & {payment_provider_agent}...")
     fixture = make_fixture(merchant_slug, payment_provider_agent, num_merchant_tx)
@@ -211,23 +279,22 @@ def generate(
         for agent in fixture["agents"]:
             agent_slug = agent["slug"]
             data_provider = import_data_providers.instantiate(agent_slug)
-            futures[agent_slug] = process_pool.submit(data_provider.provide, fixture)
+            futures[agent_slug] = process_pool.submit(batch_provide, data_provider, fixture, batch_size)
             logger.info(f"Task queued for {agent_slug}.")
 
         logger.info("Waiting for data generation to complete...")
         for agent_slug, future in futures.items():
-            data = future.result()
-            agent_data[agent_slug] = data
+            agent_data[agent_slug] = future.result()
             logger.info(f"{agent_slug} data generation completed.")
 
     with db.session_scope() as session:
-        for agent_slug, data in agent_data.items():
+        for agent_slug, dataset in agent_data.items():
             if not click.confirm(f"\nConfirm {agent_slug} data dump", default=True):
                 break
             logger.info(f"Dumping {agent_slug} data...")
             agent_instance: BaseAgent = import_agents.instantiate(agent_slug)
             dumper = get_data_dumper(agent_instance, num_payment_tx=num_payment_tx, dump_to_stdout=stdout)
-            dumper.dump(data, session=session)
+            dumper.dump(dataset, session=session)
             logger.info(f"Finished dumping {agent_slug} data")
 
 
