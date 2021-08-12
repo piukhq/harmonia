@@ -8,6 +8,7 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.reporting import get_logger
 from app.status import status_monitor
 from app.registry import NoSuchAgent, RegistryConfigurationError
+from app.core.identifier import Identifier
 from app import tasks, models, db
 import settings
 
@@ -249,6 +250,27 @@ class MatchingWorker:
 
         return transaction
 
+    def _ensure_user_identity(self, payment_transaction: models.PaymentTransaction, *, session: db.Session) -> None:
+        if not payment_transaction.user_identity_id:
+            identifier = Identifier()
+
+            try:
+                user_info = identifier.payment_card_user_info(payment_transaction, session=session)
+            except Exception as ex:
+                raise self.RedressError(f"Failed to find a user identity for {payment_transaction}: {repr(ex)}") from ex
+
+            try:
+                identifier.persist_user_identity(payment_transaction, user_info, session=session)
+            except Exception as ex:
+                raise self.RedressError(
+                    f"Failed to persist user identity for {payment_transaction}: {repr(ex)}"
+                ) from ex
+
+        if not payment_transaction.user_identity_id:
+            raise self.RedressError(
+                f"Hermes user info request succeeded however no user info was attached to {payment_transaction}."
+            )
+
     def force_match(self, payment_transaction_id: int, scheme_transaction_id: int, *, session: db.Session):
         """
         Given the IDs of a payment and scheme transaction pair, manually creates a match between them.
@@ -259,6 +281,13 @@ class MatchingWorker:
         payment_transaction = self.find_transaction_for_redress(
             models.PaymentTransaction, payment_transaction_id, session=session
         )
+
+        try:
+            self._ensure_user_identity(payment_transaction, session=session)
+        except Exception as ex:
+            self.log.warning(f"_ensure_user_identity raised {repr(ex)}")
+            raise ex
+
         scheme_transaction = self.find_transaction_for_redress(
             models.SchemeTransaction, scheme_transaction_id, session=session
         )
