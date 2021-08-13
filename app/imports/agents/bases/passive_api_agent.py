@@ -8,7 +8,7 @@ import settings
 from app import db, utils
 from app.api import utils as api_utils
 from app.api.auth import auth_decorator
-from app.imports.agents import BaseAgent
+from app.imports.agents.bases.base import BaseAgent
 
 requires_auth = auth_decorator()
 

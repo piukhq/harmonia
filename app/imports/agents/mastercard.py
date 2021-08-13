@@ -9,7 +9,9 @@ from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
+from app.imports.agents.bases.base import PaymentTransactionFields
+from app.imports.agents.bases.file_agent import FileAgent
+from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"

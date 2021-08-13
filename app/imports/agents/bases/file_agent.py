@@ -14,7 +14,7 @@ from azure.storage.blob import BlobServiceClient
 
 import settings
 from app import config, db, models, reporting, retry, tasks
-from app.imports.agents import BaseAgent
+from app.imports.agents.bases.base import BaseAgent
 from app.prometheus import bink_prometheus
 from app.scheduler import CronScheduler
 from app.service.sftp import SFTP, SFTPCredentials

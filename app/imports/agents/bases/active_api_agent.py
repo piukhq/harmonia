@@ -4,7 +4,7 @@ import marshmallow
 import requests
 
 from app import db
-from app.imports.agents import BaseAgent
+from app.imports.agents.bases.base import BaseAgent
 from app.scheduler import CronScheduler
 
 

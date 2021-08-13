@@ -25,7 +25,7 @@ def define_schema(schema_class: t.Type) -> t.Type:
 
 
 def register_import_agent_routes(app: flask.Flask) -> None:
-    from app.imports.agents import PassiveAPIAgent
+    from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
     from app.imports.agents.registry import import_agents
 
     for slug in import_agents._entries:
