@@ -46,7 +46,7 @@ test:style:
   script:
     - flake8
     - black --check .
-    - isort --check --diff .
+    - isort --check --diff --color .
 
 test:type-check:
   <<: *test

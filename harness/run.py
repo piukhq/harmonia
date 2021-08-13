@@ -33,10 +33,10 @@ with mocked_auth_decorator():
     import settings
     from app import db, encryption, feeds, models, tasks
     from app.exports.agents import BatchExportAgent, export_agents
-    from app.imports.agents.bases.base import BaseAgent
     from app.imports.agents.bases.active_api_agent import ActiveAPIAgent
-    from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
+    from app.imports.agents.bases.base import BaseAgent
     from app.imports.agents.bases.file_agent import FileAgent
+    from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
     from app.imports.agents.bases.queue_agent import QueueAgent
     from app.imports.agents.registry import import_agents
     from app.registry import NoSuchAgent
