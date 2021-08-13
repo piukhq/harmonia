@@ -1,6 +1,5 @@
-import typing as t
 import socket
-from redis.exceptions import WatchError
+import typing as t
 from logging import Logger
 from time import sleep
 from uuid import uuid4
@@ -9,10 +8,11 @@ import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.util import undefined
+from redis.exceptions import WatchError
 
-from app.reporting import get_logger
-from app import db
 import settings
+from app import db
+from app.reporting import get_logger
 
 
 def is_leader(lock_name: str, *, hostname=None):

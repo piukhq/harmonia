@@ -5,9 +5,9 @@ Revises: dfd33f24559d
 Create Date: 2020-06-09 09:55:22.670965+00:00
 
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "fba8c235398c"
 down_revision = "dfd33f24559d"

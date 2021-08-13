@@ -5,8 +5,8 @@ import pendulum
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.query import Query
 
+from app import db, models
 from app.reporting import get_logger
-from app import models, db
 
 
 class MatchResult(t.NamedTuple):

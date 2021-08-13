@@ -1,17 +1,16 @@
 import typing as t
 
-import sentry_sdk
 import pendulum
+import sentry_sdk
 
-from app.matching.agents.registry import matching_agents
+import settings
+from app import db, models, tasks
+from app.core.identifier import Identifier
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
+from app.matching.agents.registry import matching_agents
+from app.registry import NoSuchAgent, RegistryConfigurationError
 from app.reporting import get_logger
 from app.status import status_monitor
-from app.registry import NoSuchAgent, RegistryConfigurationError
-from app.core.identifier import Identifier
-from app import tasks, models, db
-import settings
-
 
 TransactionType = t.TypeVar("TransactionType", models.PaymentTransaction, models.SchemeTransaction)
 

@@ -1,10 +1,10 @@
 import typing as t
 from contextlib import ExitStack, contextmanager
-from requests import RequestException, Response
 
-import pendulum
 import humanize
+import pendulum
 import sentry_sdk
+from requests import RequestException, Response
 
 from app import db, models
 from app.exports.agents import BaseAgent

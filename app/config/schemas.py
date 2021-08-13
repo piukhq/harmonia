@@ -1,5 +1,6 @@
-from app.api.app import define_schema
 from marshmallow import Schema, fields
+
+from app.api.app import define_schema
 
 
 @define_schema

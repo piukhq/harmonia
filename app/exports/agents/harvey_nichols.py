@@ -1,10 +1,9 @@
-import pendulum
-from requests import Response, RequestException
-
-import settings
 import typing as t
 
+import pendulum
+from requests import RequestException, Response
 
+import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent

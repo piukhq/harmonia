@@ -3,13 +3,12 @@ from enum import Enum
 import sqlalchemy as s
 from sqlalchemy.dialects import postgresql as psql
 
-from app.db import Base, ModelMixin, auto_repr, auto_str
-from app.encryption import decrypt_credentials
-
 # import other module's models here to be recognised by alembic.
 from app.config.models import ConfigItem  # noqa
-from app.imports.models import ImportTransaction, ImportFileLog  # noqa
-from app.exports.models import PendingExport, ExportTransaction, FileSequenceNumber  # noqa
+from app.db import Base, ModelMixin, auto_repr, auto_str
+from app.encryption import decrypt_credentials
+from app.exports.models import ExportTransaction, FileSequenceNumber, PendingExport  # noqa
+from app.imports.models import ImportFileLog, ImportTransaction  # noqa
 
 
 @auto_repr

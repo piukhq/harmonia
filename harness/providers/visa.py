@@ -3,8 +3,8 @@ from datetime import datetime
 
 import pendulum
 
-from harness.providers.base import BaseImportDataProvider
 from app.currency import to_pounds
+from harness.providers.base import BaseImportDataProvider
 
 # field with a fixed length
 WidthField = t.Tuple[t.Any, int]

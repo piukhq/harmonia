@@ -1,12 +1,11 @@
 import contextlib
-import secrets
 import inspect
-
+import secrets
 from functools import partial
 from unittest import mock
 
-from flask import url_for
 import pytest
+from flask import url_for
 
 from app.config import config, models
 

@@ -3,12 +3,13 @@ import threading
 import time
 import typing as t
 import urllib.error
-from contextlib import contextmanager, ExitStack
+from contextlib import ExitStack, contextmanager
+
+from prometheus_client import Counter, Gauge, Histogram, push_to_gateway
+from prometheus_client.registry import REGISTRY
 
 import settings
 from app.reporting import get_logger
-from prometheus_client import Counter, Gauge, Histogram, push_to_gateway
-from prometheus_client.registry import REGISTRY
 
 logger = get_logger(__name__)
 

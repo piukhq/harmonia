@@ -1,10 +1,8 @@
-import settings
-
-from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
+from azure.storage.blob import BlobServiceClient
 
+import settings
 from app import reporting
-
 
 log = reporting.get_logger("blob-storage")
 

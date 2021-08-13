@@ -1,8 +1,9 @@
 import requests
-import settings
 from soteria.configuration import Configuration
-from app.reporting import get_logger
+
+import settings
 from app.core.requests_retry import requests_retry_session
+from app.reporting import get_logger
 
 log = get_logger("bpl")
 

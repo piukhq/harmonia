@@ -1,6 +1,6 @@
 import sqlalchemy as s
 
-from app.db import Base, auto_repr, ModelMixin
+from app.db import Base, ModelMixin, auto_repr
 
 
 @auto_repr

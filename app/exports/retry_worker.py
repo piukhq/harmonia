@@ -1,5 +1,5 @@
-import pendulum
 import humanize
+import pendulum
 
 from app import db, models, tasks
 from app.reporting import get_logger

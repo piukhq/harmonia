@@ -1,11 +1,11 @@
-from flask import request, Blueprint
 import marshmallow
+from flask import Blueprint, request
 
-from app.db import session_scope
-from app.config import config, schemas, ConfigKeyError
-from app.api.utils import expects_json, ResponseType
-from app.api.auth import auth_decorator
 import settings
+from app.api.auth import auth_decorator
+from app.api.utils import ResponseType, expects_json
+from app.config import ConfigKeyError, config, schemas
+from app.db import session_scope
 
 api = Blueprint("config_api", __name__, url_prefix=f"{settings.URL_PREFIX}/config")
 requires_auth = auth_decorator()

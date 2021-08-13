@@ -1,6 +1,7 @@
-from app.api.app import define_schema
 from marshmallow import Schema, fields
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
+
+from app.api.app import define_schema
 
 
 @define_schema

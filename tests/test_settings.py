@@ -1,7 +1,7 @@
 import os
 from functools import partial
 
-from settings import getenv, delimited_list_conv
+from settings import delimited_list_conv, getenv
 
 
 def test_getenv_delimited_list_conv():

@@ -1,13 +1,14 @@
-import json
 import inspect
+import json
 import typing as t
+
 import pendulum
 
 from app import db
+from app.config import KEY_PREFIX, Config, ConfigValue
+from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
-from app.config import KEY_PREFIX, ConfigValue, Config
-from app.currency import to_pennies
 
 PROVIDER_SLUG = "cooperative"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"

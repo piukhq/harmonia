@@ -1,9 +1,9 @@
 import hashlib
+
 import pytest
 import responses
 
 from app.service.acteol import ActeolAPI
-
 
 TEST_ACTEOL_URL = "http://acteol.test/"
 

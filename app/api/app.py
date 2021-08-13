@@ -1,14 +1,13 @@
 import typing as t
 
-from apispec import APISpec
-from apispec_webframeworks.flask import FlaskPlugin
-from apispec.ext.marshmallow import MarshmallowPlugin
 import flask
 import flask_cors
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_webframeworks.flask import FlaskPlugin
 
-from app.version import __version__
 import settings
-
+from app.version import __version__
 
 spec = APISpec(
     title="Transaction Matching API",
@@ -26,8 +25,8 @@ def define_schema(schema_class: t.Type) -> t.Type:
 
 
 def register_import_agent_routes(app: flask.Flask) -> None:
-    from app.imports.agents.registry import import_agents
     from app.imports.agents import PassiveAPIAgent
+    from app.imports.agents.registry import import_agents
 
     for slug in import_agents._entries:
         agent = import_agents.instantiate(slug)
@@ -50,9 +49,9 @@ def create_app() -> flask.Flask:
 
     from app.api.views import api as core_api
     from app.config.views import api as config_api
-    from app.status.views import api as status_api
-    from app.mids.views import api as mids_api
     from app.matching.views import api as matching_api
+    from app.mids.views import api as mids_api
+    from app.status.views import api as status_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)

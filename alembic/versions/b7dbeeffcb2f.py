@@ -5,11 +5,10 @@ Revises: 0013391ff886
 Create Date: 2020-12-15 13:57:34.440542+00:00
 
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 from app import config
-
 
 revision = "b7dbeeffcb2f"
 down_revision = "0013391ff886"

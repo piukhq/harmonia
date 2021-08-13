@@ -1,13 +1,12 @@
-import time
 import re
+import time
 
 import humanize
 import pendulum
 
-from app.reporting import get_logger
-from app.db import redis, redis_scan
 import settings
-
+from app.db import redis, redis_scan
+from app.reporting import get_logger
 
 log = get_logger("status-monitor")
 

@@ -1,11 +1,11 @@
-import requests
-import marshmallow
-
 from functools import cached_property
 
+import marshmallow
+import requests
+
+from app import db
 from app.imports.agents import BaseAgent
 from app.scheduler import CronScheduler
-from app import db
 
 
 class ActiveAPIAgent(BaseAgent):

@@ -1,6 +1,6 @@
-import settings
-
 from soteria.configuration import Configuration
+
+import settings
 
 
 class SoteriaConfigMixin:

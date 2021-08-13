@@ -9,14 +9,14 @@ import pendulum
 from soteria.encryption import PGP
 
 import settings
-from app import models, db, xml_utils
+from app import db, models, xml_utils
 from app.config import Config
-from app.soteria import SoteriaConfigMixin
-from app.utils import missing_property
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
 from app.exports.sequencing import Sequencer
 from app.service import atlas
 from app.service.sftp import SFTP, SFTPCredentials
+from app.soteria import SoteriaConfigMixin
+from app.utils import missing_property
 from harness.exporters.sftp_mock import MockSFTP
 
 

@@ -1,7 +1,7 @@
 import typing as t
 
-from sqlalchemy.orm.query import Query
 import pendulum
+from sqlalchemy.orm.query import Query
 
 from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult

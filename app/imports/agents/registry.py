@@ -1,6 +1,6 @@
-from app.registry import Registry
-from app.imports.agents import BaseAgent
 import settings
+from app.imports.agents import BaseAgent
+from app.registry import Registry
 
 import_agents = Registry[BaseAgent]()
 import_agents.add("amex", "app.imports.agents.amex.Amex")

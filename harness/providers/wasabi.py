@@ -4,6 +4,7 @@ import typing as t
 from random import randint
 
 import pendulum
+
 from app.currency import to_pounds
 from app.imports.agents.wasabi import DATE_FORMAT as IMPORT_DATE_FORMAT
 from app.imports.agents.wasabi import TIME_FORMAT as IMPORT_TIME_FORMAT

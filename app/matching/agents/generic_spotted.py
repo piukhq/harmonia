@@ -1,6 +1,6 @@
 import typing as t
 
-from app import models, db
+from app import db, models
 from app.matching.agents import BaseMatchingAgent, MatchResult
 
 

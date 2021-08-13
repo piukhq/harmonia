@@ -1,18 +1,13 @@
 import typing as t
-
 from functools import cached_property
 
 import rq
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-)
+from tenacity import retry, stop_after_attempt, wait_exponential
 
-from app import models, db, reporting, config
-from app.core import import_director, matching_worker, export_director, identifier
-from app.prometheus import prometheus_push_manager
 import settings
+from app import config, db, models, reporting
+from app.core import export_director, identifier, import_director, matching_worker
+from app.prometheus import prometheus_push_manager
 
 log = reporting.get_logger("tasks")
 

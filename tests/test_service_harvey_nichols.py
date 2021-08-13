@@ -1,11 +1,10 @@
+from unittest import mock
+
 import pytest
 import requests
 import responses
 
-from unittest import mock
-
 from app.service.harvey_nichols import HarveyNicholsAPI
-
 
 TEST_HARVEY_NICHOLS_URL = "http://harveynichols.test"
 

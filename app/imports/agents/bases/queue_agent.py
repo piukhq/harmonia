@@ -1,5 +1,4 @@
 import typing as t
-
 from functools import cached_property
 
 import kombu.mixins

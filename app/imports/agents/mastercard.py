@@ -1,16 +1,15 @@
 import inspect
 import typing as t
-from uuid import uuid4
 from hashlib import sha256
+from uuid import uuid4
 
 import pendulum
 
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
-from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, QueueAgent, PaymentTransactionFields
 from app.currency import to_pennies
-
+from app.feeds import ImportFeedTypes
+from app.imports.agents import FileAgent, PaymentTransactionFields, QueueAgent
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"

@@ -1,5 +1,4 @@
 import pendulum
-
 from freezegun import freeze_time
 
 import settings

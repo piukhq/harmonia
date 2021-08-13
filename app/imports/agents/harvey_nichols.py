@@ -1,15 +1,15 @@
-import typing as t
 import inspect
 import json
+import typing as t
+
 import pendulum
 
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
+from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
 from app.imports.agents import FileAgent, SchemeTransactionFields
-from app.currency import to_pennies
 from app.service.hermes import PaymentProviderSlug
-
 
 PROVIDER_SLUG = "harvey-nichols"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"

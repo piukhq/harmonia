@@ -1,10 +1,9 @@
 import requests
 import sentry_sdk
 
+from app import db, models, tasks
 from app.reporting import get_logger
-from app import models, db, tasks
 from app.service.hermes import hermes
-
 
 log = get_logger("identifier")
 

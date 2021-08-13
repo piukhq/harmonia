@@ -1,9 +1,8 @@
 from enum import Enum
 
+import settings
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
-import settings
-
 
 log = get_logger("hermes")
 

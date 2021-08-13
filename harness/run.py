@@ -1,25 +1,25 @@
-import time
 import json
+import time
 import typing as t
 from contextlib import contextmanager
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from uuid import uuid4
-from enum import Enum
 
 import click
-import toml
 import pendulum
 import rq
 import soteria.configuration
 import soteria.security
+import toml
 from flask import Flask
 from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
 
-from app.prometheus import prometheus_thread
 from app.api import auth
+from app.prometheus import prometheus_thread
 
 
 @contextmanager
@@ -31,16 +31,9 @@ def mocked_auth_decorator():
 
 with mocked_auth_decorator():
     import settings
-    from app import db, encryption, models, tasks, feeds
+    from app import db, encryption, feeds, models, tasks
     from app.exports.agents import BatchExportAgent, export_agents
-    from app.imports.agents import (
-        ActiveAPIAgent,
-        BaseAgent,
-        FileAgent,
-        PassiveAPIAgent,
-        QueueAgent,
-        import_agents,
-    )
+    from app.imports.agents import ActiveAPIAgent, BaseAgent, FileAgent, PassiveAPIAgent, QueueAgent, import_agents
     from app.registry import NoSuchAgent
     from app.service.hermes import hermes
     from harness.providers.registry import import_data_providers

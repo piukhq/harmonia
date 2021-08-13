@@ -1,5 +1,5 @@
-from app.registry import Registry
 from app.matching.agents.base import BaseMatchingAgent
+from app.registry import Registry
 
 matching_agents = Registry[BaseMatchingAgent]()
 matching_agents.add("bink-loyalty", "app.matching.agents.generic_loyalty.GenericLoyalty")

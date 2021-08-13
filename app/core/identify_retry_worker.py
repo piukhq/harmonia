@@ -1,6 +1,6 @@
 from functools import cached_property
-from app import scheduler, reporting, config, models, db, tasks
 
+from app import config, db, models, reporting, scheduler, tasks
 
 SCHEDULE_KEY = f"{config.KEY_PREFIX}identify-retry.schedule"
 

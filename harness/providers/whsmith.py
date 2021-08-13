@@ -1,6 +1,5 @@
 import csv
 import io
-
 from uuid import uuid4
 
 import pendulum
