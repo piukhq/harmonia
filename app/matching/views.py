@@ -1,12 +1,11 @@
-from flask import request, Blueprint
 import marshmallow
+from flask import Blueprint, request
 
-from app import db
-from app.matching import schemas
-from app.core.matching_worker import MatchingWorker
-from app.api.auth import auth_decorator
 import settings
-
+from app import db
+from app.api.auth import auth_decorator
+from app.core.matching_worker import MatchingWorker
+from app.matching import schemas
 
 api = Blueprint("matching_api", __name__, url_prefix=f"{settings.URL_PREFIX}/matching")
 requires_auth = auth_decorator()

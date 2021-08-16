@@ -1,8 +1,8 @@
 import pytest
 from redis import Redis
 
-from app.status import StatusMonitor
 import settings
+from app.status import StatusMonitor
 
 
 @pytest.fixture

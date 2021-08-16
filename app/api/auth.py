@@ -5,7 +5,6 @@ from azure_oidc.integrations.flask_decorator import FlaskOIDCAuthDecorator
 
 import settings
 
-
 oidc_config = OIDCConfig(
     base_url=f"https://login.microsoftonline.com/{settings.AAD_TENANT_ID}/v2.0",
     issuer=f"https://sts.windows.net/{settings.AAD_TENANT_ID}/",

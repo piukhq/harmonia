@@ -1,13 +1,13 @@
-from pathlib import Path
-import typing as t
 import logging
 import os
+import typing as t
+from pathlib import Path
 
-from sentry_sdk.integrations.flask import FlaskIntegration
-from sentry_sdk.integrations.rq import RqIntegration
-from sentry_sdk.integrations.redis import RedisIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.rq import RqIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 
 class ConfigVarRequiredError(Exception):

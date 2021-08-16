@@ -1,6 +1,6 @@
 import typing as t
 
-from app import models, tasks, db
+from app import db, models, tasks
 from app.reporting import get_logger
 from app.status import status_monitor
 

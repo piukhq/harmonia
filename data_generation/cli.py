@@ -1,21 +1,16 @@
 import random
 import typing as t
 import uuid
-
 from concurrent.futures import ProcessPoolExecutor
-
-from io import BytesIO
 from datetime import datetime, timedelta
+from io import BytesIO
 
 import click
 import pendulum
-
 from azure.storage.blob import BlobServiceClient
+from harmonia_fixtures.payment_cards import token_user_info_map
 from kombu import Connection
 from sqlalchemy.orm.session import Session
-
-from harmonia_fixtures.payment_cards import token_user_info_map
-from harness.providers.registry import import_data_providers, BaseImportDataProvider
 
 import settings
 from app import db
@@ -26,6 +21,7 @@ from app.imports.agents.bases.file_agent import FileAgent, SftpFileSource
 from app.imports.agents.registry import import_agents
 from app.reporting import get_logger
 from app.service.sftp import SFTP
+from harness.providers.registry import BaseImportDataProvider, import_data_providers
 
 DEFAULT_NUM_TX = 10000
 PAYMENT_AGENT_TO_PROVIDER_SLUG = {

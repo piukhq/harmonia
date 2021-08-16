@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import pendulum
 
-from harness.providers.base import BaseImportDataProvider
 from app.currency import to_pounds
+from harness.providers.base import BaseImportDataProvider
 
 
 def pipe(*args):

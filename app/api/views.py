@@ -1,7 +1,7 @@
 import flask
 
-from app.api.app import spec
 import settings
+from app.api.app import spec
 
 api = flask.Blueprint("core_api", __name__, url_prefix=settings.URL_PREFIX)
 

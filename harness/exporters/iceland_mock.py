@@ -1,6 +1,6 @@
-import requests
-
 from unittest.mock import Mock
+
+import requests
 from requests.models import Response
 
 

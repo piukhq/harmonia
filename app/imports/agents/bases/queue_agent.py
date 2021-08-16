@@ -1,12 +1,11 @@
 import typing as t
-
 from functools import cached_property
 
 import kombu.mixins
 
 import settings
 from app import db
-from app.imports.agents import BaseAgent
+from app.imports.agents.bases.base import BaseAgent
 
 
 class QueueAgent(BaseAgent):

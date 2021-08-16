@@ -1,10 +1,11 @@
-import requests
+from unittest.mock import Mock
 
-from app.reporting import get_logger
+import requests
+from requests.models import Response
+
 from app.core.requests_retry import requests_retry_session
 from app.exports.agents import AgentExportData
-from unittest.mock import Mock
-from requests.models import Response
+from app.reporting import get_logger
 
 log = get_logger("harvey-nichols")
 

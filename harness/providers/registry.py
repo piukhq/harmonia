@@ -1,7 +1,6 @@
+import settings
 from app.registry import Registry
 from harness.providers.base import BaseImportDataProvider
-import settings
-
 
 import_data_providers = Registry[BaseImportDataProvider]()
 import_data_providers.add("bink-loyalty", "harness.providers.bink_loyalty.BinkLoyalty")

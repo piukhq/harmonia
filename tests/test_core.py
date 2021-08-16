@@ -1,5 +1,4 @@
 import pytest
-
 from requests.exceptions import ConnectionError
 
 from app.core.requests_retry import requests_retry_session

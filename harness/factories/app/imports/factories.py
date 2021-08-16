@@ -1,4 +1,5 @@
 import factory
+
 from app.imports.models import ImportTransaction
 from harness.factories.common import generic, session
 

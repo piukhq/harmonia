@@ -8,7 +8,7 @@ from uuid import uuid4
 from soteria.security import get_security_agent
 
 import settings
-from app import models, db
+from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.encryption import decrypt_credentials
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent

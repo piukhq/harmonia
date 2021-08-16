@@ -1,11 +1,11 @@
-import settings
-import pendulum
-import requests
 import typing as t
 
+import pendulum
+import requests
 
-from app.reporting import get_logger
+import settings
 from app import models
+from app.reporting import get_logger
 from app.service import queue
 
 log = get_logger("atlas")

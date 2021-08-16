@@ -1,5 +1,5 @@
 from app import models
-from app.config import Config, ConfigValue, KEY_PREFIX
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.ecrebo import Ecrebo
 
 PROVIDER_SLUG = "whsmith-rewards"

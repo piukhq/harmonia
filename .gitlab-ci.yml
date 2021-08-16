@@ -45,12 +45,13 @@ test:style:
   <<: *test
   script:
     - flake8
-    - black --line-length 120 --check .
+    - black --check .
+    - isort --check --diff --color .
 
 test:type-check:
   <<: *test
   script:
-    - mypy --ignore-missing-imports app
+    - mypy app
 
 build:develop: &build
   stage: build

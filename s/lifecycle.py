@@ -1,12 +1,11 @@
 #! /usr/bin/env python3
-import typing as t
 import inspect
+import typing as t
 
 import click
 
-from app.db import session, Base
-from app.models import ImportTransaction, SchemeTransaction, PaymentTransaction, MatchedTransaction, ExportTransaction
-
+from app.db import Base, session
+from app.models import ExportTransaction, ImportTransaction, MatchedTransaction, PaymentTransaction, SchemeTransaction
 
 BOX_WIDTH = 60
 

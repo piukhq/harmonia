@@ -1,6 +1,6 @@
-from app.registry import Registry
-from app.imports.agents import BaseAgent
 import settings
+from app.imports.agents.bases.base import BaseAgent
+from app.registry import Registry
 
 import_agents = Registry[BaseAgent]()
 import_agents.add("amex", "app.imports.agents.amex.Amex")
@@ -14,8 +14,6 @@ import_agents.add("harvey-nichols", "app.imports.agents.harvey_nichols.HarveyNic
 import_agents.add("iceland-bonus-card", "app.imports.agents.iceland.Iceland")
 import_agents.add("wasabi-club", "app.imports.agents.wasabi.Wasabi")
 import_agents.add("whsmith-rewards", "app.imports.agents.whsmith.WhSmith")
-import_agents.add("bink-loyalty", "app.imports.agents.bink_loyalty.BinkLoyalty")
-import_agents.add("bink-payment", "app.imports.agents.bink_payment.BinkPayment")
 
 # TEMPORARY: remove when TS44 feed is deprecated.
 if settings.MASTERCARD_TGX2_ENABLED:

@@ -1,7 +1,7 @@
 import factory
+
 from app import models
 from harness.factories.common import generic, session
-
 
 # Pre-fetch user_identity_ids for the PaymentTransactionFactory. At least one user_identity record will need to exist
 # but this seems fair as it is a foreign key for payment_transaction.user_identity_id

@@ -1,5 +1,5 @@
-from app.registry import Registry
 from app.exports.agents import BaseAgent
+from app.registry import Registry
 
 export_agents = Registry[BaseAgent]()
 export_agents.add("bink-loyalty", "app.exports.agents.bink_loyalty.BinkLoyalty")

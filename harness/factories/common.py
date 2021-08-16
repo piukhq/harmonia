@@ -2,10 +2,11 @@ import datetime
 import json
 import random
 
-from app.db import SessionMaker
 from mimesis import Generic
 from mimesis.providers.base import BaseProvider as mimesis_baseprovider
 from sqlalchemy.orm import scoped_session
+
+from app.db import SessionMaker
 
 session = scoped_session(SessionMaker)
 

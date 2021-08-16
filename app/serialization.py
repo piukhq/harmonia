@@ -1,5 +1,5 @@
-from marshmallow.fields import DateTime
 import pendulum
+from marshmallow.fields import DateTime
 
 
 class PendulumField(DateTime):

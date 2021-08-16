@@ -1,7 +1,7 @@
-import pendulum
-
-from requests.models import Response
 from unittest import mock
+
+import pendulum
+from requests.models import Response
 
 from app.service import atlas
 

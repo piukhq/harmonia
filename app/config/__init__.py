@@ -1,1 +1,1 @@
-from .config import get, all_keys, ConfigKeyError, Config, ConfigValue, KEY_PREFIX  # noqa
+from .config import KEY_PREFIX, Config, ConfigKeyError, ConfigValue, all_keys, get  # noqa

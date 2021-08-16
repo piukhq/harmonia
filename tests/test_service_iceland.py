@@ -3,7 +3,6 @@ import responses
 
 from app.service.iceland import IcelandAPI
 
-
 TEST_ICELAND_URL = "http://iceland.test/mock/any"
 
 json = ""

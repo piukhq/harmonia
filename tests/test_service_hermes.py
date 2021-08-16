@@ -1,10 +1,8 @@
 import pytest
-
 import responses
+
 import settings
-
 from app.service.hermes import Hermes
-
 
 TEST_HERMES_URL = "http://hermes.test"
 

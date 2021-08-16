@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app import db, models
-from app.exports.agents import SingularExportAgent, AgentExportData, AgentExportDataOutput
+from app.exports.agents import AgentExportData, AgentExportDataOutput, SingularExportAgent
 
 
 class BinkLoyalty(SingularExportAgent):

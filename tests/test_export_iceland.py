@@ -1,8 +1,8 @@
 import responses
 
-from app.exports.agents.iceland import Iceland
 import settings
 from app import encryption
+from app.exports.agents.iceland import Iceland
 
 settings.EUROPA_URL = "http://europa"
 settings.ATLAS_URL = "http://atlas"

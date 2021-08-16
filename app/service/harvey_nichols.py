@@ -1,9 +1,9 @@
 import requests
-import settings
-
-from app.reporting import get_logger
-from app.core.requests_retry import requests_retry_session
 from user_auth_token.core import UserTokenStore
+
+import settings
+from app.core.requests_retry import requests_retry_session
+from app.reporting import get_logger
 
 log = get_logger("harvey-nichols")
 

@@ -1,10 +1,10 @@
-import pytest
 import pendulum
+import pytest
 import responses
 
+import settings
 from app import db, models
 from app.core.matching_worker import MatchingWorker
-import settings
 
 
 @pytest.fixture

@@ -1,20 +1,20 @@
 import inspect
 import json
 import typing as t
-import settings
-import pendulum
-
 from uuid import uuid4
+
+import pendulum
 from hashids import Hashids
 from soteria.security import get_security_agent
 
-from app import models, db
+import settings
+from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
+from app.sequences import batch
 from app.service import atlas
 from app.service.iceland import IcelandAPI
 from app.soteria import SoteriaConfigMixin
-from app.sequences import batch
 from harness.exporters.iceland_mock import IcelandMockAPI
 
 PROVIDER_SLUG = "iceland-bonus-card"

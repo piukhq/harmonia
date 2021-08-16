@@ -1,16 +1,18 @@
 from __future__ import with_statement
-from logging.config import fileConfig
-import sys
+
 import os
+import sys
+from logging.config import fileConfig
+
+from sqlalchemy import create_engine
 
 from alembic import context
-from sqlalchemy import create_engine
 
 sys.path.append(os.getcwd())
 
+import settings  # noqa
 from app.db import Base  # noqa
 from app.models import *  # noqa
-import settings  # noqa
 
 # setup default sqlalchemy configuration (loggers et cetera.)
 fileConfig(context.config.config_file_name)

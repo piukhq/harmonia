@@ -1,10 +1,10 @@
 from flask import Blueprint
 
-from app import db, models
-from app.status import status_monitor, schemas
-from app.api.utils import ResponseType, view_session
-from app.api.auth import auth_decorator
 import settings
+from app import db, models
+from app.api.auth import auth_decorator
+from app.api.utils import ResponseType, view_session
+from app.status import schemas, status_monitor
 
 api = Blueprint("status_api", __name__, url_prefix=f"{settings.URL_PREFIX}/status")
 requires_auth = auth_decorator()

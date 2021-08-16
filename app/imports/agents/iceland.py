@@ -10,7 +10,8 @@ from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import FileAgent, SchemeTransactionFields
+from app.imports.agents.bases.base import SchemeTransactionFields
+from app.imports.agents.bases.file_agent import FileAgent
 from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"

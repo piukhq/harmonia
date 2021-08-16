@@ -3,10 +3,10 @@ import typing as t
 from redis.exceptions import RedisError
 from sqlalchemy.orm.session import Session
 
-from app.config import models
-from app.db import get_or_create, run_query, redis, redis_scan
-from app.reporting import get_logger
 import settings
+from app.config import models
+from app.db import get_or_create, redis, redis_scan, run_query
+from app.reporting import get_logger
 
 log = get_logger("config")
 

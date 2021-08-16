@@ -1,19 +1,18 @@
 import typing as t
-from uuid import uuid4
 from contextlib import contextmanager
+from uuid import uuid4
 
 import sqlalchemy as s
-from sqlalchemy.orm import Session
 from redis import Redis
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.exc import NoResultFound  # noqa
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm.exc import NoResultFound  # noqa
 from sqlalchemy.pool import NullPool
 
-from app import postgres, encoding
-from app.reporting import get_logger
 import settings
+from app import encoding, postgres
+from app.reporting import get_logger
 
 engine = s.create_engine(
     settings.POSTGRES_DSN,

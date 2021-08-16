@@ -4,7 +4,8 @@ from hashlib import sha256
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import ImportFeedTypes
-from app.imports.agents import PaymentTransactionFields, QueueAgent
+from app.imports.agents.bases.base import PaymentTransactionFields
+from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"

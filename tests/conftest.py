@@ -1,5 +1,4 @@
 import pytest
-
 from sqlalchemy.orm import Session
 
 from app import db

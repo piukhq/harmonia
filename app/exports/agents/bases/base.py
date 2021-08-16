@@ -1,7 +1,7 @@
 import json
 import typing as t
-from dataclasses import dataclass
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 import pendulum
 import sentry_sdk

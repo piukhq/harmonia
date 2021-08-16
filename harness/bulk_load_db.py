@@ -3,8 +3,8 @@ import typing as t
 from concurrent.futures import ProcessPoolExecutor
 
 import click
-
 import factory
+
 from app import db
 from harness.factories.app import factories as app_factories
 from harness.factories.app.exports import factories as exports_factories

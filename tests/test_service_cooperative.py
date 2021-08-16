@@ -1,9 +1,8 @@
 import pytest
-import responses
 import requests
+import responses
 
 from app.service.cooperative import CooperativeAPI
-
 
 TEST_COOPERATIVE_URL = "http://cooperative.test/mock/any"
 

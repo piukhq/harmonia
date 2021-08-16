@@ -3,15 +3,14 @@ import string
 import typing as t
 from functools import lru_cache
 
-from sqlalchemy.dialects.postgresql import insert
-from flask import Blueprint, request
 import werkzeug
+from flask import Blueprint, request
+from sqlalchemy.dialects.postgresql import insert
 
-from app import models, db, reporting
-from app.api.utils import view_session
-from app.api.auth import auth_decorator
 import settings
-
+from app import db, models, reporting
+from app.api.auth import auth_decorator
+from app.api.utils import view_session
 
 api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
 requires_auth = auth_decorator()

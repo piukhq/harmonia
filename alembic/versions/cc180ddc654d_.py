@@ -5,9 +5,9 @@ Revises: 97aabf7b110b
 Create Date: 2020-05-15 08:57:46.115349+00:00
 
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "cc180ddc654d"
 down_revision = "97aabf7b110b"

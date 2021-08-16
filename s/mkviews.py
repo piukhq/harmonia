@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 from app.db import session
 
-
 merchants_query = """
 SELECT
     mi.mid,

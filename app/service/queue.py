@@ -4,7 +4,6 @@ from kombu import Connection
 
 import settings
 
-
 log = logging.getLogger(__name__)
 
 
