@@ -35,6 +35,7 @@ class Hermes:
         log.debug(f"Posting {name} request with parameters: {body}.")
         url = f"{self.base_url}{endpoint}"
         response = self.session.post(url, json=body, headers=self._headers)
+        log.debug(f"Response to {name} request: {response.status_code} {response.reason}")
         response.raise_for_status()
         return response.json()
 
