@@ -64,3 +64,6 @@ types-redis = "*"
 types-requests = "*"
 types-setuptools = "*"
 types-six = "*"
+
+[requires]
+python_version = "3.9"
