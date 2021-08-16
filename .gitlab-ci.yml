@@ -4,7 +4,7 @@ stages:
   - deploy
 
 default:
-  image: ghcr.io/binkhq/python:3.8
+  image: ghcr.io/binkhq/python:3.9
 
 variables:
   POSTGRES_DB: harmonia
