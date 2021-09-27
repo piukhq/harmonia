@@ -19,6 +19,14 @@ docker run \
 	--name txm-redis \
 	redis
 
+p 'creating rabbitmq'
+docker run \
+	-d \
+	-p55672:5672 \
+	-p55673:15672 \
+	--name txm-rabbitmq \
+	rabbitmq:3-management
+
 p 'giving postgres a chance to start'
 sleep 3
 
