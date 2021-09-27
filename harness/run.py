@@ -572,7 +572,7 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prom
         if preload > 0:
             preload_data(preload, fixture=fixture, session=session)
 
-    # Start up the Prometheus push thread for pushing metrics
+    # Start up the Prometheus http server for serving metrics
     if with_prometheus:
         prometheus_thread.start()
         click.echo("Prometheus push thread started")

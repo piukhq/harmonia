@@ -4,10 +4,8 @@ from functools import cached_property
 import rq
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-import settings
 from app import config, db, models, reporting
 from app.core import export_director, identifier, import_director, matching_worker
-from app.prometheus import prometheus_push_manager
 
 log = reporting.get_logger("tasks")
 
@@ -131,7 +129,4 @@ def export_singular_transaction(pending_export_id: int) -> None:
     director = export_director.ExportDirector()
 
     with db.session_scope() as session:
-        with prometheus_push_manager(
-            prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY, prometheus_job=settings.PROMETHEUS_JOB
-        ):
-            director.handle_pending_export(pending_export_id, session=session)
+        director.handle_pending_export(pending_export_id, session=session)

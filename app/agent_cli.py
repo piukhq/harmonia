@@ -75,7 +75,7 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
 
             # intentional double negative since the prometheus flag is set by default
             if not no_prometheus:
-                # Start up the Prometheus push thread for pushing metrics
+                # Start up the Prometheus http server
                 prometheus_thread.start()
                 click.echo("Prometheus push thread started")
 

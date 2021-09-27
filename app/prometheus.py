@@ -1,14 +1,20 @@
 import os
 import threading
-import time
 import typing as t
-import urllib.error
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 
-from prometheus_client import Counter, Gauge, Histogram, push_to_gateway
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+    multiprocess,
+)
+from prometheus_client.exposition import ThreadingWSGIServer, _SilentHandler, make_server
 from prometheus_client.registry import REGISTRY
 
-import settings
 from app.reporting import get_logger
 
 logger = get_logger(__name__)
@@ -156,70 +162,25 @@ class BinkPrometheus:
 bink_prometheus = BinkPrometheus()
 
 
-class PrometheusPushThread(threading.Thread):
-    """
-    Thread daemon to push to Prometheus gateway
-    """
+def get_prometheus_thread() -> threading.Thread:
+    def prometheus_app(environ, start_response):
+        registry = REGISTRY
 
-    SLEEP_INTERVAL = 30
-    PUSH_TIMEOUT = 3  # PushGateway should be running in the same pod
+        if os.getenv("PROMETHEUS_MULTIPROC_DIR"):
+            registry = CollectorRegistry()
+            multiprocess.MultiProcessCollector(registry)
 
-    def __init__(self, prometheus_push_gateway: str, prometheus_job: str):
-        # Grouping key should not need pod id as prometheus
-        # should tag that itself
-        self.grouping_key = {"pid": str(os.getpid())}
-        self.prometheus_push_gateway = prometheus_push_gateway
-        self.prometheus_job = prometheus_job
-        super().__init__()
+        header = ("Content-Type", CONTENT_TYPE_LATEST)
+        output = generate_latest(registry)
+        start_response(200, [header])
+        return [output]
 
-    def run(self):
-        time.sleep(10)
-        while True:
-            try:
-                push_to_gateway(
-                    gateway=self.prometheus_push_gateway,
-                    job=self.prometheus_job,
-                    registry=REGISTRY,
-                    grouping_key=self.grouping_key if settings.PROMETHEUS_SEND_PID else None,
-                    timeout=self.PUSH_TIMEOUT,
-                )
-            except (ConnectionRefusedError, urllib.error.URLError):
-                logger.warning("Failed to push metrics, connection refused")
-            except Exception as err:
-                logger.exception("Caught exception whilst posting metrics", exc_info=err)
+    httpd = make_server("", 9100, prometheus_app, ThreadingWSGIServer, handler_class=_SilentHandler)
+    thread = threading.Thread(target=httpd.serve_forever)
+    thread.daemon = True
 
-            time.sleep(self.SLEEP_INTERVAL)
-
-
-def get_prometheus_thread():
-    # The PrometheusPushThread class may well end up in an imported common lib, hence this helper function
-    prometheus_thread = PrometheusPushThread(
-        prometheus_push_gateway=settings.PROMETHEUS_PUSH_GATEWAY,
-        prometheus_job=settings.PROMETHEUS_JOB,
-    )
-    prometheus_thread.daemon = True
-
-    return prometheus_thread
+    return thread
 
 
 # Singleton thread
 prometheus_thread = get_prometheus_thread()
-
-
-@contextmanager
-def prometheus_push_manager(prometheus_push_gateway: str, prometheus_job: str):
-    push_timeout = 3  # PushGateway should be running in the same pod
-    grouping_key = {"pid": str(os.getpid())}
-    logger.debug("Prometheus push manager started")
-
-    try:
-        yield
-    finally:
-        if settings.PUSH_PROMETHEUS_METRICS:
-            push_to_gateway(
-                gateway=prometheus_push_gateway,
-                job=prometheus_job,
-                registry=REGISTRY,
-                grouping_key=grouping_key if settings.PROMETHEUS_SEND_PID else None,
-                timeout=push_timeout,
-            )
