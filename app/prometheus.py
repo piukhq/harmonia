@@ -172,7 +172,7 @@ def get_prometheus_thread() -> threading.Thread:
 
         header = ("Content-Type", CONTENT_TYPE_LATEST)
         output = generate_latest(registry)
-        start_response("200", [header])
+        start_response("200 OK", [header])
         return [output]
 
     httpd = make_server("", 9100, prometheus_app, ThreadingWSGIServer, handler_class=_SilentHandler)
