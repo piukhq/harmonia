@@ -26,7 +26,7 @@ class BatchExportAgent(BaseAgent):
 
     def run(self):
         scheduler = CronScheduler(
-            name="batch-export",
+            name=f"batch-export-{self.provider_slug}",
             schedule_fn=lambda: self.schedule,
             callback=self.callback,
             logger=self.log,  # type: ignore

@@ -17,7 +17,7 @@ class ActiveAPIAgent(BaseAgent):
 
     def run(self):
         scheduler = CronScheduler(
-            name="active-api-agent",
+            name=f"active-api-agent-{self.provider_slug}",
             schedule_fn=lambda: self.schedule,
             callback=self.do_import,
             logger=self.log,  # type: ignore
