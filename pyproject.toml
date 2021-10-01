@@ -11,6 +11,7 @@ line_length = 120
 
 [tool.mypy]
 ignore_missing_imports = true
+no_site_packages = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -13,6 +13,7 @@ from app.imports.exceptions import MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.status import status_monitor
+from app.tracing import TraceManager
 from app.utils import missing_property
 
 
@@ -101,6 +102,9 @@ class BaseAgent:
     def __init__(self) -> None:
         self.log = get_logger(f"import-agent.{self.provider_slug}")
         self.bink_prometheus = bink_prometheus
+        self.tracing = TraceManager(
+            tracer=settings.OPENTRACING_TRACER, component=f"{self.provider_slug}-{self.feed_type.name.lower()}"
+        )
 
     @property
     def provider_slug(self) -> str:
