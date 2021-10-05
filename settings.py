@@ -60,28 +60,31 @@ DEBUG = getenv("TXM_DEBUG", default="false", conv=boolconv)
 # Development mode toggle. Adds extra functionality for local development work.
 DEVELOPMENT = getenv("TXM_DEVELOPMENT", default="false", conv=boolconv)
 
-# Connection details for Postgres.
-# Postgres is used as the main database for the transaction matching system.
-POSTGRES_HOST = getenv("TXM_POSTGRES_HOST")
-POSTGRES_PORT = getenv("TXM_POSTGRES_PORT", default="5432", conv=int)
-POSTGRES_USER = getenv("TXM_POSTGRES_USER")
-POSTGRES_PASS = getenv("TXM_POSTGRES_PASS", required=False)
-POSTGRES_DB = getenv("TXM_POSTGRES_DB")
-
 # This shouldn't need to be changed
-POSTGRES_DSN = "".join(
-    [
-        "postgresql+psycopg2://",
-        POSTGRES_USER,
-        f":{POSTGRES_PASS}" if POSTGRES_PASS else "",
-        "@",
-        POSTGRES_HOST,
-        ":",
-        str(POSTGRES_PORT),
-        "/",
-        POSTGRES_DB,
-    ]
-)
+if getenv("TXM_POSTGRES_URI", required=False):
+    POSTGRES_DSN = getenv("TXM_POSTGRES_URI")
+else:
+    # Connection details for Postgres.
+    # Postgres is used as the main database for the transaction matching system.
+    POSTGRES_HOST = getenv("TXM_POSTGRES_HOST")
+    POSTGRES_PORT = getenv("TXM_POSTGRES_PORT", default="5432", conv=int)
+    POSTGRES_USER = getenv("TXM_POSTGRES_USER")
+    POSTGRES_PASS = getenv("TXM_POSTGRES_PASS", required=False)
+    POSTGRES_DB = getenv("TXM_POSTGRES_DB")
+
+    POSTGRES_DSN = "".join(
+        [
+            "postgresql+psycopg2://",
+            POSTGRES_USER,
+            f":{POSTGRES_PASS}" if POSTGRES_PASS else "",
+            "@",
+            POSTGRES_HOST,
+            ":",
+            str(POSTGRES_PORT),
+            "/",
+            POSTGRES_DB,
+        ]
+    )
 
 # Connection details for Redis.
 # Redis is used as a configuration store that can be updated at runtime.
