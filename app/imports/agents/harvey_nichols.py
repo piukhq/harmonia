@@ -132,7 +132,7 @@ payment_provider_map = {
     "AMERICAN EXPRESS": PaymentProviderSlug.AMEX,
     "AMEX": PaymentProviderSlug.AMEX,
     "DCC MASTERCARD": PaymentProviderSlug.MASTERCARD,
-    "MASTERCARD DB": PaymentProviderSlug.MASTERCARD,
+    "Mastercard DB": PaymentProviderSlug.MASTERCARD,
     "MAESTRO": PaymentProviderSlug.MASTERCARD,
     "MASTERCARD": PaymentProviderSlug.MASTERCARD,
     "SOLO": PaymentProviderSlug.MASTERCARD,
