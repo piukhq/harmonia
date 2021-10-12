@@ -575,7 +575,6 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prom
     # Start up the Prometheus http server for serving metrics
     if with_prometheus:
         prometheus_thread.start()
-        click.echo("Prometheus push thread started")
 
     run_transaction_matching(fixture, import_only=import_only)
 

@@ -77,7 +77,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
             if not no_prometheus:
                 # Start up the Prometheus http server
                 prometheus_thread.start()
-                click.echo("Prometheus push thread started")
 
             agent_instance.run()
 

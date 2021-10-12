@@ -4,11 +4,13 @@ import settings
 from app import tasks
 from app.core.identify_retry_worker import IdentifyRetryWorker
 from app.exports.retry_worker import ExportRetryWorker
+from app.prometheus import prometheus_thread
 
 
 @click.group()
 def cli() -> None:
-    pass
+    if settings.PUSH_PROMETHEUS_METRICS:
+        prometheus_thread.start()
 
 
 @cli.command()

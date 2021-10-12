@@ -17,7 +17,7 @@ from prometheus_client.registry import REGISTRY
 
 from app.reporting import get_logger
 
-logger = get_logger(__name__)
+log = get_logger(__name__)
 
 
 class BinkPrometheus:
@@ -176,7 +176,12 @@ def get_prometheus_thread() -> threading.Thread:
         return [output]
 
     httpd = make_server("", 9100, prometheus_app, ThreadingWSGIServer, handler_class=_SilentHandler)
-    thread = threading.Thread(target=httpd.serve_forever)
+
+    def run_server():
+        log.debug("Starting Prometheus collection server.")
+        httpd.serve_forever()
+
+    thread = threading.Thread(target=run_server)
     thread.daemon = True
 
     return thread
