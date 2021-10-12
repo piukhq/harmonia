@@ -37,8 +37,6 @@ prometheus-client = "*"
 azure-oidc = "*"
 soteria = "*"
 gunicorn = "*"
-opentracing = "*"
-jaeger-client = "*"
 
 [dev-packages]
 pytest = "*"

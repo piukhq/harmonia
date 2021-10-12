@@ -2,7 +2,6 @@ import typing as t
 from functools import cached_property
 
 import kombu.mixins
-from opentracing.ext import tags as ot_tags
 
 import settings
 from app import db
@@ -51,9 +50,5 @@ class Consumer(kombu.mixins.ConsumerMixin):
 
     def on_message(self, body: dict, message: kombu.Message):
         self.agent.log.info(f"Received transaction: {body}")
-        with self.agent.tracing.start_scope_from_text_map("import", message.headers) as scope:
-            scope.span.set_tag(ot_tags.SPAN_KIND, ot_tags.SPAN_KIND_CONSUMER)
-
-            self.agent._do_import(body)
-
+        self.agent._do_import(body)
         message.ack()

@@ -3,8 +3,6 @@ import os
 import typing as t
 from pathlib import Path
 
-import jaeger_client
-import opentracing
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -186,24 +184,3 @@ AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/
 
 # TEMPORARY: Mastercard agent selection
 MASTERCARD_TGX2_ENABLED = getenv("TXM_MASTERCARD_TGX2_ENABLED", default="false", conv=boolconv)
-
-# OpenTracing configuration
-_tracing_config = jaeger_client.Config(
-    config={
-        "sampler": {
-            "type": "probabilistic",
-            "param": getenv("TXM_TRACING_SAMPLE_RATE", default="0", conv=float),
-        },
-        "local_agent": {
-            "reporting_host": getenv("TXM_TRACING_AGENT_HOST", default="localhost"),
-            "reporting_port": getenv("TXM_TRACING_AGENT_REPORTING_PORT", default="6831"),
-            "sampling_port": getenv("TXM_TRACING_AGENT_SAMPLING_PORT", default="5778"),
-        },
-        "logging": True,
-    },
-    service_name="harmonia",
-    validate=True,
-)
-
-# Casting to stop mypy complaining, it returns a tracer on first run else None
-OPENTRACING_TRACER = t.cast(opentracing.Tracer, _tracing_config.initialize_tracer())
