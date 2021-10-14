@@ -108,7 +108,7 @@ deploy:dev: &deploy
 
 deploy:dev:bulkload:
   <<: *deploy
-  needs: ["build:develop"]
+  needs: ["build:develop:bulkload"]
   script:
     - tagbot
       --username "$CI_REGISTRY_USER"
