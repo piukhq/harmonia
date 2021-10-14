@@ -23,6 +23,15 @@ def test_payment_card_user_info(hermes: Hermes) -> None:
 
 
 @responses.activate
+def test_payment_card_user_info_404(hermes: Hermes) -> None:
+    url = f"{TEST_HERMES_URL}/payment_cards/accounts/payment_card_user_info/test-slug"
+    responses.add(responses.POST, url, status=404)
+
+    resp = hermes.payment_card_user_info("test-slug", "token123")
+    assert resp == {}
+
+
+@responses.activate
 def test_create_join_scheme_account(hermes: Hermes) -> None:
     url = f"{TEST_HERMES_URL}/accounts/join/test-slug/1"
     json = {"created": True}
@@ -32,7 +41,7 @@ def test_create_join_scheme_account(hermes: Hermes) -> None:
     assert resp == json
 
 
-def test__slug_format(hermes: Hermes):
+def test_slug_format(hermes: Hermes):
     settings.HERMES_SLUGS_TO_FORMAT = ["test-slug1", "test-slug2"]
     settings.HERMES_SLUG_FORMAT_STRING = "{}-mock"
     assert hermes._format_slug("test-slug1") == "test-slug1-mock"
