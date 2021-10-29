@@ -130,20 +130,10 @@ s/test
 You can test matching by running the end-to-end test harness.
 
 ```bash
-s/test-end-to-end
+s/test-end-to-end -f harness/fixtures/harvey_nichols_amex.toml
 ```
 
-By default this will test a few transactions going through the system with the `bink-loyalty` loyalty scheme and the `bink-payment` payment provider. If you want to change the parameters used for the test, you can create a TOML file containing the fixture.
-
-```bash
-cp harness/fixtures/default.toml my-fixture.toml
-
-...
-edit my-fixture.toml with the changes you want to make
-...
-
-s/test-end-to-end -f my-fixture.toml
-```
+Look in `harness/fixtures/*.toml` for a list of fixtures to use. You can also clone one of these and tweak it for your own test scenarios.
 
 #### Testing with Flexible Transactions
 
