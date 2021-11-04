@@ -27,6 +27,7 @@ flowchart LR
     lookup_complete[[Lookup Complete Event]]
     import_transaction[(import_transaction)]
     user_identity[(user_identity)]
+    user_lookup["User Lookup"]
 
     import_complete --> user_lookup
     import_transaction --> user_lookup
@@ -56,10 +57,9 @@ flowchart LR
     matching_engine --> payment_transaction
     matching_engine --> scheme_transaction
 
+    payment_transaction --> Spotting
     payment_transaction --> Matching
     scheme_transaction --> Matching
-    payment_transaction --> Spotting
-    scheme_transaction --> Spotting
 
     Matching --> matched_transaction
     Spotting --> matched_transaction
@@ -82,7 +82,6 @@ flowchart LR
     export_transaction[(export_transaction)]
     pending_export[(pending_export)]
 
-    matching_engine["Matching Engine"]
     submit_export["Submit for Export"]
     trigger_export["Trigger Export"]
 
@@ -101,7 +100,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    merchant([Merchant])
+    merchant((Merchant))
     pending_export[(pending_export)]
     export_transaction[(export_transaction)]
 
