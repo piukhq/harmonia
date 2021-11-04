@@ -95,11 +95,9 @@ class PaymentTransaction(Base, ModelMixin):
     last_four = s.Column(s.Text, nullable=True)  # last four digits of card number, if present
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
-    user_identity_id = s.Column(s.Integer, s.ForeignKey("user_identity.id"))
     match_group = s.Column(s.String(36), nullable=False, index=True)  # currently unused
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
-    user_identity = s.orm.relationship("UserIdentity", uselist=False, back_populates="payment_transaction")
     matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
 
 
@@ -142,14 +140,13 @@ class MatchedTransaction(Base, ModelMixin):
 class UserIdentity(Base, ModelMixin):
     __tablename__ = "user_identity"
 
+    settlement_key = s.Column(s.String, nullable=False, index=True)
     loyalty_id = s.Column(s.String(250), nullable=False)
     scheme_account_id = s.Column(s.Integer, nullable=False)
     user_id = s.Column(s.Integer, nullable=False)
     credentials = s.Column(s.Text, nullable=False)
     first_six = s.Column(s.Text, nullable=False)
     last_four = s.Column(s.Text, nullable=False)
-
-    payment_transaction = s.orm.relationship("PaymentTransaction", uselist=False, back_populates="user_identity")
 
     @property
     def decrypted_credentials(self):

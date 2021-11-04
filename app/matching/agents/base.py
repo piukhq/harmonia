@@ -11,6 +11,7 @@ from app.reporting import get_logger
 
 class MatchResult(t.NamedTuple):
     matched_transaction: models.MatchedTransaction
+    user_identity: models.UserIdentity
     scheme_transaction_id: t.Optional[int]
 
 
@@ -23,10 +24,11 @@ class BaseMatchingAgent:
     class NoMatchFound(Exception):
         pass
 
-    def __init__(self, payment_transaction: models.PaymentTransaction) -> None:
+    def __init__(self, payment_transaction: models.PaymentTransaction, user_identity: models.UserIdentity) -> None:
         """Matching agents are expected to query for their own SchemeTransaction objects based on properties of the
         given payment transaction."""
         self.payment_transaction = payment_transaction
+        self.user_identity = user_identity
         self.log = get_logger(f"matching-agent.{type(self).__name__}")
 
     def __repr__(self) -> str:
@@ -142,12 +144,6 @@ class BaseMatchingAgent:
         }
 
     def match(self, *, session: db.Session) -> t.Optional[MatchResult]:
-        if self.payment_transaction.user_identity is None:
-            self.log.warning(
-                f"Payment transaction {self.payment_transaction} has no user identity, so it cannot be matched."
-            )
-            return None
-
         self.log.info(f"Matching {self.payment_transaction}.")
         scheme_transactions = self._find_applicable_scheme_transactions(session=session)
         return self.do_match(scheme_transactions)

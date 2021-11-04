@@ -134,11 +134,6 @@ class MerchantIdentifier:
         self.mid = mid
 
 
-class MockPaymentTransaction:
-    def __init__(self, user_identity):
-        self.user_identity = user_identity
-
-
 class MockExportTransaction:
     def __init__(self, transaction_id, scheme_account_id, user_id, merchant_identifier):
         self.transaction_id = transaction_id

@@ -14,5 +14,6 @@ class GenericSpotted(BaseMatchingAgent):
                 **self.make_spotted_transaction_fields(),
                 matching_type=models.MatchingType.SPOTTED,
             ),
+            user_identity=self.user_identity,
             scheme_transaction_id=None,
         )

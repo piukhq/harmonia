@@ -74,20 +74,19 @@ class HarveyNichols(BaseMatchingAgent):
             matched_transaction=models.MatchedTransaction(
                 **self.make_matched_transaction_fields(match), matching_type=models.MatchingType.LOYALTY
             ),
+            user_identity=self.user_identity,
             scheme_transaction_id=match.id,
         )
 
     def _filter_by_card_number(
         self, scheme_transactions: t.List[models.SchemeTransaction]
     ) -> t.List[models.SchemeTransaction]:
-        user_identity = self.payment_transaction.user_identity
-
         matched_transactions = [
             transaction
             for transaction in scheme_transactions
             if (
-                transaction.last_four == user_identity.last_four
-                and (transaction.first_six == user_identity.first_six or transaction.first_six == "000000")
+                transaction.last_four == self.user_identity.last_four
+                and (transaction.first_six == self.user_identity.first_six or transaction.first_six == "000000")
             )
         ]
         return matched_transactions

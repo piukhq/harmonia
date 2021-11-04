@@ -5,7 +5,7 @@ import sentry_sdk
 
 import settings
 from app import db, models, tasks
-from app.core.identifier import Identifier
+from app.core import identifier
 from app.exports.models import ExportTransaction
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.matching.agents.registry import matching_agents
@@ -54,8 +54,10 @@ class MatchingWorker:
 
         slug = slugs.pop()
 
+        user_identity = identifier.get_user_identity(payment_transaction, session=session)
+
         try:
-            return matching_agents.instantiate(slug, payment_transaction)
+            return matching_agents.instantiate(slug, payment_transaction, user_identity)
         except (NoSuchAgent, RegistryConfigurationError) as ex:
             if settings.DEBUG:
                 raise ex
@@ -73,9 +75,7 @@ class MatchingWorker:
 
         self.log.info(f"Persisted matched transaction #{matched_transaction.id}.")
 
-    def _try_match(
-        self, agent: BaseMatchingAgent, payment_transaction: models.PaymentTransaction, *, session: db.Session
-    ) -> t.Optional[MatchResult]:
+    def _try_match(self, agent: BaseMatchingAgent, *, session: db.Session) -> t.Optional[MatchResult]:
         try:
             return agent.match(session=session)
         except agent.NoMatchFound:
@@ -92,7 +92,7 @@ class MatchingWorker:
         agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
         if agent is None:
             return None
-        return self._try_match(agent, payment_transaction, session=session)
+        return self._try_match(agent, session=session)
 
     def _finalise_match(
         self,
@@ -128,7 +128,7 @@ class MatchingWorker:
         self.log.debug("Persisting matched transaction.")
         self._persist(match_result.matched_transaction, session=session)
 
-        export_transactions_id = self.persist_export_transaction(match_result.matched_transaction, session=session)
+        export_transactions_id = self.persist_export_transaction(match_result, session=session)
 
         tasks.export_queue.enqueue(tasks.export_transaction, export_transactions_id)
 
@@ -207,7 +207,6 @@ class MatchingWorker:
             .filter(
                 models.PaymentTransaction.merchant_identifier_ids.overlap(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
-                models.PaymentTransaction.user_identity_id.isnot(None),
                 models.PaymentTransaction.created_at >= since.isoformat(),
             )
             .all(),
@@ -252,26 +251,23 @@ class MatchingWorker:
 
         return transaction
 
-    def _ensure_user_identity(self, payment_transaction: models.PaymentTransaction, *, session: db.Session) -> None:
-        if not payment_transaction.user_identity_id:
-            identifier = Identifier()
+    def _ensure_user_identity(
+        self, payment_transaction: models.PaymentTransaction, *, session: db.Session
+    ) -> models.UserIdentity:
+        if user_identity := identifier.try_get_user_identity(payment_transaction, session=session):
+            return user_identity
 
-            try:
-                user_info = identifier.payment_card_user_info(payment_transaction, session=session)
-            except Exception as ex:
-                raise self.RedressError(f"Failed to find a user identity for {payment_transaction}: {repr(ex)}") from ex
+        try:
+            user_info = identifier.payment_card_user_info(payment_transaction, session=session)
+        except Exception as ex:
+            raise self.RedressError(f"Failed to find a user identity for {payment_transaction}: {repr(ex)}") from ex
 
-            try:
-                identifier.persist_user_identity(payment_transaction, user_info, session=session)
-            except Exception as ex:
-                raise self.RedressError(
-                    f"Failed to persist user identity for {payment_transaction}: {repr(ex)}"
-                ) from ex
+        try:
+            user_identity = identifier.persist_user_identity(payment_transaction, user_info, session=session)
+        except Exception as ex:
+            raise self.RedressError(f"Failed to persist user identity for {payment_transaction}: {repr(ex)}") from ex
 
-        if not payment_transaction.user_identity_id:
-            raise self.RedressError(
-                f"Hermes user info request succeeded however no user info was attached to {payment_transaction}."
-            )
+        return user_identity
 
     def force_match(self, payment_transaction_id: int, scheme_transaction_id: int, *, session: db.Session):
         """
@@ -285,7 +281,7 @@ class MatchingWorker:
         )
 
         try:
-            self._ensure_user_identity(payment_transaction, session=session)
+            user_identity = self._ensure_user_identity(payment_transaction, session=session)
         except Exception as ex:
             self.log.warning(f"_ensure_user_identity raised {repr(ex)}")
             raise ex
@@ -304,29 +300,33 @@ class MatchingWorker:
             matched_transaction=models.MatchedTransaction(
                 **agent.make_matched_transaction_fields(scheme_transaction), matching_type=models.MatchingType.FORCED
             ),
+            user_identity=user_identity,
             scheme_transaction_id=scheme_transaction_id,
         )
 
         self._finalise_match(match_result, payment_transaction, session=session)
 
-    def persist_export_transaction(self, transaction: models.MatchedTransaction, *, session: db.Session) -> int:
+    def persist_export_transaction(self, match_result: MatchResult, *, session: db.Session) -> int:
         # Save transactions to export table for ongoing export to merchant
+        matched_transaction = match_result.matched_transaction
+        user_identity = match_result.user_identity
 
         def add_export_transaction():
             export_transaction = ExportTransaction(
-                transaction_id=transaction.transaction_id,
-                provider_slug=transaction.merchant_identifier.loyalty_scheme.slug,
-                transaction_date=transaction.transaction_date,
-                spend_amount=transaction.spend_amount,
-                spend_currency=transaction.spend_currency,
-                loyalty_id=transaction.payment_transaction.user_identity.loyalty_id,
-                mid=transaction.merchant_identifier.mid,
-                user_id=transaction.payment_transaction.user_identity_id,
-                scheme_account_id=transaction.payment_transaction.user_identity.scheme_account_id,
-                credentials=transaction.payment_transaction.user_identity.credentials,
+                transaction_id=matched_transaction.transaction_id,
+                provider_slug=matched_transaction.merchant_identifier.loyalty_scheme.slug,
+                transaction_date=matched_transaction.transaction_date,
+                spend_amount=matched_transaction.spend_amount,
+                spend_currency=matched_transaction.spend_currency,
+                loyalty_id=user_identity.loyalty_id,
+                mid=matched_transaction.merchant_identifier.mid,
+                user_id=user_identity.user_id,
+                scheme_account_id=user_identity.scheme_account_id,
+                credentials=user_identity.credentials,
             )
             session.add(export_transaction)
-            transaction.status = models.MatchedTransactionStatus.EXPORTED
+
+            matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
             session.commit()
 
             return export_transaction

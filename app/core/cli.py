@@ -2,7 +2,6 @@ import click
 
 import settings
 from app import tasks
-from app.core.identify_retry_worker import IdentifyRetryWorker
 from app.exports.retry_worker import ExportRetryWorker
 from app.prometheus import prometheus_thread
 
@@ -11,14 +10,6 @@ from app.prometheus import prometheus_thread
 def cli() -> None:
     if settings.PUSH_PROMETHEUS_METRICS:
         prometheus_thread.start()
-
-
-@cli.command()
-def identify_retry() -> None:
-    if settings.DEBUG:
-        print("Warning: Running in debug mode. Exceptions will not be handled gracefully!")
-    worker = IdentifyRetryWorker()
-    worker.run()
 
 
 @cli.command()

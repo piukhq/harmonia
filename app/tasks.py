@@ -94,10 +94,8 @@ def import_settled_payment_transactions(
 
 def identify_payment_transaction(payment_transaction_id: int) -> None:
     log.debug(f"Task started: identify payment transaction #{payment_transaction_id}")
-    tx_identifier = identifier.Identifier()
-
     with db.session_scope() as session:
-        tx_identifier.identify_payment_transaction(payment_transaction_id, session=session)
+        identifier.identify_payment_transaction(payment_transaction_id, session=session)
 
 
 def match_payment_transaction(payment_transaction_id: int) -> None:

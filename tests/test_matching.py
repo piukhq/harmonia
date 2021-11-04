@@ -4,6 +4,7 @@ import responses
 
 import settings
 from app import db, models
+from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 
 
@@ -58,7 +59,6 @@ def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
-        user_identity_id=None,
         **COMMON_TX_FIELDS,
     )
 
@@ -119,7 +119,6 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
-        user_identity_id=None,
         **COMMON_TX_FIELDS,
     )
 
@@ -137,11 +136,13 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
 
     worker = MatchingWorker()
 
-    assert ptx.user_identity_id is None  # payment transaction should have no user identity to begin with
+    user_identity = identifier.try_get_user_identity(ptx, session=db_session)
+    assert user_identity is None  # payment transaction should have no user identity to begin with
 
     worker.force_match(ptx.id, stx.id, session=db_session)
 
-    assert ptx.user_identity_id is not None  # payment transaction should now have a user identity
+    user_identity = identifier.try_get_user_identity(ptx, session=db_session)
+    assert user_identity is not None  # payment transaction should now have a user identity
 
     assert len(responses.calls) == 1  # should have called out to hermes once
     assert responses.calls[0].request.url == pcui_endpoint
@@ -170,7 +171,6 @@ def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
-        user_identity_id=None,
         **COMMON_TX_FIELDS,
     )
 
