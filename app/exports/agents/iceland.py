@@ -67,20 +67,19 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
-        return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
+    def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
+        return export_transaction.decrypted_credentials["merchant_identifier"]
 
     @staticmethod
-    def get_record_uid(matched_transaction: models.MatchedTransaction) -> str:
-        return hash_ids.encode(matched_transaction.payment_transaction.user_identity.scheme_account_id)
+    def get_record_uid(export_transaction: models.ExportTransaction) -> str:
+        return hash_ids.encode(export_transaction.scheme_account_id)
 
-    def format_transactions(self, transactions: t.Iterable[models.MatchedTransaction]) -> t.List[dict]:
+    def format_transactions(self, transactions: t.Iterable[models.ExportTransaction]) -> t.List[dict]:
         formatted = []
         for transaction in transactions:
-            user_identity: models.UserIdentity = transaction.payment_transaction.user_identity
             formatted_transaction = {
                 "record_uid": self.get_record_uid(transaction),
-                "merchant_scheme_id1": hash_ids.encode(user_identity.user_id),
+                "merchant_scheme_id1": hash_ids.encode(transaction.user_id),
                 "merchant_scheme_id2": self.get_loyalty_identifier(transaction),
                 "transaction_id": transaction.transaction_id,
             }
@@ -95,7 +94,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
         return security_class.encode(body)
 
-    def _make_export_data(self, transactions: t.List[models.MatchedTransaction], *, index: int) -> AgentExportData:
+    def _make_export_data(self, transactions: t.List[models.ExportTransaction], *, index: int) -> AgentExportData:
         formatted_transactions = self.format_transactions(transactions)
         return AgentExportData(
             outputs=[
@@ -109,7 +108,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         )
 
     def yield_export_data(
-        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
+        self, transactions: t.List[models.ExportTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
         batch_size = int(self.config.get("batch_size", session=session))
         for i, transaction_set in enumerate(batch(transactions, size=batch_size)):

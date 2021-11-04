@@ -34,12 +34,10 @@ class HarveyNichols(SingularExportAgent):
         }
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
-        return matched_transaction.payment_transaction.user_identity.decrypted_credentials["card_number"]
+    def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
+        return export_transaction.decrypted_credentials["card_number"]
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
-        user_identity = matched_transaction.payment_transaction.user_identity
-        scheme_account_id = user_identity.scheme_account_id
+    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
 
         return AgentExportData(
             outputs=[
@@ -48,14 +46,17 @@ class HarveyNichols(SingularExportAgent):
                     {
                         "CustomerClaimTransactionRequest": {
                             "token": "token",
-                            "customerNumber": self.get_loyalty_identifier(matched_transaction),
-                            "id": matched_transaction.transaction_id,
+                            "customerNumber": self.get_loyalty_identifier(export_transaction),
+                            "id": export_transaction.transaction_id,
                         }
                     },
                 )
             ],
-            transactions=[matched_transaction],
-            extra_data={"credentials": user_identity.decrypted_credentials, "scheme_account_id": scheme_account_id},
+            transactions=[export_transaction],
+            extra_data={
+                "credentials": export_transaction.decrypted_credentials,
+                "scheme_account_id": export_transaction.scheme_account_id,
+            },
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):

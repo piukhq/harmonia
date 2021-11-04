@@ -64,25 +64,22 @@ class Wasabi(SingularExportAgent):
             return run_time_today
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
-        return hashlib.sha1(
-            "Bink-Wasabi-"
-            f"{matched_transaction.payment_transaction.user_identity.decrypted_credentials['email']}".encode()
-        ).hexdigest()
+    def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
+        return hashlib.sha1("Bink-Wasabi-" f"{export_transaction.decrypted_credentials['email']}".encode()).hexdigest()
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
+    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "origin_id": self.get_loyalty_identifier(matched_transaction),
-                        "ReceiptNo": matched_transaction.transaction_id,
+                        "origin_id": self.get_loyalty_identifier(export_transaction),
+                        "ReceiptNo": export_transaction.transaction_id,
                     },
                 )
             ],
-            transactions=[matched_transaction],
-            extra_data={"credentials": matched_transaction.payment_transaction.user_identity.decrypted_credentials},
+            transactions=[export_transaction],
+            extra_data={"credentials": export_transaction.decrypted_credentials},
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):

@@ -7,6 +7,7 @@ import sentry_sdk
 from requests import RequestException, Response
 
 from app import db, models
+from app.exports import models as exp_model
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.prometheus import bink_prometheus
@@ -57,11 +58,11 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such does not support batch exports."
         )
 
-    def find_matched_transaction(
+    def find_export_transaction(
         self, pending_export: models.PendingExport, *, session: db.Session
-    ) -> models.MatchedTransaction:
+    ) -> models.ExportTransaction:
         def find_transaction():
-            return session.query(models.MatchedTransaction).get(pending_export.matched_transaction_id)
+            return session.query(models.ExportTransaction).get(pending_export.export_transaction_id)
 
         matched_transaction = db.run_query(
             find_transaction,
@@ -85,7 +86,7 @@ class SingularExportAgent(BaseAgent):
         self.log.info(f"Handling {pending_export}.")
 
         try:
-            matched_transaction = self.find_matched_transaction(pending_export, session=session)
+            export_transaction = self.find_export_transaction(pending_export, session=session)
         except db.NoResultFound:
             self.log.warning(
                 f"The export agent failed to load its matched transaction. {pending_export} will be discarded."
@@ -93,8 +94,8 @@ class SingularExportAgent(BaseAgent):
             self._delete_pending_export(pending_export, session=session)
             return
 
-        self.log.info(f"{type(self).__name__} handling {matched_transaction}.")
-        export_data = self.make_export_data(matched_transaction)
+        self.log.info(f"{type(self).__name__} handling {export_transaction}.")
+        export_data = self.make_export_data(export_transaction)
 
         try:
             self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
@@ -116,7 +117,7 @@ class SingularExportAgent(BaseAgent):
                     f"Singular export raised exception: {repr(ex)}. Sentry event ID: {event_id} "
                     "This operation has exceeded its retry limit and will be discarded."
                 )
-                matched_transaction.status = models.MatchedTransactionStatus.EXPORT_FAILED
+                export_transaction.status = exp_model.ExportTransactionStatus.EXPORT_FAILED
                 #  session.commit()     # this is unnecessary as _delete_pending_export will commit right after
 
         # if we get here, we either exported successfully or have run out of retries.
@@ -135,7 +136,7 @@ class SingularExportAgent(BaseAgent):
         with self._update_metrics(export_data=export_data, session=session):
             self.export(export_data, retry_count=retry_count, session=session)
 
-        self._save_export_transactions(export_data, session=session)
+            self._save_export_transactions(export_data, session=session)
 
     def _delete_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:
         self.log.info(f"Removing pending export {pending_export}.")

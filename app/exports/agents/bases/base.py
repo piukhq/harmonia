@@ -7,7 +7,7 @@ import pendulum
 import sentry_sdk
 
 from app import db, models
-from app.models import MatchedTransaction
+from app.exports.models import ExportTransactionStatus
 from app.reporting import get_logger
 from app.service.blob_storage import BlobStorageClient
 from app.utils import missing_property
@@ -21,7 +21,7 @@ class AgentExportDataOutput(t.NamedTuple):
 @dataclass
 class AgentExportData:
     outputs: t.List[AgentExportDataOutput]
-    transactions: t.List[MatchedTransaction]
+    transactions: t.List[models.ExportTransaction]
     extra_data: dict
 
 
@@ -93,24 +93,12 @@ class BaseAgent:
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
         self.log.debug(f"Data field comes from index #{self.saved_output_index} of {export_data.outputs}")
 
-        def add_transactions():
-            session.bulk_save_objects(
-                models.ExportTransaction(
-                    matched_transaction_id=transaction.id,
-                    transaction_id=transaction.transaction_id,
-                    provider_slug=self.provider_slug,
-                    destination=export_data.outputs[self.saved_output_index].key,
-                    data=export_data.outputs[self.saved_output_index].data,
-                )
-                for transaction in export_data.transactions
-            )
-
+        def update_export_status():
             for transaction in export_data.transactions:
-                transaction.status = models.MatchedTransactionStatus.EXPORTED
-
+                transaction.status = ExportTransactionStatus.EXPORTED
             session.commit()
 
-        db.run_query(add_transactions, session=session, description="save export transactions")
+        db.run_query(update_export_status, session=session, description="update export status")
 
     @contextmanager
     def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> t.Iterator[None]:

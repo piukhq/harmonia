@@ -3,8 +3,7 @@ from typing import cast
 from app import db, tasks
 from app.exports.agents import BaseAgent
 from app.exports.agents.registry import export_agents
-from app.exports.models import PendingExport
-from app.models import MatchedTransaction
+from app.exports.models import ExportTransaction, PendingExport
 from app.registry import NoSuchAgent
 from app.reporting import get_logger
 from app.status import status_monitor
@@ -13,32 +12,30 @@ log = get_logger("export-director")
 
 
 class ExportDirector:
-    def handle_matched_transaction(self, matched_transaction_id: int, *, session: db.Session) -> None:
+    def handle_export_transaction(self, export_transaction_id: int, *, session: db.Session) -> None:
         status_monitor.checkin(self)
 
-        log.debug(f"Recieved matched transaction #{matched_transaction_id}.")
-        matched_transaction: MatchedTransaction = db.run_query(
-            lambda: session.query(MatchedTransaction).get(matched_transaction_id),
+        log.debug(f"Recieved export transaction #{export_transaction_id}.")
+        export_transaction: ExportTransaction = db.run_query(
+            lambda: session.query(ExportTransaction).get(export_transaction_id),
             session=session,
             read_only=True,
-            description="find matched transaction",
+            description="find export transaction",
         )
 
-        if matched_transaction is None:
-            log.warning(f"Failed to load matched transaction #{matched_transaction_id} - record may have been deleted.")
+        if export_transaction is None:
+            log.warning(f"Failed to load export transaction #{export_transaction_id} - record may have been deleted.")
             return
 
-        loyalty_scheme = matched_transaction.merchant_identifier.loyalty_scheme
+        loyalty_scheme = export_transaction.provider_slug
 
         log.debug(
-            f"Creating pending export entry for loyalty scheme {loyalty_scheme.slug} "
-            f"and matched transaction #{matched_transaction_id}."
+            f"Creating pending export entry for loyalty scheme {loyalty_scheme} "
+            f"and export transaction #{export_transaction_id}."
         )
 
         def add_pending_export():
-            pending_export = PendingExport(
-                provider_slug=loyalty_scheme.slug, matched_transaction_id=matched_transaction_id
-            )
+            pending_export = PendingExport(provider_slug=loyalty_scheme, export_transaction_id=export_transaction_id)
             session.add(pending_export)
             session.commit()
             return pending_export

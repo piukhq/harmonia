@@ -1,29 +1,50 @@
+from enum import Enum
+
 import sqlalchemy as s
 
 from app.db import Base, ModelMixin, auto_repr, auto_str
+from app.encryption import decrypt_credentials
+
+
+class ExportTransactionStatus(Enum):
+    PENDING = 0  # awaiting export
+    EXPORTED = 1  # sent to provider
+    EXPORT_FAILED = 2  # failed to export after retrying
 
 
 @auto_repr
-@auto_str("id", "matched_transaction_id")
+@auto_str("id", "export_transaction_id")
 class PendingExport(Base, ModelMixin):
     __tablename__ = "pending_export"
 
     provider_slug = s.Column(s.String(50), nullable=False, index=True)
-    matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
+    export_transaction_id = s.Column(s.Integer, s.ForeignKey("export_transaction.id"))
     retry_count = s.Column(s.Integer, nullable=False, default=0)
     retry_at = s.Column(s.DateTime, nullable=True, index=True)
 
 
 @auto_repr
+@auto_str("id", "transaction_id")
 class ExportTransaction(Base, ModelMixin):
     __tablename__ = "export_transaction"
-    __table_args__ = (s.UniqueConstraint("provider_slug", "transaction_id", name="_slug_tid_et_uc"),)
 
-    matched_transaction_id = s.Column(s.Integer, s.ForeignKey("matched_transaction.id"))
-    transaction_id = s.Column(s.String(100), nullable=False)
-    provider_slug = s.Column(s.String(50), nullable=False)
-    destination = s.Column(s.String(500), nullable=True)
-    data = s.Column(s.JSON)
+    transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant/provider
+    provider_slug = s.Column(s.String(50), nullable=False)  # merchant slug
+    transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
+    spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
+    spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
+    loyalty_id = s.Column(s.String(100), nullable=False)  # Merchant loyalty identifier/membership number
+    mid = s.Column(s.String(50), nullable=False)  # merchant identifier for identifying the store purchase made
+    user_id = s.Column(s.Integer, nullable=False)
+    scheme_account_id = s.Column(s.Integer, nullable=False)
+    credentials = s.Column(s.Text, nullable=False)
+    status = s.Column(s.Enum(ExportTransactionStatus), nullable=False, default=ExportTransactionStatus.PENDING)
+
+    pending_exports = s.orm.relationship("PendingExport", backref="export_transaction")
+
+    @property
+    def decrypted_credentials(self):
+        return decrypt_credentials(self.credentials)
 
 
 @auto_repr

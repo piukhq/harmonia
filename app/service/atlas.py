@@ -33,15 +33,15 @@ class MessagePayload(t.TypedDict):
 
 
 def make_audit_transactions(
-    transactions: t.List[models.MatchedTransaction],
+    transactions: t.List[models.ExportTransaction],
     *,
-    tx_loyalty_ident_callback: t.Callable[[models.MatchedTransaction], str],
-    tx_record_uid_callback: t.Optional[t.Callable[[models.MatchedTransaction], t.Optional[str]]] = None,
+    tx_loyalty_ident_callback: t.Callable[[models.ExportTransaction], str],
+    tx_record_uid_callback: t.Optional[t.Callable[[models.ExportTransaction], t.Optional[str]]] = None,
 ) -> t.List[AuditTransaction]:
     return [
         AuditTransaction(
             transaction_id=tx.transaction_id,
-            user_id=tx.payment_transaction.user_identity.user_id,
+            user_id=tx.user_id,
             spend_amount=tx.spend_amount,
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
             loyalty_identifier=tx_loyalty_ident_callback(tx),

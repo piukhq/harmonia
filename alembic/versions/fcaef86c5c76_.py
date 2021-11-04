@@ -220,3 +220,6 @@ def downgrade():
     op.drop_table("payment_provider")
     op.drop_table("loyalty_scheme")
     op.drop_table("import_transaction")
+    sa.Enum(name="transactionstatus").drop(op.get_bind())
+    sa.Enum(name="matchingtype").drop(op.get_bind())
+    sa.Enum(name="matchedtransactionstatus").drop(op.get_bind())

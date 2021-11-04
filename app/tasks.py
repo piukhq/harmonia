@@ -116,12 +116,12 @@ def match_scheme_transactions(match_group: str) -> None:
         worker.handle_scheme_transactions(match_group, session=session)
 
 
-def export_matched_transaction(matched_transaction_id: int) -> None:
-    log.debug(f"Task started: export matched transaction #{matched_transaction_id}")
+def export_transaction(transaction_id: int) -> None:
+    log.debug(f"Task started: export transaction #{transaction_id}")
     director = export_director.ExportDirector()
 
     with db.session_scope() as session:
-        director.handle_matched_transaction(matched_transaction_id, session=session)
+        director.handle_export_transaction(transaction_id, session=session)
 
 
 def export_singular_transaction(pending_export_id: int) -> None:

@@ -49,16 +49,14 @@ class BatchExportAgent(BaseAgent):
         pending_exports_q = (
             session.query(models.PendingExport)
             .options(
-                joinedload(models.PendingExport.matched_transaction, innerjoin=True)
-                .joinedload(models.MatchedTransaction.payment_transaction, innerjoin=True)
-                .joinedload(models.PaymentTransaction.user_identity, innerjoin=True),
+                joinedload(models.PendingExport.export_transaction, innerjoin=True),
                 Load(models.PendingExport).raiseload("*"),
             )
             .filter(models.PendingExport.provider_slug == self.provider_slug)
         )
 
         pending_exports = pending_exports_q.all()
-        transactions = [pe.matched_transaction for pe in pending_exports]
+        transactions = [pe.export_transaction for pe in pending_exports]
 
         if not transactions:
             return  # nothing to export
@@ -71,11 +69,7 @@ class BatchExportAgent(BaseAgent):
                 if settings.AUDIT_EXPORTS:
                     atlas.queue_audit_message(audit_message)
 
-            db.run_query(
-                lambda: self._save_export_transactions(export_data, session=session),
-                session=session,
-                description="create export transactions from export data",
-            )
+            self._save_export_transactions(export_data, session=session)
 
         def delete_pending_exports():
             num_deleted = (

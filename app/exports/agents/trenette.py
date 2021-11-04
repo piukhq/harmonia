@@ -23,26 +23,26 @@ class Trenette(SingularExportAgent):
         self.api_class = BplAPI
 
     @staticmethod
-    def get_loyalty_identifier(matched_transaction: models.MatchedTransaction) -> str:
-        return matched_transaction.payment_transaction.user_identity.decrypted_credentials["merchant_identifier"]
+    def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
+        return export_transaction.decrypted_credentials["merchant_identifier"]
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
-        transaction_datetime = pendulum.instance(matched_transaction.transaction_date)
+    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
+        transaction_datetime = pendulum.instance(export_transaction.transaction_date)
 
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "id": f"BPL{sha1(matched_transaction.transaction_id.encode()).hexdigest()}",
-                        "transaction_total": matched_transaction.spend_amount,
+                        "id": f"BPL{sha1(export_transaction.transaction_id.encode()).hexdigest()}",
+                        "transaction_total": export_transaction.spend_amount,
                         "datetime": transaction_datetime.int_timestamp,
-                        "MID": matched_transaction.merchant_identifier.mid,
-                        "loyalty_id": self.get_loyalty_identifier(matched_transaction),
+                        "MID": export_transaction.mid,
+                        "loyalty_id": self.get_loyalty_identifier(export_transaction),
                     },
                 )
             ],
-            transactions=[matched_transaction],
+            transactions=[export_transaction],
             extra_data={},
         )
 

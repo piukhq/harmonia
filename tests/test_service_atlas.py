@@ -14,11 +14,15 @@ class MockPaymentTransaction:
     user_identity = MockUserIdentity()
 
 
-class MockMatchedTransaction:
+class MockExportTransaction:
     id = 1
     transaction_id = 125
-    payment_transaction = MockPaymentTransaction()
     spend_amount = 1500
+    credentials = {"card_number": "loyalty-123", "merchant_identifier": "876543"}
+    mid = "1234567"
+    user_id = 10
+    scheme_account_id = 2
+    loyalty_id = "876543"
 
     def __init__(self, transaction_date=pendulum.now()):
         self.transaction_date = transaction_date
@@ -47,7 +51,7 @@ def test_queue_audit_message(mocked_queue):
     audit_message = atlas.make_audit_message(
         "test-slug",
         atlas.make_audit_transactions(
-            [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
+            [MockExportTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
         ),
         request=request_body,
         request_timestamp=request_timestamp,
@@ -95,7 +99,7 @@ def test_make_audit_message_non_json_response():
     audit_message = atlas.make_audit_message(
         "test-slug",
         atlas.make_audit_transactions(
-            [MockMatchedTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
+            [MockExportTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
         ),
         request=request_body,
         request_timestamp=request_timestamp,

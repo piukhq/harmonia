@@ -136,8 +136,6 @@ class MatchedTransaction(Base, ModelMixin):
 
     extra_fields = s.Column(psql.JSON)  # combination of the same field on the scheme and payment transaction models
 
-    pending_exports = s.orm.relationship("PendingExport", backref="matched_transaction")
-
 
 @auto_repr
 @auto_str("id", "user_id", "scheme_account_id")

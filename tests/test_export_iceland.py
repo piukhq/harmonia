@@ -139,19 +139,25 @@ class MockPaymentTransaction:
         self.user_identity = user_identity
 
 
-class MockMatchedTransaction:
+class MockExportTransaction:
     def __init__(self, transaction_id, scheme_account_id, user_id, merchant_identifier):
         self.transaction_id = transaction_id
         mock_credentials = {"card_number": "loyalty-123", "merchant_identifier": merchant_identifier}
-        mock_credentials = encryption.encrypt_credentials(mock_credentials)
-        identity = UserIdentity(scheme_account_id, user_id, mock_credentials)
-        self.payment_transaction = MockPaymentTransaction(identity)
+        self.credentials = encryption.encrypt_credentials(mock_credentials)
+        self.mid = "1234567"
+        self.user_id = user_id
+        self.scheme_account_id = scheme_account_id
+        self.loyalty_id = merchant_identifier
+
+    @property
+    def decrypted_credentials(self):
+        return encryption.decrypt_credentials(self.credentials)
 
 
 @responses.activate
 def test_format_transactions() -> None:
     add_mock_routes()
-    transactions = [MockMatchedTransaction(1, 2, 3, 10), MockMatchedTransaction(2, 2, 3, 20)]
+    transactions = [MockExportTransaction(1, 2, 3, 10), MockExportTransaction(2, 2, 3, 20)]
 
     iceland = Iceland()
     formatted_transaction = iceland.format_transactions(transactions)
