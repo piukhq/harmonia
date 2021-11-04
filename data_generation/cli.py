@@ -15,9 +15,9 @@ from sqlalchemy.orm.session import Session
 import settings
 from app import db
 from app.feeds import ImportFeedTypes
-from app.imports.agents import QueueAgent
 from app.imports.agents.bases.base import BaseAgent
 from app.imports.agents.bases.file_agent import FileAgent, SftpFileSource
+from app.imports.agents.bases.queue_agent import QueueAgent
 from app.imports.agents.registry import import_agents
 from app.reporting import get_logger
 from app.service.sftp import SFTP
