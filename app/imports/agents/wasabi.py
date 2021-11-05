@@ -10,7 +10,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent, FileSourceBase, SftpFileSource
 from app.service.hermes import PaymentProviderSlug
@@ -26,7 +26,7 @@ TXN_DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
 class Wasabi(FileAgent, SoteriaConfigMixin):
-    feed_type = ImportFeedTypes.MERCHANT
+    feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     payment_provider_map = {
@@ -100,6 +100,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
             payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
             transaction_date=self.get_transaction_date(data),
             has_time=True,
@@ -109,7 +110,6 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
             auth_code=data["Auth_code"],
             first_six=data["Card Number"][:6],
             last_four=data["Card Number"][-4:],
-            extra_fields={},
         )
 
     @staticmethod

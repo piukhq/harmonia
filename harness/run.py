@@ -393,9 +393,9 @@ def patch_soteria_service():
 ImportDataType = t.Union[bytes, t.List[dict]]
 
 
-def make_import_data(slug: str, fixture: dict, *, feed_type: feeds.ImportFeedTypes) -> ImportDataType:
+def make_import_data(slug: str, fixture: dict, *, feed_type: feeds.FeedType) -> ImportDataType:
     provider = import_data_providers.instantiate(slug)
-    if feed_type == feeds.ImportFeedTypes.MERCHANT:
+    if feed_type == feeds.FeedType.MERCHANT:
         fixture = provider.apply_merchant_overrides(fixture)
     else:
         fixture = provider.apply_payment_provider_overrides(fixture)
@@ -502,12 +502,12 @@ def maybe_run_batch_export_agent(fixture: dict):
 def run_transaction_matching(fixture: dict, *, import_only: bool = False):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
-    run_rq_worker("import")
-    run_rq_worker("identify")
 
     if import_only:
         return
 
+    run_rq_worker("identify")
+    run_rq_worker("import")
     run_rq_worker("matching")
     run_rq_worker("matching_slow")
     run_rq_worker("export")

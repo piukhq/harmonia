@@ -6,7 +6,8 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+**Table of Contents** _generated with [DocToc](https://github.com/thlorenz/doctoc)_
 
 - [Harmonia](#harmonia)
   - [Prerequisites](#prerequisites)
@@ -21,6 +22,7 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
       - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
       - [Inspecting PostgreSQL](#inspecting-postgresql)
       - [Inspecting Redis](#inspecting-redis)
+  - [Events](#events)
   - [Migrations](#migrations)
   - [Deployment](#deployment)
 
@@ -154,7 +156,7 @@ settlement_key = "1111111111"
 token = "1111"  # Payment token
 
 # Which user to link the payment to - does not need to be changed in most cases as there is not much need to test with more than one user.
-user_id = 0  
+user_id = 0
 
 # Transactions only imported as scheme transactions
 [[loyalty_scheme.transactions]]
@@ -192,6 +194,14 @@ get txmatch:status:checkins:SchemeImportDirector
 ```
 
 The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.
+
+## Events
+
+Events are used to notify other applications in Harmonia that they need to perform a task.
+Events will be placed into Azure Event Hub and picked up by applications to process.
+
+Simple testing events in Harmonia can be performed by running the following:
+TODO: Event testing
 
 ## Migrations
 

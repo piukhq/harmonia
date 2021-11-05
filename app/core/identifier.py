@@ -44,10 +44,10 @@ def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, se
         raise SchemeAccountNotFound
 
 
-def persist_user_identity(settlement_key: str, user_info: dict, *, session: db.Session) -> models.UserIdentity:
+def persist_user_identity(transaction_id: str, user_info: dict, *, session: db.Session) -> models.UserIdentity:
     def add_user_identity():
         user_identity = models.UserIdentity(
-            settlement_key=settlement_key,
+            transaction_id=transaction_id,
             loyalty_id=user_info["loyalty_id"],
             scheme_account_id=user_info["scheme_account_id"],
             payment_card_account_id=user_info.get("payment_card_account_id", None),
@@ -67,51 +67,59 @@ def persist_user_identity(settlement_key: str, user_info: dict, *, session: db.S
     return user_identity
 
 
-def _user_identity_query(settlement_key: str, *, session: db.Session) -> Query:
-    return session.query(models.UserIdentity).filter(models.UserIdentity.settlement_key == settlement_key)
+def _user_identity_query(transaction_id: str, *, session: db.Session) -> Query:
+    return session.query(models.UserIdentity).filter(models.UserIdentity.transaction_id == transaction_id)
 
 
-def try_get_user_identity(settlement_key: str, *, session: db.Session) -> Optional[models.UserIdentity]:
+def try_get_user_identity(transaction_id: str, *, session: db.Session) -> Optional[models.UserIdentity]:
     return db.run_query(
-        _user_identity_query(settlement_key, session=session).one_or_none,
+        _user_identity_query(transaction_id, session=session).one_or_none,
         session=session,
         read_only=True,
         description="try to find user identity",
     )
 
 
-def get_user_identity(settlement_key: str, *, session: db.Session) -> models.UserIdentity:
+def get_user_identity(transaction_id: str, *, session: db.Session) -> models.UserIdentity:
     return db.run_query(
-        _user_identity_query(settlement_key, session=session).one,
+        _user_identity_query(transaction_id, session=session).one,
         session=session,
         read_only=True,
         description="find user identity",
     )
 
 
-def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str, *, session: db.Session) -> None:
-    log.debug(f"Attempting identification of a transaction with settlement_key #{settlement_key}")
+def identify_user(transaction_id: str, merchant_identifier_ids: list, card_token: str, *, session: db.Session) -> None:
+    log.debug(f"Attempting identification of transaction #{transaction_id}")
 
-    if try_get_user_identity(settlement_key, session=session):
-        log.warning(f"Skipping identification of {settlement_key} as it already has an associated user identity.")
-        return
+    if try_get_user_identity(transaction_id, session=session):
+        log.warning(f"Skipping identification of {transaction_id} as it already has an associated user identity.")
+    else:
+        _attach_user_identity(transaction_id, merchant_identifier_ids, card_token, session=session)
 
+    log.debug("User identification passed, enqueueing matching task.")
+    tasks.import_queue.enqueue(tasks.import_transaction, transaction_id)
+
+
+def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, card_token: str, *, session: db.Session):
     try:
-        user_info = payment_card_user_info(merchant_identifier_ids, token, session=session)
+        user_info = payment_card_user_info(merchant_identifier_ids, card_token, session=session)
     except SchemeAccountNotFound:
-        log.debug(f"Hermes was unable to find a scheme account for transaction with settlement key:  {settlement_key}")
+        log.debug(f"Hermes was unable to find a scheme account for transaction #{transaction_id}")
         return
     except requests.RequestException:
         event_id = sentry_sdk.capture_exception()
         log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
-        tasks.identify_user_queue.enqueue(tasks.identify_user, settlement_key, merchant_identifier_ids, token)
+        tasks.identify_user_queue.enqueue(
+            tasks.identify_user,
+            transaction_id=transaction_id,
+            merchant_identifier_ids=merchant_identifier_ids,
+            card_token=card_token,
+        )
         return
 
     if "card_information" not in user_info:
-        log.debug(f"Hermes identified {settlement_key} but could return no payment card information")
+        log.debug(f"Hermes identified {transaction_id} but could return no payment card information")
         return
 
-    persist_user_identity(settlement_key, user_info, session=session)
-
-    log.debug("Identification complete. Enqueueing matching task.")
-    tasks.matching_queue.enqueue(tasks.match_payment_transaction, settlement_key)
+    persist_user_identity(transaction_id, user_info, session=session)

@@ -7,7 +7,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
@@ -62,7 +62,7 @@ def _make_settlement_key(
 
 
 class Amex(FileAgent):
-    feed_type = ImportFeedTypes.SETTLED
+    feed_type = FeedType.SETTLED
     provider_slug = PROVIDER_SLUG
 
     file_fields = [
@@ -114,6 +114,8 @@ class Amex(FileAgent):
             amount=str(data["transaction_amount"]),
         )
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=settlement_key,
             transaction_date=self.get_transaction_date(data),
             has_time=True,
@@ -121,9 +123,6 @@ class Amex(FileAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["card_token"],
-            extra_fields={
-                k: data[k] for k in ("detail_identifier", "partner_id", "purchase_date", "alias_card_number")
-            },
         )
 
     @staticmethod
@@ -139,7 +138,7 @@ class Amex(FileAgent):
 
 class AmexAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.AUTH
+    feed_type = FeedType.AUTH
 
     config = Config(ConfigValue("queue_name", key=AUTH_QUEUE_NAME_KEY, default="amex-auth"))
 
@@ -148,6 +147,8 @@ class AmexAuth(QueueAgent):
         amount = to_pennies(data["transaction_amount"])
 
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=data["transaction_id"],
             transaction_date=transaction_date,
             has_time=True,
@@ -155,13 +156,11 @@ class AmexAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
-            extra_fields={"offer_id": data["offer_id"]},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        # we have to modify the transaction ID slightly to stop it clashing with the settlement transaction.
-        return f'{data["transaction_id"]}-auth'
+        return data["transaction_id"]
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
@@ -169,7 +168,7 @@ class AmexAuth(QueueAgent):
 
 class AmexSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.SETTLED
+    feed_type = FeedType.SETTLED
 
     config = Config(ConfigValue("queue_name", key=SETTLEMENT_QUEUE_NAME_KEY, default="amex-settlement"))
 
@@ -183,6 +182,8 @@ class AmexSettlement(QueueAgent):
             first_six, last_four = None, None
 
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=data["transactionId"],
             transaction_date=transaction_date,
             has_time=True,
@@ -192,13 +193,11 @@ class AmexSettlement(QueueAgent):
             card_token=data["cardToken"],
             first_six=first_six,
             last_four=last_four,
-            extra_fields={"offerId": data["offerId"]},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        # we have to modify the transaction ID slightly to stop it clashing with the auth transaction.
-        return f'{data["transactionId"]}-settlement'
+        return data["transactionId"]
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchantNumber"]]

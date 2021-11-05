@@ -8,7 +8,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
@@ -47,7 +47,7 @@ def try_convert_settlement_mid(mid: str) -> str:
 
 
 class MastercardTS44Settlement(FileAgent):
-    feed_type = ImportFeedTypes.SETTLED
+    feed_type = FeedType.SETTLED
     provider_slug = PROVIDER_SLUG
 
     field_widths = [
@@ -106,6 +106,8 @@ class MastercardTS44Settlement(FileAgent):
         transaction_date = self.get_transaction_date(data)
         card_token = data["bank_customer_number"]
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["bank_net_ref_number"],
                 transaction_date=transaction_date,
@@ -118,19 +120,6 @@ class MastercardTS44Settlement(FileAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=card_token,
-            extra_fields={
-                k: data[k]
-                for k in (
-                    "record_type",
-                    "bank_account_number",
-                    "merchant_dba_name",
-                    "location_id",
-                    "issuer_ica_code",
-                    "transaction_time",
-                    "bank_net_ref_number",
-                    "aggregate_merchant_id",
-                )
-            },
         )
 
     @staticmethod
@@ -147,7 +136,7 @@ class MastercardTS44Settlement(FileAgent):
 
 class MastercardTGX2Settlement(FileAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.SETTLED
+    feed_type = FeedType.SETTLED
 
     config = Config(
         ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
@@ -187,6 +176,8 @@ class MastercardTGX2Settlement(FileAgent):
         transaction_date = self.get_transaction_date(data)
         card_token = data["token"]
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["transaction_id"],
                 transaction_date=transaction_date,
@@ -200,15 +191,14 @@ class MastercardTGX2Settlement(FileAgent):
             spend_currency="GBP",
             card_token=card_token,
             auth_code=data["auth_code"],
-            extra_fields={},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        if data["transaction_id"]:
-            return f"settlement-{data['transaction_id']}"
+        if transaction_id := data.get("transaction_id"):
+            return transaction_id
         else:
-            return f"settlement-{uuid4()}"
+            return uuid4().hex
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(data["mid"])]
@@ -220,7 +210,7 @@ class MastercardTGX2Settlement(FileAgent):
 
 class MastercardAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.AUTH
+    feed_type = FeedType.AUTH
 
     config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
 
@@ -228,6 +218,8 @@ class MastercardAuth(QueueAgent):
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
         card_token = data["payment_card_token"]
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["third_party_id"],
                 transaction_date=transaction_date,
@@ -240,12 +232,11 @@ class MastercardAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             card_token=card_token,
-            extra_fields={"third_party_id": data["third_party_id"]},
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return f"auth-{str(uuid4())}"
+        return uuid4().hex
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["mid"]]

@@ -27,10 +27,16 @@ docker run \
 	--name txm-rabbitmq \
 	rabbitmq:3-management
 
-p 'giving postgres a chance to start'
-sleep 3
+retries=3
+for ((i=0; i<retries; i++)); do
+    p 'creating harmonia database'
+    docker exec -it txm-postgres psql -U postgres -c 'create database harmonia;' && \
+    s/migrate
+    [[ $? -eq 0 ]] && break
 
-p 'creating harmonia database'
-docker exec -it txm-postgres psql -U postgres -c 'create database harmonia;'
+    p 'giving postgres a chance to start'
+    sleep 3
+done
 
-s/migrate
+(( retries == i )) && { p 'failed!'; exit 1; }
+exit 0

@@ -3,7 +3,7 @@ from hashlib import sha256
 
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 
@@ -33,7 +33,7 @@ def try_convert_settlement_mid(mid: str) -> str:
 
 class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.AUTH
+    feed_type = FeedType.AUTH
 
     def __init__(self):
         super().__init__()
@@ -51,7 +51,7 @@ class VisaAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return f'{get_key_value(data, "Transaction.VipTransactionId")}-auth'
+        return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
@@ -60,6 +60,8 @@ class VisaAuth(QueueAgent):
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
@@ -68,13 +70,12 @@ class VisaAuth(QueueAgent):
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=get_key_value(data, "Transaction.AuthCode"),
-            extra_fields={},
         )
 
 
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = ImportFeedTypes.SETTLED
+    feed_type = FeedType.SETTLED
 
     def __init__(self):
         super().__init__()
@@ -94,7 +95,7 @@ class VisaSettlement(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return f'{get_key_value(data, "Transaction.VipTransactionId")}-settlement'
+        return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(get_key_value(data, "Transaction.MerchantCardAcceptorId"))]
@@ -103,6 +104,8 @@ class VisaSettlement(QueueAgent):
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
         return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
             transaction_date=transaction_date,
             has_time=True,
             spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
@@ -111,5 +114,4 @@ class VisaSettlement(QueueAgent):
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=get_key_value(data, "Transaction.AuthCode"),
-            extra_fields={},
         )

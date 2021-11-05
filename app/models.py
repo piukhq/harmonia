@@ -8,6 +8,7 @@ from app.config.models import ConfigItem  # noqa
 from app.db import Base, ModelMixin, auto_repr, auto_str
 from app.encryption import decrypt_credentials
 from app.exports.models import ExportTransaction, FileSequenceNumber, PendingExport  # noqa
+from app.feeds import FeedType
 from app.imports.models import ImportFileLog, ImportTransaction  # noqa
 
 
@@ -50,7 +51,50 @@ class MerchantIdentifier(Base, ModelMixin):
 
 class TransactionStatus(Enum):
     PENDING = 0
-    MATCHED = 1
+    IMPORTED = 1
+    MATCHED = 2
+    EXPORTED = 3
+    EXPORT_FAILED = 4
+
+
+@auto_repr
+@auto_str("id", "transaction_id")
+class Transaction(Base, ModelMixin):
+    __tablename__ = "transaction"
+    __table_args__ = (s.UniqueConstraint("transaction_id", "feed_type", name="_transaction_id_feed_type_t_uc"),)
+
+    # the type of transaction this is. unique together with the transaction ID.
+    feed_type = s.Column(s.Enum(FeedType), nullable=False)
+
+    # current state of the transaction.
+    status = s.Column(s.Enum(TransactionStatus), nullable=False)
+
+    # list of related merchant_identifier record IDs.
+    merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
+
+    # hermes scheme & paymentcard slugs.
+    merchant_slug = s.Column(s.String(50), nullable=False)
+    payment_provider_slug = s.Column(s.String(50), nullable=False)
+
+    # provider-specific transaction ID. unique together with the feed type.
+    transaction_id = s.Column(s.String(100), nullable=False)
+
+    # used to group auth & settled transactions together.
+    settlement_key = s.Column(s.String(100), nullable=True, index=True)
+
+    # the group this transaction was imported in
+    match_group = s.Column(s.String(36), nullable=False, index=True)
+
+    # per-feed transaction data
+    transaction_date = s.Column(s.DateTime(timezone=True), nullable=False)
+    has_time = s.Column(s.Boolean, nullable=False, default=False)
+    spend_amount = s.Column(s.Integer, nullable=False)
+    spend_multiplier = s.Column(s.Integer, nullable=False)
+    spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic
+    card_token = s.Column(s.String(100), nullable=True)  # null for merchant feed transactions
+    first_six = s.Column(s.Text, nullable=True)
+    last_four = s.Column(s.Text, nullable=True)
+    auth_code = s.Column(s.String(20), nullable=False, default="")
 
 
 @auto_repr
@@ -141,7 +185,7 @@ class MatchedTransaction(Base, ModelMixin):
 class UserIdentity(Base, ModelMixin):
     __tablename__ = "user_identity"
 
-    settlement_key = s.Column(s.String, nullable=False, index=True)
+    transaction_id = s.Column(s.String, nullable=False, index=True)
     loyalty_id = s.Column(s.String(250), nullable=False)
     scheme_account_id = s.Column(s.Integer, nullable=False)
     user_id = s.Column(s.Integer, nullable=False)

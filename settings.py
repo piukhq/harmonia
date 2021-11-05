@@ -135,6 +135,7 @@ BLOB_IMPORT_CONTAINER = getenv("TXM_BLOB_IMPORT_CONTAINER", default="harmonia-im
 BLOB_ARCHIVE_CONTAINER = getenv("TXM_BLOB_ARCHIVE_CONTAINER", default="harmonia-archive")
 BLOB_EXPORT_CONTAINER = getenv("TXM_BLOB_EXPORT_CONTAINER", default="harmonia-exports")
 BLOB_AUDIT_CONTAINER = getenv("TXM_BLOB_AUDIT_CONTAINER", default="harmonia-atlas")
+BLOB_EVENT_CONTAINER = getenv("TXM_BLOB_EVENT_CONTAINER", default="harmonia-events")
 
 if not BLOB_STORAGE_DSN:
     # The path to load import files from.
@@ -181,6 +182,10 @@ API_AUTH_ENABLED = getenv("TXM_API_AUTH_ENABLED", default="true", conv=boolconv)
 # Azure AD application details
 AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID")
 AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
+
+# Azure event hub connection information
+EVENT_HUB_DSN = getenv("TXM_EVENT_HUB_DSN", required=False)
+EVENT_HUB_NAME = getenv("TXM_EVENT_HUB_NAME", required=False)
 
 # TEMPORARY: Mastercard agent selection
 MASTERCARD_TGX2_ENABLED = getenv("TXM_MASTERCARD_TGX2_ENABLED", default="false", conv=boolconv)
