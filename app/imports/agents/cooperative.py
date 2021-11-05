@@ -7,7 +7,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 
@@ -17,7 +17,7 @@ SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 
 class Cooperative(FileAgent):
-    feed_type = ImportFeedTypes.MERCHANT
+    feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
     config = Config(
         ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
@@ -38,13 +38,13 @@ class Cooperative(FileAgent):
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug="",
             transaction_date=self.get_transaction_date(data),
             has_time=True,
-            payment_provider_slug="",
             spend_amount=to_pennies(data["amount"]["value"]),
             spend_multiplier=100,
             spend_currency=data["amount"]["unit"],
-            extra_fields={k: data[k] for k in ("card",)},
         )
 
     @staticmethod

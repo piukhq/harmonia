@@ -14,7 +14,7 @@ from sqlalchemy.orm.session import Session
 
 import settings
 from app import db
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import BaseAgent
 from app.imports.agents.bases.file_agent import FileAgent, SftpFileSource
 from app.imports.agents.bases.queue_agent import QueueAgent
@@ -108,9 +108,9 @@ class QueueDumper(DataDumper):
                 print(data)
             return
 
-        if self.agent.feed_type in (ImportFeedTypes.AUTH, ImportFeedTypes.SETTLED):
+        if self.agent.feed_type in (FeedType.AUTH, FeedType.SETTLED):
             queue_name = f"""{self.agent.provider_slug}-{('auth'
-                if self.agent.feed_type == ImportFeedTypes.AUTH else 'settlement')}"""
+                if self.agent.feed_type == FeedType.AUTH else 'settlement')}"""
         else:
             raise Exception(f"Unsupported ImportFeedType: {self.agent.feed_type}")
 

@@ -1,10 +1,132 @@
+"""
+TODO: this module is due a name change. "import" here refers to importing data into the matching system, not the agents.
+"""
+
 import typing as t
+from uuid import uuid4
 
 from app import db, models, tasks
+from app.feeds import FeedType
 from app.reporting import get_logger
 from app.status import status_monitor
 
 log = get_logger("import-director")
+
+
+class ImportDirector:
+    class ImportError(Exception):
+        pass
+
+    def get_feed_type_handler(self, feed_type: FeedType) -> t.Callable[[list[models.Transaction]], None]:
+        return {
+            FeedType.AUTH: self.handle_auth_transactions,
+            FeedType.SETTLED: self.handle_settled_transactions,
+            FeedType.MERCHANT: self.handle_merchant_transactions,
+        }[feed_type]
+
+    def handle_transaction(self, transaction_id: str, *, session: db.Session) -> None:
+        log.info(f"Import director handling transaction #{transaction_id}")
+
+        transaction = self._load_transaction(transaction_id, session=session)
+        log.debug(f"Loaded {transaction.feed_type.name} transaction: {transaction}")
+
+        handler = self.get_feed_type_handler(transaction.feed_type)
+        handler([transaction])
+
+        log.debug(f"Successfully enqueued import job for {transaction}")
+
+    def handle_transactions(self, match_group: str, *, session: db.Session) -> None:
+        log.info(f"Import director handling transaction group #{match_group}")
+
+        transactions = self._load_transactions(match_group, session=session)
+        feed_types = {tx.feed_type for tx in transactions}
+
+        if len(feed_types) > 1:
+            raise self.ImportError(
+                "Received match group with mixed feed types: #{match_group}. "
+                "This indicates a problem in the import agent base."
+            )
+
+        feed_type = feed_types.pop()
+        log.debug(f"Loaded {len(transactions)} {feed_type.name} transactions")
+
+        handler = self.get_feed_type_handler(feed_type)
+        handler(transactions)
+
+        log.debug(f"Successfully enqueued import job for {len(transactions)} {feed_type.name} transactions.")
+
+    def handle_auth_transactions(self, transactions: list[models.Transaction]) -> None:
+        self._handle_payment_transactions(transactions, import_task=tasks.import_auth_payment_transactions)
+
+    def handle_settled_transactions(self, transactions: list[models.Transaction]) -> None:
+        self._handle_payment_transactions(transactions, import_task=tasks.import_settled_payment_transactions)
+
+    def handle_merchant_transactions(self, transactions: list[models.Transaction]) -> None:
+        match_group = uuid4().hex
+        scheme_transactions = [
+            models.SchemeTransaction(
+                merchant_identifier_ids=transaction.merchant_identifier_ids,
+                provider_slug=transaction.merchant_slug,
+                payment_provider_slug=transaction.payment_provider_slug,
+                transaction_id=transaction.transaction_id,
+                transaction_date=transaction.transaction_date,
+                has_time=transaction.has_time,
+                spend_amount=transaction.spend_amount,
+                spend_multiplier=transaction.spend_multiplier,
+                spend_currency=transaction.spend_currency,
+                first_six=transaction.first_six,
+                last_four=transaction.last_four,
+                status=models.TransactionStatus.PENDING,
+                auth_code=transaction.auth_code,
+                match_group=match_group,
+                extra_fields={},
+            )
+            for transaction in transactions
+        ]
+        tasks.import_queue.enqueue(tasks.import_scheme_transactions, scheme_transactions, match_group=match_group)
+
+    def _handle_payment_transactions(self, transactions: list[models.Transaction], *, import_task: t.Callable) -> None:
+        match_group = uuid4().hex
+        payment_transactions = [
+            models.PaymentTransaction(
+                merchant_identifier_ids=transaction.merchant_identifier_ids,
+                provider_slug=transaction.payment_provider_slug,
+                transaction_id=transaction.transaction_id,
+                settlement_key=transaction.settlement_key,
+                transaction_date=transaction.transaction_date,
+                has_time=transaction.has_time,
+                spend_amount=transaction.spend_amount,
+                spend_multiplier=transaction.spend_multiplier,
+                spend_currency=transaction.spend_currency,
+                card_token=transaction.card_token,
+                first_six=transaction.first_six,
+                last_four=transaction.last_four,
+                status=models.TransactionStatus.PENDING,
+                auth_code=transaction.auth_code,
+                match_group=match_group,
+                extra_fields={},
+            )
+            for transaction in transactions
+        ]
+        tasks.import_queue.enqueue(import_task, payment_transactions, match_group=match_group)
+
+    def _load_transaction(self, transaction_id: str, *, session: db.Session) -> models.Transaction:
+        q = session.query(models.Transaction).filter(models.Transaction.transaction_id == transaction_id)
+        return db.run_query(
+            q.one,
+            session=session,
+            read_only=True,
+            description=f"load transaction #{transaction_id} for import into the matching system",
+        )
+
+    def _load_transactions(self, match_group: str, *, session: db.Session) -> models.Transaction:
+        q = session.query(models.Transaction).filter(models.Transaction.match_group == match_group)
+        return db.run_query(
+            q.all,
+            session=session,
+            read_only=True,
+            description=f"load transactions in group #{match_group} for import into the matching system",
+        )
 
 
 class SchemeImportDirector:
@@ -100,12 +222,7 @@ class PaymentImportDirector:
 
         db.run_query(add_transaction, session=session, description="create auth payment transaction")
 
-        tasks.identify_user_queue.enqueue(
-            tasks.identify_user,
-            auth_transaction.settlement_key,
-            auth_transaction.merchant_identifier_ids,
-            auth_transaction.card_token,
-        )
+        tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.settlement_key)
 
         log.info(f"Received, persisted, and enqueued matching job for auth transaction {auth_transaction}.")
 
@@ -141,11 +258,6 @@ class PaymentImportDirector:
 
             db.run_query(add_transaction, session=session, description="create settled transaction")
 
-            tasks.identify_user_queue.enqueue(
-                tasks.identify_user,
-                settled_transaction.settlement_key,
-                settled_transaction.merchant_identifier_ids,
-                settled_transaction.card_token,
-            )
+            tasks.matching_queue.enqueue(tasks.match_payment_transaction, settled_transaction.settlement_key)
 
         log.info(f"Received, persisted, and enqueued settled transaction {settled_transaction}.")

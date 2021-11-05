@@ -8,7 +8,7 @@ import redis.lock
 
 import settings
 from app import db, models, tasks
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.exceptions import MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
@@ -17,19 +17,21 @@ from app.utils import missing_property
 
 
 class SchemeTransactionFields(t.NamedTuple):
+    merchant_slug: str
     payment_provider_slug: str
     transaction_date: pendulum.DateTime
     has_time: bool
     spend_amount: int
     spend_multiplier: int
     spend_currency: str
-    extra_fields: dict
     first_six: t.Optional[str] = None
     last_four: t.Optional[str] = None
     auth_code: str = ""
 
 
 class PaymentTransactionFields(t.NamedTuple):
+    merchant_slug: str
+    payment_provider_slug: str
     transaction_date: pendulum.DateTime
     has_time: bool
     spend_amount: int
@@ -37,48 +39,28 @@ class PaymentTransactionFields(t.NamedTuple):
     spend_currency: str
     card_token: str
     settlement_key: str
-    extra_fields: dict
     first_six: t.Optional[str] = None
     last_four: t.Optional[str] = None
     auth_code: str = ""
 
 
+class IdentifyArgs(t.NamedTuple):
+    transaction_id: str
+    merchant_identifier_ids: list[int]
+    card_token: str
+
+
 TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
-class ImportTaskProtocol(t.Protocol):
-    def __call__(self, transactions: t.List[TxType], /, *, match_group: str) -> None:
-        ...
-
-
-class FeedTypeHandler(t.NamedTuple):
-    model: db.Base
-    import_task: ImportTaskProtocol
-
-
-FEED_TYPE_HANDLERS = {
-    ImportFeedTypes.MERCHANT: FeedTypeHandler(
-        model=models.SchemeTransaction, import_task=tasks.import_scheme_transactions
-    ),
-    ImportFeedTypes.AUTH: FeedTypeHandler(
-        model=models.PaymentTransaction,
-        import_task=tasks.import_auth_payment_transactions,
-    ),
-    ImportFeedTypes.SETTLED: FeedTypeHandler(
-        model=models.PaymentTransaction,
-        import_task=tasks.import_settled_payment_transactions,
-    ),
-}
-
-
 @lru_cache(maxsize=2048)
-def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str, *, session: db.Session) -> t.List[int]:
+def identify_mid(mid: str, feed_type: FeedType, provider_slug: str, *, session: db.Session) -> t.List[int]:
     def find_mid():
         q = session.query(models.MerchantIdentifier)
 
-        if feed_type == ImportFeedTypes.MERCHANT:
+        if feed_type == FeedType.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
-        elif feed_type in (ImportFeedTypes.SETTLED, ImportFeedTypes.AUTH):
+        elif feed_type in (FeedType.SETTLED, FeedType.AUTH):
             q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
@@ -94,6 +76,21 @@ def identify_mid(mid: str, feed_type: ImportFeedTypes, provider_slug: str, *, se
     return [mid.id for mid in merchant_identifiers]
 
 
+@lru_cache(maxsize=2048)
+def get_merchant_slug(mid: str) -> str:
+    with db.session_scope() as session:
+
+        def find_slug():
+            return (
+                session.query(models.LoyaltyScheme.slug)
+                .join(models.MerchantIdentifier)
+                .filter(models.MerchantIdentifier.mid == mid)
+                .scalar()
+            )
+
+        return db.run_query(find_slug, session=session, read_only=True, description=f"find merchant slug for mid {mid}")
+
+
 class BaseAgent:
     class ImportError(Exception):
         pass
@@ -107,8 +104,12 @@ class BaseAgent:
         return missing_property(type(self), "provider_slug")
 
     @property
-    def feed_type(self) -> ImportFeedTypes:
+    def feed_type(self) -> FeedType:
         return missing_property(type(self), "feed_type")
+
+    @property
+    def feed_type_is_payment(self) -> bool:
+        return self.feed_type in [FeedType.AUTH, FeedType.SETTLED, FeedType.REFUND]
 
     def help(self, session: db.Session) -> str:
         return (
@@ -159,6 +160,10 @@ class BaseAgent:
 
     def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
+
+    def get_merchant_slug(self, data: dict) -> str:
+        mid = self.get_mids(data).pop()
+        return get_merchant_slug(mid)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
@@ -225,14 +230,15 @@ class BaseAgent:
 
         new = self._find_new_transactions(provider_transactions, session=session)
 
-        handler = FEED_TYPE_HANDLERS[self.feed_type]
+        # NOTE: it may be worth limiting the batch size if files get any larger than 10k transactions.
+        import_transaction_inserts = []
+        transaction_inserts = []
 
-        # TODO: it may be worth limiting the batch size if files get any larger than 10k transactions.
-        insertions = []
-        queue_transactions = []
+        # user ID requests to enqueue after import
+        identify_args: list[IdentifyArgs] = []
 
         # generate a match group ID
-        match_group = str(uuid4())
+        match_group = uuid4().hex
 
         for tx_data in new:
             tid = self.get_transaction_id(tx_data)
@@ -245,52 +251,89 @@ class BaseAgent:
                 continue
 
             try:
-                mids = self.get_mids(tx_data)
-
-                merchant_identifier_ids = []
-                for mid in mids:
-                    try:
-                        merchant_identifier_ids.extend(self._identify_mid(mid, session=session))
-                    except MissingMID:
-                        pass
-
-                identified = len(merchant_identifier_ids) > 0
-
-                insertions.append(
-                    dict(
-                        transaction_id=tid,
-                        provider_slug=self.provider_slug,
-                        identified=identified,
-                        match_group=match_group,
-                        data=tx_data,
-                        source=source,
-                    )
+                import_transaction_insert, transaction_insert, identify = self._build_inserts(
+                    tx_data, match_group, source, session=session
                 )
+                import_transaction_inserts.append(import_transaction_insert)
 
-                if identified:
-                    queue_transactions.append(
-                        self._build_queue_transaction(
-                            model=handler.model,
-                            transaction_data=tx_data,
-                            merchant_identifier_ids=merchant_identifier_ids,
-                            transaction_id=tid,
-                            match_group=match_group,
-                        )
-                    )
+                if transaction_insert:
+                    transaction_inserts.append(transaction_insert)
 
+                if identify:
+                    identify_args.append(identify)
             finally:
                 lock.release()
 
             yield
 
-        if insertions:
-            db.engine.execute(models.ImportTransaction.__table__.insert().values(insertions))
-            self._update_metrics(n_insertions=len(insertions))
+        if import_transaction_inserts:
+            db.engine.execute(models.ImportTransaction.__table__.insert().values(import_transaction_inserts))
+            self._update_metrics(n_insertions=len(import_transaction_inserts))
 
-        if queue_transactions:
-            tasks.import_queue.enqueue(handler.import_task, queue_transactions, match_group=match_group)
+        if transaction_inserts:
+            db.engine.execute(models.Transaction.__table__.insert().values(transaction_inserts))
+
+        if self.feed_type_is_payment:
+            # payment imports need to get identified before they can be matched
+            for args in identify_args:
+                tasks.identify_user_queue.enqueue(tasks.identify_user, **args._asdict())
+        elif self.feed_type == FeedType.MERCHANT:
+            # merchant imports can go straight to the matching engine
+            tasks.import_queue.enqueue(tasks.import_transactions, match_group)
 
         return len(new)
+
+    def _build_inserts(
+        self, tx_data: dict, match_group: str, source: str, *, session: db.Session
+    ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
+        tid = self.get_transaction_id(tx_data)
+        mids = self.get_mids(tx_data)
+
+        merchant_identifier_ids = []
+        for mid in mids:
+            try:
+                merchant_identifier_ids.extend(self._identify_mid(mid, session=session))
+            except MissingMID:
+                pass
+
+        identified = len(merchant_identifier_ids) > 0
+
+        import_transaction_insert = dict(
+            transaction_id=tid,
+            provider_slug=self.provider_slug,
+            identified=identified,
+            match_group=match_group,
+            data=tx_data,
+            source=source,
+        )
+        transaction_insert = None
+        identify = None
+
+        if identified:
+            transaction_fields = self.to_transaction_fields(tx_data)
+            transaction_insert = dict(
+                feed_type=self.feed_type,
+                status=models.TransactionStatus.IMPORTED,
+                merchant_identifier_ids=merchant_identifier_ids,
+                transaction_id=tid,
+                match_group=match_group,
+                **transaction_fields._asdict(),
+            )
+
+            if self.feed_type_is_payment:
+                if not isinstance(transaction_fields, PaymentTransactionFields):
+                    raise self.ImportError(
+                        f"{self.provider_slug} agent is configured with a feed type of {self.feed_type}, "
+                        f" but provided {type(transaction_fields).__name__} instead of PaymentTransactionFields"
+                    )
+
+                identify = IdentifyArgs(
+                    transaction_id=transaction_fields.settlement_key,
+                    merchant_identifier_ids=merchant_identifier_ids,
+                    card_token=transaction_fields.card_token,
+                )
+
+        return import_transaction_insert, transaction_insert, identify
 
     def _update_metrics(self, n_insertions: int) -> None:
         """
@@ -304,26 +347,4 @@ class BaseAgent:
             transaction_type=transaction_type,
             process_type="import",
             slug=self.provider_slug,
-        )
-
-    def _build_queue_transaction(
-        self,
-        *,
-        model: db.Base,
-        transaction_data: dict,
-        merchant_identifier_ids: t.List[int],
-        transaction_id: str,
-        match_group: str,
-    ) -> db.Base:
-        """
-        Creates a transaction instance depending on the feed type and enqueues the transaction.
-        """
-        transaction_fields = self.to_transaction_fields(transaction_data)
-
-        return model(
-            provider_slug=self.provider_slug,
-            merchant_identifier_ids=merchant_identifier_ids,
-            transaction_id=transaction_id,
-            match_group=match_group,
-            **transaction_fields._asdict(),
         )

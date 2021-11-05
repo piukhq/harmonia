@@ -9,7 +9,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.service.hermes import PaymentProviderSlug
@@ -22,7 +22,7 @@ DATETIME_FORMAT = "YYYY-MM-DD HH:mm:ss"
 
 
 class Iceland(FileAgent):
-    feed_type = ImportFeedTypes.MERCHANT
+    feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     field_transforms: t.Dict[str, t.Callable] = {
@@ -83,25 +83,16 @@ class Iceland(FileAgent):
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug=self.payment_provider_map[data["TransactionCardScheme"]],
             transaction_date=self.get_transaction_date(data),
             has_time=True,
-            payment_provider_slug=Iceland.payment_provider_map[data["TransactionCardScheme"]],
             spend_amount=data["TransactionAmountValue"],
             spend_multiplier=100,
             spend_currency=data["TransactionAmountUnit"],
             auth_code=data["TransactionAuthCode"],
             first_six=data["TransactionCardFirst6"],
             last_four=data["TransactionCardLast4"],
-            extra_fields={
-                k: data[k]
-                for k in (
-                    "TransactionCardExpiry",
-                    "TransactionCardSchemeId",
-                    "TransactionCardScheme",
-                    "TransactionCashbackValue",
-                    "TransactionCashbackUnit",
-                )
-            },
         )
 
     @staticmethod

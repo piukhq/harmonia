@@ -8,7 +8,7 @@ import pendulum
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
-from app.feeds import ImportFeedTypes
+from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.service.hermes import PaymentProviderSlug
@@ -48,7 +48,7 @@ DATA_FIELDS = (
 
 
 class WhSmith(FileAgent):
-    feed_type = ImportFeedTypes.MERCHANT
+    feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
 
     field_transforms: t.Dict[str, t.Callable] = {
@@ -86,6 +86,7 @@ class WhSmith(FileAgent):
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
             payment_provider_slug=WhSmith.payment_provider_map[data["card_type"]],
             transaction_date=self.get_transaction_date(data),
             has_time=True,
@@ -94,7 +95,6 @@ class WhSmith(FileAgent):
             spend_currency=data["currency"],
             auth_code=data["auth_no"],
             last_four=data["card_masked_pan"],
-            extra_fields={},
         )
 
     @staticmethod

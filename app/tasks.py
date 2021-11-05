@@ -93,10 +93,26 @@ def import_settled_payment_transactions(
             director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
-def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str) -> None:
-    log.debug(f"Task started: identify user #{settlement_key}")
+def identify_user(*, transaction_id: str, merchant_identifier_ids: list, card_token: str) -> None:
+    log.debug(f"Task started: identify user #{transaction_id}")
     with db.session_scope() as session:
-        identifier.identify_user(settlement_key, merchant_identifier_ids, token, session=session)
+        identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
+
+
+def import_transaction(transaction_id: str) -> None:
+    log.debug(f"Task started: match transaction #{transaction_id}")
+    director = import_director.ImportDirector()
+
+    with db.session_scope() as session:
+        director.handle_transaction(transaction_id, session=session)
+
+
+def import_transactions(match_group: str) -> None:
+    log.debug(f"Task started: match transactions in group #{match_group}")
+    director = import_director.ImportDirector()
+
+    with db.session_scope() as session:
+        director.handle_transactions(match_group, session=session)
 
 
 def match_payment_transaction(settlement_key: str) -> None:
