@@ -15,6 +15,7 @@ from prometheus_client import (
 from prometheus_client.exposition import ThreadingWSGIServer, _SilentHandler, make_server
 from prometheus_client.registry import REGISTRY
 
+import settings
 from app.reporting import get_logger
 
 log = get_logger(__name__)
@@ -175,11 +176,17 @@ def get_prometheus_thread() -> threading.Thread:
         start_response("200 OK", [header])
         return [output]
 
-    httpd = make_server("", 9100, prometheus_app, ThreadingWSGIServer, handler_class=_SilentHandler)
+    if settings.PUSH_PROMETHEUS_METRICS:
+        httpd = make_server("", 9100, prometheus_app, ThreadingWSGIServer, handler_class=_SilentHandler)
 
-    def run_server():
-        log.debug("Starting Prometheus collection server.")
-        httpd.serve_forever()
+        def run_server():
+            log.debug("Starting Prometheus collection server.")
+            httpd.serve_forever()
+
+    else:
+
+        def run_server():
+            log.warning("Prometheus metrics are disabled, refusing to start collection server.")
 
     thread = threading.Thread(target=run_server)
     thread.daemon = True
