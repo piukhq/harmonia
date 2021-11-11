@@ -502,6 +502,7 @@ def run_transaction_matching(fixture: dict, *, import_only: bool = False):
     for agent in fixture["agents"]:
         run_import_agent(agent["slug"], fixture)
     run_rq_worker("import")
+    run_rq_worker("identify")
 
     if import_only:
         return
