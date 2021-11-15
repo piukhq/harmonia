@@ -54,7 +54,7 @@ class MatchingWorker:
 
         slug = slugs.pop()
 
-        user_identity = identifier.get_user_identity(payment_transaction, session=session)
+        user_identity = identifier.get_user_identity(payment_transaction.settlement_key, session=session)
 
         try:
             return matching_agents.instantiate(slug, payment_transaction, user_identity)
