@@ -66,13 +66,11 @@ def persist_user_identity(settlement_key: str, user_info: dict, *, session: db.S
     return user_identity
 
 
-def _user_identity_query(settlement_key: int, *, session: db.Session) -> Query:
-    return session.query(models.UserIdentity).filter(
-        models.UserIdentity.settlement_key == settlement_key
-    )
+def _user_identity_query(settlement_key: str, *, session: db.Session) -> Query:
+    return session.query(models.UserIdentity).filter(models.UserIdentity.settlement_key == settlement_key)
 
 
-def try_get_user_identity(settlement_key: int, *, session: db.Session) -> Optional[models.UserIdentity]:
+def try_get_user_identity(settlement_key: str, *, session: db.Session) -> Optional[models.UserIdentity]:
     return db.run_query(
         _user_identity_query(settlement_key, session=session).one_or_none,
         session=session,
@@ -81,7 +79,7 @@ def try_get_user_identity(settlement_key: int, *, session: db.Session) -> Option
     )
 
 
-def get_user_identity(settlement_key: int, *, session: db.Session) -> models.UserIdentity:
+def get_user_identity(settlement_key: str, *, session: db.Session) -> models.UserIdentity:
     return db.run_query(
         _user_identity_query(settlement_key, session=session).one,
         session=session,
@@ -109,7 +107,9 @@ def identify_payment_transaction(payment_transaction_id: int, *, session: db.Ses
         return
 
     try:
-        user_info = payment_card_user_info(payment_transaction, session=session)
+        user_info = payment_card_user_info(
+            payment_transaction.merchant_identifier_ids, payment_transaction.card_token, session=session
+        )
     except SchemeAccountNotFound:
         log.debug(f"Hermes was unable to find a scheme account matching {payment_transaction}")
         return

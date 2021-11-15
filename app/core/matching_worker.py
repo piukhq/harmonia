@@ -254,16 +254,20 @@ class MatchingWorker:
     def _ensure_user_identity(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> models.UserIdentity:
-        if user_identity := identifier.try_get_user_identity(payment_transaction, session=session):
+        if user_identity := identifier.try_get_user_identity(payment_transaction.settlement_key, session=session):
             return user_identity
 
         try:
-            user_info = identifier.payment_card_user_info(payment_transaction, session=session)
+            user_info = identifier.payment_card_user_info(
+                payment_transaction.merchant_identifier_ids, payment_transaction.card_token, session=session
+            )
         except Exception as ex:
             raise self.RedressError(f"Failed to find a user identity for {payment_transaction}: {repr(ex)}") from ex
 
         try:
-            user_identity = identifier.persist_user_identity(payment_transaction, user_info, session=session)
+            user_identity = identifier.persist_user_identity(
+                payment_transaction.settlement_key, user_info, session=session
+            )
         except Exception as ex:
             raise self.RedressError(f"Failed to persist user identity for {payment_transaction}: {repr(ex)}") from ex
 

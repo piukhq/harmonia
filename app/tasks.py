@@ -93,10 +93,10 @@ def import_settled_payment_transactions(
             director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
-def identify_user(settlement_key: int, merchant_identifier_ids: list, token: str) -> None:
+def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str) -> None:
     log.debug(f"Task started: identify user #{settlement_key}")
     with db.session_scope() as session:
-        identifier.identify_user(settlement_key, merchant_identifier_ids, token,  session=session)
+        identifier.identify_user(settlement_key, merchant_identifier_ids, token, session=session)
 
 
 def identify_payment_transaction(payment_transaction_id: int) -> None:

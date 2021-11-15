@@ -136,12 +136,12 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
 
     worker = MatchingWorker()
 
-    user_identity = identifier.try_get_user_identity(ptx, session=db_session)
+    user_identity = identifier.try_get_user_identity(ptx.settlement_key, session=db_session)
     assert user_identity is None  # payment transaction should have no user identity to begin with
 
     worker.force_match(ptx.id, stx.id, session=db_session)
 
-    user_identity = identifier.try_get_user_identity(ptx, session=db_session)
+    user_identity = identifier.try_get_user_identity(ptx.settlement_key, session=db_session)
     assert user_identity is not None  # payment transaction should now have a user identity
 
     assert len(responses.calls) == 1  # should have called out to hermes once
