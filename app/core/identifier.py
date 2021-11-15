@@ -88,48 +88,6 @@ def get_user_identity(settlement_key: str, *, session: db.Session) -> models.Use
     )
 
 
-def identify_payment_transaction(payment_transaction_id: int, *, session: db.Session) -> None:
-    log.debug(f"Attempting identification of payment transaction #{payment_transaction_id}")
-
-    payment_transaction = db.run_query(
-        lambda: session.query(models.PaymentTransaction).get(payment_transaction_id),
-        session=session,
-        read_only=True,
-        description="find payment transaction",
-    )
-
-    if payment_transaction is None:
-        log.warning(f"Failed to load payment transaction #{payment_transaction_id} - record may have been deleted.")
-        return
-
-    if try_get_user_identity(payment_transaction, session=session):
-        log.warning(f"Skipping identification of {payment_transaction} as it already has an associated user identity.")
-        return
-
-    try:
-        user_info = payment_card_user_info(
-            payment_transaction.merchant_identifier_ids, payment_transaction.card_token, session=session
-        )
-    except SchemeAccountNotFound:
-        log.debug(f"Hermes was unable to find a scheme account matching {payment_transaction}")
-        return
-    except requests.RequestException:
-        event_id = sentry_sdk.capture_exception()
-        log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
-        tasks.matching_queue.enqueue(tasks.identify_payment_transaction, payment_transaction_id)
-        return
-
-    if "card_information" not in user_info:
-        log.debug(f"Hermes identified {payment_transaction} but could return no payment card information")
-        return
-
-    persist_user_identity(payment_transaction, user_info, session=session)
-
-    log.debug("Identification complete. Enqueueing matching task.")
-
-    tasks.matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction_id)
-
-
 def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str, *, session: db.Session) -> None:
     log.debug(f"Attempting identification of a transaction with settlement_key #{settlement_key}")
 
@@ -155,3 +113,4 @@ def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str
     persist_user_identity(settlement_key, user_info, session=session)
 
     log.debug("Identification complete. Enqueueing matching task.")
+    tasks.matching_queue.enqueue(tasks.match_payment_transaction, settlement_key)

@@ -125,7 +125,7 @@ class PaymentImportDirector:
             if auth_transaction.status == models.TransactionStatus.PENDING:
                 self._override_auth_transaction(auth_transaction, settled_transaction, session=session)
                 log.info(f"Re-queuing matching job for {auth_transaction}")
-                tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.id)
+                tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.settlement_key)
             else:
                 log.info(
                     f"Skipping import of settled transaction {settled_transaction} "

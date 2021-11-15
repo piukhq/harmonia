@@ -99,18 +99,12 @@ def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str
         identifier.identify_user(settlement_key, merchant_identifier_ids, token, session=session)
 
 
-def identify_payment_transaction(payment_transaction_id: int) -> None:
-    log.debug(f"Task started: identify payment transaction #{payment_transaction_id}")
-    with db.session_scope() as session:
-        identifier.identify_payment_transaction(payment_transaction_id, session=session)
-
-
-def match_payment_transaction(payment_transaction_id: int) -> None:
-    log.debug(f"Task started: match payment transaction #{payment_transaction_id}")
+def match_payment_transaction(settlement_key: str) -> None:
+    log.debug(f"Task started: match payment transaction #{settlement_key}")
     worker = matching_worker.MatchingWorker()
 
     with db.session_scope() as session:
-        worker.handle_payment_transaction(payment_transaction_id, session=session)
+        worker.handle_payment_transaction(settlement_key, session=session)
 
 
 def match_scheme_transactions(match_group: str) -> None:
