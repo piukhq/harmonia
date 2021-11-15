@@ -15,7 +15,7 @@ class SchemeAccountNotFound(Exception):
     pass
 
 
-def payment_card_user_info(merchant_identifier_ids: list, token: str, *, session: db.Session) -> dict:
+def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, session: db.Session) -> dict:
     # TODO: this query exists in app/core/matching_worker.py:50 as well, should we combine?
     merchant_identifiers = db.run_query(
         lambda: session.query(models.MerchantIdentifier)
