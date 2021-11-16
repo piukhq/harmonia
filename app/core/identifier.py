@@ -98,7 +98,7 @@ def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str
     try:
         user_info = payment_card_user_info(merchant_identifier_ids, token, session=session)
     except SchemeAccountNotFound:
-        log.debug(f"Hermes was unable to find a scheme account for transaction with settlement Key:  {settlement_key}")
+        log.debug(f"Hermes was unable to find a scheme account for transaction with settlement key:  {settlement_key}")
         return
     except requests.RequestException:
         event_id = sentry_sdk.capture_exception()
