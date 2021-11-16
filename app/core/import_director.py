@@ -100,7 +100,12 @@ class PaymentImportDirector:
 
         db.run_query(add_transaction, session=session, description="create auth payment transaction")
 
-        tasks.matching_queue.enqueue(tasks.identify_payment_transaction, auth_transaction.id)
+        tasks.identify_user_queue.enqueue(
+            tasks.identify_user,
+            auth_transaction.settlement_key,
+            auth_transaction.merchant_identifier_ids,
+            auth_transaction.card_token,
+        )
 
         log.info(f"Received, persisted, and enqueued matching job for auth transaction {auth_transaction}.")
 
@@ -120,7 +125,7 @@ class PaymentImportDirector:
             if auth_transaction.status == models.TransactionStatus.PENDING:
                 self._override_auth_transaction(auth_transaction, settled_transaction, session=session)
                 log.info(f"Re-queuing matching job for {auth_transaction}")
-                tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.id)
+                tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.settlement_key)
             else:
                 log.info(
                     f"Skipping import of settled transaction {settled_transaction} "
@@ -135,6 +140,12 @@ class PaymentImportDirector:
                 session.commit()
 
             db.run_query(add_transaction, session=session, description="create settled transaction")
-            tasks.matching_queue.enqueue(tasks.identify_payment_transaction, settled_transaction.id)
+
+            tasks.identify_user_queue.enqueue(
+                tasks.identify_user,
+                settled_transaction.settlement_key,
+                settled_transaction.merchant_identifier_ids,
+                settled_transaction.card_token,
+            )
 
         log.info(f"Received, persisted, and enqueued settled transaction {settled_transaction}.")
