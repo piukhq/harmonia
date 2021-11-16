@@ -54,7 +54,7 @@ class MatchingWorker:
 
         slug = slugs.pop()
 
-        user_identity = identifier.get_user_identity(payment_transaction, session=session)
+        user_identity = identifier.get_user_identity(payment_transaction.settlement_key, session=session)
 
         try:
             return matching_agents.instantiate(slug, payment_transaction, user_identity)
@@ -143,12 +143,14 @@ class MatchingWorker:
 
         return matching_queue
 
-    def handle_payment_transaction(self, payment_transaction_id: int, *, session: db.Session) -> None:
+    def handle_payment_transaction(self, settlement_key: str, *, session: db.Session) -> None:
         """Runs the matching process for a single payment transaction."""
         status_monitor.checkin(self)
 
         payment_transaction = db.run_query(
-            lambda: session.query(models.PaymentTransaction).get(payment_transaction_id),
+            lambda: session.query(models.PaymentTransaction)
+            .filter(models.PaymentTransaction.settlement_key == settlement_key)
+            .one_or_none(),
             session=session,
             read_only=True,
             description="find payment transaction",
@@ -156,7 +158,7 @@ class MatchingWorker:
 
         if payment_transaction is None:
             self.log.warning(
-                f"Failed to load payment transaction #{payment_transaction_id} - record may have been deleted."
+                f"Failed to load payment transaction with settlement key #{settlement_key} - may be deleted."
             )
             return
 
@@ -224,7 +226,7 @@ class MatchingWorker:
                 )
             )
             for payment_transaction in payment_transactions:
-                matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.id)
+                matching_queue.enqueue(tasks.match_payment_transaction, payment_transaction.settlement_key)
         else:
             self.log.debug("Found no matching payment transactions. Exiting matching job.")
 
@@ -254,16 +256,20 @@ class MatchingWorker:
     def _ensure_user_identity(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> models.UserIdentity:
-        if user_identity := identifier.try_get_user_identity(payment_transaction, session=session):
+        if user_identity := identifier.try_get_user_identity(payment_transaction.settlement_key, session=session):
             return user_identity
 
         try:
-            user_info = identifier.payment_card_user_info(payment_transaction, session=session)
+            user_info = identifier.payment_card_user_info(
+                payment_transaction.merchant_identifier_ids, payment_transaction.card_token, session=session
+            )
         except Exception as ex:
             raise self.RedressError(f"Failed to find a user identity for {payment_transaction}: {repr(ex)}") from ex
 
         try:
-            user_identity = identifier.persist_user_identity(payment_transaction, user_info, session=session)
+            user_identity = identifier.persist_user_identity(
+                payment_transaction.settlement_key, user_info, session=session
+            )
         except Exception as ex:
             raise self.RedressError(f"Failed to persist user identity for {payment_transaction}: {repr(ex)}") from ex
 

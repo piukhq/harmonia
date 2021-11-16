@@ -55,6 +55,7 @@ def run_worker(queue_names: t.List[str], *, burst: bool = False, workerclass: t.
 
 
 import_queue = LoggedQueue(name="import", connection=db.redis_raw)
+identify_user_queue = LoggedQueue(name="identify", connection=db.redis_raw)
 matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
 matching_slow_queue = LoggedQueue(name="matching_slow", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
@@ -92,18 +93,18 @@ def import_settled_payment_transactions(
             director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
-def identify_payment_transaction(payment_transaction_id: int) -> None:
-    log.debug(f"Task started: identify payment transaction #{payment_transaction_id}")
+def identify_user(settlement_key: str, merchant_identifier_ids: list, token: str) -> None:
+    log.debug(f"Task started: identify user #{settlement_key}")
     with db.session_scope() as session:
-        identifier.identify_payment_transaction(payment_transaction_id, session=session)
+        identifier.identify_user(settlement_key, merchant_identifier_ids, token, session=session)
 
 
-def match_payment_transaction(payment_transaction_id: int) -> None:
-    log.debug(f"Task started: match payment transaction #{payment_transaction_id}")
+def match_payment_transaction(settlement_key: str) -> None:
+    log.debug(f"Task started: match payment transaction #{settlement_key}")
     worker = matching_worker.MatchingWorker()
 
     with db.session_scope() as session:
-        worker.handle_payment_transaction(payment_transaction_id, session=session)
+        worker.handle_payment_transaction(settlement_key, session=session)
 
 
 def match_scheme_transactions(match_group: str) -> None:
