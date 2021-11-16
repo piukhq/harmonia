@@ -40,7 +40,7 @@ def get_payment_provider(slug, *, session: db.Session):
 
 
 def create_merchant_identifier_fields(
-    payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, *, session: db.Session
+    payment_provider_slug, mid, store_id, brand_id, loyalty_scheme_slug, location, postcode, *, session: db.Session
 ) -> dict:
     loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug, session=session)
     payment_provider = get_payment_provider(payment_provider_slug, session=session)
@@ -48,6 +48,7 @@ def create_merchant_identifier_fields(
     return dict(
         mid=mid,
         store_id=store_id if store_id else None,
+        brand_id=brand_id if brand_id else None,
         loyalty_scheme_id=loyalty_scheme.id,
         payment_provider_id=payment_provider.id,
         location=location,
@@ -82,6 +83,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
                 mid,
                 loyalty_scheme_slug,
                 store_id,
+                brand_id,
                 loyalty_scheme_name,
                 location,
                 postcode,
@@ -94,7 +96,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
             continue
 
         merchant_identifier_fields = create_merchant_identifier_fields(
-            payment_provider_slug, mid, store_id, loyalty_scheme_slug, location, postcode, session=session
+            payment_provider_slug, mid, store_id, brand_id, loyalty_scheme_slug, location, postcode, session=session
         )
         merchant_identifiers_fields.append(merchant_identifier_fields)
 

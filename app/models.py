@@ -39,6 +39,7 @@ class MerchantIdentifier(Base, ModelMixin):
 
     mid = s.Column(s.String(50), nullable=False)
     store_id = s.Column(s.String(50), nullable=True)
+    brand_id = s.Column(s.String(50), nullable=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
     payment_provider_id = s.Column(s.Integer, s.ForeignKey("payment_provider.id"))
     location = s.Column(s.String(250), nullable=False)
