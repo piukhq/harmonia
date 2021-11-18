@@ -244,6 +244,7 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
                 payment_token: {
                     "loyalty_id": user["loyalty_id"],
                     "scheme_account_id": idx,
+                    "payment_card_account_id": idx,
                     "user_id": idx,
                     "credentials": user["credentials"],
                     "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
