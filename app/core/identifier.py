@@ -50,6 +50,7 @@ def persist_user_identity(settlement_key: str, user_info: dict, *, session: db.S
             settlement_key=settlement_key,
             loyalty_id=user_info["loyalty_id"],
             scheme_account_id=user_info["scheme_account_id"],
+            payment_card_account_id=user_info.get("payment_card_account_id", None),
             user_id=user_info["user_id"],
             credentials=user_info["credentials"],
             first_six=user_info["card_information"]["first_six"],
