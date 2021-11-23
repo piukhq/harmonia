@@ -18,6 +18,26 @@ depends_on = None
 
 
 def upgrade():
+    # alter transactionstatus enum with new fields
+    with op.get_context().autocommit_block():
+        op.execute("ALTER TYPE transactionstatus RENAME TO transactionstatus_old")
+        op.execute(
+            "CREATE TYPE transactionstatus AS ENUM('PENDING', 'IMPORTED', 'MATCHED', 'EXPORTED', 'EXPORT_FAILED')"
+        )
+        op.execute(
+            "ALTER TABLE scheme_transaction "
+            "ALTER COLUMN status "
+            "TYPE transactionstatus "
+            "USING status::text::transactionstatus"
+        )
+        op.execute(
+            "ALTER TABLE payment_transaction "
+            "ALTER COLUMN status "
+            "TYPE transactionstatus "
+            "USING status::text::transactionstatus"
+        )
+        op.execute("DROP TYPE transactionstatus_old")
+
     # add transaction model
     op.create_table(
         "transaction",
@@ -27,11 +47,7 @@ def upgrade():
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("feed_type", sa.Enum("MERCHANT", "AUTH", "SETTLED", "REFUND", name="feedtype"), nullable=False),
-        sa.Column(
-            "status",
-            sa.Enum("PENDING", "IMPORTED", "MATCHED", "EXPORTED", "EXPORT_FAILED", name="transactionstatus"),
-            nullable=False,
-        ),
+        sa.Column("status", postgresql.ENUM(name="transactionstatus", create_type=False), nullable=False),
         sa.Column("merchant_identifier_ids", postgresql.ARRAY(sa.Integer()), nullable=True),
         sa.Column("merchant_slug", sa.String(length=50), nullable=False),
         sa.Column("payment_provider_slug", sa.String(length=50), nullable=False),
@@ -51,32 +67,6 @@ def upgrade():
         sa.UniqueConstraint("transaction_id", "feed_type", name="_transaction_id_feed_type_t_uc"),
     )
     op.create_index(op.f("ix_transaction_settlement_key"), "transaction", ["settlement_key"], unique=False)
-
-    # alter transactionstatus enum with new fields
-    with op.get_context().autocommit_block():
-        op.execute("ALTER TYPE transactionstatus RENAME TO transactionstatus_old")
-        op.execute(
-            "CREATE TYPE transactionstatus AS ENUM('PENDING', 'IMPORTED', 'MATCHED', 'EXPORTED', 'EXPORT_FAILED')"
-        )
-        op.execute(
-            "ALTER TABLE transaction "
-            "ALTER COLUMN status "
-            "TYPE transactionstatus "
-            "USING status::text::transactionstatus"
-        )
-        op.execute(
-            "ALTER TABLE scheme_transaction "
-            "ALTER COLUMN status "
-            "TYPE transactionstatus "
-            "USING status::text::transactionstatus"
-        )
-        op.execute(
-            "ALTER TABLE payment_transaction "
-            "ALTER COLUMN status "
-            "TYPE transactionstatus "
-            "USING status::text::transactionstatus"
-        )
-        op.execute("DROP TYPE transactionstatus_old")
 
     # rename user_identity.settlement_key to user_identity.transaction_id
     op.drop_index("ix_user_identity_settlement_key", table_name="user_identity")
