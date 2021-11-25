@@ -24,13 +24,13 @@ class ImportDirector:
             FeedType.MERCHANT: self.handle_merchant_transactions,
         }[feed_type]
 
-    def handle_transaction(self, transaction_id: str, *, session: db.Session) -> None:
-        log.info(f"Import director handling transaction #{transaction_id}")
+    def handle_transaction(self, transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
+        log.info(f"Import director handling {feed_type.name} transaction #{transaction_id}")
 
-        transaction = self._load_transaction(transaction_id, session=session)
-        log.debug(f"Loaded {transaction.feed_type.name} transaction: {transaction}")
+        transaction = self._load_transaction(transaction_id, feed_type, session=session)
+        log.debug(f"Loaded {feed_type.name} transaction: {transaction}")
 
-        handler = self.get_feed_type_handler(transaction.feed_type)
+        handler = self.get_feed_type_handler(feed_type)
         handler([transaction])
 
         log.debug(f"Successfully enqueued import job for {transaction}")
@@ -110,8 +110,10 @@ class ImportDirector:
         ]
         tasks.import_queue.enqueue(import_task, payment_transactions, match_group=match_group)
 
-    def _load_transaction(self, transaction_id: str, *, session: db.Session) -> models.Transaction:
-        q = session.query(models.Transaction).filter(models.Transaction.transaction_id == transaction_id)
+    def _load_transaction(self, transaction_id: str, feed_type: FeedType, *, session: db.Session) -> models.Transaction:
+        q = session.query(models.Transaction).filter(
+            models.Transaction.transaction_id == transaction_id, models.Transaction.feed_type == feed_type
+        )
         return db.run_query(
             q.one,
             session=session,

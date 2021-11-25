@@ -98,7 +98,6 @@ def identify_user(transaction_id: str, merchant_identifier_ids: list, card_token
         _attach_user_identity(transaction_id, merchant_identifier_ids, card_token, session=session)
 
     log.debug("User identification passed, enqueueing matching task.")
-    tasks.import_queue.enqueue(tasks.import_transaction, transaction_id)
 
 
 def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, card_token: str, *, session: db.Session):
