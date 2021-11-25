@@ -83,6 +83,7 @@ def get_merchant_slug(mid: str) -> str:
         def find_slug():
             return (
                 session.query(models.LoyaltyScheme.slug)
+                .distinct()
                 .join(models.MerchantIdentifier)
                 .filter(models.MerchantIdentifier.mid == mid)
                 .scalar()
