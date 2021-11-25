@@ -277,7 +277,7 @@ class BaseAgent:
         if self.feed_type_is_payment:
             # payment imports need to get identified before they can be matched
             for args in identify_args:
-                tasks.identify_user_queue.enqueue(tasks.identify_user, **args._asdict())
+                tasks.identify_user_queue.enqueue(tasks.identify_user, feed_type=self.feed_type, **args._asdict())
         elif self.feed_type == FeedType.MERCHANT:
             # merchant imports can go straight to the matching engine
             tasks.import_queue.enqueue(tasks.import_transactions, match_group)
@@ -329,7 +329,7 @@ class BaseAgent:
                     )
 
                 identify = IdentifyArgs(
-                    transaction_id=transaction_fields.settlement_key,
+                    transaction_id=tid,
                     merchant_identifier_ids=merchant_identifier_ids,
                     card_token=transaction_fields.card_token,
                 )

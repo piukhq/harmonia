@@ -54,7 +54,7 @@ class MatchingWorker:
 
         slug = slugs.pop()
 
-        user_identity = identifier.get_user_identity(payment_transaction.settlement_key, session=session)
+        user_identity = identifier.get_user_identity(payment_transaction.transaction_id, session=session)
 
         try:
             return matching_agents.instantiate(slug, payment_transaction, user_identity)
@@ -256,7 +256,7 @@ class MatchingWorker:
     def _ensure_user_identity(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> models.UserIdentity:
-        if user_identity := identifier.try_get_user_identity(payment_transaction.settlement_key, session=session):
+        if user_identity := identifier.try_get_user_identity(payment_transaction.transaction_id, session=session):
             return user_identity
 
         try:
@@ -268,7 +268,7 @@ class MatchingWorker:
 
         try:
             user_identity = identifier.persist_user_identity(
-                payment_transaction.settlement_key, user_info, session=session
+                payment_transaction.transaction_id, user_info, session=session
             )
         except Exception as ex:
             raise self.RedressError(f"Failed to persist user identity for {payment_transaction}: {repr(ex)}") from ex

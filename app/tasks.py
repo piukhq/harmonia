@@ -6,6 +6,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app import config, db, models, reporting
 from app.core import export_director, identifier, import_director, matching_worker
+from app.feeds import FeedType
 
 log = reporting.get_logger("tasks")
 
@@ -93,18 +94,19 @@ def import_settled_payment_transactions(
             director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
-def identify_user(*, transaction_id: str, merchant_identifier_ids: list, card_token: str) -> None:
+def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifier_ids: list, card_token: str) -> None:
     log.debug(f"Task started: identify user #{transaction_id}")
     with db.session_scope() as session:
         identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
+    import_queue.enqueue(import_transaction, transaction_id, feed_type)
 
 
-def import_transaction(transaction_id: str) -> None:
+def import_transaction(transaction_id: str, feed_type: FeedType) -> None:
     log.debug(f"Task started: match transaction #{transaction_id}")
     director = import_director.ImportDirector()
 
     with db.session_scope() as session:
-        director.handle_transaction(transaction_id, session=session)
+        director.handle_transaction(transaction_id, feed_type, session=session)
 
 
 def import_transactions(match_group: str) -> None:
