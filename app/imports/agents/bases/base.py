@@ -279,8 +279,8 @@ class BaseAgent:
             for args in identify_args:
                 tasks.identify_user_queue.enqueue(tasks.identify_user, feed_type=self.feed_type, **args._asdict())
         elif self.feed_type == FeedType.MERCHANT:
-            # merchant imports can go straight to the matching engine
-            tasks.import_queue.enqueue(tasks.match_transactions, match_group)
+            # merchant imports can go straight to matching/streaming
+            tasks.import_queue.enqueue(tasks.import_transactions, match_group)
 
         return len(new)
 

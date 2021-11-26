@@ -71,4 +71,4 @@ if queue_transactions:
     log.info(f"[SCRIPT] queueing import task for match group {match_group} with {len(queue_transactions)} transactions")
     for tx in queue_transactions:
         log.info(f"[SCRIPT] {repr(tx)}")
-    tasks.import_queue.enqueue(tasks.import_scheme_transactions, queue_transactions, match_group=match_group)
+    tasks.matching_queue.enqueue(tasks.persist_scheme_transactions, queue_transactions, match_group=match_group)

@@ -29,8 +29,6 @@ class MatchingDirector:
         handler = self.get_feed_type_handler(feed_type)
         handler([transaction])
 
-        log.debug(f"Successfully enqueued import job for {transaction}")
-
     def handle_transactions(self, match_group: str, *, session: db.Session) -> None:
         log.info(f"Matching director handling transaction group #{match_group}")
 
@@ -49,13 +47,13 @@ class MatchingDirector:
         handler = self.get_feed_type_handler(feed_type)
         handler(transactions)
 
-        log.debug(f"Successfully enqueued import job for {len(transactions)} {feed_type.name} transactions.")
+        log.debug(f"Successfully enqueued matching job for {len(transactions)} {feed_type.name} transactions.")
 
     def handle_auth_transactions(self, transactions: list[models.Transaction]) -> None:
-        self._handle_payment_transactions(transactions, import_task=tasks.import_auth_payment_transactions)
+        self._handle_payment_transactions(transactions, routing_task=tasks.persist_auth_payment_transactions)
 
     def handle_settled_transactions(self, transactions: list[models.Transaction]) -> None:
-        self._handle_payment_transactions(transactions, import_task=tasks.import_settled_payment_transactions)
+        self._handle_payment_transactions(transactions, routing_task=tasks.persist_settled_payment_transactions)
 
     def handle_merchant_transactions(self, transactions: list[models.Transaction]) -> None:
         match_group = uuid4().hex
@@ -79,9 +77,9 @@ class MatchingDirector:
             )
             for transaction in transactions
         ]
-        tasks.import_queue.enqueue(tasks.import_scheme_transactions, scheme_transactions, match_group=match_group)
+        tasks.matching_queue.enqueue(tasks.persist_scheme_transactions, scheme_transactions, match_group=match_group)
 
-    def _handle_payment_transactions(self, transactions: list[models.Transaction], *, import_task: t.Callable) -> None:
+    def _handle_payment_transactions(self, transactions: list[models.Transaction], *, routing_task: t.Callable) -> None:
         match_group = uuid4().hex
         payment_transactions = [
             models.PaymentTransaction(
@@ -104,7 +102,7 @@ class MatchingDirector:
             )
             for transaction in transactions
         ]
-        tasks.import_queue.enqueue(import_task, payment_transactions, match_group=match_group)
+        tasks.matching_queue.enqueue(routing_task, payment_transactions, match_group=match_group)
 
     def _load_transaction(self, transaction_id: str, feed_type: FeedType, *, session: db.Session) -> models.Transaction:
         q = session.query(models.Transaction).filter(
@@ -140,10 +138,6 @@ class SchemeMatchingDirector:
         db.run_query(add_transactions, session=session, description="create scheme transaction")
 
         tasks.matching_queue.enqueue(tasks.match_scheme_transactions, match_group=match_group)
-
-        log.info(
-            f"Received, persisted, and enqueued {len(scheme_transactions)} scheme transactions in group {match_group}."
-        )
 
 
 class PaymentMatchingDirector:
@@ -222,8 +216,6 @@ class PaymentMatchingDirector:
 
         tasks.matching_queue.enqueue(tasks.match_payment_transaction, auth_transaction.settlement_key)
 
-        log.info(f"Received, persisted, and enqueued matching job for auth transaction {auth_transaction}.")
-
     def handle_settled_payment_transaction(
         self, settled_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> None:
@@ -257,5 +249,3 @@ class PaymentMatchingDirector:
             db.run_query(add_transaction, session=session, description="create settled transaction")
 
             tasks.matching_queue.enqueue(tasks.match_payment_transaction, settled_transaction.settlement_key)
-
-        log.info(f"Received, persisted, and enqueued settled transaction {settled_transaction}.")

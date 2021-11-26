@@ -1,0 +1,2 @@
+class BaseStreamingAgent:
+    pass
