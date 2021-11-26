@@ -189,8 +189,6 @@ select * from export_transaction;
 docker exec -it txm-redis redis-cli
 
 keys *
-get txmatch:status:checkins:PaymentImportDirector
-get txmatch:status:checkins:SchemeImportDirector
 ```
 
 The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.

@@ -5,7 +5,7 @@ import rq
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app import config, db, models, reporting
-from app.core import export_director, identifier, import_director, matching_worker
+from app.core import export_director, identifier, matching_director, matching_worker
 from app.feeds import FeedType
 
 log = reporting.get_logger("tasks")
@@ -64,7 +64,7 @@ export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 def import_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str) -> None:
     log.debug(f"Task started: import {len(scheme_transactions)} scheme transactions in group {match_group}.")
-    director = import_director.SchemeImportDirector()
+    director = matching_director.SchemeMatchingDirector()
 
     with db.session_scope() as session:
         director.handle_scheme_transactions(scheme_transactions, match_group=match_group, session=session)
@@ -74,7 +74,7 @@ def import_auth_payment_transactions(
     payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
 ) -> None:
     log.debug(f"Task started: import {len(payment_transactions)} auth payment transactions.")
-    director = import_director.PaymentImportDirector()
+    director = matching_director.PaymentMatchingDirector()
 
     with db.session_scope() as session:
         # TODO: replace with batch process
@@ -86,7 +86,7 @@ def import_settled_payment_transactions(
     payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
 ) -> None:
     log.debug(f"Task started: import {len(payment_transactions)} settled payment transactions.")
-    director = import_director.PaymentImportDirector()
+    director = matching_director.PaymentMatchingDirector()
 
     with db.session_scope() as session:
         # TODO: replace with batch process
@@ -98,20 +98,20 @@ def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifi
     log.debug(f"Task started: identify user #{transaction_id}")
     with db.session_scope() as session:
         identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
-    import_queue.enqueue(import_transaction, transaction_id, feed_type)
+    import_queue.enqueue(match_transaction, transaction_id, feed_type)
 
 
-def import_transaction(transaction_id: str, feed_type: FeedType) -> None:
+def match_transaction(transaction_id: str, feed_type: FeedType) -> None:
     log.debug(f"Task started: match transaction #{transaction_id}")
-    director = import_director.ImportDirector()
+    director = matching_director.MatchingDirector()
 
     with db.session_scope() as session:
         director.handle_transaction(transaction_id, feed_type, session=session)
 
 
-def import_transactions(match_group: str) -> None:
+def match_transactions(match_group: str) -> None:
     log.debug(f"Task started: match transactions in group #{match_group}")
-    director = import_director.ImportDirector()
+    director = matching_director.MatchingDirector()
 
     with db.session_scope() as session:
         director.handle_transactions(match_group, session=session)
