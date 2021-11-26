@@ -1,7 +1,3 @@
-"""
-TODO: this module is due a name change. "import" here refers to importing data into the matching system, not the agents.
-"""
-
 import typing as t
 from uuid import uuid4
 
@@ -10,10 +6,10 @@ from app.feeds import FeedType
 from app.reporting import get_logger
 from app.status import status_monitor
 
-log = get_logger("import-director")
+log = get_logger("matching-director")
 
 
-class ImportDirector:
+class MatchingDirector:
     class ImportError(Exception):
         pass
 
@@ -25,7 +21,7 @@ class ImportDirector:
         }[feed_type]
 
     def handle_transaction(self, transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
-        log.info(f"Import director handling {feed_type.name} transaction #{transaction_id}")
+        log.info(f"Matching director handling {feed_type.name} transaction #{transaction_id}")
 
         transaction = self._load_transaction(transaction_id, feed_type, session=session)
         log.debug(f"Loaded {feed_type.name} transaction: {transaction}")
@@ -36,7 +32,7 @@ class ImportDirector:
         log.debug(f"Successfully enqueued import job for {transaction}")
 
     def handle_transactions(self, match_group: str, *, session: db.Session) -> None:
-        log.info(f"Import director handling transaction group #{match_group}")
+        log.info(f"Matching director handling transaction group #{match_group}")
 
         transactions = self._load_transactions(match_group, session=session)
         feed_types = {tx.feed_type for tx in transactions}
@@ -131,7 +127,7 @@ class ImportDirector:
         )
 
 
-class SchemeImportDirector:
+class SchemeMatchingDirector:
     def handle_scheme_transactions(
         self, scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str, session: db.Session
     ) -> None:
@@ -150,7 +146,7 @@ class SchemeImportDirector:
         )
 
 
-class PaymentImportDirector:
+class PaymentMatchingDirector:
     class InvalidAuthTransaction(Exception):
         pass
 

@@ -45,7 +45,7 @@ class SingularExportAgent(BaseAgent):
 
     def run(self):
         raise NotImplementedError(
-            f"{type(self).__name__} is a singular export agent and as such must be run via the import director."
+            f"{type(self).__name__} is a singular export agent and as such must be run via the export worker."
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
