@@ -5,7 +5,7 @@ import rq
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app import config, db, models, reporting
-from app.core import export_director, identifier, matching_director, matching_worker
+from app.core import export_director, identifier, import_director, matching_director, matching_worker
 from app.feeds import FeedType
 
 log = reporting.get_logger("tasks")
@@ -59,50 +59,35 @@ import_queue = LoggedQueue(name="import", connection=db.redis_raw)
 identify_user_queue = LoggedQueue(name="identify", connection=db.redis_raw)
 matching_queue = LoggedQueue(name="matching", connection=db.redis_raw)
 matching_slow_queue = LoggedQueue(name="matching_slow", connection=db.redis_raw)
+streaming_queue = LoggedQueue(name="streaming", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
-
-
-def import_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str) -> None:
-    log.debug(f"Task started: import {len(scheme_transactions)} scheme transactions in group {match_group}.")
-    director = matching_director.SchemeMatchingDirector()
-
-    with db.session_scope() as session:
-        director.handle_scheme_transactions(scheme_transactions, match_group=match_group, session=session)
-
-
-def import_auth_payment_transactions(
-    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
-) -> None:
-    log.debug(f"Task started: import {len(payment_transactions)} auth payment transactions.")
-    director = matching_director.PaymentMatchingDirector()
-
-    with db.session_scope() as session:
-        # TODO: replace with batch process
-        for payment_transaction in payment_transactions:
-            director.handle_auth_payment_transaction(payment_transaction, session=session)
-
-
-def import_settled_payment_transactions(
-    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
-) -> None:
-    log.debug(f"Task started: import {len(payment_transactions)} settled payment transactions.")
-    director = matching_director.PaymentMatchingDirector()
-
-    with db.session_scope() as session:
-        # TODO: replace with batch process
-        for payment_transaction in payment_transactions:
-            director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
 def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifier_ids: list, card_token: str) -> None:
     log.debug(f"Task started: identify user #{transaction_id}")
+
     with db.session_scope() as session:
         identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
-    import_queue.enqueue(match_transaction, transaction_id, feed_type)
+
+    import_queue.enqueue(import_transaction, transaction_id, feed_type)
+
+
+def import_transaction(transaction_id: str, feed_type: FeedType) -> None:
+    log.debug(f"Task started: import {feed_type.name} transaction #{transaction_id}")
+
+    with db.session_scope() as session:
+        import_director.handle_transaction(transaction_id, feed_type, session=session)
+
+
+def import_transactions(match_group: str) -> None:
+    log.debug(f"Task started: import transactions in group #{match_group}")
+
+    with db.session_scope() as session:
+        import_director.handle_transactions(match_group, session=session)
 
 
 def match_transaction(transaction_id: str, feed_type: FeedType) -> None:
-    log.debug(f"Task started: match transaction #{transaction_id}")
+    log.debug(f"Task started: match {feed_type.name} transaction #{transaction_id}")
     director = matching_director.MatchingDirector()
 
     with db.session_scope() as session:
@@ -115,6 +100,38 @@ def match_transactions(match_group: str) -> None:
 
     with db.session_scope() as session:
         director.handle_transactions(match_group, session=session)
+
+
+def persist_scheme_transactions(scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str) -> None:
+    log.debug(f"Task started: persist {len(scheme_transactions)} scheme transactions in group {match_group}.")
+    director = matching_director.SchemeMatchingDirector()
+
+    with db.session_scope() as session:
+        director.handle_scheme_transactions(scheme_transactions, match_group=match_group, session=session)
+
+
+def persist_auth_payment_transactions(
+    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
+) -> None:
+    log.debug(f"Task started: persist {len(payment_transactions)} auth payment transactions.")
+    director = matching_director.PaymentMatchingDirector()
+
+    with db.session_scope() as session:
+        # TODO: replace with batch process
+        for payment_transaction in payment_transactions:
+            director.handle_auth_payment_transaction(payment_transaction, session=session)
+
+
+def persist_settled_payment_transactions(
+    payment_transactions: t.List[models.PaymentTransaction], *, match_group: str
+) -> None:
+    log.debug(f"Task started: import {len(payment_transactions)} settled payment transactions.")
+    director = matching_director.PaymentMatchingDirector()
+
+    with db.session_scope() as session:
+        # TODO: replace with batch process
+        for payment_transaction in payment_transactions:
+            director.handle_settled_payment_transaction(payment_transaction, session=session)
 
 
 def match_payment_transaction(settlement_key: str) -> None:
@@ -131,6 +148,16 @@ def match_scheme_transactions(match_group: str) -> None:
 
     with db.session_scope() as session:
         worker.handle_scheme_transactions(match_group, session=session)
+
+
+def stream_transaction(transaction_id: str, feed_type: FeedType) -> None:
+    log.debug(f"Task started: stream transaction #{transaction_id}")
+    raise NotImplementedError("streaming is not implemented yet")
+
+
+def stream_transactions(match_group: str) -> None:
+    log.debug(f"Task started: stream transactions in group #{match_group}")
+    raise NotImplementedError("streaming is not implemented yet")
 
 
 def export_transaction(transaction_id: int) -> None:

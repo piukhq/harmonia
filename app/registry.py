@@ -21,6 +21,9 @@ class Registry(t.Generic[T]):
     def __init__(self) -> None:
         self._entries: t.Dict[str, str] = {}
 
+    def __contains__(self, item: str) -> bool:
+        return item in self._entries
+
     def add(self, key: str, import_path: str) -> None:
         self._entries[key] = import_path
 

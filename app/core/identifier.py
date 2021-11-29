@@ -97,8 +97,6 @@ def identify_user(transaction_id: str, merchant_identifier_ids: list, card_token
     else:
         _attach_user_identity(transaction_id, merchant_identifier_ids, card_token, session=session)
 
-    log.debug("User identification passed, enqueueing matching task.")
-
 
 def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, card_token: str, *, session: db.Session):
     try:
@@ -122,3 +120,4 @@ def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, ca
         return
 
     persist_user_identity(transaction_id, user_info, session=session)
+    log.debug(f"Transaction #{transaction_id} identified successfully.")
