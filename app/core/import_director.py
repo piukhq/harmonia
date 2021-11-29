@@ -16,7 +16,7 @@ def wanted_by_matching(merchant_slug: str, feed_type: FeedType) -> bool:
 
 
 def wanted_by_streaming(merchant_slug: str, feed_type: FeedType) -> bool:
-    return merchant_slug in streaming_agents and feed_type in MATCHING_FEEDS
+    return merchant_slug in streaming_agents and feed_type in STREAMING_FEEDS
 
 
 def handle_transaction(transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
