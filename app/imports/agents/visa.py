@@ -115,3 +115,47 @@ class VisaSettlement(QueueAgent):
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=get_key_value(data, "Transaction.AuthCode"),
         )
+
+
+class VisaRefund(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = FeedType.REFUND
+
+    def __init__(self):
+        super().__init__()
+
+        # Set up Prometheus metric types
+        self.prometheus_metrics = {
+            "counters": ["transactions"],
+        }
+
+    config = Config(
+        ConfigValue(
+            "queue_name",
+            key=f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-refund.queue_name",
+            default="visa-refund",
+        )
+    )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        return get_key_value(data, "ReturnTransaction.VipTransactionId")
+
+    def get_mids(self, data: dict) -> t.List[str]:
+        return [try_convert_settlement_mid(get_key_value(data, "ReturnTransaction.CardAcceptorIdCode"))]
+
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        ext_user_id = data["ExternalUserId"]
+        transaction_date = self.pendulum_parse(get_key_value(data, "ReturnTransaction.DateTime"), tz="GMT")
+        return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
+            transaction_date=transaction_date,
+            has_time=True,
+            spend_amount=-abs(to_pennies(get_key_value(data, "ReturnTransaction.Amount"))),
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=ext_user_id,
+            settlement_key=_make_settlement_key(get_key_value(data, "ReturnTransaction.VipTransactionId")),
+            auth_code=get_key_value(data, "ReturnTransaction.AuthCode"),
+        )

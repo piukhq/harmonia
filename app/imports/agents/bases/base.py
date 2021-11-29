@@ -60,7 +60,7 @@ def identify_mid(mid: str, feed_type: FeedType, provider_slug: str, *, session: 
 
         if feed_type == FeedType.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
-        elif feed_type in (FeedType.SETTLED, FeedType.AUTH):
+        elif feed_type in (FeedType.SETTLED, FeedType.AUTH, FeedType.REFUND):
             q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")

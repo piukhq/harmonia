@@ -109,3 +109,38 @@ class VisaSettlement(BaseImportDataProvider):
             for user in fixture["users"]
             for transaction in user["transactions"]
         ]
+
+
+class VisaRefund(BaseImportDataProvider):
+    def provide(self, fixture: dict) -> t.List[dict]:
+        return [
+            {
+                "CardId": transaction["settlement_key"][:9],
+                "ExternalUserId": user["token"],
+                "MessageElementsCollection": [
+                    {"Key": "ReturnTransaction.DateTime", "Value": pendulum.instance(transaction["date"]).isoformat()},
+                    {"Key": "ReturnTransaction.CardAcceptorIdCode", "Value": transaction["mid"]},
+                    {"Key": "ReturnTransaction.AcquirerBIN", "Value": "3423432"},
+                    {"Key": "ReturnTransaction.Amount", "Value": str(to_pounds(transaction["amount"]))},
+                    {"Key": "ReturnTransaction.VipTransactionId", "Value": transaction["settlement_key"]},
+                    {"Key": "ReturnTransaction.SettlementId", "Value": transaction["settlement_key"]},
+                    {"Key": "ReturnTransaction.VisaMerchantName", "Value": "Bink Shop"},
+                    {"Key": "ReturnTransaction.VisaMerchantId", "Value": transaction["mid"]},
+                    {"Key": "ReturnTransaction.VisaStoreName", "Value": "Bink Shop"},
+                    {"Key": "ReturnTransaction.VisaStoreId", "Value": transaction["mid"]},
+                    {"Key": "ReturnTransaction.AcquirerAmount", "Value": str(to_pounds(transaction["amount"]))},
+                    {"Key": "ReturnTransaction.AcquirerCurrencyCode", "Value": 826},
+                    {"Key": "ReturnTransaction.CurrencyCode", "Value": "840"},
+                    {"Key": "ReturnTransaction.TransactionUSDAmount", "Value": str(to_pounds(transaction["amount"]))},
+                    {"Key": "ReturnTransaction.MerchantGroupName.0.Name", "Value": "TEST_MG"},
+                    {"Key": "ReturnTransaction.MerchantGroupName.0.ExternalId", "Value": "MYSTORE"},
+                    {"Key": "ReturnTransaction.AuthCode", "Value": transaction["auth_code"]},
+                ],
+                "MessageId": "12345678",
+                "MessageName": "SettlementMessageTest",
+                "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "RETURN"}],
+                "UserProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
+            }
+            for user in fixture["users"]
+            for transaction in user["transactions"]
+        ]
