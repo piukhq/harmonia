@@ -27,6 +27,7 @@ DEFAULT_NUM_TX = 10000
 PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "visa-auth": "visa",
     "visa-settlement": "visa",
+    "visa-refund": "visa",
     "mastercard-auth": "mastercard",
     "mastercard-settlement": "mastercard",
     "amex": "amex",
