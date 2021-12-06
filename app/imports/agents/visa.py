@@ -1,6 +1,8 @@
 import typing as t
 from hashlib import sha256
 
+import pendulum
+
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -146,7 +148,10 @@ class VisaRefund(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date = self.pendulum_parse(get_key_value(data, "ReturnTransaction.DateTime"), tz="GMT")
+        transaction_date = pendulum.from_format(
+            get_key_value(data, "ReturnTransaction.DateTime"), "D/M/YYYY h:m:s A", tz="GMT"
+        )
+
         return PaymentTransactionFields(
             merchant_slug=self.get_merchant_slug(data),
             payment_provider_slug=self.provider_slug,

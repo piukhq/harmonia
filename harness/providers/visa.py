@@ -118,7 +118,10 @@ class VisaRefund(BaseImportDataProvider):
                 "CardId": transaction["settlement_key"][:9],
                 "ExternalUserId": user["token"],
                 "MessageElementsCollection": [
-                    {"Key": "ReturnTransaction.DateTime", "Value": pendulum.instance(transaction["date"]).isoformat()},
+                    {
+                        "Key": "ReturnTransaction.DateTime",
+                        "Value": pendulum.instance(transaction["date"]).format("D/M/YYYY h:m:s A"),
+                    },
                     {"Key": "ReturnTransaction.CardAcceptorIdCode", "Value": transaction["mid"]},
                     {"Key": "ReturnTransaction.AcquirerBIN", "Value": "3423432"},
                     {"Key": "ReturnTransaction.Amount", "Value": str(to_pounds(transaction["amount"]))},
