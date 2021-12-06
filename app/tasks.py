@@ -5,7 +5,7 @@ import rq
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app import config, db, models, reporting
-from app.core import export_director, identifier, import_director, matching_director, matching_worker
+from app.core import export_director, identifier, import_director, matching_director, matching_worker, streaming_worker
 from app.feeds import FeedType
 
 log = reporting.get_logger("tasks")
@@ -152,12 +152,18 @@ def match_scheme_transactions(match_group: str) -> None:
 
 def stream_transaction(transaction_id: str, feed_type: FeedType) -> None:
     log.debug(f"Task started: stream transaction #{transaction_id}")
-    raise NotImplementedError("streaming is not implemented yet")
+    worker = streaming_worker.StreamingWorker()
+
+    with db.session_scope() as session:
+        worker.handle_transaction(transaction_id, feed_type, session=session)
 
 
 def stream_transactions(match_group: str) -> None:
     log.debug(f"Task started: stream transactions in group #{match_group}")
-    raise NotImplementedError("streaming is not implemented yet")
+    worker = streaming_worker.StreamingWorker()
+
+    with db.session_scope() as session:
+        worker.handle_transactions(match_group, session=session)
 
 
 def export_transaction(transaction_id: int) -> None:

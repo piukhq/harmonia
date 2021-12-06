@@ -6,7 +6,7 @@ import sentry_sdk
 import settings
 from app import db, models, tasks
 from app.core import identifier
-from app.exports.models import ExportTransaction
+from app.core.export_director import ExportFields, create_export
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.matching.agents.registry import matching_agents
 from app.registry import NoSuchAgent, RegistryConfigurationError
@@ -128,9 +128,7 @@ class MatchingWorker:
         self.log.debug("Persisting matched transaction.")
         self._persist(match_result.matched_transaction, session=session)
 
-        export_transactions_id = self.persist_export_transaction(match_result, session=session)
-
-        tasks.export_queue.enqueue(tasks.export_transaction, export_transactions_id)
+        self.export_transaction(match_result, session=session)
 
     def _choose_matching_queue(self, scheme_transactions: t.List[models.SchemeTransaction]):
         """
@@ -312,33 +310,33 @@ class MatchingWorker:
 
         self._finalise_match(match_result, payment_transaction, session=session)
 
-    def persist_export_transaction(self, match_result: MatchResult, *, session: db.Session) -> int:
+    def export_transaction(self, match_result: MatchResult, *, session: db.Session) -> None:
         # Save transactions to export table for ongoing export to merchant
         matched_transaction = match_result.matched_transaction
         user_identity = match_result.user_identity
 
-        def add_export_transaction():
-            export_transaction = ExportTransaction(
+        create_export(
+            ExportFields(
                 transaction_id=matched_transaction.transaction_id,
-                provider_slug=matched_transaction.merchant_identifier.loyalty_scheme.slug,
+                feed_type=None,  # matching has no single feed type
+                merchant_slug=matched_transaction.merchant_identifier.loyalty_scheme.slug,
                 transaction_date=matched_transaction.transaction_date,
                 spend_amount=matched_transaction.spend_amount,
                 spend_currency=matched_transaction.spend_currency,
                 loyalty_id=user_identity.loyalty_id,
                 mid=matched_transaction.merchant_identifier.mid,
+                store_id=matched_transaction.merchant_identifier.store_id,
+                brand_id=matched_transaction.merchant_identifier.brand_id,
                 user_id=user_identity.user_id,
                 scheme_account_id=user_identity.scheme_account_id,
+                payment_card_account_id=user_identity.payment_card_account_id,
                 credentials=user_identity.credentials,
-            )
-            session.add(export_transaction)
+            ),
+            session=session,
+        )
 
+        def mark_transaction_as_exported():
             matched_transaction.status = models.MatchedTransactionStatus.EXPORTED
             session.commit()
 
-            return export_transaction
-
-        export_transaction = db.run_query(
-            add_export_transaction, session=session, description="create export transaction"
-        )
-
-        return export_transaction.id
+        db.run_query(mark_transaction_as_exported, session=session, description="mark matched transaction as exported")

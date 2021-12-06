@@ -22,7 +22,6 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
       - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
       - [Inspecting PostgreSQL](#inspecting-postgresql)
       - [Inspecting Redis](#inspecting-redis)
-  - [Events](#events)
   - [Migrations](#migrations)
   - [Deployment](#deployment)
 
@@ -192,14 +191,6 @@ keys *
 ```
 
 The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.
-
-## Events
-
-Events are used to notify other applications in Harmonia that they need to perform a task.
-Events will be placed into Azure Event Hub and picked up by applications to process.
-
-Simple testing events in Harmonia can be performed by running the following:
-TODO: Event testing
 
 ## Migrations
 

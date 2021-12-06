@@ -1,14 +1,67 @@
-from typing import cast
+from dataclasses import dataclass
+from typing import Optional, cast
+
+import pendulum
 
 from app import db, tasks
 from app.exports.agents import BaseAgent
 from app.exports.agents.registry import export_agents
 from app.exports.models import ExportTransaction, PendingExport
+from app.feeds import FeedType
 from app.registry import NoSuchAgent
 from app.reporting import get_logger
 from app.status import status_monitor
 
 log = get_logger("export-director")
+
+
+@dataclass(frozen=True)
+class ExportFields:
+    transaction_id: str
+    feed_type: Optional[FeedType]
+    merchant_slug: str
+    transaction_date: pendulum.DateTime
+    spend_amount: int
+    spend_currency: str
+    loyalty_id: str
+    mid: str
+    store_id: str
+    brand_id: str
+    user_id: int
+    scheme_account_id: int
+    payment_card_account_id: Optional[int]
+    credentials: str
+
+
+def create_export(fields: ExportFields, *, session: db.Session) -> None:
+    """
+    Utility method to create an export transaction record and queue up an export job for it.
+    """
+
+    def add_export_transaction():
+        export_transaction = ExportTransaction(
+            transaction_id=fields.transaction_id,
+            feed_type=fields.feed_type,
+            provider_slug=fields.merchant_slug,
+            transaction_date=fields.transaction_date,
+            spend_amount=fields.spend_amount,
+            spend_currency=fields.spend_currency,
+            loyalty_id=fields.loyalty_id,
+            mid=fields.mid,
+            store_id=fields.store_id,
+            brand_id=fields.brand_id,
+            user_id=fields.user_id,
+            scheme_account_id=fields.scheme_account_id,
+            payment_card_account_id=fields.payment_card_account_id,
+            credentials=fields.credentials,
+        )
+        session.add(export_transaction)
+        session.commit()
+
+        return export_transaction
+
+    export_transaction = db.run_query(add_export_transaction, session=session, description="create export transaction")
+    tasks.export_queue.enqueue(tasks.export_transaction, export_transaction.id)
 
 
 class ExportDirector:

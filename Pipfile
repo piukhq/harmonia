@@ -37,8 +37,6 @@ prometheus-client = "*"
 azure-oidc = "*"
 soteria = "*"
 gunicorn = "*"
-azure-eventhub = "*"
-azure-eventhub-checkpointstoreblob = "*"
 
 [dev-packages]
 pytest = "*"
