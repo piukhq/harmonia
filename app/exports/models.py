@@ -4,6 +4,7 @@ import sqlalchemy as s
 
 from app.db import Base, ModelMixin, auto_repr, auto_str
 from app.encryption import decrypt_credentials
+from app.feeds import FeedType
 
 
 class ExportTransactionStatus(Enum):
@@ -29,14 +30,18 @@ class ExportTransaction(Base, ModelMixin):
     __tablename__ = "export_transaction"
 
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant/provider
+    feed_type = s.Column(s.Enum(FeedType), nullable=True)  # can be null, matching has no single feed type
     provider_slug = s.Column(s.String(50), nullable=False)  # merchant slug
     transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     loyalty_id = s.Column(s.String(100), nullable=False)  # Merchant loyalty identifier/membership number
     mid = s.Column(s.String(50), nullable=False)  # merchant identifier for identifying the store purchase made
+    store_id = s.Column(s.String(50), nullable=True)
+    brand_id = s.Column(s.String(50), nullable=True)
     user_id = s.Column(s.Integer, nullable=False)
     scheme_account_id = s.Column(s.Integer, nullable=False)
+    payment_card_account_id = s.Column(s.Integer, nullable=True)
     credentials = s.Column(s.Text, nullable=False)
     status = s.Column(s.Enum(ExportTransactionStatus), nullable=False, default=ExportTransactionStatus.PENDING)
 

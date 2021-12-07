@@ -191,6 +191,7 @@ class BaseAgent:
                 .filter(
                     models.ImportTransaction.provider_slug == self.provider_slug,
                     models.ImportTransaction.transaction_id.in_(tids_in_set),
+                    models.ImportTransaction.feed_type == self.feed_type,
                 ),
                 session=session,
                 read_only=True,
@@ -301,6 +302,7 @@ class BaseAgent:
 
         import_transaction_insert = dict(
             transaction_id=tid,
+            feed_type=self.feed_type,
             provider_slug=self.provider_slug,
             identified=identified,
             match_group=match_group,
