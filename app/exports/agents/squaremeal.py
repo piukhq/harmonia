@@ -33,7 +33,7 @@ class SquareMeal(SingularExportAgent):
                         "auth": export_transaction.feed_type == FeedType.AUTH,
                         "cleared": export_transaction.feed_type == FeedType.SETTLED,
                         "mid": export_transaction.mid,
-                        "transaction_date": dt.format("YYYY-MM-DDThh:mm:ss"),
+                        "transaction_date": dt.in_timezone("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
                         "transaction_amount": export_transaction.spend_amount,
                         "transaction_currency": "GBP",
                         "payment_card_account_id": export_transaction.payment_card_account_id,
