@@ -48,12 +48,12 @@ class SingularExportAgent(BaseAgent):
             f"{type(self).__name__} is a singular export agent and as such must be run via the export worker."
         )
 
-    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
 
-    def export_all(self, *, session: db.Session):
+    def export_all(self, *, session: db.Session) -> None:
         raise NotImplementedError(
             f"{type(self).__name__} is a singular export agent and as such does not support batch exports."
         )

@@ -46,9 +46,7 @@ class Trenette(SingularExportAgent):
             extra_data={},
         )
 
-    def export(
-        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> atlas.MessagePayload:
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session), self.provider_slug)
@@ -59,14 +57,15 @@ class Trenette(SingularExportAgent):
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
             raise Exception(f"BPL transaction endpoint returned {response.status_code}")
 
-        audit_message = atlas.make_audit_message(
-            self.provider_slug,
-            atlas.make_audit_transactions(
-                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-            ),
-            request=body,
-            request_timestamp=request_timestamp,
-            response=response,
-            response_timestamp=response_timestamp,
+        atlas.queue_audit_message(
+            atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
+            )
         )
-        return audit_message
