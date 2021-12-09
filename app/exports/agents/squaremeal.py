@@ -46,9 +46,7 @@ class SquareMeal(SingularExportAgent):
             extra_data={},
         )
 
-    def export(
-        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> atlas.MessagePayload:
+    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
 
@@ -58,12 +56,15 @@ class SquareMeal(SingularExportAgent):
         response = api.transactions(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        audit_message = atlas.make_audit_message(
-            self.provider_slug,
-            atlas.make_audit_transactions(export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
-            request=body,
-            request_timestamp=request_timestamp,
-            response=response,
-            response_timestamp=response_timestamp,
+        atlas.queue_audit_message(
+            atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
+            )
         )
-        return audit_message
