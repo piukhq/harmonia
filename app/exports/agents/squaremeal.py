@@ -31,7 +31,7 @@ class SquareMeal(SingularExportAgent):
                         "transaction_id": sha256(export_transaction.transaction_id.encode()).hexdigest(),
                         "loyalty_id": export_transaction.loyalty_id,
                         "auth": export_transaction.feed_type == FeedType.AUTH,
-                        "cleared": export_transaction.feed_type == FeedType.SETTLED,
+                        "cleared": export_transaction.feed_type in (FeedType.SETTLED, FeedType.REFUND),
                         "mid": export_transaction.mid,
                         "transaction_date": dt.in_timezone("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
                         "transaction_amount": export_transaction.spend_amount,
