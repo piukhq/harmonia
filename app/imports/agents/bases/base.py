@@ -112,13 +112,6 @@ class BaseAgent:
     def feed_type_is_payment(self) -> bool:
         return self.feed_type in [FeedType.AUTH, FeedType.SETTLED, FeedType.REFUND]
 
-    def help(self, session: db.Session) -> str:
-        return (
-            "This is a new import agent.\n"
-            "Implement all the required methods (see agent base classes) "
-            "and override this help method to provide specific information."
-        )
-
     def run(self):
         raise NotImplementedError(
             "Override the run method in your agent to act as the main entry point into the import process."

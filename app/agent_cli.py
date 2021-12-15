@@ -1,10 +1,8 @@
-import textwrap
 import typing as t
 
 import click
 
 import settings
-from app import db
 from app.prometheus import prometheus_thread
 from app.registry import NoSuchAgent, Registry, RegistryConfigurationError
 
@@ -51,13 +49,6 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
 
         if not quiet:
             click.echo(f"Loaded {info(type(agent_instance).__name__)} agent from {info(registry._entries[agent])}.")
-
-            click.echo()
-            click.echo("Agent help text:")
-            click.echo()
-            with db.session_scope() as session:
-                click.echo(textwrap.indent(agent_instance.help(session=session), "    "))
-            click.echo()
 
             if settings.DEBUG:
                 click.echo(

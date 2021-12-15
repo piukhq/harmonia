@@ -1,5 +1,4 @@
 import datetime
-import inspect
 import json
 import os
 import typing as t
@@ -39,14 +38,6 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
 
         self.soteria_config = self.get_soteria_config()
         self.api = CooperativeAPI(self.soteria_config.merchant_url)
-
-    def help(self, session: db.Session):
-        return inspect.cleandoc(
-            f"""
-            This agent exports {self.provider_slug} transactions on a schedule of {self.config.get(
-                "schedule", session=session)}
-            """
-        )
 
     @staticmethod
     def save_backup_file(response):

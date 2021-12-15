@@ -1,4 +1,3 @@
-import inspect
 import typing as t
 
 import marshmallow
@@ -64,16 +63,4 @@ class PassiveAPIAgent(BaseAgent):
             "This agent cannot be run this way. "
             "For local testing, use the flask development server. "
             "A production deployment should utilise a server such as Gunicorn. "
-        )
-
-    def _help(self, module):
-        return inspect.cleandoc(
-            f"""
-            This is an agent based on the PassiveAPIAgent base class.
-            It can be run with the flask development server for local testing and development.
-
-            For a production deployment, a WSGI server such as Gunicorn should be used.
-
-            Endpoint: {settings.URL_PREFIX}/{self.provider_slug}/
-            """
         )
