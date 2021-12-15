@@ -59,7 +59,6 @@ class WhSmith(FileAgent):
         "VISA": PaymentProviderSlug.VISA,
         "VISA DEBIT": PaymentProviderSlug.VISA,
         "MASTERCARD": PaymentProviderSlug.MASTERCARD,
-        "Bink-Payment": "bink-payment",
     }
 
     config = Config(

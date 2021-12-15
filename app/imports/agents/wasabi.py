@@ -37,7 +37,6 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         "Maestro": PaymentProviderSlug.MASTERCARD,
         "Debit Mastercard": PaymentProviderSlug.MASTERCARD,
         "Compliments Card": PaymentProviderSlug.MASTERCARD,
-        "Bink-Payment": "bink-payment",
     }
 
     config = Config(

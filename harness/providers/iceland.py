@@ -14,7 +14,6 @@ def _get_card_scheme(slug: str) -> t.Tuple[int, str]:
         "amex": (1, "Amex"),
         "visa": (2, "Visa"),
         "mastercard": (3, "MasterCard/MasterCard One"),
-        "bink-payment": (9, "Bink-Payment"),
     }[slug]
 
 

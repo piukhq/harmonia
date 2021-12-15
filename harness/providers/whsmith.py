@@ -13,7 +13,6 @@ def _get_card_type(slug: str) -> str:
         "amex": "AMEX",
         "visa": "VISA",
         "mastercard": "MASTERCARD",
-        "bink-payment": "Bink-Payment",
     }
     return providers[slug]
 

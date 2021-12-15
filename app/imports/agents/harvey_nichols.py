@@ -139,8 +139,6 @@ payment_provider_map = {
     "DELTA": PaymentProviderSlug.VISA,
     "ELECTRON": PaymentProviderSlug.VISA,
     "VISA": PaymentProviderSlug.VISA,
-    # for end-to-end tests
-    "Bink-Payment": PaymentProviderSlug.BINK_PAYMENT,
 }
 
 

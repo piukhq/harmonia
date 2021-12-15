@@ -41,7 +41,6 @@ class Iceland(FileAgent):
         "EDC/Maestro (INT) / Laser": PaymentProviderSlug.MASTERCARD,
         "MasterCard Debit": PaymentProviderSlug.MASTERCARD,
         "Mastercard One": PaymentProviderSlug.MASTERCARD,
-        "Bink-Payment": "bink-payment",
     }
 
     config = Config(
