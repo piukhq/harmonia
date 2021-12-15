@@ -13,7 +13,6 @@ import rq
 import soteria.configuration
 import soteria.security
 import toml
-from flask import Flask
 from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
@@ -36,7 +35,6 @@ with mocked_auth_decorator():
     from app.imports.agents.bases.active_api_agent import ActiveAPIAgent
     from app.imports.agents.bases.base import BaseAgent
     from app.imports.agents.bases.file_agent import FileAgent
-    from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
     from app.imports.agents.bases.queue_agent import QueueAgent
     from app.imports.agents.registry import import_agents
     from app.registry import NoSuchAgent
@@ -154,14 +152,12 @@ uvDZiw+mDuG9j1g8RNzNqKf3tpoHbyyZPEfGRv4ns52Sgz5DPm3JQ12K
 
 
 class ImportAgentKind(Enum):
-    PASSIVE_API = "Passive API"
     ACTIVE_API = "Active API"
     FILE = "File"
     QUEUE = "Queue"
 
 
 _import_agent_kind = {
-    PassiveAPIAgent: ImportAgentKind.PASSIVE_API,
     ActiveAPIAgent: ImportAgentKind.ACTIVE_API,
     FileAgent: ImportAgentKind.FILE,
     QueueAgent: ImportAgentKind.QUEUE,
@@ -402,36 +398,6 @@ def make_import_data(slug: str, fixture: dict, *, feed_type: feeds.FeedType) -> 
     return provider.provide(fixture)
 
 
-def make_test_client(agent: PassiveAPIAgent):
-    bp = agent.get_blueprint()
-    app = Flask(__name__)
-    app.register_blueprint(bp)
-    return app.test_client()
-
-
-def run_passive_api_import_agent(agent_slug: str, agent: PassiveAPIAgent, fixture: dict):
-    import_data_list = t.cast(t.List[dict], make_import_data(agent_slug, fixture, feed_type=agent.feed_type))
-    client = make_test_client(agent)
-    url = f"{settings.URL_PREFIX}/import/{agent_slug}/"
-
-    for import_data in import_data_list:
-        click.secho(
-            f"Importing {agent_slug} transaction #{agent.get_transaction_id(import_data)}",
-            fg="cyan",
-            bold=True,
-        )
-        click.echo(f"POST {url}")
-        cpprint(import_data)
-        resp = client.post(url, json=import_data)
-
-        if 200 <= resp.status_code <= 299:
-            cpprint(resp.json)
-        else:
-            click.echo(resp.status)
-            cpprint(resp.json)
-            click.secho("Failed", fg="red", bold=True)
-
-
 def run_active_api_import_agent(agent_slug: str, agent: ActiveAPIAgent, fixture: dict):
     raise NotImplementedError("Active API import agents are not implemented yet.")
 
@@ -472,9 +438,7 @@ def run_import_agent(slug: str, fixture: dict):
         return
 
     kind = get_import_agent_kind(agent)
-    if kind == ImportAgentKind.PASSIVE_API:
-        run_passive_api_import_agent(slug, t.cast(PassiveAPIAgent, agent), fixture)
-    elif kind == ImportAgentKind.ACTIVE_API:
+    if kind == ImportAgentKind.ACTIVE_API:
         run_active_api_import_agent(slug, t.cast(ActiveAPIAgent, agent), fixture)
     elif kind == ImportAgentKind.FILE:
         run_file_import_agent(slug, t.cast(FileAgent, agent), fixture)
