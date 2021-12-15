@@ -11,7 +11,6 @@ from app.exports import models as exp_model
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
 from app.prometheus import bink_prometheus
-from app.status import status_monitor
 
 
 class SingularExportAgent(BaseAgent):
@@ -81,8 +80,6 @@ class SingularExportAgent(BaseAgent):
         return matched_transaction
 
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session):
-        status_monitor.checkin(self)
-
         self.log.info(f"Handling {pending_export}.")
 
         try:

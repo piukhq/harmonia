@@ -12,7 +12,6 @@ from app.feeds import FeedType
 from app.imports.exceptions import MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
-from app.status import status_monitor
 from app.utils import missing_property
 
 
@@ -221,8 +220,6 @@ class BaseAgent:
         Creates ImportTransaction instances in the database, and enqueues the
         transaction data to be matched.
         """
-        status_monitor.checkin(self)
-
         new = self._find_new_transactions(provider_transactions, session=session)
         if not new:
             self.log.debug(f'No new transactions found in source "{source}", exiting early.')

@@ -10,7 +10,6 @@ from app.exports.models import ExportTransaction, PendingExport
 from app.feeds import FeedType
 from app.registry import NoSuchAgent
 from app.reporting import get_logger
-from app.status import status_monitor
 
 log = get_logger("export-director")
 
@@ -66,8 +65,6 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
 
 class ExportDirector:
     def handle_export_transaction(self, export_transaction_id: int, *, session: db.Session) -> None:
-        status_monitor.checkin(self)
-
         log.debug(f"Recieved export transaction #{export_transaction_id}.")
         export_transaction: ExportTransaction = db.run_query(
             lambda: session.query(ExportTransaction).get(export_transaction_id),

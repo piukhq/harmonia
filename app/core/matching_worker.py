@@ -11,7 +11,6 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.matching.agents.registry import matching_agents
 from app.registry import NoSuchAgent, RegistryConfigurationError
 from app.reporting import get_logger
-from app.status import status_monitor
 
 TransactionType = t.TypeVar("TransactionType", models.PaymentTransaction, models.SchemeTransaction)
 
@@ -143,8 +142,6 @@ class MatchingWorker:
 
     def handle_payment_transaction(self, settlement_key: str, *, session: db.Session) -> None:
         """Runs the matching process for a single payment transaction."""
-        status_monitor.checkin(self)
-
         payment_transaction = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(models.PaymentTransaction.settlement_key == settlement_key)
@@ -182,8 +179,6 @@ class MatchingWorker:
 
     def handle_scheme_transactions(self, match_group: str, *, session: db.Session) -> None:
         """Finds potential matching payment transactions and requeues a matching job for them."""
-        status_monitor.checkin(self)
-
         scheme_transactions = db.run_query(
             lambda: session.query(models.SchemeTransaction)
             .filter(models.SchemeTransaction.match_group == match_group)
@@ -278,8 +273,6 @@ class MatchingWorker:
         Given the IDs of a payment and scheme transaction pair, manually creates a match between them.
         This is used for the missing loyalty redress process.
         """
-        status_monitor.checkin(self)
-
         payment_transaction = self.find_transaction_for_redress(
             models.PaymentTransaction, payment_transaction_id, session=session
         )
