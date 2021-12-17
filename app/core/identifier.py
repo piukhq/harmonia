@@ -15,6 +15,10 @@ class SchemeAccountNotFound(Exception):
     pass
 
 
+class PaymentCardInfoNotFound(Exception):
+    pass
+
+
 def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, session: db.Session) -> dict:
     # TODO: this query exists in app/core/matching_worker.py:50 as well, should we combine?
     merchant_identifiers = db.run_query(
@@ -103,7 +107,7 @@ def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, ca
         user_info = payment_card_user_info(merchant_identifier_ids, card_token, session=session)
     except SchemeAccountNotFound:
         log.debug(f"Hermes was unable to find a scheme account for transaction #{transaction_id}")
-        return
+        raise
     except requests.RequestException:
         event_id = sentry_sdk.capture_exception()
         log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
@@ -113,11 +117,11 @@ def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, ca
             merchant_identifier_ids=merchant_identifier_ids,
             card_token=card_token,
         )
-        return
+        raise
 
     if "card_information" not in user_info:
         log.debug(f"Hermes identified {transaction_id} but could return no payment card information")
-        return
+        raise PaymentCardInfoNotFound
 
     persist_user_identity(transaction_id, user_info, session=session)
     log.debug(f"Transaction #{transaction_id} identified successfully.")
