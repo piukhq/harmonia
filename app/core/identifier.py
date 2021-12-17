@@ -44,7 +44,29 @@ def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, se
         raise SchemeAccountNotFound
 
 
+def remove_suffix(transaction_id: str, suffix: str) -> str:
+    if transaction_id.endswith(suffix):
+        transaction_id = transaction_id[: -len(suffix)]
+    return transaction_id
+
+
+def remove_prefix(transaction_id: str, suffix: str) -> str:
+    if transaction_id.startswith(suffix):
+        transaction_id = transaction_id[len(suffix) :]
+    return transaction_id
+
+
+def hotfix_transaction_id(transaction_id: str) -> str:
+    # temporary hack to resolve prod issues
+    transaction_id = remove_suffix(transaction_id, "-settlement")
+    transaction_id = remove_suffix(transaction_id, "-auth")
+    transaction_id = remove_prefix(transaction_id, "settlement-")
+    return transaction_id
+
+
 def persist_user_identity(transaction_id: str, user_info: dict, *, session: db.Session) -> models.UserIdentity:
+    transaction_id = hotfix_transaction_id(transaction_id)
+
     def add_user_identity():
         user_identity = models.UserIdentity(
             transaction_id=transaction_id,
@@ -72,6 +94,8 @@ def _user_identity_query(transaction_id: str, *, session: db.Session) -> Query:
 
 
 def try_get_user_identity(transaction_id: str, *, session: db.Session) -> Optional[models.UserIdentity]:
+    transaction_id = hotfix_transaction_id(transaction_id)
+
     return db.run_query(
         _user_identity_query(transaction_id, session=session).one_or_none,
         session=session,
@@ -81,6 +105,8 @@ def try_get_user_identity(transaction_id: str, *, session: db.Session) -> Option
 
 
 def get_user_identity(transaction_id: str, *, session: db.Session) -> models.UserIdentity:
+    transaction_id = hotfix_transaction_id(transaction_id)
+
     return db.run_query(
         _user_identity_query(transaction_id, session=session).one,
         session=session,
@@ -90,6 +116,8 @@ def get_user_identity(transaction_id: str, *, session: db.Session) -> models.Use
 
 
 def identify_user(transaction_id: str, merchant_identifier_ids: list, card_token: str, *, session: db.Session) -> None:
+    transaction_id = hotfix_transaction_id(transaction_id)
+
     log.debug(f"Attempting identification of transaction #{transaction_id}")
 
     if try_get_user_identity(transaction_id, session=session):
