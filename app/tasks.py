@@ -67,7 +67,11 @@ def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifi
     log.debug(f"Task started: identify user #{transaction_id}")
 
     with db.session_scope() as session:
-        identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
+        try:
+            identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
+        except Exception as ex:
+            log.debug(f"User identification task failed: {repr(ex)}. Failed Hermes requests will be retried.")
+            return
 
     import_queue.enqueue(import_transaction, transaction_id, feed_type)
 
