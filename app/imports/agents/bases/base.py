@@ -231,6 +231,9 @@ class BaseAgent:
         status_monitor.checkin(self)
 
         new = self._find_new_transactions(provider_transactions, session=session)
+        if not new:
+            self.log.debug(f'No new transactions found in source "{source}", exiting early.')
+            return 0
 
         # NOTE: it may be worth limiting the batch size if files get any larger than 10k transactions.
         import_transaction_inserts = []
@@ -268,6 +271,17 @@ class BaseAgent:
 
             yield
 
+        self._persist_and_enqueue(import_transaction_inserts, transaction_inserts, identify_args, match_group)
+
+        return len(new)
+
+    def _persist_and_enqueue(
+        self,
+        import_transaction_inserts: list[dict],
+        transaction_inserts: list[dict],
+        identify_args: list[IdentifyArgs],
+        match_group: str,
+    ) -> None:
         if import_transaction_inserts:
             db.engine.execute(models.ImportTransaction.__table__.insert().values(import_transaction_inserts))
             self._update_metrics(n_insertions=len(import_transaction_inserts))
@@ -282,8 +296,6 @@ class BaseAgent:
         elif self.feed_type == FeedType.MERCHANT:
             # merchant imports can go straight to matching/streaming
             tasks.import_queue.enqueue(tasks.import_transactions, match_group)
-
-        return len(new)
 
     def _build_inserts(
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
