@@ -1,5 +1,4 @@
 import csv
-import inspect
 import io
 import typing as t
 from functools import cached_property
@@ -7,7 +6,6 @@ from pathlib import Path
 
 import pendulum
 
-from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -39,7 +37,6 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         "Maestro": PaymentProviderSlug.MASTERCARD,
         "Debit Mastercard": PaymentProviderSlug.MASTERCARD,
         "Compliments Card": PaymentProviderSlug.MASTERCARD,
-        "Bink-Payment": "bink-payment",
     }
 
     config = Config(
@@ -78,16 +75,6 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
             logger=self.log,
             provider_agent=self,
             archive_path="archive",
-        )
-
-    def help(self, session: db.Session) -> str:
-        return inspect.cleandoc(
-            f"""
-            This is the Wasabi scheme transaction SFTP file import agent.
-
-            It is currently set up to monitor {self.config.get("path", session=session)} on SFTP host
-            {self.sftp_credentials.host}:{self.sftp_credentials.port} for files to import.
-            """
         )
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:

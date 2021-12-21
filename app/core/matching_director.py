@@ -4,7 +4,6 @@ from uuid import uuid4
 from app import db, models, tasks
 from app.feeds import FeedType
 from app.reporting import get_logger
-from app.status import status_monitor
 
 log = get_logger("matching-director")
 
@@ -129,8 +128,6 @@ class SchemeMatchingDirector:
     def handle_scheme_transactions(
         self, scheme_transactions: t.List[models.SchemeTransaction], *, match_group: str, session: db.Session
     ) -> None:
-        status_monitor.checkin(self)
-
         def add_transactions():
             session.bulk_save_objects(scheme_transactions)
             session.commit()
@@ -188,8 +185,6 @@ class PaymentMatchingDirector:
     def handle_auth_payment_transaction(
         self, auth_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> None:
-        status_monitor.checkin(self)
-
         if auth_transaction.settlement_key is None:
             raise self.InvalidAuthTransaction(
                 f"Auth transaction {auth_transaction} has no settlement key! "
@@ -219,8 +214,6 @@ class PaymentMatchingDirector:
     def handle_settled_payment_transaction(
         self, settled_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> None:
-        status_monitor.checkin(self)
-
         if settled_transaction.settlement_key is not None:
             auth_transaction = self._get_matching_transaction(
                 settlement_key=settled_transaction.settlement_key, session=session

@@ -2,7 +2,6 @@ from app.exports.agents import BaseAgent
 from app.registry import Registry
 
 export_agents = Registry[BaseAgent]()
-export_agents.add("bink-loyalty", "app.exports.agents.bink_loyalty.BinkLoyalty")
 export_agents.add("harvey-nichols", "app.exports.agents.harvey_nichols.HarveyNichols")
 export_agents.add("cooperative", "app.exports.agents.cooperative.Cooperative")
 export_agents.add("iceland-bonus-card", "app.exports.agents.iceland.Iceland")

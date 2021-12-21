@@ -1,10 +1,8 @@
-import inspect
 import typing as t
 from hashlib import sha256
 
 import pendulum
 
-from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -87,15 +85,6 @@ class Amex(FileAgent):
         ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
     )
-
-    def help(self, session: db.Session) -> str:
-        return inspect.cleandoc(
-            f"""
-        This is the Amex payment transaction file import agent.
-
-        It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
-        """
-        )
 
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         for line in data.decode().split("\n"):

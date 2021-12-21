@@ -182,16 +182,6 @@ select * from matched_transaction;
 select * from export_transaction;
 ```
 
-#### Inspecting Redis
-
-```bash
-docker exec -it txm-redis redis-cli
-
-keys *
-```
-
-The `txmatch:status:checkins:*` keys contain timestamps from when various parts of the system were operating.
-
 ## Migrations
 
 [alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.

@@ -1,4 +1,3 @@
-import inspect
 import json
 import typing as t
 from uuid import uuid4
@@ -56,15 +55,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
             "counters": ["requests_sent", "failed_requests", "transactions"],
             "histograms": ["request_latency"],
         }
-
-    def help(self, session: db.Session) -> str:
-        return inspect.cleandoc(
-            f"""
-            This agent exports {self.provider_slug} transactions on a schedule of {self.config.get(
-                "schedule", session=session
-                )}
-            """
-        )
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:

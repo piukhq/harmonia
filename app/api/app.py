@@ -24,17 +24,6 @@ def define_schema(schema_class: t.Type) -> t.Type:
     return schema_class
 
 
-def register_import_agent_routes(app: flask.Flask) -> None:
-    from app.imports.agents.bases.passive_api_agent import PassiveAPIAgent
-    from app.imports.agents.registry import import_agents
-
-    for slug in import_agents._entries:
-        agent = import_agents.instantiate(slug)
-        if isinstance(agent, PassiveAPIAgent):
-            bp = agent.get_blueprint()
-            app.register_blueprint(bp)
-
-
 def create_app() -> flask.Flask:
     app = flask.Flask(__name__)
     app.config.from_mapping(settings.FLASK)  # type: ignore
@@ -51,15 +40,11 @@ def create_app() -> flask.Flask:
     from app.config.views import api as config_api
     from app.matching.views import api as matching_api
     from app.mids.views import api as mids_api
-    from app.status.views import api as status_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)
-    app.register_blueprint(status_api)
     app.register_blueprint(mids_api)
     app.register_blueprint(matching_api)
-
-    register_import_agent_routes(app)
 
     with app.test_request_context():
         for view_func in app.view_functions.values():

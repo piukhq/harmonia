@@ -12,7 +12,6 @@ from app.feeds import FeedType
 from app.imports.exceptions import MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
-from app.status import status_monitor
 from app.utils import missing_property
 
 
@@ -111,13 +110,6 @@ class BaseAgent:
     @property
     def feed_type_is_payment(self) -> bool:
         return self.feed_type in [FeedType.AUTH, FeedType.SETTLED, FeedType.REFUND]
-
-    def help(self, session: db.Session) -> str:
-        return (
-            "This is a new import agent.\n"
-            "Implement all the required methods (see agent base classes) "
-            "and override this help method to provide specific information."
-        )
 
     def run(self):
         raise NotImplementedError(
@@ -228,8 +220,6 @@ class BaseAgent:
         Creates ImportTransaction instances in the database, and enqueues the
         transaction data to be matched.
         """
-        status_monitor.checkin(self)
-
         new = self._find_new_transactions(provider_transactions, session=session)
         if not new:
             self.log.debug(f'No new transactions found in source "{source}", exiting early.')

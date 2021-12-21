@@ -1,10 +1,8 @@
-import inspect
 import json
 import typing as t
 
 import pendulum
 
-from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -141,8 +139,6 @@ payment_provider_map = {
     "DELTA": PaymentProviderSlug.VISA,
     "ELECTRON": PaymentProviderSlug.VISA,
     "VISA": PaymentProviderSlug.VISA,
-    # for end-to-end tests
-    "Bink-Payment": PaymentProviderSlug.BINK_PAYMENT,
 }
 
 
@@ -173,15 +169,6 @@ class HarveyNichols(FileAgent):
         for transaction in transactions:
             if transaction["card"]["scheme"] in payment_provider_map:
                 yield transaction
-
-    def help(self, session: db.Session) -> str:
-        return inspect.cleandoc(
-            f"""
-            This is the Harvey Nichols scheme transaction file import agent.
-
-            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
-            """
-        )
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(

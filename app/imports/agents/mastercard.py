@@ -1,11 +1,9 @@
-import inspect
 import typing as t
 from hashlib import sha256
 from uuid import uuid4
 
 import pendulum
 
-from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -92,15 +90,6 @@ class MastercardTS44Settlement(FileAgent):
                 continue
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
-
-    def help(self, session: db.Session) -> str:
-        return inspect.cleandoc(
-            f"""
-            This is the Mastercard payment transaction file import agent.
-
-            It is currently set up to monitor {self.config.get("path", session=session)} for files to import.
-            """
-        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.get_transaction_date(data)

@@ -42,13 +42,6 @@ class BaseAgent:
     def __str__(self) -> str:
         return f"export agent {type(self).__name__} for {self.provider_slug}"
 
-    def help(self, session: db.Session) -> str:
-        return (
-            "This is a new export agent.\n"
-            "Implement all the required methods (see agent base classes) "
-            "and override this help method to provide specific information."
-        )
-
     def run(self):
         raise NotImplementedError("This method should be overridden by specialised base agents.")
 
