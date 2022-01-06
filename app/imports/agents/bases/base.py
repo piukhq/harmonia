@@ -75,8 +75,24 @@ def identify_mid(mid: str, feed_type: FeedType, provider_slug: str, *, session: 
     return [mid.id for mid in merchant_identifiers]
 
 
+def replace_secondary_mids(mids: t.List[int], mid: str, *, session: db.Session) -> None:
+    """
+    Given a list of merchant_identifier IDs and a string, replaces all MIDs on the given records with the new string.
+    This is used to swap secondary MIDs with their primary equivalent.
+    """
+
+    def update_mids():
+        session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id.in_(mids)).update({"mid": mid})
+
+    db.run_query(update_mids, session=session, description=f"replace secondary MIDs with {mid}")
+
+
 @lru_cache(maxsize=2048)
-def get_merchant_slug(mid: str) -> str:
+def get_merchant_slug(mid: str, secondary_mid: t.Optional[str]) -> str:
+    mid_values = [mid]
+    if secondary_mid:
+        mid_values.append(secondary_mid)
+
     with db.session_scope() as session:
 
         def find_slug():
@@ -84,7 +100,7 @@ def get_merchant_slug(mid: str) -> str:
                 session.query(models.LoyaltyScheme.slug)
                 .distinct()
                 .join(models.MerchantIdentifier)
-                .filter(models.MerchantIdentifier.mid == mid)
+                .filter(models.MerchantIdentifier.mid.in_(mid_values))
                 .scalar()
             )
 
@@ -154,9 +170,18 @@ class BaseAgent:
     def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
 
+    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
+        """
+        Override this method if your agent can provide a secondary MID.
+        If the primary MID is not found, this secondary MID will be used instead. If it is found, it will be replaced
+        in the database with the primary MID.
+        """
+        return None
+
     def get_merchant_slug(self, data: dict) -> str:
         mid = self.get_mids(data).pop()
-        return get_merchant_slug(mid)
+        secondary_mid = self.get_secondary_mid(data)
+        return get_merchant_slug(mid, secondary_mid)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
@@ -206,10 +231,19 @@ class BaseAgent:
 
         return new
 
-    def _identify_mid(self, mid: str, *, session: db.Session) -> t.List[int]:
+    def _identify_mid(self, mid: str, *, secondary_mid: t.Optional[str], session: db.Session) -> t.List[int]:
         mids = identify_mid(mid, self.feed_type, self.provider_slug, session=session)
         if not mids:
+            if secondary_mid:
+                self.log.debug(f'Primary MID lookup failed for "{mid}", trying secondary mid "{secondary_mid}"')
+                mids = identify_mid(secondary_mid, self.feed_type, self.provider_slug, session=session)
+                if mids:
+                    self.log.info(f'Secondary MID found. Replacing "{secondary_mid}" ({mids}) with "{mid}"')
+                    replace_secondary_mids(mids, mid, session=session)
+
+        if not mids:
             raise MissingMID
+
         return mids
 
     def _import_transactions(
@@ -292,11 +326,12 @@ class BaseAgent:
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
         mids = self.get_mids(tx_data)
+        secondary_mid = self.get_secondary_mid(tx_data)
 
         merchant_identifier_ids = []
         for mid in mids:
             try:
-                merchant_identifier_ids.extend(self._identify_mid(mid, session=session))
+                merchant_identifier_ids.extend(self._identify_mid(mid, secondary_mid=secondary_mid, session=session))
             except MissingMID:
                 pass
 

@@ -58,6 +58,9 @@ class VisaAuth(QueueAgent):
     def get_mids(self, data: dict) -> t.List[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
+    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
+        return get_key_value(data, "Transaction.VisaStoreId")
+
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
@@ -102,6 +105,9 @@ class VisaSettlement(QueueAgent):
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(get_key_value(data, "Transaction.MerchantCardAcceptorId"))]
 
+    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
+        return get_key_value(data, "Transaction.VisaStoreId")
+
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
@@ -145,6 +151,9 @@ class VisaRefund(QueueAgent):
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [try_convert_settlement_mid(get_key_value(data, "ReturnTransaction.CardAcceptorIdCode"))]
+
+    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
+        return get_key_value(data, "ReturnTransaction.VisaStoreId")
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
