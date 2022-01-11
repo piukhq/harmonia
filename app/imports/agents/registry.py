@@ -14,7 +14,6 @@ import_agents.add("cooperative", "app.imports.agents.cooperative.Cooperative")
 import_agents.add("harvey-nichols", "app.imports.agents.harvey_nichols.HarveyNichols")
 import_agents.add("iceland-bonus-card", "app.imports.agents.iceland.Iceland")
 import_agents.add("wasabi-club", "app.imports.agents.wasabi.Wasabi")
-import_agents.add("whsmith-rewards", "app.imports.agents.whsmith.WhSmith")
 
 # TEMPORARY: remove when TS44 feed is deprecated.
 if settings.MASTERCARD_TGX2_ENABLED:
