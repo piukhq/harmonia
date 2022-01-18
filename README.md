@@ -7,23 +7,22 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-**Table of Contents** _generated with [DocToc](https://github.com/thlorenz/doctoc)_
 
-- [Harmonia](#harmonia)
-  - [Prerequisites](#prerequisites)
-  - [Dependencies](#dependencies)
-  - [Project Setup](#project-setup)
-    - [MacOS Dependencies](#macos-dependencies)
-    - [Virtual Environment](#virtual-environment)
-    - [Database Schema Migration](#database-schema-migration)
-    - [Development API Server](#development-api-server)
-    - [Unit Tests](#unit-tests)
-    - [End-to-End Matching Test](#end-to-end-matching-test)
-      - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
-      - [Inspecting PostgreSQL](#inspecting-postgresql)
-      - [Inspecting Redis](#inspecting-redis)
-  - [Migrations](#migrations)
-  - [Deployment](#deployment)
+- [Prerequisites](#prerequisites)
+- [Dependencies](#dependencies)
+- [Project Setup](#project-setup)
+  - [MacOS Dependencies](#macos-dependencies)
+  - [Virtual Environment](#virtual-environment)
+  - [Database Schema Migration](#database-schema-migration)
+  - [Development API Server](#development-api-server)
+  - [Unit Tests](#unit-tests)
+  - [End-to-End Matching Test](#end-to-end-matching-test)
+    - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
+    - [Inspecting PostgreSQL](#inspecting-postgresql)
+- [Migrations](#migrations)
+- [Deployment](#deployment)
+- [Additional Documentation](#additional-documentation)
+  - [Entity Relationship Diagram](#entity-relationship-diagram)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -191,3 +190,11 @@ Migrations should be manually squashed before each deployment for efficiency's s
 ## Deployment
 
 There is a Dockerfile provided in the project root. Build an image from this to get a deployment-ready version of the project.
+
+## Additional Documentation
+
+### Entity Relationship Diagram
+
+A diagram of the Harmonia database structure can be found in `doc/entity-relationship.{png|svg}`.
+
+The source of this diagram is provided in the same directory as `entity-relationship.uml`. This is a PlantUML description that can be generated with [planter](https://github.com/achiku/planter). Once the UML file is generated, a PlantUML renderer can be used to generate the diagram in a vector or raster format. One option requiring no install is [PlantText](https://www.planttext.com/).
