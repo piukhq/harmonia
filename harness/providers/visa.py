@@ -1,5 +1,7 @@
 import typing as t
+from base64 import b64encode
 from datetime import datetime
+from hashlib import sha256
 
 import pendulum
 
@@ -22,6 +24,10 @@ def format_time(date: datetime) -> str:
     return pendulum.instance(date).format("hhmm")
 
 
+def vsid(mid: str) -> str:
+    return b64encode(sha256(mid.encode()).digest()).decode()
+
+
 class VisaAuth(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
         return [
@@ -38,7 +44,7 @@ class VisaAuth(BaseImportDataProvider):
                     {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "Transaction.VisaMerchantId", "Value": transaction["mid"]},
                     {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
-                    {"Key": "Transaction.VisaStoreId", "Value": transaction["mid"]},
+                    {"Key": "Transaction.VisaStoreId", "Value": vsid(transaction["mid"])},
                     {"Key": "Transaction.SettlementDate", "Value": ""},
                     {"Key": "Transaction.SettlementAmount", "Value": 0},
                     {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 0},
@@ -81,7 +87,7 @@ class VisaSettlement(BaseImportDataProvider):
                     {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "Transaction.VisaMerchantId", "Value": transaction["mid"]},
                     {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
-                    {"Key": "Transaction.VisaStoreId", "Value": transaction["mid"]},
+                    {"Key": "Transaction.VisaStoreId", "Value": vsid(transaction["mid"])},
                     {"Key": "Transaction.SettlementDate", "Value": pendulum.now().isoformat()},
                     {"Key": "Transaction.SettlementAmount", "Value": str(to_pounds(transaction["amount"]))},
                     {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 826},
@@ -130,7 +136,7 @@ class VisaRefund(BaseImportDataProvider):
                     {"Key": "ReturnTransaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "ReturnTransaction.VisaMerchantId", "Value": transaction["mid"]},
                     {"Key": "ReturnTransaction.VisaStoreName", "Value": "Bink Shop"},
-                    {"Key": "ReturnTransaction.VisaStoreId", "Value": transaction["mid"]},
+                    {"Key": "ReturnTransaction.VisaStoreId", "Value": vsid(transaction["mid"])},
                     {"Key": "ReturnTransaction.AcquirerAmount", "Value": str(to_pounds(transaction["amount"]))},
                     {"Key": "ReturnTransaction.AcquirerCurrencyCode", "Value": 826},
                     {"Key": "ReturnTransaction.CurrencyCode", "Value": "840"},
