@@ -16,14 +16,16 @@ SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 DATE_FORMAT = "YYYYMMDD"
 
 
-def _make_settlement_key(key_id: str):
+def _make_settlement_key(key_id: str) -> str:
     return sha256(f"visa.{key_id}".encode()).hexdigest()
 
 
-def get_key_value(data: dict, key: str):
+def get_key_value(data: dict, key: str) -> str:
     for d in data["MessageElementsCollection"]:
         if d["Key"] == key:
             return d["Value"]
+
+    raise KeyError(f"Key {key} not found in data: {data}")
 
 
 def try_convert_settlement_mid(mid: str) -> str:
@@ -31,6 +33,15 @@ def try_convert_settlement_mid(mid: str) -> str:
     if mid.startswith(prefix):
         return mid[len(prefix) :]
     return mid
+
+
+def get_mid_and_vsid(data: dict, *, mid_key: str, vsid_key: str) -> t.List[str]:
+    mids = [get_key_value(data, mid_key)]
+
+    if vsid := get_key_value(data, vsid_key):
+        mids.append(vsid)
+
+    return mids
 
 
 class VisaAuth(QueueAgent):
@@ -56,10 +67,7 @@ class VisaAuth(QueueAgent):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
-        return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
-
-    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
-        return get_key_value(data, "Transaction.VisaStoreId")
+        return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -103,10 +111,7 @@ class VisaSettlement(QueueAgent):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
-        return [try_convert_settlement_mid(get_key_value(data, "Transaction.MerchantCardAcceptorId"))]
-
-    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
-        return get_key_value(data, "Transaction.VisaStoreId")
+        return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -150,10 +155,9 @@ class VisaRefund(QueueAgent):
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> t.List[str]:
-        return [try_convert_settlement_mid(get_key_value(data, "ReturnTransaction.CardAcceptorIdCode"))]
-
-    def get_secondary_mid(self, data: dict) -> t.Optional[str]:
-        return get_key_value(data, "ReturnTransaction.VisaStoreId")
+        return get_mid_and_vsid(
+            data, mid_key="ReturnTransaction.CardAcceptorIdCode", vsid_key="ReturnTransaction.VisaStoreId"
+        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
