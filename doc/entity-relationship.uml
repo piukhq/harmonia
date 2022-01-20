@@ -1,0 +1,233 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "**alembic_version**" {
+  + ""version_num"": //character varying(32) [PK]//
+  --
+}
+
+entity "**config_item**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""key"": //character varying(100) //
+  *""value"": //character varying(100) //
+}
+
+entity "**export_transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""transaction_id"": //character varying(100) //
+  *""provider_slug"": //character varying(50) //
+  *""transaction_date"": //timestamp without time zone //
+  *""spend_amount"": //integer //
+  *""spend_currency"": //character varying(3) //
+  *""loyalty_id"": //character varying(100) //
+  *""mid"": //character varying(50) //
+  *""user_id"": //integer //
+  *""scheme_account_id"": //integer //
+  *""credentials"": //text //
+  *""status"": //exporttransactionstatus //
+  ""feed_type"": //feedtype //
+  ""store_id"": //character varying(50) //
+  ""brand_id"": //character varying(50) //
+  ""payment_card_account_id"": //integer //
+}
+
+entity "**file_sequence_number**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""provider_slug"": //character varying(50) //
+  *""next_value"": //integer //
+}
+
+entity "**import_file_log**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""provider_slug"": //character varying(50) //
+  *""file_name"": //character varying(500) //
+  *""imported"": //boolean //
+  ""transaction_count"": //integer //
+  ""date_range_from"": //timestamp without time zone //
+  ""date_range_to"": //timestamp without time zone //
+  ""unique_transaction_count"": //integer //
+}
+
+entity "**import_transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""transaction_id"": //character varying(100) //
+  *""provider_slug"": //character varying(50) //
+  *""identified"": //boolean //
+  ""source"": //character varying(500) //
+  ""data"": //json //
+  *""match_group"": //character varying(36) //
+  ""feed_type"": //feedtype //
+}
+
+entity "**loyalty_scheme**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""slug"": //character varying(50) //
+}
+
+entity "**matched_transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  ""merchant_identifier_id"": //integer [FK]//
+  *""transaction_id"": //character varying(100) //
+  *""transaction_date"": //timestamp without time zone //
+  *""spend_amount"": //integer //
+  *""spend_multiplier"": //integer //
+  *""spend_currency"": //character varying(3) //
+  *""card_token"": //character varying(100) //
+  *""matching_type"": //matchingtype //
+  *""status"": //matchedtransactionstatus //
+  ""payment_transaction_id"": //integer [FK]//
+  ""scheme_transaction_id"": //integer [FK]//
+  ""extra_fields"": //json //
+}
+
+entity "**merchant_identifier**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""mid"": //character varying(50) //
+  ""loyalty_scheme_id"": //integer [FK]//
+  ""payment_provider_id"": //integer [FK]//
+  *""location"": //character varying(250) //
+  *""postcode"": //character varying(16) //
+  ""store_id"": //character varying(50) //
+  ""brand_id"": //character varying(50) //
+}
+
+entity "**payment_provider**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""slug"": //character varying(50) //
+}
+
+entity "**payment_transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  ""merchant_identifier_ids"": //integer[] //
+  *""transaction_id"": //character varying(100) //
+  *""transaction_date"": //timestamp with time zone //
+  *""spend_amount"": //integer //
+  *""spend_multiplier"": //integer //
+  *""spend_currency"": //character varying(3) //
+  *""card_token"": //character varying(100) //
+  *""status"": //transactionstatus //
+  ""extra_fields"": //json //
+  ""settlement_key"": //character varying(100) //
+  *""provider_slug"": //character varying(50) //
+  *""auth_code"": //character varying(20) //
+  *""has_time"": //boolean //
+  *""match_group"": //character varying(36) //
+  ""first_six"": //text //
+  ""last_four"": //text //
+}
+
+entity "**pending_export**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""provider_slug"": //character varying(50) //
+  *""retry_count"": //integer //
+  ""retry_at"": //timestamp without time zone //
+  ""export_transaction_id"": //integer [FK]//
+}
+
+entity "**scheme_transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  ""merchant_identifier_ids"": //integer[] //
+  *""transaction_id"": //character varying(100) //
+  *""transaction_date"": //timestamp with time zone //
+  *""spend_amount"": //integer //
+  *""spend_multiplier"": //integer //
+  *""spend_currency"": //character varying(3) //
+  *""status"": //transactionstatus //
+  ""extra_fields"": //json //
+  *""provider_slug"": //character varying(50) //
+  *""payment_provider_slug"": //character varying(50) //
+  *""auth_code"": //character varying(20) //
+  *""has_time"": //boolean //
+  *""match_group"": //character varying(36) //
+  ""first_six"": //text //
+  ""last_four"": //text //
+}
+
+entity "**transaction**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""feed_type"": //feedtype //
+  *""status"": //transactionstatus //
+  ""merchant_identifier_ids"": //integer[] //
+  *""merchant_slug"": //character varying(50) //
+  *""payment_provider_slug"": //character varying(50) //
+  *""transaction_id"": //character varying(100) //
+  ""settlement_key"": //character varying(100) //
+  *""match_group"": //character varying(36) //
+  *""transaction_date"": //timestamp with time zone //
+  *""has_time"": //boolean //
+  *""spend_amount"": //integer //
+  *""spend_multiplier"": //integer //
+  *""spend_currency"": //character varying(3) //
+  ""card_token"": //character varying(100) //
+  ""first_six"": //text //
+  ""last_four"": //text //
+  *""auth_code"": //character varying(20) //
+}
+
+entity "**user_identity**" {
+  + ""id"": //serial [PK]//
+  --
+  ""created_at"": //timestamp without time zone //
+  ""updated_at"": //timestamp without time zone //
+  *""loyalty_id"": //character varying(250) //
+  *""scheme_account_id"": //integer //
+  *""user_id"": //integer //
+  *""credentials"": //text //
+  *""first_six"": //text //
+  *""last_four"": //text //
+  *""transaction_id"": //character varying //
+  ""payment_card_account_id"": //integer //
+}
+
+"**matched_transaction**"   }--  "**merchant_identifier**"
+
+"**matched_transaction**"   }--  "**payment_transaction**"
+
+"**matched_transaction**"   }--  "**scheme_transaction**"
+
+"**merchant_identifier**"   }--  "**loyalty_scheme**"
+
+"**merchant_identifier**"   }--  "**payment_provider**"
+
+"**pending_export**"   }--  "**export_transaction**"
+@enduml
