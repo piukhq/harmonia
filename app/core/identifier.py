@@ -1,10 +1,9 @@
 from typing import Optional
 
 import requests
-import sentry_sdk
 from sqlalchemy.orm import Query
 
-from app import db, models, tasks
+from app import db, models
 from app.reporting import get_logger
 from app.service.hermes import hermes
 
@@ -16,6 +15,10 @@ class SchemeAccountNotFound(Exception):
 
 
 class PaymentCardInfoNotFound(Exception):
+    pass
+
+
+class RetryableLookupFailure(Exception):
     pass
 
 
@@ -108,16 +111,8 @@ def _attach_user_identity(transaction_id: str, merchant_identifier_ids: list, ca
     except SchemeAccountNotFound:
         log.debug(f"Hermes was unable to find a scheme account for transaction #{transaction_id}")
         raise
-    except requests.RequestException:
-        event_id = sentry_sdk.capture_exception()
-        log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
-        tasks.identify_user_queue.enqueue(
-            tasks.identify_user,
-            transaction_id=transaction_id,
-            merchant_identifier_ids=merchant_identifier_ids,
-            card_token=card_token,
-        )
-        raise
+    except requests.RequestException as ex:
+        raise RetryableLookupFailure from ex
 
     if "card_information" not in user_info:
         log.debug(f"Hermes identified {transaction_id} but could return no payment card information")

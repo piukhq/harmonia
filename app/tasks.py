@@ -2,6 +2,7 @@ import typing as t
 from functools import cached_property
 
 import rq
+import sentry_sdk
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app import config, db, models, reporting
@@ -69,6 +70,17 @@ def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifi
     with db.session_scope() as session:
         try:
             identifier.identify_user(transaction_id, merchant_identifier_ids, card_token, session=session)
+        except identifier.RetryableLookupFailure:
+            event_id = sentry_sdk.capture_exception()
+            log.debug(f"Failed to get user info from Hermes. Task will be requeued. Sentry event ID: {event_id}")
+            identify_user_queue.enqueue(
+                identify_user,
+                transaction_id=transaction_id,
+                feed_type=feed_type,
+                merchant_identifier_ids=merchant_identifier_ids,
+                card_token=card_token,
+            )
+            return
         except Exception as ex:
             log.debug(f"User identification task failed: {repr(ex)}. Failed Hermes requests will be retried.")
             return
