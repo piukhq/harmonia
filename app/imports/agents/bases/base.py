@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pendulum
 import redis.lock
+from sqlalchemy.dialects.postgresql import insert
 
 import settings
 from app import db, models, tasks
@@ -286,11 +287,13 @@ class BaseAgent:
         match_group: str,
     ) -> None:
         if import_transaction_inserts:
-            db.engine.execute(models.ImportTransaction.__table__.insert().values(import_transaction_inserts))
+            db.engine.execute(
+                insert(models.ImportTransaction.__table__).values(import_transaction_inserts).on_conflict_do_nothing()
+            )
             self._update_metrics(n_insertions=len(import_transaction_inserts))
 
         if transaction_inserts:
-            db.engine.execute(models.Transaction.__table__.insert().values(transaction_inserts))
+            db.engine.execute(insert(models.Transaction.__table__).values(transaction_inserts).on_conflict_do_nothing())
 
         if self.feed_type_is_payment:
             # payment imports need to get identified before they can be matched
