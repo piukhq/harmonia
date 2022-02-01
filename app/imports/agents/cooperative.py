@@ -22,7 +22,7 @@ class Cooperative(FileAgent):
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
     )
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
         yield from json.loads(data.decode())["transactions"]
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:

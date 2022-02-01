@@ -164,7 +164,7 @@ class HarveyNichols(FileAgent):
     The following generator only yields the valid payment provider transactions, only these are stored.
     """
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
         transactions = json.loads(data.decode())["transactions"]
         for transaction in transactions:
             if transaction["card"]["scheme"] in payment_provider_map:

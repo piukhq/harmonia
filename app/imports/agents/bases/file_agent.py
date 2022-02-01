@@ -9,6 +9,7 @@ from pathlib import Path
 
 import humanize
 import pendulum
+import sentry_sdk
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 
@@ -252,7 +253,7 @@ class FileAgent(BaseAgent):
 
             transactions_data = []
             all_timestamps = []
-            for transaction in self.yield_transactions_data(data):
+            for transaction in self.safe_yield_transactions_data(data):
                 transactions_data.append(transaction)
                 all_timestamps.append(self.get_transaction_date(transaction))
                 yield
@@ -298,8 +299,23 @@ class FileAgent(BaseAgent):
             slug=self.provider_slug,
         )
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
         raise NotImplementedError
+
+    def safe_yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
+        gen = self.yield_transactions_data(data)
+        while True:
+            try:
+                yield next(gen)
+            except StopIteration:
+                break
+            except Exception as ex:
+                event_id = sentry_sdk.capture_exception()
+                self.log.warning(
+                    f"{type(self).__name__} raised {repr(ex)} while importing data. "
+                    f"Sentry event ID: {event_id}. "
+                    "The import will continue with the remainder of the file."
+                )
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         raise NotImplementedError
