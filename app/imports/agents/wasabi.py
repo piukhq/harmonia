@@ -77,7 +77,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
             archive_path="archive",
         )
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:
