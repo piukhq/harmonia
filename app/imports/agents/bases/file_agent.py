@@ -222,7 +222,8 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         if archive_path:
             if archive_path not in sftp.client.listdir("/"):
                 sftp.client.mkdir(f"/{archive_path}")
-            sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}")
+            import_timestamp = pendulum.now().isoformat()
+            sftp.client.rename(f"{path}/{filename}", f"/{archive_path}/{filename}-{import_timestamp}")
         else:
             sftp.client.remove(filename)
 
