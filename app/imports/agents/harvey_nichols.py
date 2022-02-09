@@ -167,8 +167,13 @@ class HarveyNichols(FileAgent):
     def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
         transactions = json.loads(data.decode())["transactions"]
         for transaction in transactions:
-            if transaction["card"]["scheme"] in payment_provider_map:
-                yield transaction
+            if transaction["card"]["scheme"] not in payment_provider_map:
+                continue
+
+            # raising an error for a bad datetime format at this point allows the rest of the file to be imported.
+            self.get_transaction_date(transaction)
+
+            yield transaction
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(

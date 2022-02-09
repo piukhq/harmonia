@@ -159,6 +159,9 @@ class MastercardTGX2Settlement(FileAgent):
             if raw_data["record_type"] != "D":
                 continue
 
+            # raising an error for bad datetime format at this point allows the rest of the file to be imported.
+            self.get_transaction_date(raw_data)
+
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
