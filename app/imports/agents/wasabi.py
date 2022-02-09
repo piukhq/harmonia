@@ -83,7 +83,11 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         for raw_data in reader:
             if raw_data["Card Type Name"] not in self.payment_provider_map:
                 continue
-            yield {k: v for k, v in raw_data.items()}
+
+            # raising an error for bad datetime format at this point allows the rest of the file to be imported.
+            self.get_transaction_date(raw_data)
+
+            yield raw_data
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
