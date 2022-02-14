@@ -201,12 +201,12 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
             mid_map = STORE_ID_MIDS_MAP[merchant_slug][store_id]
             user_data["transactions"].append(
                 {
-                    "amount": round(random.randint(100, 9000)),
+                    "amount": round(random.randint(100, 30000)),
                     "auth_code": random.randint(100000, 999999),
                     "date": pendulum.now()
                     - timedelta(
                         **{
-                            "days": random.randint(1, 30 * 3),
+                            "days": random.randint(1, 3),
                             "hours": random.randint(0, 23),
                             "minutes": random.randint(0, 60),
                             "seconds": random.randint(0, 60),
