@@ -164,8 +164,7 @@ def mids_data(merchant_slug: str, payment_slug: str) -> dict:
     # Load mid and store id from csv files for a single merchant
     # Only harvey nichols uses store id's to locate MID's so special check in this code.
     filename = f"{merchant_slug}-mids.csv"
-    pwd = Path.cwd()
-    file_path = Path(f"{pwd}/data_generation/files/{filename}")
+    file_path = Path.cwd() / "data_generation/files" / filename
     store_payment_mids = {}
 
     with file_path.open() as f:
