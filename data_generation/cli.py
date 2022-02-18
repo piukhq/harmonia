@@ -166,7 +166,7 @@ def mids_data(merchant_slug: str, payment_slug: str) -> dict:
     # Only harvey nichols uses store id's to locate MID's so special check in this code.
     filename = f"{merchant_slug}-mids.csv"
     file_path = Path.cwd() / "data_generation/files" / filename
-    store_payment_mids = {}
+    store_payment_mids = defaultdict(list)
 
     with file_path.open() as f:
         data = csv.reader(f, delimiter=",")
