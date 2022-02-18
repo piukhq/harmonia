@@ -1,9 +1,11 @@
+import csv
 import random
 import typing as t
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from io import BytesIO
+from pathlib import Path
 
 import click
 import pendulum
@@ -33,29 +35,12 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex": "amex",
     "amex-auth": "amex",
 }
-STORE_ID_MIDS_MAP = {  # type: t.Dict[str, t.Any]
-    "iceland-bonus-card": {
-        None: {  # store_id
-            "visa": ["02894183", "02894843", "02900453", "02900873", "02901343", "02902153", "02903043", "02903623"],
-            "mastercard": ["34870233", "34872513", "34873083", "34874053", "34874713", "34875443", "34876093"],
-            "amex": ["8174868976", "8174868968", "8042520049", "8042520320", "8174868984", "8174868992"],
-        },
-    },
-    "harvey-nichols": {
-        "0001017   005682": {  # store_id
-            "amex": ["9421355991", "9423447317", "9425544541", "9448629014"],
-            "mastercard": ["3553323", "3561503", "3561683", "3561763", "3561843", "3561923", "3562073", "3562233"],
-            "visa": ["56742051", "80289201", "80289611", "92040173", "92040913"],
-        },
-    },
-    "wasabi-club": {
-        None: {  # store_id
-            "visa": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-            "mastercard": ["16433941", "16434021", "15419601", "16434361", "16434511", "16434691", "15819251"],
-            "amex": ["9421717158", "9421721788", "9422065326", "9447911868", "9421724592", "9421724626", "9449137736"],
-        },
-    },
-}
+
+# merchants_with_store_ids contains merchants that require a store id to locate MID's
+# Added this because some Iceland data in merchant identifier table had store id's but these are not used.
+merchants_with_store_ids = [
+    "harvey-nichols",
+]
 
 logger = get_logger("data-generator")
 
@@ -175,6 +160,29 @@ def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_si
     return dataset
 
 
+def mids_data(merchant_slug: str, payment_slug: str) -> dict:
+    # Load mid and store id from csv files for a single merchant
+    # Only harvey nichols uses store id's to locate MID's so special check in this code.
+    filename = f"{merchant_slug}-mids.csv"
+    pwd = Path.cwd()
+    file_path = Path(f"{pwd}/data_generation/files/{filename}")
+    store_payment_mids = {}
+
+    with file_path.open() as f:
+        data = csv.reader(f, delimiter=",")
+        for row in data:
+            if not payment_slug == row[0]:
+                continue
+
+            store_id = row[3] if merchant_slug in merchants_with_store_ids else None
+            if store_id in store_payment_mids:
+                store_payment_mids[store_id].append(row[1])
+            else:
+                store_payment_mids[store_id] = [row[1]]
+
+    return store_payment_mids
+
+
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())
     payment_provider_slug = PAYMENT_AGENT_TO_PROVIDER_SLUG[payment_provider_agent]
@@ -191,14 +199,16 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
             "last_four": user_info.card_information.last_four,
             "transactions": [],
         }
+
+        store_payment_mids = mids_data(merchant_slug, payment_provider_slug)
         tx_per_user, remainder = divmod(num_tx, len(token_users))
         if i == 0:
             tx_per_user += remainder
         for _ in range(tx_per_user):
             store_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) store IDs if required
-                list(STORE_ID_MIDS_MAP[merchant_slug].keys())
+                list(store_payment_mids.keys())
             )
-            mid_map = STORE_ID_MIDS_MAP[merchant_slug][store_id]
+            mid_map = store_payment_mids[store_id]
             user_data["transactions"].append(
                 {
                     "amount": round(random.randint(100, 30000)),
@@ -213,7 +223,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                         }
                     ),
                     "settlement_key": str(uuid.uuid4()),
-                    "mid": random.choice(mid_map[payment_provider_slug]),
+                    "mid": random.choice(mid_map),
                     "store_id": store_id,
                 }
             )
