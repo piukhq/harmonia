@@ -2,6 +2,7 @@ import csv
 import random
 import typing as t
 import uuid
+from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -174,10 +175,7 @@ def mids_data(merchant_slug: str, payment_slug: str) -> dict:
                 continue
 
             store_id = row[3] if merchant_slug in merchants_with_store_ids else None
-            if store_id in store_payment_mids:
-                store_payment_mids[store_id].append(row[1])
-            else:
-                store_payment_mids[store_id] = [row[1]]
+            store_payment_mids[store_id].append(row[1])
 
     return store_payment_mids
 
