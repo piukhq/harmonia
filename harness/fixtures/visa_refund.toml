@@ -26,7 +26,7 @@ card_number = "loyalty-234"
 merchant_identifier = "88899966"
 
 [[users.transactions]]
-date = 2020-06-02T17:46:00Z
+date = 2020-06-15T17:46:00Z
 amount = 1099
 settlement_key = "settlement-234"
 auth_code = "666666"

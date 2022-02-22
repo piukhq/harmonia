@@ -126,7 +126,7 @@ class VisaRefund(BaseImportDataProvider):
                 "MessageElementsCollection": [
                     {
                         "Key": "ReturnTransaction.DateTime",
-                        "Value": pendulum.instance(transaction["date"]).format("D/M/YYYY h:m:s A"),
+                        "Value": pendulum.instance(transaction["date"]).format("M/D/YYYY h:m:s A"),
                     },
                     {"Key": "ReturnTransaction.CardAcceptorIdCode", "Value": transaction["mid"]},
                     {"Key": "ReturnTransaction.AcquirerBIN", "Value": "3423432"},
