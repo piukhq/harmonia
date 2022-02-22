@@ -86,7 +86,7 @@ class Amex(FileAgent):
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
     )
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         for line in data.decode().split("\n"):
             raw_data = [ln.strip() for ln in line.split("|")]
 

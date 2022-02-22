@@ -57,7 +57,7 @@ class Iceland(FileAgent):
             "gauges": ["last_file_timestamp"],
         }
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:

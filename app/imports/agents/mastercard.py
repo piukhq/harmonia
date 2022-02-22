@@ -81,7 +81,7 @@ class MastercardTS44Settlement(FileAgent):
             idx += width
         return data
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         lines = data.decode().split("\n")[1:]  # the header line is discarded
         for line in lines:
             raw_data = self.parse_line(line)
@@ -151,7 +151,7 @@ class MastercardTGX2Settlement(FileAgent):
     def parse_line(self, line: str) -> dict:
         return {field.name: line[field.start : field.start + field.length].strip() for field in self.fields}
 
-    def yield_transactions_data(self, data: bytes) -> t.Iterator[dict]:
+    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         lines = data.decode().split("\n")[1:]  # the header line is discarded
         for line in lines:
             raw_data = self.parse_line(line)
