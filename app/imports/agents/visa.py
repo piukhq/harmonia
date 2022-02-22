@@ -162,7 +162,7 @@ class VisaRefund(QueueAgent):
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = pendulum.from_format(
-            get_key_value(data, "ReturnTransaction.DateTime"), "D/M/YYYY h:m:s A", tz="GMT"
+            get_key_value(data, "ReturnTransaction.DateTime"), "M/D/YYYY h:m:s A", tz="GMT"
         )
 
         return PaymentTransactionFields(
