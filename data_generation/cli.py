@@ -33,7 +33,6 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "visa-refund": "visa",
     "mastercard-auth": "mastercard",
     "mastercard-settlement": "mastercard",
-    "amex": "amex",
     "amex-auth": "amex",
 }
 

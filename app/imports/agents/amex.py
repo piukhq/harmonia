@@ -1,13 +1,9 @@
 import typing as t
-from hashlib import sha256
-
-import pendulum
 
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
-from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "amex"
@@ -18,111 +14,6 @@ SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 DATE_FORMAT = "YYYY-MM-DD"
 DATETIME_FORMAT = "YYYY-MM-DD-HH.mm.ss"
-
-
-class SettlementKeyError(Exception):
-    pass
-
-
-def _make_settlement_key(
-    *,
-    card_token: str,
-    transaction_id: t.Optional[str] = None,
-    mid: t.Optional[str] = None,
-    amount: t.Optional[str] = None,
-):
-    """
-    auth-settled transaction pairing logic from amex:
-
-    most transactions:
-    settlement key = card token + transaction ID
-
-    if transaction ID is blank:
-    settlement key = card token + amount + MID
-    """
-
-    parts = ["amex", card_token]
-    if transaction_id:
-        parts.append(transaction_id)
-    elif amount and mid:
-        parts.append(amount)
-        parts.append(mid)
-    else:
-        raise SettlementKeyError(
-            "Failed to generate a settlement key. "
-            "At least one of the following combinations must be provided: "
-            "card token + transaction ID, or"
-            "card_token + amount + mid. "
-            "This transaction has not been imported."
-        )
-
-    return sha256(".".join(parts).encode()).hexdigest()
-
-
-class Amex(FileAgent):
-    feed_type = FeedType.SETTLED
-    provider_slug = PROVIDER_SLUG
-
-    file_fields = [
-        "detail_identifier",
-        "partner_id",
-        "transaction_id",
-        "purchase_date",
-        "transaction_amount",
-        "card_token",
-        "merchant_number",
-        "transaction_date",
-        "alias_card_number",
-    ]
-
-    field_transforms: t.Dict[str, t.Callable] = {
-        "purchase_date": lambda x: pendulum.from_format(x, DATE_FORMAT, tz="Europe/London"),
-        "transaction_date": lambda x: pendulum.from_format(x, DATETIME_FORMAT, tz="Europe/London"),
-        "transaction_amount": lambda x: to_pennies(x),
-    }
-
-    config = Config(
-        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
-        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
-    )
-
-    def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
-        for line in data.decode().split("\n"):
-            raw_data = [ln.strip() for ln in line.split("|")]
-
-            if not raw_data or raw_data[0] != "D":
-                continue
-
-            yield {k: self.field_transforms.get(k, str)(v) for k, v in zip(self.file_fields, raw_data)}
-
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
-        settlement_key = _make_settlement_key(
-            card_token=data["card_token"],
-            transaction_id=data["transaction_id"],
-            mid=data["merchant_number"],
-            amount=str(data["transaction_amount"]),
-        )
-        return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
-            payment_provider_slug=self.provider_slug,
-            settlement_key=settlement_key,
-            transaction_date=self.get_transaction_date(data),
-            has_time=True,
-            spend_amount=data["transaction_amount"],
-            spend_multiplier=100,
-            spend_currency="GBP",
-            card_token=data["card_token"],
-        )
-
-    @staticmethod
-    def get_transaction_id(data: dict) -> str:
-        return data["transaction_id"]
-
-    def get_mids(self, data: dict) -> t.List[str]:
-        return [data["merchant_number"]]
-
-    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
-        return data["transaction_date"]
 
 
 class AmexAuth(QueueAgent):
