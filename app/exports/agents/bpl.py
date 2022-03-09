@@ -9,18 +9,13 @@ from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas
 from app.service.bpl import BplAPI
 
-PROVIDER_SLUG = "bpl-trenette"
 
-BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
-
-
-class Trenette(SingularExportAgent):
-    provider_slug = PROVIDER_SLUG
-    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
-
+class Bpl(SingularExportAgent):
     def __init__(self):
         super().__init__()
         self.api_class = BplAPI
+        self.base_url = f"{KEY_PREFIX}exports.agents.{self.provider_slug}.base_url"
+        self.config = Config(ConfigValue("base_url", key=self.base_url, default="http://localhost"))
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
@@ -51,11 +46,11 @@ class Trenette(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session), self.provider_slug)
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.post_matched_transaction(body)
+        response = api.post_matched_transaction("asos", body)
         response_timestamp = pendulum.now().to_datetime_string()
 
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
-            raise Exception(f"BPL transaction endpoint returned {response.status_code}")
+            raise Exception(f"BPL - {self.provider_slug} transaction endpoint returned {response.status_code}")
 
         atlas.queue_audit_message(
             atlas.make_audit_message(
@@ -69,3 +64,11 @@ class Trenette(SingularExportAgent):
                 response_timestamp=response_timestamp,
             )
         )
+
+
+class Trenette(Bpl):
+    provider_slug = "bpl-trenette"
+
+
+class Asos(Bpl):
+    provider_slug = "bpl-asos"
