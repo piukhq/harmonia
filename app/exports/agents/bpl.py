@@ -11,11 +11,12 @@ from app.service.bpl import BplAPI
 
 
 class Bpl(SingularExportAgent):
-    def __init__(self):
+    def __init__(self, merchant_name: str):
         super().__init__()
         self.api_class = BplAPI
-        self.base_url = f"{KEY_PREFIX}exports.agents.{self.provider_slug}.base_url"
-        self.config = Config(ConfigValue("base_url", key=self.base_url, default="http://localhost"))
+        self.merchant_name = merchant_name
+        base_url_key = f"{KEY_PREFIX}exports.agents.{self.provider_slug}.base_url"
+        self.config = Config(ConfigValue("base_url", key=base_url_key, default="http://localhost"))
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
@@ -46,7 +47,7 @@ class Bpl(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session), self.provider_slug)
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.post_matched_transaction("asos", body)
+        response = api.post_matched_transaction(self.merchant_name, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
@@ -69,6 +70,12 @@ class Bpl(SingularExportAgent):
 class Trenette(Bpl):
     provider_slug = "bpl-trenette"
 
+    def __init__(self, merchant_name="trenette"):
+        super().__init__()
+
 
 class Asos(Bpl):
     provider_slug = "bpl-asos"
+
+    def __init__(self, merchant_name="asos"):
+        super().__init__()
