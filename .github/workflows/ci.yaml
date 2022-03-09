@@ -41,7 +41,7 @@ jobs:
       - run: xenon --max-average A --max-modules B --max-absolute B .
       - run: mypy app
       - run: alembic upgrade head
-      - run: pytest --verbose --cov app --cov-report=xml --junitxml=report.xml
+      - run: pytest --cov app
       - run: flake8 .
       - run: black --line-length=120 --check .
       - run: isort --check --line-length 120 --profile black .
