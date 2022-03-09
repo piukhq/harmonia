@@ -8,15 +8,19 @@ from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas
 from app.service.bpl import BplAPI
+from app.utils import missing_property
 
 
 class Bpl(SingularExportAgent):
-    def __init__(self, merchant_name: str):
+    def __init__(self):
         super().__init__()
         self.api_class = BplAPI
-        self.merchant_name = merchant_name
         base_url_key = f"{KEY_PREFIX}exports.agents.{self.provider_slug}.base_url"
         self.config = Config(ConfigValue("base_url", key=base_url_key, default="http://localhost"))
+
+    @property
+    def merchant_name(self) -> str:
+        return missing_property(type(self), "merchant_name")
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
@@ -69,13 +73,9 @@ class Bpl(SingularExportAgent):
 
 class Trenette(Bpl):
     provider_slug = "bpl-trenette"
-
-    def __init__(self, merchant_name="trenette"):
-        super().__init__()
+    merchant_name = "trenette"
 
 
 class Asos(Bpl):
     provider_slug = "bpl-asos"
-
-    def __init__(self, merchant_name="asos"):
-        super().__init__()
+    merchant_name = "asos"
