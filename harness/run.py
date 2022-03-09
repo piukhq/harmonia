@@ -353,8 +353,8 @@ def patch_soteria_service():
             "security_credentials": {
                 "outbound": {
                     "credentials": [
+                        {"credential_type": "compound_key", "value": {"token": "testing token"}},
                         {"credential_type": "merchant_public_key", "value": PGP_PUBLIC_KEY},
-                        {"credential_type": "compound_key", "value": {}},
                         {"credential_type": "bink_private_key", "value": PGP_PRIVATE_KEY},
                     ],
                     "service": soteria.configuration.Configuration.RSA_SECURITY,
