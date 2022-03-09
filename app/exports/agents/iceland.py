@@ -38,11 +38,6 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
     def __init__(self):
         super().__init__()
 
-        if settings.ATLAS_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Atlas URL to be set."
-            )
-
         self.merchant_config = self.get_soteria_config()
         if settings.DEBUG is True:
             # Use mocked Iceland endpoints

@@ -43,7 +43,6 @@ with mocked_auth_decorator():
 
 # most of the export agents need this to be set to something.
 settings.EUROPA_URL = ""
-settings.ATLAS_URL = ""
 settings.VAULT_URL = ""
 settings.AUDIT_EXPORTS = False
 

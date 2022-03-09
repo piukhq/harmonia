@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from soteria.security import get_security_agent
 
-import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.encryption import decrypt_credentials
@@ -30,11 +29,6 @@ class Cooperative(BatchExportAgent, SoteriaConfigMixin):
 
     def __init__(self):
         super().__init__()
-
-        if settings.ATLAS_URL is None:
-            raise settings.ConfigVarRequiredError(
-                f"The {self.provider_slug} export agent requires the Atlas URL to be set."
-            )
 
         self.soteria_config = self.get_soteria_config()
         self.api = CooperativeAPI(self.soteria_config.merchant_url)

@@ -159,9 +159,6 @@ SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 # AES Cipher key.
 AES_KEY = "6gZW4ARFINh4DR1uIzn12l7Mh1UF982L"
 
-# Base URL for saving transaction export status.
-ATLAS_URL = getenv("TXM_ATLAS_URL", required=False)
-
 # Base URL for Merchant API configuration service.
 EUROPA_URL = getenv("TXM_EUROPA_URL", required=False)
 
