@@ -5,7 +5,6 @@ import settings
 from app.exports.agents.wasabi import Wasabi
 
 settings.EUROPA_URL = "http://europa"
-settings.ATLAS_URL = "http://atlas"
 settings.VAULT_URL = "https://vault"
 
 

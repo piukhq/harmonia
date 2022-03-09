@@ -5,7 +5,6 @@ from app import encryption
 from app.exports.agents.iceland import Iceland
 
 settings.EUROPA_URL = "http://europa"
-settings.ATLAS_URL = "http://atlas"
 settings.VAULT_URL = "https://vault"
 
 MOCK_URL = "http://iceland.test"
