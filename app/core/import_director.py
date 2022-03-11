@@ -55,10 +55,10 @@ def handle_transactions(match_group: str, *, session: db.Session) -> None:
 
     log.debug(f"Group #{match_group} contains {merchant_slug} {feed_type.name} transactions.")
 
-    if wanted_by_matching(merchant_slug, feed_type):
+    if wanted_by_matching(merchant_slug):
         log.info(f"{feed_type.name} group #{match_group} is wanted by matching; enqueueing match job")
         tasks.matching_queue.enqueue(tasks.match_transactions, match_group)
 
-    if wanted_by_streaming(merchant_slug, feed_type):
+    if wanted_by_streaming(merchant_slug):
         log.info(f"{feed_type.name} group #{match_group} is wanted by streaming; enqueueing stream job")
         tasks.streaming_queue.enqueue(tasks.stream_transactions, match_group)
