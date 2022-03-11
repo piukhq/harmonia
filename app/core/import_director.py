@@ -4,19 +4,15 @@ from app.matching.agents.registry import matching_agents
 from app.reporting import get_logger
 from app.streaming.agents.registry import streaming_agents
 
-MATCHING_FEEDS = [FeedType.AUTH, FeedType.SETTLED, FeedType.MERCHANT]
-STREAMING_FEEDS = [FeedType.AUTH, FeedType.SETTLED, FeedType.REFUND, FeedType.MERCHANT]
-
-
 log = get_logger("import-director")
 
 
-def wanted_by_matching(merchant_slug: str, feed_type: FeedType) -> bool:
-    return merchant_slug in matching_agents and feed_type in MATCHING_FEEDS
+def wanted_by_matching(merchant_slug: str) -> bool:
+    return merchant_slug in matching_agents
 
 
-def wanted_by_streaming(merchant_slug: str, feed_type: FeedType) -> bool:
-    return merchant_slug in streaming_agents and feed_type in STREAMING_FEEDS
+def wanted_by_streaming(merchant_slug: str) -> bool:
+    return merchant_slug in streaming_agents
 
 
 def handle_transaction(transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
@@ -37,11 +33,11 @@ def handle_transaction(transaction_id: str, feed_type: FeedType, *, session: db.
         description=f"load {feed_type.name} transaction #{transaction_id} for routing.",
     )
 
-    if wanted_by_matching(merchant_slug, feed_type):
+    if wanted_by_matching(merchant_slug):
         log.info(f"{feed_type.name} transaction #{transaction_id} is wanted by matching; enqueueing match job")
         tasks.matching_queue.enqueue(tasks.match_transaction, transaction_id, feed_type)
 
-    if wanted_by_streaming(merchant_slug, feed_type):
+    if wanted_by_streaming(merchant_slug):
         log.info(f"{feed_type.name} transaction #{transaction_id} is wanted by streaming; enqueueing stream job")
         tasks.streaming_queue.enqueue(tasks.stream_transaction, transaction_id, feed_type)
 
