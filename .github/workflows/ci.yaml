@@ -70,7 +70,7 @@ jobs:
           push: true
           file: harness/Dockerfile
           tags: |
-            binkcore.azurecr.io/harmonia_bulkload:${{ steps.date.outputs.date }}
+            binkcore.azurecr.io/harmonia:harness-${{ steps.date.outputs.date }}
   create_tag_release:
     if: github.event_name == 'release' && github.event.action == 'published'
     name: create_tag_release
