@@ -30,6 +30,6 @@ amount = 1099
 settlement_key = "settle123"
 auth_code = "666666"
 mid = "92040913"
-store_id = "0001017   005682"
+location_id = "0001017   005682"
 # [users.transactions.merchant_overrides]
 # auth_code = "777777"

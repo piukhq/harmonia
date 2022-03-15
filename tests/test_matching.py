@@ -14,7 +14,7 @@ def mid(db_session: db.Session) -> int:
     payment_provider = models.PaymentProvider(slug="amex")
     mid = models.MerchantIdentifier(
         mid="test-force-match-mid-1",
-        store_id=None,
+        location_id=None,
         loyalty_scheme=loyalty_scheme,
         payment_provider=payment_provider,
         location="test",

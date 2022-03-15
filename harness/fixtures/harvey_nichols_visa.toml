@@ -30,7 +30,7 @@ amount = 1099
 settlement_key = "settle123"
 auth_code = "666666"
 mid = "92040913"
-store_id = "0001017   005682"
+location_id = "0001017   005682"
 
 [[users.transactions]]
 date = 2020-05-28T16:46:00Z
@@ -38,4 +38,4 @@ amount = 1099
 settlement_key = "settle234"
 auth_code = "666666"
 mid = "92040913"
-store_id = "0001017   005682"
+location_id = "0001017   005682"

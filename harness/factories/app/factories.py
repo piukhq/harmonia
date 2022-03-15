@@ -46,7 +46,7 @@ class MerchantIdentifierFactory(factory.alchemy.SQLAlchemyModelFactory):
         yield from session.query(models.PaymentProvider).limit(500).all()
 
     mid = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
-    store_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    location_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     loyalty_scheme = factory.iterator(loyalty_scheme)
     payment_provider = factory.iterator(payment_provider)
     location = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=250))

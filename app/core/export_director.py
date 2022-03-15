@@ -24,8 +24,8 @@ class ExportFields:
     spend_currency: str
     loyalty_id: str
     mid: str
-    store_id: str
-    brand_id: str
+    location_id: str
+    merchant_internal_id: str
     user_id: int
     scheme_account_id: int
     payment_card_account_id: Optional[int]
@@ -47,8 +47,8 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             spend_currency=fields.spend_currency,
             loyalty_id=fields.loyalty_id,
             mid=fields.mid,
-            store_id=fields.store_id,
-            brand_id=fields.brand_id,
+            location_id=fields.location_id,
+            merchant_internal_id=fields.merchant_internal_id,
             user_id=fields.user_id,
             scheme_account_id=fields.scheme_account_id,
             payment_card_account_id=fields.payment_card_account_id,

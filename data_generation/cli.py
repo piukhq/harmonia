@@ -36,9 +36,9 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex-auth": "amex",
 }
 
-# merchants_with_store_ids contains merchants that require a store id to locate MID's
-# Added this because some Iceland data in merchant identifier table had store id's but these are not used.
-merchants_with_store_ids = [
+# merchants_with_location_ids contains merchants that require a location id to locate MID's
+# Added this because some Iceland data in merchant identifier table had location id's but these are not used.
+merchants_with_location_ids = [
     "harvey-nichols",
 ]
 
@@ -161,11 +161,11 @@ def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_si
 
 
 def mids_data(merchant_slug: str, payment_slug: str) -> dict:
-    # Load mid and store id from csv files for a single merchant
-    # Only harvey nichols uses store id's to locate MID's so special check in this code.
+    # Load mid and location id from csv files for a single merchant
+    # Only harvey nichols uses location id's to locate MID's so special check in this code.
     filename = f"{merchant_slug}-mids.csv"
     file_path = Path.cwd() / "data_generation/files" / filename
-    store_payment_mids = defaultdict(list)
+    location_payment_mids = defaultdict(list)
 
     with file_path.open() as f:
         data = csv.reader(f, delimiter=",")
@@ -173,10 +173,10 @@ def mids_data(merchant_slug: str, payment_slug: str) -> dict:
             if not payment_slug == row[0]:
                 continue
 
-            store_id = row[3] if merchant_slug in merchants_with_store_ids else None
-            store_payment_mids[store_id].append(row[1])
+            location_id = row[3] if merchant_slug in merchants_with_location_ids else None
+            location_payment_mids[location_id].append(row[1])
 
-    return store_payment_mids
+    return location_payment_mids
 
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
@@ -196,15 +196,15 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
             "transactions": [],
         }
 
-        store_payment_mids = mids_data(merchant_slug, payment_provider_slug)
+        location_payment_mids = mids_data(merchant_slug, payment_provider_slug)
         tx_per_user, remainder = divmod(num_tx, len(token_users))
         if i == 0:
             tx_per_user += remainder
         for _ in range(tx_per_user):
-            store_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) store IDs if required
-                list(store_payment_mids.keys())
+            location_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) location IDs if required
+                list(location_payment_mids.keys())
             )
-            mid_map = store_payment_mids[store_id]
+            mid_map = location_payment_mids[location_id]
             user_data["transactions"].append(
                 {
                     "amount": round(random.randint(100, 30000)),
@@ -220,7 +220,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                     ),
                     "settlement_key": str(uuid.uuid4()),
                     "mid": random.choice(mid_map),
-                    "store_id": store_id,
+                    "location_id": location_id,
                 }
             )
         fixture["users"].append(user_data)

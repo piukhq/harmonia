@@ -37,8 +37,8 @@ class SquareMeal(SingularExportAgent):
                         "transaction_amount": export_transaction.spend_amount,
                         "transaction_currency": "GBP",
                         "payment_card_account_id": export_transaction.payment_card_account_id,
-                        "store_id": export_transaction.store_id,
-                        "brand_id": export_transaction.brand_id,
+                        "store_id": export_transaction.location_id,
+                        "brand_id": export_transaction.merchant_internal_id,
                     },
                 )
             ],

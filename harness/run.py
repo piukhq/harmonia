@@ -178,7 +178,7 @@ class FixtureUserTransactionSchema(Schema):
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
     mid = fields.String(required=True, allow_none=False)
-    store_id = fields.String(required=False, allow_none=True)
+    location_id = fields.String(required=False, allow_none=True)
 
     @pre_load
     def convert_dates(self, data, **kwargs):
@@ -296,7 +296,7 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
                 defaults={
-                    "store_id": transaction.get("store_id"),
+                    "location_id": transaction.get("location_id"),
                     "location": fixture["location"],
                     "postcode": fixture["postcode"],
                 },
