@@ -17,9 +17,6 @@ slug = "visa-auth"
 [[agents]]
 slug = "visa-settlement"
 
-[[agents]]
-slug = "visa-refund"
-
 # first user
 [[users]]
 loyalty_id = "loyalty-123"
