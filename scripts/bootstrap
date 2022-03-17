@@ -1,0 +1,87 @@
+#!/bin/sh
+. scripts/_common
+
+if [ -n "${VIRTUAL_ENV-}" ]; then
+    warn 'This script should not be run inside a virtual environment.'
+    exit 1
+fi
+
+install() {
+    info 'Installing dependencies...'
+    mkdir .venv # pipenv will use this instead of the default location
+    pipenv install --dev
+    hr
+}
+
+psql_cmd() {
+    psql -h localhost -U postgres -c "$1" -o /dev/null
+}
+
+test_postgres() {
+    psql_cmd 'select 1' >/dev/null 2>&1
+}
+
+make_postgres() {
+    if ! which docker; then
+        warn 'Docker not found.'
+        info 'Please either setup PostgreSQL on localhost:5432 or install Docker.'
+        exit 1
+    fi
+
+    info 'Creating PostgreSQL docker container...'
+    docker run -d --rm --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -p5432:5432 postgres
+    hr
+}
+
+make_databases() {
+    info 'Making harmonia & harmonia_test databases...'
+    psql_cmd 'create database harmonia' >/dev/null 2>&1 || true
+    psql_cmd 'create database harmonia_test' >/dev/null 2>&1 || true
+    hr
+}
+
+ensure_postgres() {
+    info 'Ensuring PostgreSQL is available...'
+    if test_postgres; then
+        info 'PostgreSQL is available on localhost:5432'
+        hr
+    else
+        info 'Failed to connect to PostgreSQL, trying to start one with Docker...'
+        make_postgres
+        for i in $(seq 5); do test_postgres && break || sleep 3; done
+    fi
+    make_databases
+}
+
+test_redis() {
+    redis-cli -c 'ping' >/dev/null 2>&1
+}
+
+make_redis() {
+    if ! which docker; then
+        warn 'Docker not found.'
+        info 'Please either setup Redis on localhost:6379 or install Docker.'
+        exit 1
+    fi
+
+    info 'Creating Redis docker container...'
+    docker run -d --rm --name redis -p6379:6379 redis
+    hr
+}
+
+ensure_redis() {
+    info 'Ensuring Redis is available...'
+    if test_redis; then
+        info 'Redis is available on localhost:6379'
+        hr
+    else
+        info 'Failed to connect to Redis, trying to start one with Docker...'
+        make_redis
+        for i in $(seq 5); do test_redis && break || sleep 3; done
+    fi
+}
+
+install
+ensure_postgres
+pipenv run scripts/migrate
+ensure_redis

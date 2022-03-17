@@ -1,6 +1,0 @@
-#! /bin/bash
-
-source s/_common
-
-p 'migrating database'
-pipenv run alembic upgrade head

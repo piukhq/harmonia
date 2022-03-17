@@ -77,7 +77,7 @@ cp .env.example .env
 
 The provided example is sufficient as a basic configuration, but modification may be required for specific use-cases.
 
-The `.env` file contains connection parameters for the two major services used in the project; PostgreSQL and Redis. The default connection parameters assume a local instance of these services listening on ports 51234 (PostgreSQL) and 61234 (Redis.)
+The `.env` file contains connection parameters for the two major services used in the project; PostgreSQL and Redis. The default connection parameters assume a local instance of these services listening on ports 5432 (PostgreSQL) and 6379 (Redis.)
 
 To quickly create docker containers for the required services:
 

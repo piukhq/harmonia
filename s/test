@@ -1,6 +1,0 @@
-#! /bin/bash
-
-source s/_common
-
-p 'running tests'
-pipenv run pytest --cov app -v

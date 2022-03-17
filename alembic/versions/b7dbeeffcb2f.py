@@ -8,7 +8,6 @@ Create Date: 2020-12-15 13:57:34.440542+00:00
 import sqlalchemy as sa
 
 from alembic import op
-from app import config
 
 revision = "b7dbeeffcb2f"
 down_revision = "0013391ff886"
@@ -17,7 +16,7 @@ depends_on = None
 
 
 def upgrade():
-    table = op.create_table(
+    op.create_table(
         "config_item",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column(
@@ -29,8 +28,6 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_config_item_key"), "config_item", ["key"], unique=True)
-
-    op.bulk_insert(table, [{"key": k, "value": v} for k, v in config.all_keys()])
 
 
 def downgrade():

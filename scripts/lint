@@ -1,0 +1,24 @@
+#!/bin/sh
+. scripts/_common
+
+info 'Running isort...'
+isort --check .
+hr
+
+info 'Running black...'
+black --check .
+hr
+
+info 'Running flake8...'
+flake8
+hr
+
+info 'Running mypy...'
+mypy app
+hr
+
+info 'Running xenon...'
+pipenv run xenon --max-average A --max-modules B --max-absolute B .
+hr
+
+info 'Done!'
