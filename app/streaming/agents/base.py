@@ -8,5 +8,5 @@ class BaseStreamingAgent:
     for example, only stream if the transaction is in the stream feed type and is not an Amex Auth
     """
 
-    def should_stream(self, transaction: Transaction):
+    def should_stream(self, transaction: Transaction) -> bool:
         return True
