@@ -1,0 +1,8 @@
+#!/bin/sh
+. scripts/_common
+
+info 'Opening psql shell...'
+psql -h localhost -U postgres -d harmonia
+hr
+
+info 'Done!'

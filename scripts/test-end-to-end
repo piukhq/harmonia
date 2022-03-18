@@ -1,0 +1,8 @@
+#!/bin/sh
+. scripts/_common
+
+info 'Running end-to-end test harness...'
+python -m harness.run "$@"
+hr
+
+info 'Done!'

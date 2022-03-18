@@ -1,0 +1,8 @@
+#!/bin/sh
+. scripts/_common
+
+info 'Running tests...'
+pytest --cov app
+hr
+
+info 'Done!'

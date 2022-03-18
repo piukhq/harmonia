@@ -10,21 +10,19 @@ from app.core.matching_worker import MatchingWorker
 
 @pytest.fixture
 def mid(db_session: db.Session) -> int:
-    loyalty_scheme = models.LoyaltyScheme(slug="iceland-bonus-card")
-    payment_provider = models.PaymentProvider(slug="amex")
-    mid = models.MerchantIdentifier(
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
+    mid, _ = db.get_or_create(
+        models.MerchantIdentifier,
         mid="test-force-match-mid-1",
-        location_id=None,
-        loyalty_scheme=loyalty_scheme,
-        payment_provider=payment_provider,
-        location="test",
-        postcode="test",
+        defaults={
+            "loyalty_scheme": loyalty_scheme,
+            "payment_provider": payment_provider,
+            "location": "test",
+            "postcode": "test",
+        },
+        session=db_session,
     )
-
-    db_session.add(loyalty_scheme)
-    db_session.add(payment_provider)
-    db_session.add(mid)
-    db_session.flush()
 
     return mid.id
 
