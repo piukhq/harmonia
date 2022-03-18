@@ -127,18 +127,18 @@ class BaseAgent:
         raise NotImplementedError("Override get_transaction_id in your agent.")
 
     @cached_property
-    def storeid_mid_map(self) -> t.DefaultDict[str, t.List[str]]:
+    def location_id_mid_map(self) -> t.DefaultDict[str, t.List[str]]:
         with db.session_scope() as session:
 
             def get_data():
                 return (
                     session.query(
-                        models.MerchantIdentifier.store_id,
+                        models.MerchantIdentifier.location_id,
                         models.MerchantIdentifier.mid,
                     )
                     .join(models.LoyaltyScheme)
                     .filter(models.LoyaltyScheme.slug == self.provider_slug)
-                    .filter(models.MerchantIdentifier.store_id.isnot(None))
+                    .filter(models.MerchantIdentifier.location_id.isnot(None))
                     .distinct()
                 )
 
@@ -146,13 +146,13 @@ class BaseAgent:
                 get_data,
                 session=session,
                 read_only=True,
-                description=f"find {self.provider_slug} MIDs by store ID",
+                description=f"find {self.provider_slug} MIDs by location ID",
             )
 
-        storeid_mid_map = defaultdict(list)
-        for (store_id, mid) in data:
-            storeid_mid_map[store_id].append(mid)
-        return storeid_mid_map
+        location_id_mid_map = defaultdict(list)
+        for (location_id, mid) in data:
+            location_id_mid_map[location_id].append(mid)
+        return location_id_mid_map
 
     def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")

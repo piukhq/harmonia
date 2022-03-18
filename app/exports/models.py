@@ -37,8 +37,8 @@ class ExportTransaction(Base, ModelMixin):
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     loyalty_id = s.Column(s.String(100), nullable=False)  # Merchant loyalty identifier/membership number
     mid = s.Column(s.String(50), nullable=False)  # merchant identifier for identifying the store purchase made
-    store_id = s.Column(s.String(50), nullable=True)
-    brand_id = s.Column(s.String(50), nullable=True)
+    location_id = s.Column(s.String(50), nullable=True)
+    merchant_internal_id = s.Column(s.String(50), nullable=True)
     user_id = s.Column(s.Integer, nullable=False)
     scheme_account_id = s.Column(s.Integer, nullable=False)
     payment_card_account_id = s.Column(s.Integer, nullable=True)
