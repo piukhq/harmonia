@@ -8,8 +8,8 @@ fi
 
 install() {
     info 'Installing dependencies...'
-    mkdir .venv # pipenv will use this instead of the default location
-    pipenv install --dev
+    mkdir -p .venv # pipenv will use this instead of the default location
+    pipenv sync --dev
     hr
 }
 
