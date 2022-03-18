@@ -1,8 +1,16 @@
+from typing import cast
+
 from sqlalchemy import any_
 
 from app import db, models
 from app.core.export_director import ExportFields, create_export
 from app.feeds import FeedType
+from app.registry import NoSuchAgent
+from app.reporting import get_logger
+from app.streaming.agents.base import BaseStreamingAgent
+from app.streaming.agents.registry import streaming_agents
+
+log = get_logger("streaming-worker")
 
 
 class StreamingWorker:
@@ -28,7 +36,15 @@ class StreamingWorker:
             read_only=True,
             description=f"load streaming data for transaction #{transaction_id}",
         )
-        self._handle(transaction, user_identity, merchant_identifier, session=session)
+
+        try:
+            agent = cast(BaseStreamingAgent, streaming_agents.instantiate(transaction.merchant_slug))
+        except NoSuchAgent:
+            log.debug(f"No streaming agent is registered for slug {transaction.merchant_slug}.")
+            return
+
+        if agent.should_stream(transaction):
+            self._handle(transaction, user_identity, merchant_identifier, session=session)
 
     def handle_transactions(self, match_group: str, *, session: db.Session) -> None:
         raise NotImplementedError
