@@ -7,6 +7,7 @@ import marshmallow
 import werkzeug
 from flask import Blueprint, request
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql import tuple_
 
 import settings
 from app import db, models, reporting
@@ -144,7 +145,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
     return n_mids_in_file, count
 
 
-@api.route("/", methods=["POST"])
+@api.route("/csv", methods=["POST"])
 @requires_auth(auth_scopes="mids:write")
 @view_session
 def import_mids(*, session: db.Session) -> tuple[dict, int]:
@@ -185,13 +186,13 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
     return {"imported": imported, "failed": failed}, 200
 
 
-@api.route("/<payment_provider>/mids", methods=["POST"])
+@api.route("/", methods=["POST"])
 @requires_service_auth
-def onboard_mids(payment_provider: str) -> tuple[dict, int]:
+def onboard_mids() -> tuple[dict, int]:
     if not request.is_json:
         return {"title": "Bad request", "description": "Expected JSON content type"}, 400
 
-    request_schema = schemas.NewMIDListSchema()
+    request_schema = schemas.MIDCreationListSchema()
 
     try:
         data = request_schema.load(request.json)
@@ -205,7 +206,7 @@ def onboard_mids(payment_provider: str) -> tuple[dict, int]:
                 location_id=mid.get("location_id"),
                 merchant_internal_id=mid.get("merchant_internal_id"),
                 loyalty_scheme_slug=mid["loyalty_plan"],
-                payment_provider_slug=payment_provider,
+                payment_provider_slug=mid["payment_scheme"],
                 location="",
                 postcode="",
                 session=session,
@@ -216,3 +217,43 @@ def onboard_mids(payment_provider: str) -> tuple[dict, int]:
         count = insert_mids(mids, session=session)
 
     return {"total": len(mids), "onboarded": count}, 200
+
+
+@api.route("/deletion", methods=["POST"])
+@requires_service_auth
+def offboard_mids() -> tuple[dict, int]:
+    if not request.is_json:
+        return {"title": "Bad request", "description": "Expected JSON content type"}, 400
+
+    request_schema = schemas.MIDDeletionListSchema()
+    try:
+        data = request_schema.load(request.json)
+    except marshmallow.ValidationError as ex:
+        return {"title": "Validation error", "description": ex.messages}, 422
+
+    with db.session_scope() as session:
+        q = (
+            session.query(models.MerchantIdentifier.id)
+            .join(models.PaymentProvider)
+            .filter(
+                tuple_(models.MerchantIdentifier.mid, models.PaymentProvider.slug).in_(
+                    [(mid["mid"], mid["payment_scheme"]) for mid in data["mids"]]
+                )
+                | models.MerchantIdentifier.location_id.in_(data["locations"])
+            )
+        )
+        mid_ids = db.run_query(
+            q.all,
+            session=session,
+            description="find MID IDs for offboarding by (mid, payment_slug) or location",
+        )
+
+        count = db.run_query(
+            session.query(models.MerchantIdentifier)
+            .filter(models.MerchantIdentifier.id.in_([r.id for r in mid_ids]))
+            .delete,
+            session=session,
+            description="delete MIDs by ID",
+        )
+
+    return {"deleted": count}, 200
