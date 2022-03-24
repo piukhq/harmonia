@@ -30,6 +30,7 @@ class ExportFields:
     scheme_account_id: int
     payment_card_account_id: Optional[int]
     credentials: str
+    settlement_key: Optional[str]
 
 
 def create_export(fields: ExportFields, *, session: db.Session) -> None:
@@ -53,6 +54,7 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             scheme_account_id=fields.scheme_account_id,
             payment_card_account_id=fields.payment_card_account_id,
             credentials=fields.credentials,
+            settlement_key=fields.settlement_key,
         )
         session.add(export_transaction)
         session.commit()

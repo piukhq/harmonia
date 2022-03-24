@@ -92,7 +92,7 @@ class SingularExportAgent(BaseAgent):
             return
 
         self.log.info(f"{type(self).__name__} handling {export_transaction}.")
-        export_data = self.make_export_data(export_transaction)
+        export_data = self.make_export_data(export_transaction, session)
 
         try:
             self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
@@ -208,5 +208,5 @@ class SingularExportAgent(BaseAgent):
                     slug=self.provider_slug,
                 )
 
-    def make_export_data(self, matched_transaction: models.MatchedTransaction) -> AgentExportData:
+    def make_export_data(self, matched_transaction: models.MatchedTransaction, session: db.Session) -> AgentExportData:
         raise NotImplementedError("Override the make export data method in your export agent")

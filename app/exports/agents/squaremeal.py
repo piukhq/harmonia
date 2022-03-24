@@ -20,7 +20,27 @@ class SquareMeal(SingularExportAgent):
         ConfigValue("base_url", key=BASE_URL_KEY, default="https://uk-bink-transactions-dev.azurewebsites.net")
     )
 
-    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
+    def get_settlement_key(self, export_transaction: models.ExportTransaction, session: db.Session) -> str:
+        # Check if there is a settlement key since a transaction might already be in the export queue
+        # If no settlement key, then obtain it from the transaction table data
+        if settlement_key := export_transaction.settlement_key:
+            return settlement_key
+        else:
+            settlement_key = db.run_query(
+                session.query(models.Transaction.settlement_key)
+                .filter(
+                    models.Transaction.feed_type == export_transaction.feed_type,
+                    models.Transaction.transaction_id == export_transaction.transaction_id,
+                )
+                .scalar,
+                session=session,
+                read_only=True,
+                description="find transaction settlement key for export",
+            )
+        self.log.warning(f"Settlement key not found for SquareMeal transaction: {export_transaction}")
+        return settlement_key
+
+    def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         dt = pendulum.instance(export_transaction.transaction_date)
 
         return AgentExportData(
@@ -28,7 +48,9 @@ class SquareMeal(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "transaction_id": sha256(export_transaction.transaction_id.encode()).hexdigest(),
+                        "transaction_id": sha256(
+                            self.get_settlement_key(export_transaction, session).encode()
+                        ).hexdigest(),
                         "loyalty_id": export_transaction.loyalty_id,
                         "auth": export_transaction.feed_type == FeedType.AUTH,
                         "cleared": export_transaction.feed_type in (FeedType.SETTLED, FeedType.REFUND),

@@ -73,6 +73,7 @@ class StreamingWorker:
                 scheme_account_id=user_identity.scheme_account_id,
                 payment_card_account_id=user_identity.payment_card_account_id,
                 credentials=user_identity.credentials,
+                settlement_key=transaction.settlement_key,
             ),
             session=session,
         )

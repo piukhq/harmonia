@@ -44,6 +44,7 @@ class ExportTransaction(Base, ModelMixin):
     payment_card_account_id = s.Column(s.Integer, nullable=True)
     credentials = s.Column(s.Text, nullable=False)
     status = s.Column(s.Enum(ExportTransactionStatus), nullable=False, default=ExportTransactionStatus.PENDING)
+    settlement_key = s.Column(s.String(100), nullable=True)  # used to group auth & settled transactions
 
     pending_exports = s.orm.relationship("PendingExport", backref="export_transaction")
 
