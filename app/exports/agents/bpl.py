@@ -26,7 +26,7 @@ class Bpl(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
-    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
+    def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         transaction_datetime = pendulum.instance(export_transaction.transaction_date)
 
         return AgentExportData(

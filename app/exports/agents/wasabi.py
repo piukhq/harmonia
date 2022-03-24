@@ -67,7 +67,7 @@ class Wasabi(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return hashlib.sha1("Bink-Wasabi-" f"{export_transaction.decrypted_credentials['email']}".encode()).hexdigest()
 
-    def make_export_data(self, export_transaction: models.ExportTransaction) -> AgentExportData:
+    def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
