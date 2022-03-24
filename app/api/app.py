@@ -31,10 +31,24 @@ def create_app() -> flask.Flask:
     flask_cors.CORS(app)
 
     from azure_oidc.integrations.flask_decorator import HTTPUnauthorized
+    from werkzeug.exceptions import BadRequest
+
+    from app.api.auth import AuthError
 
     @app.errorhandler(HTTPUnauthorized)
     def handle_unauthorized(error: HTTPUnauthorized):
+        """Handle an OIDC authentication error."""
         return {"title": "401 Unauthorized", "description": error.description}, 401
+
+    @app.errorhandler(AuthError)
+    def handle_auth_error(error: AuthError) -> tuple[dict, int]:
+        """Handle a service authentication error."""
+        return {"title": "401 Unauthorized", "description": error.args}, 401
+
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(error: BadRequest) -> tuple[dict, int]:
+        """Handle a bad request."""
+        return {"title": "400 Bad Request", "description": error.args}, 400
 
     from app.api.views import api as core_api
     from app.config.views import api as config_api
