@@ -289,18 +289,26 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     )
     for user in fixture["users"]:
         for transaction in user["transactions"]:
-            db.get_or_create(
-                models.MerchantIdentifier,
-                session=session,
+            merchant_identifier = models.MerchantIdentifier(
                 mid=transaction["mid"],
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
-                defaults={
-                    "location_id": transaction.get("location_id"),
-                    "location": fixture["location"],
-                    "postcode": fixture["postcode"],
-                },
+                location_id=transaction.get("location_id"),
+                location=fixture["location"],
+                postcode=fixture["postcode"],
             )
+            mid_id = (
+                session.query(models.MerchantIdentifier.id)
+                .where(
+                    models.MerchantIdentifier.mid == transaction["mid"],
+                    models.MerchantIdentifier.payment_provider_id == payment_provider.id,
+                )
+                .scalar()
+            )
+            if mid_id:
+                merchant_identifier.id = mid_id
+            session.merge(merchant_identifier)
+    session.commit()
 
 
 def preload_import_transactions(count: int, *, fixture: dict, session: db.Session):
