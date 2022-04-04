@@ -95,7 +95,7 @@ class MastercardTS44Settlement(FileAgent):
         transaction_date = self.get_transaction_date(data)
         card_token = data["bank_customer_number"]
         return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
+            merchant_slug=self.get_merchant_slug(data, self.provider_slug),
             payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["bank_net_ref_number"],
@@ -168,7 +168,7 @@ class MastercardTGX2Settlement(FileAgent):
         transaction_date = self.get_transaction_date(data)
         card_token = data["token"]
         return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
+            merchant_slug=self.get_merchant_slug(data, self.provider_slug),
             payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["transaction_id"],
@@ -210,7 +210,7 @@ class MastercardAuth(QueueAgent):
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
         card_token = data["payment_card_token"]
         return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
+            merchant_slug=self.get_merchant_slug(data, self.provider_slug),
             payment_provider_slug=self.provider_slug,
             settlement_key=_make_settlement_key(
                 third_party_id=data["third_party_id"],

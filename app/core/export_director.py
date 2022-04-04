@@ -31,6 +31,10 @@ class ExportFields:
     payment_card_account_id: Optional[int]
     credentials: str
     settlement_key: Optional[str]
+    last_four: Optional[int]
+    expiry_month: Optional[int]
+    expiry_year: Optional[int]
+    payment_scheme_slug: Optional[str]
 
 
 def create_export(fields: ExportFields, *, session: db.Session) -> None:
@@ -55,6 +59,10 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             payment_card_account_id=fields.payment_card_account_id,
             credentials=fields.credentials,
             settlement_key=fields.settlement_key,
+            last_four=fields.last_four,
+            expiry_month=fields.expiry_month,
+            expiry_year=fields.expiry_year,
+            payment_scheme_slug=fields.payment_scheme_slug,
         )
         session.add(export_transaction)
         session.commit()

@@ -173,7 +173,6 @@ class IdentityDateTimeField(fields.DateTime):
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
-    settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
@@ -197,6 +196,8 @@ class FixtureUserSchema(Schema):
     last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     credentials = fields.Dict(required=True, allow_none=False)
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
+    expiry_month = fields.String(required=False, validate=validate.Length(equal=2))
+    expiry_year = fields.String(required=False, validate=validate.Length(equal=4))
 
 
 class FixtureProviderSchema(Schema):
@@ -242,7 +243,12 @@ def payment_card_user_info_fn(fixture: dict) -> t.Callable:
                     "payment_card_account_id": idx,
                     "user_id": idx,
                     "credentials": user["credentials"],
-                    "card_information": {"first_six": user["first_six"], "last_four": user["last_four"]},
+                    "card_information": {
+                        "first_six": user["first_six"],
+                        "last_four": user["last_four"],
+                        "expiry_month": user.get("expiry_month"),
+                        "expiry_year": user.get("expiry_year"),
+                    },
                 }
             }
 
@@ -277,7 +283,10 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
         raise click.Abort
 
     for user in fixture["users"]:
+        settlement_key = str(uuid4())
         user["credentials"] = encryption.encrypt_credentials(user["credentials"])
+        for transaction in user["transactions"]:
+            transaction["settlement_key"] = settlement_key
 
     return fixture
 
@@ -289,18 +298,26 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     )
     for user in fixture["users"]:
         for transaction in user["transactions"]:
-            db.get_or_create(
-                models.MerchantIdentifier,
-                session=session,
+            merchant_identifier = models.MerchantIdentifier(
                 mid=transaction["mid"],
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
-                defaults={
-                    "location_id": transaction.get("location_id"),
-                    "location": fixture["location"],
-                    "postcode": fixture["postcode"],
-                },
+                location_id=transaction.get("location_id"),
+                location=fixture["location"],
+                postcode=fixture["postcode"],
             )
+            mid_id = (
+                session.query(models.MerchantIdentifier.id)
+                .where(
+                    models.MerchantIdentifier.mid == transaction["mid"],
+                    models.MerchantIdentifier.payment_provider_id == payment_provider.id,
+                )
+                .scalar()
+            )
+            if mid_id:
+                merchant_identifier.id = mid_id
+            session.merge(merchant_identifier)
+    session.commit()
 
 
 def preload_import_transactions(count: int, *, fixture: dict, session: db.Session):

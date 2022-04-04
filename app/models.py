@@ -193,6 +193,8 @@ class UserIdentity(Base, ModelMixin):
     first_six = s.Column(s.Text, nullable=False)
     last_four = s.Column(s.Text, nullable=False)
     payment_card_account_id = s.Column(s.Integer, nullable=True)
+    expiry_month = s.Column(s.Integer, nullable=True)
+    expiry_year = s.Column(s.Integer, nullable=True)
 
     @property
     def decrypted_credentials(self):
