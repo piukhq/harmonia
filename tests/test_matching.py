@@ -83,8 +83,7 @@ def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
     mtx = (
         db_session.query(models.MatchedTransaction)
         .filter(
-            models.MatchedTransaction.payment_transaction_id == ptx.id,
-            models.MatchedTransaction.scheme_transaction_id == stx.id,
+            models.MatchedTransaction.transaction_id == stx.transaction_id,
         )
         .one_or_none()
     )
@@ -148,8 +147,7 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
     mtx = (
         db_session.query(models.MatchedTransaction)
         .filter(
-            models.MatchedTransaction.payment_transaction_id == ptx.id,
-            models.MatchedTransaction.scheme_transaction_id == stx.id,
+            models.MatchedTransaction.transaction_id == stx.transaction_id,
         )
         .one_or_none()
     )
@@ -195,8 +193,7 @@ def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
     mtx = (
         db_session.query(models.MatchedTransaction)
         .filter(
-            models.MatchedTransaction.payment_transaction_id == ptx.id,
-            models.MatchedTransaction.scheme_transaction_id == stx.id,
+            models.MatchedTransaction.transaction_id == stx.transaction_id,
         )
         .one_or_none()
     )
