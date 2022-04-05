@@ -118,8 +118,6 @@ class SchemeTransaction(Base, ModelMixin):
     match_group = s.Column(s.String(36), nullable=False, index=True)  # the group this transaction was imported in
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
-    matched_transactions = s.orm.relationship("MatchedTransaction", backref="scheme_transaction")
-
 
 @auto_repr
 @auto_str("id", "transaction_id", "provider_slug")
@@ -142,8 +140,6 @@ class PaymentTransaction(Base, ModelMixin):
     auth_code = s.Column(s.String(20), nullable=False, default="")
     match_group = s.Column(s.String(36), nullable=False, index=True)  # currently unused
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
-
-    matched_transactions = s.orm.relationship("MatchedTransaction", backref="payment_transaction")
 
 
 class MatchingType(Enum):
@@ -174,8 +170,6 @@ class MatchedTransaction(Base, ModelMixin):
     card_token = s.Column(s.String(100), nullable=False)  # token assigned to the card that was used
     matching_type = s.Column(s.Enum(MatchingType), nullable=False)  # type of matching, see MatchingType for options
     status = s.Column(s.Enum(MatchedTransactionStatus), nullable=False, default=MatchedTransactionStatus.PENDING)
-    payment_transaction_id = s.Column(s.Integer, s.ForeignKey("payment_transaction.id"))
-    scheme_transaction_id = s.Column(s.Integer, s.ForeignKey("scheme_transaction.id"))
 
     extra_fields = s.Column(psql.JSON)  # combination of the same field on the scheme and payment transaction models
 

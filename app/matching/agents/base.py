@@ -138,8 +138,6 @@ class BaseMatchingAgent:
             "merchant_identifier_id": matching_merchant_identifier_ids[0],
             **st_fields,
             "card_token": self.payment_transaction.card_token,
-            "payment_transaction_id": self.payment_transaction.id,
-            "scheme_transaction_id": scheme_transaction.id,
             "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
         }
 
