@@ -5,6 +5,7 @@ import settings
 from app import db, models, tasks
 from app.exports.retry_worker import ExportRetryWorker
 from app.prometheus import prometheus_thread
+from app.scheduler import is_leader
 
 
 @click.group()
@@ -33,7 +34,18 @@ def worker():
 @click.option(
     "--no-user-input", type=bool, is_flag=True, default=False, help="Do not ask for confirmation before purging"
 )
-def purgedb(days: int = 60, no_user_input: bool = False) -> None:
+@click.option(
+    "--leader-election",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use leader election for multi-cluster environments",
+)
+def purgedb(days: int = 60, no_user_input: bool = False, leader_election: bool = False) -> None:
+    if leader_election and not is_leader("purgedb"):
+        click.secho("Leader election is enabled and I am not leader, exiting.", bold=True, fg="red")
+        raise click.Abort
+
     DELETE = [
         models.ExportTransaction,
         models.MatchedTransaction,
@@ -41,6 +53,8 @@ def purgedb(days: int = 60, no_user_input: bool = False) -> None:
         models.PaymentTransaction,
         models.Transaction,
         models.ImportTransaction,
+        models.UserIdentity,
+        models.ImportFileLog,
     ]
 
     date = pendulum.now("utc").subtract(days=days).date()
