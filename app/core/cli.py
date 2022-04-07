@@ -44,7 +44,7 @@ def worker():
 def purgedb(days: int = 60, no_user_input: bool = False, leader_election: bool = False) -> None:
     if leader_election and not is_leader("purgedb"):
         click.secho("Leader election is enabled and I am not leader, exiting.", bold=True, fg="red")
-        raise click.Abort
+        return
 
     DELETE = [
         models.ExportTransaction,
