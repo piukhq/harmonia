@@ -105,8 +105,6 @@ class BaseMatchingAgent:
             "spend_multiplier": self.payment_transaction.spend_multiplier,
             "spend_currency": self.payment_transaction.spend_currency,
             "card_token": self.payment_transaction.card_token,
-            "payment_transaction_id": self.payment_transaction.id,
-            "scheme_transaction_id": None,
             "extra_fields": self.payment_transaction.extra_fields,
         }
 
