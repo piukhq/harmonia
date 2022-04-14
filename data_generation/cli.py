@@ -34,6 +34,7 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "mastercard-auth": "mastercard",
     "mastercard-settlement": "mastercard",
     "amex-auth": "amex",
+    "amex-settlement": "amex",
 }
 
 # merchants_with_location_ids contains merchants that require a location id to locate MID's
