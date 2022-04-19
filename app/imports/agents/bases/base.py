@@ -77,7 +77,7 @@ def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: 
 
 
 @lru_cache(maxsize=2048)
-def get_merchant_slug(*mids: str) -> str:
+def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
     with db.session_scope() as session:
 
         def find_slug():
@@ -85,7 +85,8 @@ def get_merchant_slug(*mids: str) -> str:
                 session.query(models.LoyaltyScheme.slug)
                 .distinct()
                 .join(models.MerchantIdentifier)
-                .filter(models.MerchantIdentifier.mid.in_(mids))
+                .join(models.PaymentProvider)
+                .filter(models.MerchantIdentifier.mid.in_(mids), models.PaymentProvider.slug == payment_provider_slug)
                 .scalar()
             )
 
@@ -159,7 +160,9 @@ class BaseAgent:
 
     def get_merchant_slug(self, data: dict) -> str:
         mids = self.get_mids(data)
-        return get_merchant_slug(*mids)
+        # we can use self.provider_slug as the payment provider slug as there is no reason to ever call this function
+        # in a loyalty import agent.
+        return get_merchant_slug(*mids, payment_provider_slug=self.provider_slug)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
