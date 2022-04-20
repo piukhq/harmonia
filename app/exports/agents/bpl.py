@@ -79,3 +79,8 @@ class Trenette(Bpl):
 class Asos(Bpl):
     provider_slug = "bpl-asos"
     merchant_name = "asos"
+
+
+class Cortado(Bpl):
+    provider_slug = "bpl-cortado"
+    merchant_name = "cortado"
