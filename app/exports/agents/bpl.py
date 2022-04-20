@@ -29,8 +29,7 @@ class Bpl(SingularExportAgent):
     @staticmethod
     def export_transaction_id(transaction_id: str, amount: int) -> str:
         if amount < 0:
-            refund_id = f"{transaction_id}-refund"
-            return f"BPL{sha1(refund_id.encode()).hexdigest()}"
+            transaction_id = f"{transaction_id}-refund"
 
         return f"BPL{sha1(transaction_id.encode()).hexdigest()}"
 
