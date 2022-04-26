@@ -31,7 +31,7 @@ class ExportFields:
     payment_card_account_id: Optional[int]
     credentials: str
     settlement_key: Optional[str]
-    last_four: Optional[int]
+    last_four: Optional[str]
     expiry_month: Optional[int]
     expiry_year: Optional[int]
     payment_scheme_slug: Optional[str]

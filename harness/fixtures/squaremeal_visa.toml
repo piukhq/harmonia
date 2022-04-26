@@ -21,8 +21,8 @@ loyalty_id = "loyalty-123"
 token = "token-a-123"
 first_six = "423456"
 last_four = "7890"
-expiry_year = "1999"
-expiry_month = "12"
+expiry_year = 1999
+expiry_month = 12
 
 [users.credentials]
 card_number = "loyalty-123"

@@ -196,8 +196,8 @@ class FixtureUserSchema(Schema):
     last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     credentials = fields.Dict(required=True, allow_none=False)
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
-    expiry_month = fields.String(required=False, validate=validate.Length(equal=2))
-    expiry_year = fields.String(required=False, validate=validate.Length(equal=4))
+    expiry_month = fields.Integer()
+    expiry_year = fields.Integer()
 
 
 class FixtureProviderSchema(Schema):
@@ -283,10 +283,9 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
         raise click.Abort
 
     for user in fixture["users"]:
-        settlement_key = str(uuid4())
         user["credentials"] = encryption.encrypt_credentials(user["credentials"])
         for transaction in user["transactions"]:
-            transaction["settlement_key"] = settlement_key
+            transaction["settlement_key"] = str(uuid4())
 
     return fixture
 
