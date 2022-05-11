@@ -40,7 +40,7 @@ def add_mock_routes():
     )
     responses.add(
         "GET",
-        f"{settings.AZURE_VAULT_URL}secrets/aes-keys/?api-version=7.2",
+        f"{settings.VAULT_URL}secrets/aes-keys/?api-version=7.2",
         json={"id": "http://test-123/a/b/c", "value": '{"AES_KEY": "value-123"}'},
     )
 

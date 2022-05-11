@@ -22,4 +22,4 @@ def connect_to_vault():
         exclude_visual_studio_code_credential=True,
         exclude_interactive_browser_credential=True,
     )
-    return SecretClient(vault_url=settings.AZURE_VAULT_URL, credential=kv_credential)
+    return SecretClient(vault_url=settings.VAULT_URL, credential=kv_credential)

@@ -156,12 +156,10 @@ URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
 # API key for service authentication.
 SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 
-AZURE_VAULT_URL = getenv("TXM_AZURE_VAULT_URL", default="https://bink-uksouth-dev-com.vault.azure.net/")
-
 # Base URL for Merchant API configuration service.
 EUROPA_URL = getenv("TXM_EUROPA_URL", required=False)
 
-# Hashicorp Vault connection details
+# Vault connection details
 VAULT_URL = getenv("TXM_VAULT_URL", required=False)
 VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
 
