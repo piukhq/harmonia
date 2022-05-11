@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
@@ -6,6 +7,7 @@ from azure.keyvault.secrets import SecretClient
 import settings
 
 
+@lru_cache(128)
 def get_aes_key(secret_name):
     client = connect_to_vault()
     vault_aes_keys = client.get_secret(secret_name).value
