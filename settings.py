@@ -156,8 +156,7 @@ URL_PREFIX = getenv("TXM_URL_PREFIX", default="/txm")
 # API key for service authentication.
 SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 
-# AES Cipher key.
-AES_KEY = "6gZW4ARFINh4DR1uIzn12l7Mh1UF982L"
+AZURE_VAULT_URL = getenv("TXM_AZURE_VAULT_URL", default="https://bink-uksouth-dev-com.vault.azure.net/")
 
 # Base URL for Merchant API configuration service.
 EUROPA_URL = getenv("TXM_EUROPA_URL", required=False)
