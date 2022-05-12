@@ -38,6 +38,11 @@ def add_mock_routes():
         f"{settings.VAULT_URL}/secrets/test2/",
         json={"id": "https://test6/a/b/c", "value": '{"data": {"value": "test4"}}'},
     )
+    responses.add(
+        "GET",
+        f"{settings.VAULT_URL}/secrets/aes-keys/?api-version=7.2",
+        json={"id": "http://test-123/a/b/c", "value": '{"AES_KEY": "value-123"}'},
+    )
 
 
 class Expected:
