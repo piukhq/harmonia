@@ -26,6 +26,13 @@ class Bpl(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
+    @staticmethod
+    def export_transaction_id(transaction_id: str, amount: int) -> str:
+        if amount < 0:
+            transaction_id = f"{transaction_id}-refund"
+
+        return f"BPL{sha1(transaction_id.encode()).hexdigest()}"
+
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         transaction_datetime = pendulum.instance(export_transaction.transaction_date)
 
@@ -34,11 +41,14 @@ class Bpl(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "id": f"BPL{sha1(export_transaction.transaction_id.encode()).hexdigest()}",
+                        "id": self.export_transaction_id(
+                            export_transaction.transaction_id, export_transaction.spend_amount
+                        ),
                         "transaction_total": export_transaction.spend_amount,
                         "datetime": transaction_datetime.int_timestamp,
                         "MID": export_transaction.mid,
                         "loyalty_id": self.get_loyalty_identifier(export_transaction),
+                        "transaction_id": f"BPL{sha1(export_transaction.transaction_id.encode()).hexdigest()}",
                     },
                 )
             ],
@@ -79,3 +89,8 @@ class Trenette(Bpl):
 class Asos(Bpl):
     provider_slug = "bpl-asos"
     merchant_name = "asos"
+
+
+class Cortado(Bpl):
+    provider_slug = "bpl-cortado"
+    merchant_name = "cortado"

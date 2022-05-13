@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from unittest import mock
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import click
@@ -13,6 +15,7 @@ import rq
 import soteria.configuration
 import soteria.security
 import toml
+from azure.keyvault.secrets import SecretClient
 from marshmallow import ValidationError, fields, pre_load, validate
 from marshmallow.schema import Schema
 from prettyprinter import cpprint
@@ -173,6 +176,7 @@ class IdentityDateTimeField(fields.DateTime):
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
+    settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
@@ -196,8 +200,6 @@ class FixtureUserSchema(Schema):
     last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     credentials = fields.Dict(required=True, allow_none=False)
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
-    expiry_month = fields.Integer()
-    expiry_year = fields.Integer()
 
 
 class FixtureProviderSchema(Schema):
@@ -281,11 +283,11 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
         click.secho("Failed to load fixture", fg="red", bold=True)
         cpprint(ex.messages)
         raise click.Abort
-
-    for user in fixture["users"]:
-        user["credentials"] = encryption.encrypt_credentials(user["credentials"])
-        for transaction in user["transactions"]:
-            transaction["settlement_key"] = str(uuid4())
+    with mock.patch("app.vault.connect_to_vault", return_value=patch_secret_client()):
+        for user in fixture["users"]:
+            user["credentials"] = encryption.encrypt_credentials(user["credentials"])
+            for transaction in user["transactions"]:
+                transaction["settlement_key"] = str(uuid4())
 
     return fixture
 
@@ -358,6 +360,16 @@ def preload_data(count: int, *, fixture: dict, session: db.Session, batch_size: 
 
 def patch_hermes_service(fixture: dict):
     hermes.payment_card_user_info = payment_card_user_info_fn(fixture)
+
+
+def patch_secret_client():
+    class MockSecretClient(SecretClient):
+        def get_secret(self, secret_name="abc"):
+            mock = MagicMock()
+            mock.value = '{"AES_KEY": "fake-123"}'
+            return mock
+
+    return MockSecretClient("http://vault", "{}")
 
 
 def patch_soteria_service():

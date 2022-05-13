@@ -1,0 +1,39 @@
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "bpl-asos"
+
+[payment_provider]
+slug = "mastercard"
+
+[[agents]]
+slug = "mastercard-auth"
+
+[[agents]]
+slug = "mastercard-settled"
+
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-asos-123"
+first_six = "423456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+merchant_identifier = "88899966"
+email = "test-123@testbink.com"
+
+[[users.transactions]]
+date = 2020-04-09T15:46:00Z
+amount = 11199
+auth_code = "666666"
+settlement_key = "settlement-123"
+mid = "test-mid-123"
+
+[[users.transactions]]
+date = 2020-04-09T15:46:00Z
+amount = -11199
+auth_code = "666666"
+settlement_key = "refund-123"
+mid = "test-mid-123"

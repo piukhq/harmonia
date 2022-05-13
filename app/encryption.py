@@ -5,7 +5,7 @@ import json
 from Crypto import Random
 from Crypto.Cipher import AES
 
-import settings
+from app.vault import get_aes_key
 
 
 class AESCipher(object):
@@ -39,10 +39,10 @@ class AESCipher(object):
 
 
 def decrypt_credentials(credentials: str) -> dict:
-    aes = AESCipher(settings.AES_KEY.encode())
+    aes = AESCipher(get_aes_key("aes-keys"))
     return json.loads(aes.decrypt(credentials.replace(" ", "+")))
 
 
 def encrypt_credentials(credentials: dict) -> str:
-    aes = AESCipher(settings.AES_KEY.encode())
+    aes = AESCipher(get_aes_key("aes-keys"))
     return aes.encrypt(json.dumps(credentials).encode()).decode("utf-8")
