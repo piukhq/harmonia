@@ -45,7 +45,6 @@ class PaymentTransactionFields(t.NamedTuple):
     approval_code: str = ""
 
 
-
 class IdentifyArgs(t.NamedTuple):
     transaction_id: str
     merchant_identifier_ids: list[int]
