@@ -176,7 +176,6 @@ class IdentityDateTimeField(fields.DateTime):
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
-    settlement_key = fields.String(required=True, allow_none=False, validate=validate.Length(min=1))
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
@@ -200,6 +199,8 @@ class FixtureUserSchema(Schema):
     last_four = fields.String(required=True, allow_none=False, validate=validate.Length(equal=4))
     credentials = fields.Dict(required=True, allow_none=False)
     transactions = fields.Nested(FixtureUserTransactionSchema, many=True)
+    expiry_month = fields.Integer()
+    expiry_year = fields.Integer()
 
 
 class FixtureProviderSchema(Schema):
@@ -288,7 +289,6 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
             user["credentials"] = encryption.encrypt_credentials(user["credentials"])
             for transaction in user["transactions"]:
                 transaction["settlement_key"] = str(uuid4())
-
     return fixture
 
 

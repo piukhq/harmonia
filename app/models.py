@@ -95,6 +95,7 @@ class Transaction(Base, ModelMixin):
     first_six = s.Column(s.Text, nullable=True)
     last_four = s.Column(s.Text, nullable=True)
     auth_code = s.Column(s.String(20), nullable=False, default="")
+    approval_code = s.Column(s.String(20), nullable=True, default="")
 
 
 @auto_repr
