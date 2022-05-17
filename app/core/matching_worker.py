@@ -335,6 +335,8 @@ class MatchingWorker:
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
                 payment_scheme_slug=payment_scheme_slug,
+                auth_code=None,
+                approval_code=None,
             ),
             session=session,
         )
