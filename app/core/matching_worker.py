@@ -308,12 +308,6 @@ class MatchingWorker:
         matched_transaction = match_result.matched_transaction
         user_identity = match_result.user_identity
 
-        payment_scheme_slug = (
-            matched_transaction.scheme_transaction.payment_provider_slug
-            if matched_transaction.scheme_transaction
-            else None
-        )
-
         create_export(
             ExportFields(
                 transaction_id=matched_transaction.transaction_id,
@@ -334,7 +328,7 @@ class MatchingWorker:
                 last_four=user_identity.last_four,
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
-                payment_scheme_slug=payment_scheme_slug,
+                payment_scheme_slug=None,
                 auth_code=None,
                 approval_code=None,
             ),
