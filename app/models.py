@@ -95,6 +95,7 @@ class Transaction(Base, ModelMixin):
     first_six = s.Column(s.Text, nullable=True)
     last_four = s.Column(s.Text, nullable=True)
     auth_code = s.Column(s.String(20), nullable=False, default="")
+    approval_code = s.Column(s.String(20), nullable=True, default="")
 
 
 @auto_repr
@@ -187,6 +188,8 @@ class UserIdentity(Base, ModelMixin):
     first_six = s.Column(s.Text, nullable=False)
     last_four = s.Column(s.Text, nullable=False)
     payment_card_account_id = s.Column(s.Integer, nullable=True)
+    expiry_month = s.Column(s.Integer, nullable=True)
+    expiry_year = s.Column(s.Integer, nullable=True)
 
     @property
     def decrypted_credentials(self):

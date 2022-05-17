@@ -74,6 +74,12 @@ class StreamingWorker:
                 payment_card_account_id=user_identity.payment_card_account_id,
                 credentials=user_identity.credentials,
                 settlement_key=transaction.settlement_key,
+                last_four=user_identity.last_four,
+                expiry_month=user_identity.expiry_month,
+                expiry_year=user_identity.expiry_year,
+                payment_scheme_slug=transaction.payment_provider_slug,
+                auth_code=transaction.auth_code,
+                approval_code=transaction.approval_code,
             ),
             session=session,
         )

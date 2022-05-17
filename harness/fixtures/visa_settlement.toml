@@ -40,7 +40,6 @@ auth_code = "6666667"
 [[users.transactions]]
 date = 2020-06-02T17:46:00Z
 amount = 1099
-settlement_key = "settlement-234"
 auth_code = "666666"
 mid = "test-mid-234"
 # [users.transactions.merchant_overrides]
