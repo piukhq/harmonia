@@ -7,7 +7,7 @@ from app.models import ExportTransaction
 from app.reporting import get_logger
 from app.service import queue
 
-log = get_logger("data_event")
+log = get_logger(__name__)
 
 
 class ExportedTransaction(t.TypedDict):

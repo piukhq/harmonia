@@ -37,7 +37,6 @@ prometheus-client = "*"
 azure-oidc = "*"
 soteria = "*"
 gunicorn = "*"
-olympus-messaging = "*"
 
 [dev-packages]
 pytest = "*"
