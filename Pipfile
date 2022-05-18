@@ -14,7 +14,7 @@ harmonia = {editable = true,path = "."}
 sqlalchemy = "*"
 flask = "*"
 flask-cors = "*"
-click = "*"
+click = "==8.0.4"
 redis = "*"
 apscheduler = "*"
 humanize = "*"
@@ -37,6 +37,7 @@ prometheus-client = "*"
 azure-oidc = "*"
 soteria = "*"
 gunicorn = "*"
+olympus-messaging = "*"
 
 [dev-packages]
 pytest = "*"

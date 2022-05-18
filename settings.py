@@ -142,7 +142,7 @@ if not BLOB_STORAGE_DSN:
 else:
     LOCAL_IMPORT_BASE_PATH = None
 
-# If set, messages will be queued for Atlas consumption.
+# If set, messages will be queued for Atlas and data warehouse consumption.
 AUDIT_EXPORTS = getenv("TXM_AUDIT_EXPORTS", default="true", conv=boolconv)
 
 # This dictionary is passed to `Flask.config.from_mapping`.
