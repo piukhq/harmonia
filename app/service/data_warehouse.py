@@ -24,11 +24,11 @@ class ExportedTransaction(t.TypedDict):
     scheme_account_id: int
     credentials: str
     status: str
-    feed_type: str
-    location_id: str
-    merchant_internal_id: str
-    payment_card_account_id: int
-    settlement_key: str
+    feed_type: t.Optional[str]
+    location_id: t.Optional[str]
+    merchant_internal_id: t.Optional[int]
+    payment_card_account_id: t.Optional[str]
+    settlement_key: t.Optional[str]
 
 
 def exported_event(transactions: t.List[ExportTransaction]):
@@ -37,19 +37,19 @@ def exported_event(transactions: t.List[ExportTransaction]):
         provider_slug = transaction.provider_slug
         exported_transaction = ExportedTransaction(
             event_type="transaction.exported",
-            event_date_time=pendulum.instance(transaction.created_at).to_datetime_string(),
+            event_date_time=transaction.created_at.isoformat(),
             internal_user_ref=transaction.user_id,
             transaction_id=transaction.transaction_id,
             provider_slug=provider_slug,
-            transaction_date=pendulum.instance(transaction.transaction_date).to_datetime_string(),
+            transaction_date=pendulum.parse(transaction.transaction_date).isoformat(),
             spend_amount=transaction.spend_amount,
             spend_currency=transaction.spend_currency,
             loyalty_id=transaction.loyalty_id,
             mid=transaction.mid,
             scheme_account_id=transaction.scheme_account_id,
             credentials=transaction.credentials,
-            status=transaction.status.name,
-            feed_type=transaction.feed_type.name,
+            status=transaction.status.name if transaction.status else "",
+            feed_type=transaction.feed_type.name if transaction.feed_type else "",
             location_id=transaction.location_id,
             merchant_internal_id=transaction.merchant_internal_id,
             payment_card_account_id=transaction.payment_card_account_id,
