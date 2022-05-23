@@ -32,7 +32,7 @@ class MockPartExportTransaction:
     id = 1
     created_at = pendulum.datetime(2022, 5, 19, 13, 27, 34)
     transaction_id = 345
-    feed_type = ""
+    feed_type = None
     provider_slug = "test-slug"
     transaction_date = pendulum.datetime(2022, 5, 18, 10, 7, 00).to_datetime_string()
     spend_amount = 1500
@@ -66,5 +66,5 @@ def test_queue_data_warehouse_part_message(mocked_queue):
 
     mocked_queue.assert_called()
     assert mocked_queue.call_args[0][0]["transaction_id"] == 345
-    assert mocked_queue.call_args[0][0]["feed_type"] == ""
+    assert mocked_queue.call_args[0][0]["feed_type"] is None
     assert mocked_queue.call_args[0][0]["merchant_internal_id"] is None
