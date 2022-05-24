@@ -13,7 +13,7 @@ class MockFullExportTransaction:
     transaction_id = 125
     feed_type = FeedType.AUTH
     provider_slug = "test-slug"
-    transaction_date = pendulum.datetime(2022, 5, 18, 10, 7, 00).to_datetime_string()
+    transaction_date = pendulum.datetime(2022, 5, 18, 10, 7, 00)
     spend_amount = 1500
     spend_currency = "GBP"
     loyalty_id = "876543"
@@ -34,7 +34,7 @@ class MockPartExportTransaction:
     transaction_id = 345
     feed_type = None
     provider_slug = "test-slug"
-    transaction_date = pendulum.datetime(2022, 5, 18, 10, 7, 00).to_datetime_string()
+    transaction_date = pendulum.datetime(2022, 5, 18, 10, 7, 00)
     spend_amount = 1500
     spend_currency = "GBP"
     loyalty_id = "876543"
