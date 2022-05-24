@@ -1,7 +1,5 @@
 import typing as t
 
-import pendulum
-
 import settings
 from app.models import ExportTransaction
 from app.reporting import get_logger
@@ -41,7 +39,7 @@ def exported_event(transactions: t.List[ExportTransaction]):
             internal_user_ref=transaction.user_id,
             transaction_id=transaction.transaction_id,
             provider_slug=provider_slug,
-            transaction_date=pendulum.parse(transaction.transaction_date).isoformat(),
+            transaction_date=transaction.transaction_date.isoformat(),
             spend_amount=transaction.spend_amount,
             spend_currency=transaction.spend_currency,
             loyalty_id=transaction.loyalty_id,
