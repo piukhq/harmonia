@@ -35,8 +35,8 @@ class ExportFields:
     expiry_month: Optional[int]
     expiry_year: Optional[int]
     payment_scheme_slug: Optional[str]
-    auth_code: Optional[str]
-    approval_code: Optional[str]
+    auth_code: str
+    approval_code: str
 
 
 def create_export(fields: ExportFields, *, session: db.Session) -> None:

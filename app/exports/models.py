@@ -43,8 +43,8 @@ class ExportTransaction(Base, ModelMixin):
     scheme_account_id = s.Column(s.Integer, nullable=False)
     payment_card_account_id = s.Column(s.Integer, nullable=True)
     credentials = s.Column(s.Text, nullable=False)
-    auth_code = s.Column(s.String(50), nullable=True)
-    approval_code = s.Column(s.String(50), nullable=True)
+    auth_code = s.Column(s.String(20), nullable=False, default="")
+    approval_code = s.Column(s.String(20), nullable=False, default="")
     status = s.Column(s.Enum(ExportTransactionStatus), nullable=False, default=ExportTransactionStatus.PENDING)
     settlement_key = s.Column(s.String(100), nullable=True)  # used to group auth & settled transactions
     last_four = s.Column(s.String(4), nullable=True)

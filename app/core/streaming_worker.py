@@ -78,8 +78,8 @@ class StreamingWorker:
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
                 payment_scheme_slug=transaction.payment_provider_slug,
-                auth_code=transaction.auth_code if transaction.auth_code else None,
-                approval_code=transaction.approval_code if transaction.approval_code else None,
+                auth_code=transaction.auth_code,
+                approval_code=transaction.approval_code,
             ),
             session=session,
         )
