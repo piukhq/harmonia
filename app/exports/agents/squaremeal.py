@@ -61,6 +61,14 @@ class SquareMeal(SingularExportAgent):
                         "payment_card_account_id": export_transaction.payment_card_account_id,
                         "store_id": export_transaction.location_id,
                         "brand_id": export_transaction.merchant_internal_id,
+                        "payment_card_last_four": export_transaction.last_four,
+                        "payment_scheme": {
+                            "slug": export_transaction.payment_provider_slug,
+                            "auth_code": export_transaction.auth_code,
+                            "approval_code": export_transaction.approval_code,
+                        },
+                        "payment_card_expiry_month": export_transaction.expiry_month,
+                        "payment_card_expiry_year": export_transaction.expiry_year,
                     },
                 )
             ],

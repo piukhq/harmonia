@@ -42,6 +42,7 @@ class PaymentTransactionFields(t.NamedTuple):
     first_six: t.Optional[str] = None
     last_four: t.Optional[str] = None
     auth_code: str = ""
+    approval_code: str = ""
 
 
 class IdentifyArgs(t.NamedTuple):

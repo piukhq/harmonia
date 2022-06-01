@@ -325,6 +325,12 @@ class MatchingWorker:
                 payment_card_account_id=user_identity.payment_card_account_id,
                 credentials=user_identity.credentials,
                 settlement_key=None,
+                last_four=user_identity.last_four,
+                expiry_month=user_identity.expiry_month,
+                expiry_year=user_identity.expiry_year,
+                payment_provider_slug=None,
+                auth_code="",
+                approval_code="",
             ),
             session=session,
         )

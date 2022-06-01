@@ -62,6 +62,8 @@ def persist_user_identity(transaction_id: str, user_info: dict, *, session: db.S
             credentials=user_info["credentials"],
             first_six=user_info["card_information"]["first_six"],
             last_four=user_info["card_information"]["last_four"],
+            expiry_year=user_info["card_information"].get("expiry_year"),
+            expiry_month=user_info["card_information"].get("expiry_month"),
         )
 
         session.add(user_identity)

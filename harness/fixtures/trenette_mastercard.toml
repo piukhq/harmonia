@@ -32,7 +32,6 @@ merchant_identifier = "88899966"
 [[users.transactions]]
 date = 2020-08-05T16:28:52Z
 amount = 9000
-settlement_key = "settle123"
 auth_code = "999999"
 mid = "test-mid-456"
 # [users.transactions.merchant_overrides]
