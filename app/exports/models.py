@@ -50,7 +50,7 @@ class ExportTransaction(Base, ModelMixin):
     last_four = s.Column(s.String(4), nullable=True)
     expiry_month = s.Column(s.Integer, nullable=True)
     expiry_year = s.Column(s.Integer, nullable=True)
-    payment_scheme_slug = s.Column(s.String(50), nullable=True)  # payment card provider slug - visa, amex etc
+    payment_provider_slug = s.Column(s.String(50), nullable=True)  # payment card provider slug - visa, amex etc
 
     pending_exports = s.orm.relationship("PendingExport", backref="export_transaction")
 

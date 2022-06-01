@@ -77,7 +77,7 @@ class StreamingWorker:
                 last_four=user_identity.last_four,
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
-                payment_scheme_slug=transaction.payment_provider_slug,
+                payment_provider_slug=transaction.payment_provider_slug,
                 auth_code=transaction.auth_code,
                 approval_code=transaction.approval_code,
             ),

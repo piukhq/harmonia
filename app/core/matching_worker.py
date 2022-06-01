@@ -328,9 +328,9 @@ class MatchingWorker:
                 last_four=user_identity.last_four,
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
-                payment_scheme_slug=None,
-                auth_code=None,
-                approval_code=None,
+                payment_provider_slug=None,
+                auth_code="",
+                approval_code="",
             ),
             session=session,
         )

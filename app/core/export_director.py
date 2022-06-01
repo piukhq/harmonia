@@ -34,7 +34,7 @@ class ExportFields:
     last_four: Optional[str]
     expiry_month: Optional[int]
     expiry_year: Optional[int]
-    payment_scheme_slug: Optional[str]
+    payment_provider_slug: Optional[str]
     auth_code: str
     approval_code: str
 
@@ -64,7 +64,7 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             last_four=fields.last_four,
             expiry_month=fields.expiry_month,
             expiry_year=fields.expiry_year,
-            payment_scheme_slug=fields.payment_scheme_slug,
+            payment_provider_slug=fields.payment_provider_slug,
             auth_code=fields.auth_code,
             approval_code=fields.approval_code,
         )
