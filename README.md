@@ -82,19 +82,21 @@ The `.env` file contains connection parameters for the two major services used i
 To quickly create docker containers for the required services:
 
 ```bash
-s/services
+scripts/bootstrap
 ```
+
+This also installs dependencies and migrates database schemas.
 
 ### Database Schema Migration
 
-If you used the `s/services` script then you can skip this step.
+If you used the `scripts/bootstrap` script then you can skip this step.
 
 Once PostgreSQL is running, you will need to create all the tables and indices required by the project.
 
 To apply all migrations:
 
 ```bash
-s/migrate
+scripts/migrate
 ```
 
 ### Development API Server
@@ -104,7 +106,7 @@ The flask development server is used for running the project locally. This shoul
 To run the flask development server:
 
 ```bash
-s/api
+scripts/server
 ```
 
 You may see the following output in the flask server logs:
@@ -122,7 +124,7 @@ Testing is done with `pytest`.
 To execute a full test run:
 
 ```bash
-s/test
+scripts/test
 ```
 
 ### End-to-End Matching Test
@@ -130,7 +132,7 @@ s/test
 You can test matching by running the end-to-end test harness.
 
 ```bash
-s/test-end-to-end -f harness/fixtures/harvey_nichols_amex.toml
+scripts/test-end-to-end -f harness/fixtures/harvey_nichols_amex.toml
 ```
 
 Look in `harness/fixtures/*.toml` for a list of fixtures to use. You can also clone one of these and tweak it for your own test scenarios.
@@ -169,7 +171,7 @@ After running these tests, the PostgreSQL and Redis containers will be left inta
 #### Inspecting PostgreSQL
 
 ```bash
-s/psql
+scripts/psql
 
 select * from payment_provider;
 select * from loyalty_scheme;
@@ -179,6 +181,28 @@ select * from payment_transaction;
 select * from scheme_transaction;
 select * from matched_transaction;
 select * from export_transaction;
+```
+
+### Linting
+
+You can run the full suite of linters (isort, black, flake8, mypy, xexon) by running:
+
+```bash
+scripts/lint
+```
+
+To only format (i.e. isort and black):
+
+```bash
+scripts/format
+```
+
+### CI Build
+
+You can run both the full linting suite and tests.
+
+```bash
+scripts/cibuild
 ```
 
 ## Migrations
