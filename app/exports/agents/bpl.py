@@ -48,7 +48,7 @@ class Bpl(SingularExportAgent):
                         "datetime": transaction_datetime.int_timestamp,
                         "MID": export_transaction.mid,
                         "loyalty_id": self.get_loyalty_identifier(export_transaction),
-                        "transaction_id": f"BPL{sha1(export_transaction.transaction_id.encode()).hexdigest()}",
+                        "transaction_id": f"BPL{export_transaction.transaction_id}",
                     },
                 )
             ],
