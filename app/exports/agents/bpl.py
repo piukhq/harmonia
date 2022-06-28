@@ -33,10 +33,7 @@ class Bpl(SingularExportAgent):
             else export_transaction.transaction_id
         )
 
-        return (
-            self.provider_slug.replace("-", "")
-            + sha1((transaction_id + str(transaction_datetime)).encode()).hexdigest()
-        )
+        return self.provider_slug + "-" + sha1((transaction_id + str(transaction_datetime)).encode()).hexdigest()
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         transaction_datetime = pendulum.instance(export_transaction.transaction_date).int_timestamp
@@ -51,7 +48,7 @@ class Bpl(SingularExportAgent):
                         "datetime": transaction_datetime,
                         "MID": export_transaction.mid,
                         "loyalty_id": self.get_loyalty_identifier(export_transaction),
-                        "transaction_id": f"BPL{sha1(export_transaction.transaction_id.encode()).hexdigest()}",
+                        "transaction_id": export_transaction.transaction_id,
                     },
                 )
             ],
