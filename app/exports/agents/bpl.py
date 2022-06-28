@@ -26,26 +26,26 @@ class Bpl(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
-    @staticmethod
-    def export_transaction_id(transaction_id: str, amount: int) -> str:
-        if amount < 0:
-            transaction_id = f"{transaction_id}-refund"
+    def export_transaction_id(self, export_transaction: models.ExportTransaction, transaction_datetime: int) -> str:
+        transaction_id = (
+            f"{export_transaction.transaction_id}-refund"
+            if export_transaction.spend_amount < 0
+            else export_transaction.transaction_id
+        )
 
-        return f"BPL{sha1(transaction_id.encode()).hexdigest()}"
+        return self.provider_slug + "-" + sha1((transaction_id + str(transaction_datetime)).encode()).hexdigest()
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
-        transaction_datetime = pendulum.instance(export_transaction.transaction_date)
+        transaction_datetime = pendulum.instance(export_transaction.transaction_date).int_timestamp
 
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "id": self.export_transaction_id(
-                            export_transaction.transaction_id, export_transaction.spend_amount
-                        ),
+                        "id": self.export_transaction_id(export_transaction, transaction_datetime),
                         "transaction_total": export_transaction.spend_amount,
-                        "datetime": transaction_datetime.int_timestamp,
+                        "datetime": transaction_datetime,
                         "MID": export_transaction.mid,
                         "loyalty_id": self.get_loyalty_identifier(export_transaction),
                         "transaction_id": export_transaction.transaction_id,
