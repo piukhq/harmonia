@@ -1,7 +1,7 @@
-mastercard,9999999999,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A
-amex,9999999999,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A
-visa,DE0100000087080,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
-mastercard,DE0100000087080,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
-mastercard,211366,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
-visa,211366,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
-visa,9999999999,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A
+mastercard,9999999999,PRIMARY,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A
+amex,9999999999,PRIMARY,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A
+visa,DE0100000087080,PRIMARY,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
+mastercard,DE0100000087080,PRIMARY,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
+mastercard,211366,PRIMARY,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
+visa,211366,PRIMARY,bpl-trenette,,,Bpl Trenette,Loyalty Angels Ltd - Ascot,SL5 9FE,A
+visa,9999999999,PRIMARY,bpl-trenette,9999,,Bpl Trenette,Ascot,Sl5 9ED,A

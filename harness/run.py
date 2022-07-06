@@ -301,7 +301,8 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     for user in fixture["users"]:
         for transaction in user["transactions"]:
             merchant_identifier = models.MerchantIdentifier(
-                mid=transaction["mid"],
+                identifier=transaction["mid"],
+                identifier_type="PRIMARY",
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
                 location_id=transaction.get("location_id"),
@@ -311,7 +312,7 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
             mid_id = (
                 session.query(models.MerchantIdentifier.id)
                 .where(
-                    models.MerchantIdentifier.mid == transaction["mid"],
+                    models.MerchantIdentifier.identifier == transaction["mid"],
                     models.MerchantIdentifier.payment_provider_id == payment_provider.id,
                 )
                 .scalar()

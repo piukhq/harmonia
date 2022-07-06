@@ -66,7 +66,7 @@ class StreamingWorker:
                 spend_amount=transaction.spend_amount,
                 spend_currency=transaction.spend_currency,
                 loyalty_id=user_identity.loyalty_id,
-                mid=merchant_identifier.mid,
+                mid=merchant_identifier.identifier,
                 location_id=merchant_identifier.location_id,
                 merchant_internal_id=merchant_identifier.merchant_internal_id,
                 user_id=user_identity.user_id,

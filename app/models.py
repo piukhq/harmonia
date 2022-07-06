@@ -32,13 +32,20 @@ class PaymentProvider(Base, ModelMixin):
     merchant_identifiers = s.orm.relationship("MerchantIdentifier", backref="payment_provider")
 
 
+class IdentifierType(Enum):
+    PRIMARY = 0
+    SECONDARY = 1
+    PSIMI = 2
+
+
 @auto_repr
-@auto_str("id", "mid")
+@auto_str("id", "identifier")
 class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = "merchant_identifier"
-    __table_args__ = (s.UniqueConstraint("mid", "payment_provider_id", name="_mid_provider_mi_uc"),)
+    __table_args__ = (s.UniqueConstraint("identifier", "identifier_type", "payment_provider_id", name="_identifier_type_provider_mi_uc"),)
 
-    mid = s.Column(s.String(50), nullable=False)
+    identifier = s.Column(s.String(50), nullable=False)
+    identifier_type = s.Column(s.Enum(IdentifierType), nullable=False, default=IdentifierType.PRIMARY)
     location_id = s.Column(s.String(50), nullable=True)
     merchant_internal_id = s.Column(s.String(50), nullable=True)
     loyalty_scheme_id = s.Column(s.Integer, s.ForeignKey("loyalty_scheme.id"))
