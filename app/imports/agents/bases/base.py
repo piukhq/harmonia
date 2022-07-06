@@ -87,7 +87,9 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
                 .distinct()
                 .join(models.MerchantIdentifier)
                 .join(models.PaymentProvider)
-                .filter(models.MerchantIdentifier.identifier.in_(mids), models.PaymentProvider.slug == payment_provider_slug)
+                .filter(
+                    models.MerchantIdentifier.identifier.in_(mids), models.PaymentProvider.slug == payment_provider_slug
+                )
                 .scalar()
             )
 

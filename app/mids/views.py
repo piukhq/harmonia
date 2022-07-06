@@ -206,7 +206,8 @@ def onboard_mids() -> tuple[dict, int]:
     with db.session_scope() as session:
         mids = [
             create_merchant_identifier_fields(
-                mid=mid["mid"],  # change
+                identifier=mid["mid"],
+                identifier_type=mid.get("identifier_type") or "PRIMARY",
                 location_id=mid.get("location_id"),
                 merchant_internal_id=mid.get("merchant_internal_id"),
                 loyalty_scheme_slug=mid["loyalty_plan"],

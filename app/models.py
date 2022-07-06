@@ -42,7 +42,11 @@ class IdentifierType(Enum):
 @auto_str("id", "identifier")
 class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = "merchant_identifier"
-    __table_args__ = (s.UniqueConstraint("identifier", "identifier_type", "payment_provider_id", name="_identifier_type_provider_mi_uc"),)
+    __table_args__ = (
+        s.UniqueConstraint(
+            "identifier", "identifier_type", "payment_provider_id", name="_identifier_type_provider_mi_uc"
+        ),
+    )
 
     identifier = s.Column(s.String(50), nullable=False)
     identifier_type = s.Column(s.Enum(IdentifierType), nullable=False, default=IdentifierType.PRIMARY)
