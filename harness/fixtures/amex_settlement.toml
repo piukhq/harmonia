@@ -33,4 +33,5 @@ date = 2020-06-02T15:46:00Z
 amount = 2233
 auth_code = "777777"
 mid = "test-mid-234"
+identifier_type = "PRIMARY"
 

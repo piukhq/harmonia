@@ -30,6 +30,7 @@ amount = 1099
 settlement_key = "settle123"
 auth_code = "666666"
 mid = "92040913"
+identifier_type = "PRIMARY"
 location_id = "0001017   005682"
 
 [[users.transactions]]
@@ -37,4 +38,5 @@ date = 2020-05-28T13:46:00Z
 amount = 2099
 auth_code = "666666"
 mid = "92040913"
+identifier_type = "PRIMARY"
 location_id = "0001017   005682"

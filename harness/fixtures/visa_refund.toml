@@ -30,3 +30,4 @@ date = 2020-06-15T17:46:00Z
 amount = 1099
 auth_code = "666666"
 mid = "test-mid-234"
+identifier_type = "PRIMARY"
