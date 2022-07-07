@@ -36,5 +36,5 @@ email = "test-123@testbink.com"
 date = 2020-10-27T15:01:59Z
 amount = 7733
 auth_code = "777777"
-mid = "cortado-mid-123"
+identifier = "cortado-mid-123"
 identifier_type = "PRIMARY"

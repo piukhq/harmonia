@@ -42,7 +42,7 @@ class MastercardTS44Settlement(BaseImportDataProvider):
                 (str(to_pounds(transaction["amount"])).rjust(13, "0"), 13),
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYYMMDD"), 8),
                 (fixture["loyalty_scheme"]["slug"].upper(), 60),
-                (transaction["mid"], 22),
+                (transaction["identifier"], 22),
                 (str(randint(0, 10 ** 8)).rjust(9, "0"), 9),  # location ID
                 (str(randint(0, 10 ** 5)).rjust(6, "0"), 6),  # issuer ICA code
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("HHmm"), 4),  # transaction time
@@ -91,7 +91,7 @@ class MastercardTGX2Settlement(BaseImportDataProvider):
                 ("", 51),
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYYMMDD"), 8),
                 ("", 341),
-                (transaction["mid"], 15),
+                (transaction["identifier"], 15),
                 ("", 52),
                 (f"{transaction['amount']:012}", 12),
                 ("", 33),
@@ -126,7 +126,7 @@ class MastercardAuth(BaseImportDataProvider):
                 "amount": str(to_pounds(transaction["amount"])),
                 "currency_code": "GBP",
                 "payment_card_token": user["token"],
-                "mid": transaction["mid"],
+                "mid": transaction["identifier"],
             }
             for user in fixture["users"]
             for transaction in user["transactions"]
