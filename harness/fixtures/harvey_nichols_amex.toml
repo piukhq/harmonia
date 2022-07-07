@@ -32,5 +32,6 @@ merchant_identifier = "88899966"
 date = 2020-10-27T15:01:59Z
 amount = 1222
 auth_code = "666666"
-mid = "92040913"
+identifier = "92040913"
+identifier_type = "PRIMARY"
 location_id = "0001017   005682"

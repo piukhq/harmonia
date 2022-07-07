@@ -14,7 +14,8 @@ def mid(db_session: db.Session) -> int:
     payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
-        mid="test-force-match-mid-1",
+        identifier="test-force-match-mid-1",
+        identifier_type="PRIMARY",
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,

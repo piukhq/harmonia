@@ -32,6 +32,7 @@ email = "test@binktest.com"
 date = 2020-08-05T16:28:52Z
 amount = 9000
 auth_code = "999999"
-mid = "test-mid-456"
+identifier = "test-mid-456"
+identifier_type = "PRIMARY"
 # [users.transactions.merchant_overrides]
 # auth_code = "777777"

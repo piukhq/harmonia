@@ -24,7 +24,7 @@ class AmexAuth(BaseImportDataProvider):
                 "transaction_time": pendulum.instance(transaction["date"]).in_tz("MST").format("YYYY-MM-DD HH:mm:ss"),
                 "transaction_amount": to_pounds(transaction["amount"]),
                 "cm_alias": user["token"],
-                "merchant_number": transaction["mid"],
+                "merchant_number": transaction["identifier"],
                 "approval_code": transaction["auth_code"],
             }
             for user in fixture["users"]
@@ -43,7 +43,7 @@ class AmexSettlement(BaseImportDataProvider):
                 ),
                 "transactionAmount": to_pounds(transaction["amount"]),
                 "cardToken": user["token"],
-                "merchantNumber": transaction["mid"],
+                "merchantNumber": transaction["identifier"],
                 "approvalCode": transaction["auth_code"],
                 "dpan": f'{user["first_six"]}XXXXX{user["last_four"]}',
                 "partnerId": "AADP0050",

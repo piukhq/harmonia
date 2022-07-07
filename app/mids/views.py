@@ -39,9 +39,18 @@ def get_payment_provider(slug, *, session: db.Session):
     return payment_provider
 
 
+def validate_identifier_type(identifier_type):
+    if identifier_type is None:
+        raise ValueError("Missing identifier type")
+    if identifier_type.lower() not in ["primary", "secondary", "psimi"]:
+        raise ValueError("Identifier type must be of type PRIMARY, SECONDARY OR PSIMI")
+    return identifier_type.upper()
+
+
 def create_merchant_identifier_fields(
     payment_provider_slug,
-    mid,
+    identifier,
+    identifier_type,
     location_id,
     merchant_internal_id,
     loyalty_scheme_slug,
@@ -54,7 +63,8 @@ def create_merchant_identifier_fields(
     payment_provider = get_payment_provider(payment_provider_slug, session=session)
 
     return dict(
-        mid=mid,
+        identifier=identifier,
+        identifier_type=identifier_type,
         location_id=location_id if location_id else None,
         merchant_internal_id=merchant_internal_id if merchant_internal_id else None,
         loyalty_scheme_id=loyalty_scheme.id,
@@ -110,7 +120,8 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
         try:
             (
                 payment_provider_slug,
-                mid,
+                identifier,
+                identifier_type,
                 loyalty_scheme_slug,
                 location_id,
                 merchant_internal_id,
@@ -125,9 +136,12 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
         if action.lower() != "a":
             continue
 
+        identifier_type = validate_identifier_type(identifier_type)
+
         mid_fields = create_merchant_identifier_fields(
             payment_provider_slug,
-            mid,
+            identifier,
+            identifier_type,
             location_id,
             merchant_internal_id,
             loyalty_scheme_slug,
@@ -202,7 +216,8 @@ def onboard_mids() -> tuple[dict, int]:
     with db.session_scope() as session:
         mids = [
             create_merchant_identifier_fields(
-                mid=mid["mid"],
+                identifier=mid["mid"],
+                identifier_type=validate_identifier_type(mid.get("identifier_type")),
                 location_id=mid.get("location_id"),
                 merchant_internal_id=mid.get("merchant_internal_id"),
                 loyalty_scheme_slug=mid["loyalty_plan"],
@@ -236,7 +251,7 @@ def offboard_mids() -> tuple[dict, int]:
             session.query(models.MerchantIdentifier.id)
             .join(models.PaymentProvider)
             .filter(
-                tuple_(models.MerchantIdentifier.mid, models.PaymentProvider.slug).in_(
+                tuple_(models.MerchantIdentifier.identifier, models.PaymentProvider.slug).in_(
                     [(mid["mid"], mid["payment_scheme"]) for mid in data["mids"]]
                 )
                 | models.MerchantIdentifier.location_id.in_(data["locations"])

@@ -66,7 +66,7 @@ def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: 
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
-        return q.filter(models.MerchantIdentifier.mid.in_(mids)).all()
+        return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
 
     merchant_identifiers = db.run_query(
         find_mids,
@@ -87,7 +87,9 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
                 .distinct()
                 .join(models.MerchantIdentifier)
                 .join(models.PaymentProvider)
-                .filter(models.MerchantIdentifier.mid.in_(mids), models.PaymentProvider.slug == payment_provider_slug)
+                .filter(
+                    models.MerchantIdentifier.identifier.in_(mids), models.PaymentProvider.slug == payment_provider_slug
+                )
                 .scalar()
             )
 
@@ -136,7 +138,7 @@ class BaseAgent:
                 return (
                     session.query(
                         models.MerchantIdentifier.location_id,
-                        models.MerchantIdentifier.mid,
+                        models.MerchantIdentifier.identifier,
                     )
                     .join(models.LoyaltyScheme)
                     .filter(models.LoyaltyScheme.slug == self.provider_slug)

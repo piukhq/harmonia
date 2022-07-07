@@ -179,7 +179,8 @@ class FixtureUserTransactionSchema(Schema):
     auth_code = fields.String(validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
-    mid = fields.String(required=True, allow_none=False)
+    identifier = fields.String(required=True, allow_none=False)
+    identifier_type = fields.String(required=True, allow_none=False)
     location_id = fields.String(required=False, allow_none=True)
 
     @pre_load
@@ -301,7 +302,8 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
     for user in fixture["users"]:
         for transaction in user["transactions"]:
             merchant_identifier = models.MerchantIdentifier(
-                mid=transaction["mid"],
+                identifier=transaction["identifier"],
+                identifier_type=transaction["identifier_type"],
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
                 location_id=transaction.get("location_id"),
@@ -311,7 +313,7 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
             mid_id = (
                 session.query(models.MerchantIdentifier.id)
                 .where(
-                    models.MerchantIdentifier.mid == transaction["mid"],
+                    models.MerchantIdentifier.identifier == transaction["identifier"],
                     models.MerchantIdentifier.payment_provider_id == payment_provider.id,
                 )
                 .scalar()
