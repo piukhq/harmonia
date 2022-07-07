@@ -180,6 +180,7 @@ class FixtureUserTransactionSchema(Schema):
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
     mid = fields.String(required=True, allow_none=False)
+    identifier_type = fields.String(required=True, allow_none=False)
     location_id = fields.String(required=False, allow_none=True)
 
     @pre_load
@@ -302,7 +303,7 @@ def create_merchant_identifier(fixture: dict, session: db.Session):
         for transaction in user["transactions"]:
             merchant_identifier = models.MerchantIdentifier(
                 identifier=transaction["mid"],
-                identifier_type="PRIMARY",
+                identifier_type=transaction["identifier_type"],
                 loyalty_scheme_id=loyalty_scheme.id,
                 payment_provider_id=payment_provider.id,
                 location_id=transaction.get("location_id"),

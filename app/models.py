@@ -39,7 +39,7 @@ class IdentifierType(Enum):
 
 
 @auto_repr
-@auto_str("id", "identifier")
+@auto_str("id", "identifier", "identifier_type")
 class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = "merchant_identifier"
     __table_args__ = (

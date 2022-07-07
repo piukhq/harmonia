@@ -39,6 +39,14 @@ def get_payment_provider(slug, *, session: db.Session):
     return payment_provider
 
 
+def validate_identifier_type(identifier_type):
+    if identifier_type is None:
+        raise ValueError("Missing identifier type")
+    if identifier_type.lower() not in ["primary", "secondary", "psimi"]:
+        raise ValueError("Identifier type must be of type PRIMARY, SECONDARY OR PSIMI")
+    return identifier_type.upper()
+
+
 def create_merchant_identifier_fields(
     payment_provider_slug,
     identifier,
@@ -128,6 +136,8 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
         if action.lower() != "a":
             continue
 
+        identifier_type = validate_identifier_type(identifier_type)
+
         mid_fields = create_merchant_identifier_fields(
             payment_provider_slug,
             identifier,
@@ -207,7 +217,7 @@ def onboard_mids() -> tuple[dict, int]:
         mids = [
             create_merchant_identifier_fields(
                 identifier=mid["mid"],
-                identifier_type=mid.get("identifier_type") or "PRIMARY",
+                identifier_type=validate_identifier_type(mid.get("identifier_type")),
                 location_id=mid.get("location_id"),
                 merchant_internal_id=mid.get("merchant_internal_id"),
                 loyalty_scheme_slug=mid["loyalty_plan"],
