@@ -91,6 +91,11 @@ class Asos(Bpl):
     merchant_name = "asos"
 
 
+class Viator(Bpl):
+    provider_slug = "bpl-viator"
+    merchant_name = "viator"
+
+
 class Cortado(Bpl):
     provider_slug = "bpl-cortado"
     merchant_name = "cortado"
