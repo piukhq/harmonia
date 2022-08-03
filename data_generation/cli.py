@@ -22,6 +22,7 @@ from app.imports.agents.bases.base import BaseAgent
 from app.imports.agents.bases.file_agent import FileAgent, SftpFileSource
 from app.imports.agents.bases.queue_agent import QueueAgent
 from app.imports.agents.registry import import_agents
+from app.models import IdentifierType
 from app.reporting import get_logger
 from app.service.sftp import SFTP
 from harness.providers.registry import BaseImportDataProvider, import_data_providers
@@ -221,6 +222,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                     ),
                     "settlement_key": str(uuid.uuid4()),
                     "identifier": random.choice(mid_map),
+                    "identifier_type": IdentifierType.PRIMARY,
                     "location_id": location_id,
                 }
             )

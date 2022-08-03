@@ -35,18 +35,25 @@ def try_convert_settlement_mid(mid: str) -> str:
     return mid
 
 
-def get_mid_and_vsid(data: dict, *, mid_key: str, vsid_key: str) -> t.List[str]:
-    mids = [get_key_value(data, mid_key)]
-
-    if vsid := get_key_value(data, vsid_key):
-        mids.append(vsid)
-
-    return mids
+def get_valid_identifiers(data: dict, identifier_mapping: dict):
+    ids = {
+        "PRIMARY": get_key_value(data, identifier_mapping["PRIMARY"]),
+        "SECONDARY": get_key_value(data, identifier_mapping["SECONDARY"]),
+        "PSIMI": get_key_value(data, identifier_mapping["PSIMI"])
+    }
+    # Remove empty strings
+    ids = {k: v for k, v in ids.items() if v}
+    return ids
 
 
 class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.AUTH
+    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
+        "PRIMARY": "Transaction.MerchantCardAcceptorId",
+        "SECONDARY": "Transaction.VisaStoreId",
+        "PSIMI": "Transaction.VisaMerchantId"
+    }
 
     def __init__(self):
         super().__init__()
@@ -62,12 +69,11 @@ class VisaAuth(QueueAgent):
         )
     )
 
-    @staticmethod
-    def get_transaction_id(data: dict) -> str:
+    def get_transaction_id(self, data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_mids(self, data: dict) -> t.List[str]:
-        return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -89,6 +95,11 @@ class VisaAuth(QueueAgent):
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.SETTLED
+    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
+        "PRIMARY": "Transaction.MerchantCardAcceptorId",
+        "SECONDARY": "Transaction.VisaStoreId",
+        "PSIMI": "Transaction.VisaMerchantId"
+    }
 
     def __init__(self):
         super().__init__()
@@ -110,8 +121,8 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_mids(self, data: dict) -> t.List[str]:
-        return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -133,6 +144,11 @@ class VisaSettlement(QueueAgent):
 class VisaRefund(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.REFUND
+    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
+        "PRIMARY": "ReturnTransaction.CardAcceptorIdCode",
+        "SECONDARY": "ReturnTransaction.VisaStoreId",
+        "PSIMI": "ReturnTransaction.VisaMerchantId"
+    }
 
     def __init__(self):
         super().__init__()
@@ -154,10 +170,8 @@ class VisaRefund(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
-    def get_mids(self, data: dict) -> t.List[str]:
-        return get_mid_and_vsid(
-            data, mid_key="ReturnTransaction.CardAcceptorIdCode", vsid_key="ReturnTransaction.VisaStoreId"
-        )
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]

@@ -55,8 +55,8 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
-    def find_mids():
+def get_identifier(*identifiers: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
+    def get_identifiers():
         q = session.query(models.MerchantIdentifier)
 
         if feed_type == FeedType.MERCHANT:
@@ -66,13 +66,13 @@ def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: 
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
-        return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
+        return q.filter(models.MerchantIdentifier.identifier.in_(identifiers)).all()
 
     merchant_identifiers = db.run_query(
-        find_mids,
+        get_identifiers,
         session=session,
         read_only=True,
-        description=f"find {provider_slug} MID",
+        description=f"find {provider_slug} identifier",
     )
     return [mid.id for mid in merchant_identifiers]
 
@@ -160,14 +160,15 @@ class BaseAgent:
             location_id_mid_map[location_id].append(mid)
         return location_id_mid_map
 
-    def get_mids(self, data: dict) -> t.List[str]:
-        raise NotImplementedError("Override get_mids in your agent.")
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        raise NotImplementedError("Override get_identifiers in your agent.")
 
     def get_merchant_slug(self, data: dict) -> str:
-        mids = self.get_mids(data)
+        identifiers_and_types = self.get_identifiers_from_data(data)
+        identifiers = [v for v in identifiers_and_types.values()]
         # we can use self.provider_slug as the payment provider slug as there is no reason to ever call this function
         # in a loyalty import agent.
-        return get_merchant_slug(*mids, payment_provider_slug=self.provider_slug)
+        return get_merchant_slug(*identifiers, payment_provider_slug=self.provider_slug)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
@@ -217,22 +218,23 @@ class BaseAgent:
 
         return new
 
-    def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
-        ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
-        if not ids:
+    def get_identifier_from_mid_table(self, identifiers_and_type: dict, session: db.Session) -> t.List[int]:
+        identifiers = []
+        for k, v in identifiers_and_type.items():
+            id = get_identifier(v, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
+            if self.feed_type != FeedType.MERCHANT and len(id) > 1:
+                raise MIDDataError(
+                    f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID value "
+                    f"per transaction. However, the agent mapped this MIDs list: {identifiers_and_type[k]} to these "
+                    f"multiple IDs: {id}. This indicates an issue with the MIDs loaded into the database. Please "
+                    f"ensure that this combination of MIDs only maps to a single merchant_identifier record."
+                )
+            identifiers.extend(id)
+
+        if not identifiers:
             raise MissingMID
 
-        if self.feed_type != FeedType.MERCHANT and len(ids) > 1:
-            raise MIDDataError(
-                f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID value per "
-                f"transaction. However, the agent mapped this MIDs list: {mids} to these multiple IDs: {ids}. "
-                "This indicates an issue with the MIDs loaded into the database. Please ensure that this combination "
-                "of MIDs only maps to a single merchant_identifier record.\n"
-                "Note, Visa MIDs are given as [MID, VSID]. If this is a Visa issue, ensure that either the MID or the "
-                "VSID is loaded, and not both."
-            )
-
-        return ids
+        return [identifiers[0]]
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
@@ -315,12 +317,12 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        mids = self.get_mids(tx_data)
+        identifiers_and_type = self.get_identifiers_from_data(tx_data)
 
         merchant_identifier_ids = []
         identified = True
         try:
-            merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
+            merchant_identifier_ids.extend(self.get_identifier_from_mid_table(identifiers_and_type, session=session))
         except MissingMID:
             identified = False
 

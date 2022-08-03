@@ -172,6 +172,8 @@ date = 2020-06-02T15:47:45Z
 amount = 1222
 first_six = "123456"  # Payment card first six
 last_four = "7890"  # Payment card last four
+identifier = "test-mid-234"
+identifier_type = "PRIMARY"  # PRIMARY, SECONDARY OR PSIMI
 ```
 
 After running these tests, the PostgreSQL and Redis containers will be left
