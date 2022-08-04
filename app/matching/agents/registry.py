@@ -1,6 +1,10 @@
 from app.matching.agents.base import BaseMatchingAgent
 from app.registry import Registry
 
+# *******IMPORTANT*************
+# The registry entries here are used to determine if a merchant is a matching or spotting type.
+# Currently all spotting merchants are GenericSpotted types. If this changes then review code that depends on this
+# For example the Amex Auth class only imports transactions if they are none spotting or streaming.
 matching_agents = Registry[BaseMatchingAgent]()
 matching_agents.add("cooperative", "app.matching.agents.generic_loyalty.GenericLoyalty")
 matching_agents.add("harvey-nichols", "app.matching.agents.harvey_nichols.HarveyNichols")

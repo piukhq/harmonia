@@ -30,13 +30,17 @@ class Registry(t.Generic[T]):
     def remove(self, key: str) -> None:
         del self._entries[key]
 
-    def instantiate(self, key: str, *args, **kwargs) -> T:
+    def registered_entries(self, key: str) -> t.List[str]:
         try:
-            mod_path, class_name = self._entries[key].rsplit(".", 1)
+            return self._entries[key].rsplit(".", 1)
         except KeyError as ex:
             raise NoSuchAgent(f"Invalid registry key: {key}") from ex
         except ValueError as ex:
             raise RegistryConfigurationError(f"Invalid import path: {self._entries[key]}") from ex
+
+    def instantiate(self, key: str, *args, **kwargs) -> T:
+
+        mod_path, class_name = self.registered_entries(key)
 
         try:
             mod = importlib.import_module(mod_path)

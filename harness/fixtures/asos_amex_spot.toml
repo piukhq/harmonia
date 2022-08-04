@@ -1,0 +1,37 @@
+# base fixture data
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "bpl-asos"
+
+[payment_provider]
+slug = "amex"
+
+[[agents]]
+slug = "bpl-asos"
+
+[[agents]]
+slug = "amex-auth"
+
+[[agents]]
+slug = "amex-settlement"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+merchant_identifier = "88899966"
+email = "test-123@testbink.com"
+
+[[users.transactions]]
+date = 2022-08-02T15:01:59Z
+amount = 3935
+auth_code = "444444"
+identifier = "amex-asos-mid-123"
+identifier_type = "PRIMARY"
