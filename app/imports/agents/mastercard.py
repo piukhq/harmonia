@@ -115,8 +115,12 @@ class MastercardTS44Settlement(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_sequence_number"]
 
-    def get_identifiers_from_data(self, data: dict) -> t.List[str]:
-        return [try_convert_settlement_mid(data["merchant_id"])]
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        return {
+            "PRIMARY": data["mid"],
+            "SECONDARY": data["location_id"],
+            "PSIMI": data["aggregate_merchant_id"],
+        }
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['transaction_date']} {data['transaction_time']}"
@@ -136,6 +140,8 @@ class MastercardTGX2Settlement(FileAgent):
     fields = [
         FixedWidthField(name="record_type", start=0, length=1),
         FixedWidthField(name="mid", start=451, length=15),
+        FixedWidthField(name="location_id", start=500, length=12),
+        FixedWidthField(name="aggregate_merchant_id", start=512, length=6),
         FixedWidthField(name="amount", start=518, length=12),
         FixedWidthField(name="date", start=102, length=8),
         FixedWidthField(name="time", start=563, length=4),
@@ -192,8 +198,12 @@ class MastercardTGX2Settlement(FileAgent):
         else:
             return uuid4().hex
 
-    def get_identifiers_from_data(self, data: dict) -> t.List[str]:
-        return [try_convert_settlement_mid(data["mid"])]
+    def get_identifiers_from_data(self, data: dict) -> dict:
+        return {
+            "PRIMARY": data["mid"],
+            "SECONDARY": data["location_id"],
+            "PSIMI": data["aggregate_merchant_id"],
+        }
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"

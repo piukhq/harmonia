@@ -182,6 +182,7 @@ class FixtureUserTransactionSchema(Schema):
     identifier = fields.String(required=True, allow_none=False)
     identifier_type = fields.String(required=True, allow_none=False)
     location_id = fields.String(required=False, allow_none=True)
+    aggregate_merchant_id = fields.String(required=False, allow_none=True)
 
     @pre_load
     def convert_dates(self, data, **kwargs):
