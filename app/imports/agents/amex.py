@@ -1,10 +1,13 @@
 import typing as t
+from functools import cache
 
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
+from app.matching.agents.registry import matching_agents
+from app.streaming.agents.registry import streaming_agents
 
 PROVIDER_SLUG = "amex"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -22,12 +25,32 @@ class AmexAuth(QueueAgent):
 
     config = Config(ConfigValue("queue_name", key=AUTH_QUEUE_NAME_KEY, default="amex-auth"))
 
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+    @cache
+    def do_not_import(self, merchant_slug: str) -> bool:
+        # Use the registered agents from streaming and matching (spotting) to check the merchant
+        # If the merchant is a spotting or streaming agent, then do not import, return true for this method
+        # Streaming agents checked first since this is less overhead then checking matching agents
+        if merchant_slug in streaming_agents:
+            return True
+        elif merchant_slug in matching_agents:
+            # Only stop the spotting merchants from importing.
+            match_entry = matching_agents.registered_entries(merchant_slug)
+            if "spotted" in match_entry[0]:
+                return True
+
+        return False
+
+    def to_transaction_fields(self, data: dict) -> t.Optional[PaymentTransactionFields]:
         transaction_date = self.pendulum_parse(data["transaction_time"], tz="MST")
         amount = to_pennies(data["transaction_amount"])
 
+        merchant_slug = self.get_merchant_slug(data)
+        # Spotting and streaming merchants cannot use Amex auth transactions, so do not import.
+        if self.do_not_import(merchant_slug):
+            return None
+
         return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
+            merchant_slug=merchant_slug,
             payment_provider_slug=self.provider_slug,
             settlement_key=data["transaction_id"],
             transaction_date=transaction_date,

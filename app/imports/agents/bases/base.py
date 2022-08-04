@@ -123,7 +123,8 @@ class BaseAgent:
             "Override the run method in your agent to act as the main entry point into the import process."
         )
 
-    def to_transaction_fields(self, data: dict) -> t.Union[SchemeTransactionFields, PaymentTransactionFields]:
+    def to_transaction_fields(self, data: dict) ->\
+            t.Union[t.Optional[SchemeTransactionFields], t.Optional[PaymentTransactionFields]]:
         raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
@@ -336,27 +337,28 @@ class BaseAgent:
 
         if identified:
             transaction_fields = self.to_transaction_fields(tx_data)
-            transaction_insert = dict(
-                feed_type=self.feed_type,
-                status=models.TransactionStatus.IMPORTED,
-                merchant_identifier_ids=merchant_identifier_ids,
-                transaction_id=tid,
-                match_group=match_group,
-                **transaction_fields._asdict(),
-            )
-
-            if self.feed_type_is_payment:
-                if not isinstance(transaction_fields, PaymentTransactionFields):
-                    raise self.ImportError(
-                        f"{self.provider_slug} agent is configured with a feed type of {self.feed_type}, "
-                        f" but provided {type(transaction_fields).__name__} instead of PaymentTransactionFields"
-                    )
-
-                identify = IdentifyArgs(
-                    transaction_id=tid,
+            if transaction_fields:
+                transaction_insert = dict(
+                    feed_type=self.feed_type,
+                    status=models.TransactionStatus.IMPORTED,
                     merchant_identifier_ids=merchant_identifier_ids,
-                    card_token=transaction_fields.card_token,
+                    transaction_id=tid,
+                    match_group=match_group,
+                    **transaction_fields._asdict(),
                 )
+
+                if self.feed_type_is_payment:
+                    if not isinstance(transaction_fields, PaymentTransactionFields):
+                        raise self.ImportError(
+                            f"{self.provider_slug} agent is configured with a feed type of {self.feed_type}, "
+                            f" but provided {type(transaction_fields).__name__} instead of PaymentTransactionFields"
+                        )
+
+                    identify = IdentifyArgs(
+                        transaction_id=tid,
+                        merchant_identifier_ids=merchant_identifier_ids,
+                        card_token=transaction_fields.card_token,
+                    )
 
         return import_transaction_insert, transaction_insert, identify
 
