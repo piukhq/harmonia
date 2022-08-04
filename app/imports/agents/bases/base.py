@@ -123,8 +123,9 @@ class BaseAgent:
             "Override the run method in your agent to act as the main entry point into the import process."
         )
 
-    def to_transaction_fields(self, data: dict) ->\
-            t.Union[t.Optional[SchemeTransactionFields], t.Optional[PaymentTransactionFields]]:
+    def to_transaction_fields(
+        self, data: dict
+    ) -> t.Union[t.Optional[SchemeTransactionFields], t.Optional[PaymentTransactionFields]]:
         raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
