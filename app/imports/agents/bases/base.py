@@ -160,7 +160,7 @@ class BaseAgent:
             location_id_mid_map[location_id].append(mid)
         return location_id_mid_map
 
-    def get_identifiers_from_data(self, data: dict) -> dict:
+    def get_identifiers_from_data(self, data):
         raise NotImplementedError("Override get_identifiers in your agent.")
 
     def get_merchant_slug(self, data: dict) -> str:
@@ -218,23 +218,31 @@ class BaseAgent:
 
         return new
 
-    def get_identifier_from_mid_table(self, identifiers_and_type: dict, session: db.Session) -> t.List[int]:
-        identifiers = []
-        for k, v in identifiers_and_type.items():
+    def get_identifier_from_mid_table_for_merchant_feed(self, identifiers: list[str], session: db.Session) -> list[int]:
+        ids = get_identifier(*identifiers, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
+        if not ids:
+            raise MissingMID
+        return ids
+
+    def get_identifier_from_mid_table_for_payment_provider_feed(
+        self, identifiers_and_types: dict, session: db.Session
+    ) -> list[int]:
+        ids = []
+        for k, v in identifiers_and_types.items():
             id = get_identifier(v, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
-            if self.feed_type != FeedType.MERCHANT and len(id) > 1:
+            if len(id) > 1:
                 raise MIDDataError(
-                    f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID value "
-                    f"per transaction. However, the agent mapped this MIDs list: {identifiers_and_type[k]} to these "
-                    f"multiple IDs: {id}. This indicates an issue with the MIDs loaded into the database. Please "
+                    f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID "
+                    f"value per transaction. However, the agent mapped this MIDs list: {identifiers_and_types[k]} to "
+                    f"these multiple IDs: {id}. This indicates an issue with the MIDs loaded into the database. Please "
                     f"ensure that this combination of MIDs only maps to a single merchant_identifier record."
                 )
-            identifiers.extend(id)
+            ids.extend(id)
 
-        if not identifiers:
+        if not ids:
             raise MissingMID
 
-        return [identifiers[0]]
+        return [ids[0]]
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
@@ -317,12 +325,19 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        identifiers_and_type = self.get_identifiers_from_data(tx_data)
+        identifiers = self.get_identifiers_from_data(tx_data)
 
         merchant_identifier_ids = []
         identified = True
         try:
-            merchant_identifier_ids.extend(self.get_identifier_from_mid_table(identifiers_and_type, session=session))
+            if self.feed_type != FeedType.MERCHANT:
+                merchant_identifier_ids.extend(
+                    self.get_identifier_from_mid_table_for_payment_provider_feed(identifiers, session=session)
+                )
+            else:
+                merchant_identifier_ids.extend(
+                    self.get_identifier_from_mid_table_for_merchant_feed(identifiers, session=session)
+                )
         except MissingMID:
             identified = False
 

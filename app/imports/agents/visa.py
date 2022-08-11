@@ -1,4 +1,3 @@
-import typing as t
 from hashlib import sha256
 
 import pendulum
@@ -39,7 +38,7 @@ def get_valid_identifiers(data: dict, identifier_mapping: dict):
     ids = {
         "PRIMARY": get_key_value(data, identifier_mapping["PRIMARY"]),
         "SECONDARY": get_key_value(data, identifier_mapping["SECONDARY"]),
-        "PSIMI": get_key_value(data, identifier_mapping["PSIMI"])
+        "PSIMI": get_key_value(data, identifier_mapping["PSIMI"]),
     }
     # Remove empty strings
     ids = {k: v for k, v in ids.items() if v}
@@ -52,7 +51,7 @@ class VisaAuth(QueueAgent):
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
         "PRIMARY": "Transaction.MerchantCardAcceptorId",
         "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId"
+        "PSIMI": "Transaction.VisaMerchantId",
     }
 
     def __init__(self):
@@ -69,7 +68,7 @@ class VisaAuth(QueueAgent):
         )
     )
 
-    def get_transaction_id(self, data: dict) -> str:
+    def get_transaction_id(self, data):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_identifiers_from_data(self, data: dict) -> dict:
@@ -98,7 +97,7 @@ class VisaSettlement(QueueAgent):
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
         "PRIMARY": "Transaction.MerchantCardAcceptorId",
         "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId"
+        "PSIMI": "Transaction.VisaMerchantId",
     }
 
     def __init__(self):
@@ -147,7 +146,7 @@ class VisaRefund(QueueAgent):
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
         "PRIMARY": "ReturnTransaction.CardAcceptorIdCode",
         "SECONDARY": "ReturnTransaction.VisaStoreId",
-        "PSIMI": "ReturnTransaction.VisaMerchantId"
+        "PSIMI": "ReturnTransaction.VisaMerchantId",
     }
 
     def __init__(self):

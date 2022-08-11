@@ -118,8 +118,6 @@ class MastercardTS44Settlement(FileAgent):
     def get_identifiers_from_data(self, data: dict) -> dict:
         return {
             "PRIMARY": data["mid"],
-            "SECONDARY": data["location_id"],
-            "PSIMI": data["aggregate_merchant_id"],
         }
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:

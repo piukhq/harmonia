@@ -27,11 +27,10 @@ card_number = "loyalty-hn-123"
 [[users.transactions]]
 date = 2020-05-28T15:46:00Z
 amount = 1099
-settlement_key = "settle123"
 auth_code = "666666"
 identifier = "92040913"
 identifier_type = "PRIMARY"
-location_id = "0001017   005682"
+location_id = "0001017   005682"  # Location id's should not be more than length 12
 
 [[users.transactions]]
 date = 2020-05-28T13:46:00Z
@@ -39,4 +38,4 @@ amount = 2099
 auth_code = "666666"
 identifier = "92040913"
 identifier_type = "PRIMARY"
-location_id = "0001017   005682"
+location_id = "0001017   005682"  # Location id's should not be more than length 12

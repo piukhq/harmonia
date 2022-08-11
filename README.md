@@ -158,9 +158,6 @@ Example:
 [[payment_provider.transactions]]
 date = 2020-06-02T15:46:30Z  # Datetime representing the transaction time
 amount = 1222  # Transaction amount in pennies
-
-# Settlement key of the payment transaction - should be kept to 9 chars or less for Mastercard
-settlement_key = "1111111111"
 token = "1111"  # Payment token
 
 # Which user to link the payment to - does not need to be changed in most cases as there is not much need to test with more than one user.

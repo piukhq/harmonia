@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from app import db, models
+from app import db
 
 
 @pytest.fixture

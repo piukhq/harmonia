@@ -31,10 +31,9 @@ merchant_identifier = "88899966"
 [[users.transactions]]
 date = 2020-06-02T15:46:00Z
 amount = 1099
-settlement_key = "settle123"
 auth_code = "666665"
 identifier = "test-mid-234"
-identifier_type = "PRIMARY"
+identifier_type = "SECONDARY"
 [users.transactions.payment_provider_overrides]
 auth_code = "6666667"
 
@@ -43,6 +42,4 @@ date = 2020-06-02T17:46:00Z
 amount = 1099
 auth_code = "666666"
 identifier = "test-mid-234"
-identifier_type = "PRIMARY"
-# [users.transactions.merchant_overrides]
-# date = 2020-06-02T17:46:12Z
+identifier_type = "SECONDARY"
