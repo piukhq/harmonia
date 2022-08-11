@@ -36,5 +36,3 @@ identifier = "test-mid-456"
 identifier_type = "PRIMARY"
 location_id = "411111087"
 aggregate_merchant_id = "134568"
-# [users.transactions.merchant_overrides]
-# auth_code = "777777"

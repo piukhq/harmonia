@@ -32,5 +32,3 @@ identifier = "92040913"
 identifier_type = "PRIMARY"
 location_id = "0001017   005682"  # Location id's should not be more than length 12
 aggregate_merchant_id = "666567"
-# [users.transactions.merchant_overrides]
-# auth_code = "777777"
