@@ -5,12 +5,12 @@ import pytest
 from app import db, models
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MIDDataError, MissingMID
-from app.models import LoyaltyScheme, PaymentProvider
+from app.models import LoyaltyScheme, PaymentProvider, IdentifierType
 
 pp_data = {
-    "PRIMARY": "test-mid-primary",
-    "PSIMI": "test-mid-psimi",
-    "SECONDARY": "test-mid-secondary",
+    IdentifierType.PRIMARY: "test-mid-primary",
+    IdentifierType.PSIMI: "test-mid-psimi",
+    IdentifierType.SECONDARY: "test-mid-secondary",
 }
 
 merchant_data = ["test-mid-primary", "test-mid-secondary"]
@@ -69,7 +69,7 @@ def mid_primary(loyalty_scheme: LoyaltyScheme, payment_provider: PaymentProvider
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-mid-primary",
-        identifier_type="PRIMARY",
+        identifier_type=IdentifierType.PRIMARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,
@@ -87,7 +87,7 @@ def mid_secondary(loyalty_scheme: LoyaltyScheme, payment_provider: PaymentProvid
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-mid-secondary",
-        identifier_type="SECONDARY",
+        identifier_type=IdentifierType.SECONDARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,
@@ -107,7 +107,7 @@ def mid_primary_duplicate(
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-mid-primary",
-        identifier_type="PSIMI",
+        identifier_type=IdentifierType.PSIMI,
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,

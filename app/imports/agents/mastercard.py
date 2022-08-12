@@ -10,6 +10,7 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
+from app.models import IdentifierType
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
@@ -117,7 +118,7 @@ class MastercardTS44Settlement(FileAgent):
 
     def get_identifiers_from_data(self, data: dict) -> dict:
         return {
-            "PRIMARY": data["mid"],
+            IdentifierType.PRIMARY: data["mid"],
         }
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
@@ -198,9 +199,9 @@ class MastercardTGX2Settlement(FileAgent):
 
     def get_identifiers_from_data(self, data: dict) -> dict:
         return {
-            "PRIMARY": data["mid"],
-            "SECONDARY": data["location_id"],
-            "PSIMI": data["aggregate_merchant_id"],
+            IdentifierType.PRIMARY: data["mid"],
+            IdentifierType.SECONDARY: data["location_id"],
+            IdentifierType.PSIMI: data["aggregate_merchant_id"],
         }
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
@@ -239,4 +240,4 @@ class MastercardAuth(QueueAgent):
         return uuid4().hex
 
     def get_identifiers_from_data(self, data: dict) -> dict:
-        return {"PRIMARY": data["mid"]}
+        return {IdentifierType.PRIMARY: data["mid"]}

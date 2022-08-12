@@ -7,6 +7,7 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
+from app.models import IdentifierType
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -36,9 +37,9 @@ def try_convert_settlement_mid(mid: str) -> str:
 
 def get_valid_identifiers(data: dict, identifier_mapping: dict):
     ids = {
-        "PRIMARY": get_key_value(data, identifier_mapping["PRIMARY"]),
-        "SECONDARY": get_key_value(data, identifier_mapping["SECONDARY"]),
-        "PSIMI": get_key_value(data, identifier_mapping["PSIMI"]),
+        IdentifierType.PRIMARY: get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
+        IdentifierType.SECONDARY: get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
+        IdentifierType.PSIMI: get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
     }
     # Remove empty strings
     ids = {k: v for k, v in ids.items() if v}
@@ -49,9 +50,9 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.AUTH
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        "PRIMARY": "Transaction.MerchantCardAcceptorId",
-        "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId",
+        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
+        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
+        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
 
     def __init__(self):
@@ -68,7 +69,7 @@ class VisaAuth(QueueAgent):
         )
     )
 
-    def get_transaction_id(self, data):
+    def get_transaction_id(self, data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_identifiers_from_data(self, data: dict) -> dict:
@@ -95,9 +96,9 @@ class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.SETTLED
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        "PRIMARY": "Transaction.MerchantCardAcceptorId",
-        "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId",
+        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
+        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
+        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
 
     def __init__(self):
@@ -144,9 +145,9 @@ class VisaRefund(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.REFUND
     IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        "PRIMARY": "ReturnTransaction.CardAcceptorIdCode",
-        "SECONDARY": "ReturnTransaction.VisaStoreId",
-        "PSIMI": "ReturnTransaction.VisaMerchantId",
+        IdentifierType.PRIMARY: "ReturnTransaction.CardAcceptorIdCode",
+        IdentifierType.SECONDARY: "ReturnTransaction.VisaStoreId",
+        IdentifierType.PSIMI: "ReturnTransaction.VisaMerchantId",
     }
 
     def __init__(self):

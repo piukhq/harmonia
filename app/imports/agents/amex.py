@@ -7,6 +7,7 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 from app.matching.agents.registry import matching_agents
+from app.models import IdentifierType
 from app.streaming.agents.registry import streaming_agents
 
 PROVIDER_SLUG = "amex"
@@ -67,7 +68,7 @@ class AmexAuth(QueueAgent):
         return data["transaction_id"]
 
     def get_identifiers_from_data(self, data: dict) -> dict:
-        return {"PRIMARY": data["merchant_number"]}
+        return {IdentifierType.PRIMARY: data["merchant_number"]}
 
 
 class AmexSettlement(QueueAgent):
@@ -105,4 +106,4 @@ class AmexSettlement(QueueAgent):
         return data["transactionId"]
 
     def get_identifiers_from_data(self, data: dict) -> dict:
-        return {"PRIMARY": data["merchantNumber"]}
+        return {IdentifierType.PRIMARY: data["merchantNumber"]}

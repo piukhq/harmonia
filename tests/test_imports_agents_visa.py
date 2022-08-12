@@ -1,6 +1,7 @@
 import copy
 
 from app.imports.agents.visa import VisaAuth, get_valid_identifiers
+from app.models import IdentifierType
 
 tx_data = {
     "CardId": "744e4f00-",
@@ -41,15 +42,15 @@ tx_data = {
 
 def test_get_valid_identifiers():
     identifier_mapping = {
-        "PRIMARY": "Transaction.MerchantCardAcceptorId",
-        "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId",
+        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
+        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
+        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
     ids = get_valid_identifiers(tx_data, identifier_mapping)
     assert ids == {
-        "PRIMARY": "test-mid-123",
-        "PSIMI": "test-mid-456",
-        "SECONDARY": "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
+        IdentifierType.PRIMARY: "test-mid-123",
+        IdentifierType.PSIMI: "test-mid-456",
+        IdentifierType.SECONDARY: "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
     }
 
 
@@ -57,14 +58,14 @@ def test_get_valid_identifiers_empty_string():
     data = copy.deepcopy(tx_data)
     data["MessageElementsCollection"][7] = {"Key": "Transaction.VisaMerchantId", "Value": ""}
     identifier_mapping = {
-        "PRIMARY": "Transaction.MerchantCardAcceptorId",
-        "SECONDARY": "Transaction.VisaStoreId",
-        "PSIMI": "Transaction.VisaMerchantId",
+        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
+        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
+        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
     ids = get_valid_identifiers(data, identifier_mapping)
     assert ids == {
-        "PRIMARY": "test-mid-123",
-        "SECONDARY": "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
+        IdentifierType.PRIMARY: "test-mid-123",
+        IdentifierType.SECONDARY: "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
     }
 
 
@@ -72,7 +73,7 @@ def test_get_identifiers_from_data():
     agent = VisaAuth()
     ids = agent.get_identifiers_from_data(tx_data)
     assert ids == {
-        "PRIMARY": "test-mid-123",
-        "PSIMI": "test-mid-456",
-        "SECONDARY": "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
+        IdentifierType.PRIMARY: "test-mid-123",
+        IdentifierType.PSIMI: "test-mid-456",
+        IdentifierType.SECONDARY: "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=",
     }

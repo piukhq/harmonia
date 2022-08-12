@@ -6,6 +6,7 @@ import settings
 from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
+from app.models import IdentifierType
 
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def mid(db_session: db.Session) -> int:
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-force-match-mid-1",
-        identifier_type="PRIMARY",
+        identifier_type=IdentifierType.PRIMARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,
