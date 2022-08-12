@@ -35,14 +35,14 @@ def try_convert_settlement_mid(mid: str) -> str:
     return mid
 
 
-def get_valid_identifiers(data: dict, identifier_mapping: dict):
-    ids = {
-        IdentifierType.PRIMARY: get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
-        IdentifierType.SECONDARY: get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
-        IdentifierType.PSIMI: get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
-    }
+def get_valid_identifiers(data: dict, identifier_mapping: dict) -> list[str]:
+    ids = [
+        get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
+        get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
+        get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
+    ]
     # Remove empty strings
-    ids = {k: v for k, v in ids.items() if v}
+    ids = [id for id in ids if id]
     return ids
 
 
@@ -69,10 +69,11 @@ class VisaAuth(QueueAgent):
         )
     )
 
-    def get_transaction_id(self, data: dict) -> str:
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_identifiers_from_data(self, data: dict) -> dict:
+    def get_identifiers(self, data: dict) -> list[str]:
         return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
@@ -121,7 +122,7 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_identifiers_from_data(self, data: dict) -> dict:
+    def get_identifiers(self, data: dict) -> list[str]:
         return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
@@ -170,7 +171,7 @@ class VisaRefund(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
-    def get_identifiers_from_data(self, data: dict) -> dict:
+    def get_identifiers(self, data: dict) -> list[str]:
         return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:

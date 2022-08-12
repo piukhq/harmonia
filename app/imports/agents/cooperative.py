@@ -40,7 +40,7 @@ class Cooperative(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["id"]
 
-    def get_identifiers_from_data(self, data: dict) -> t.List[str]:
+    def get_identifiers(self, data: dict) -> t.List[str]:
         return [data["store_id"]]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:

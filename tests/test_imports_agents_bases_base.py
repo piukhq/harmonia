@@ -5,17 +5,11 @@ import pytest
 from app import db, models
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MIDDataError, MissingMID
-from app.models import LoyaltyScheme, PaymentProvider, IdentifierType
+from app.models import IdentifierType, LoyaltyScheme, PaymentProvider
 
-pp_data = {
-    IdentifierType.PRIMARY: "test-mid-primary",
-    IdentifierType.PSIMI: "test-mid-psimi",
-    IdentifierType.SECONDARY: "test-mid-secondary",
-}
+data = ["test-mid-primary", "test-mid-secondary", "test-mid-psimi"]
 
-merchant_data = ["test-mid-primary", "test-mid-secondary"]
-
-visa_data = {
+visa_transaction = {
     "CardId": "f237df3e-",
     "ExternalUserId": "token-123",
     "MessageElementsCollection": [
@@ -120,73 +114,63 @@ def mid_primary_duplicate(
     return mid.id
 
 
-def test_get_merchant_slug_primary(mid_primary: int, db_session: db.Session):
+def test_get_merchant_slug_primary_identifier_visa(mid_primary: int, db_session: db.Session):
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
-        slug = agent.get_merchant_slug(visa_data)
+        slug = agent.get_merchant_slug(visa_transaction)
         assert slug == "loyalty_scheme"
 
 
-def test_get_merchant_slug_secondary(mid_secondary: int, db_session: db.Session):
+def test_get_merchant_slug_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
-        slug = agent.get_merchant_slug(visa_data)
+        slug = agent.get_merchant_slug(visa_transaction)
         assert slug == "loyalty_scheme"
 
 
-def test_get_identifier_from_mid_table_for_merchant_feed_primary(mid_primary: int, db_session: db.Session):
+def test_get_identifier_from_mid_table_primary_identifier_visa(mid_primary: int, db_session: db.Session):
     agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table_for_merchant_feed(merchant_data, db_session)
+    identifer = agent.get_identifier_from_mid_table(data, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_get_identifier_from_mid_table_for_merchant_feed_multiple(
+def test_get_identifier_from_mid_table_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
+    agent = VisaAuth()
+    identifer = agent.get_identifier_from_mid_table(data, db_session)
+
+    assert identifer == [mid_secondary]
+
+
+def test_get_identifier_from_mid_table_multiple_identifiers_visa(
     mid_primary: int, mid_secondary: int, db_session: db.Session
 ):
     agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table_for_merchant_feed(merchant_data, db_session)
+    identifer = agent.get_identifier_from_mid_table(data, db_session)
 
-    assert identifer == [mid_primary, mid_secondary]
+    assert identifer == [mid_primary]
 
 
-def test_get_identifier_from_mid_table_for_merchant_feed_no_matching_identifiers(db_session: db.Session):
+def test_get_identifier_from_mid_table_no_matching_identifiers_visa(db_session: db.Session):
     agent = VisaAuth()
     with pytest.raises(MissingMID) as e:
-        agent.get_identifier_from_mid_table_for_merchant_feed(merchant_data, db_session)
+        agent.get_identifier_from_mid_table(data, db_session)
 
     assert e.typename == "MissingMID"
 
 
-def test_get_identifier_from_mid_table_for_pp_feed_primary(mid_primary: int, db_session: db.Session):
-    agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table_for_payment_provider_feed(pp_data, db_session)
-
-    assert identifer == [mid_primary]
-
-
-def test_get_identifier_from_mid_table_for_pp_feed_multiple(
-    mid_primary: int, mid_secondary: int, db_session: db.Session
-):
-    agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table_for_payment_provider_feed(pp_data, db_session)
-
-    assert identifer == [mid_primary]
-
-
-def test_get_identifier_from_mid_table_for_pp_feed_duplicate_identifiers(
+def test_get_identifier_from_mid_table_duplicate_identifiers_visa(
     mid_primary: int, mid_primary_duplicate: int, db_session: db.Session
 ):
     agent = VisaAuth()
     with pytest.raises(MIDDataError) as e:
-        agent.get_identifier_from_mid_table_for_payment_provider_feed(pp_data, db_session)
+        agent.get_identifier_from_mid_table(data, db_session)
 
     assert e.typename == "MIDDataError"
-
-
-def test_get_identifier_from_mid_table_for_pp_feed_no_matching_identifiers(db_session: db.Session):
-    agent = VisaAuth()
-    with pytest.raises(MissingMID) as e:
-        agent.get_identifier_from_mid_table_for_payment_provider_feed(pp_data, db_session)
-
-    assert e.typename == "MissingMID"
+    assert (
+        e.value.args[0]
+        == f"VisaAuth is a payment feed agent and must therefore only provide a single MID value per transaction. "
+        f"However, the agent mapped this identifier: test-mid-primary to these multiple identifier IDs: "
+        f"[{mid_primary}, {mid_primary_duplicate}]. This indicates an issue with the MIDs loaded into the "
+        f"database. Please ensure that this identifier only maps to a single merchant_identifier record."
+    )
