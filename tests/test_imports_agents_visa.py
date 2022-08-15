@@ -1,6 +1,6 @@
 import copy
 
-from app.imports.agents.visa import VisaAuth, get_valid_identifiers
+from app.imports.agents.visa import VisaAuth, get_identifiers
 from app.models import IdentifierType
 
 tx_data = {
@@ -40,17 +40,17 @@ tx_data = {
 }
 
 
-def test_get_valid_identifiers():
+def test_get_identifiers():
     identifier_mapping = {
         IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
         IdentifierType.SECONDARY: "Transaction.VisaStoreId",
         IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
-    ids = get_valid_identifiers(tx_data, identifier_mapping)
+    ids = get_identifiers(tx_data, identifier_mapping)
     assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=", "test-mid-456"]
 
 
-def test_get_valid_identifiers_empty_string():
+def test_get_identifiers_empty_string():
     data = copy.deepcopy(tx_data)
     data["MessageElementsCollection"][7] = {"Key": "Transaction.VisaMerchantId", "Value": ""}
     identifier_mapping = {
@@ -58,11 +58,11 @@ def test_get_valid_identifiers_empty_string():
         IdentifierType.SECONDARY: "Transaction.VisaStoreId",
         IdentifierType.PSIMI: "Transaction.VisaMerchantId",
     }
-    ids = get_valid_identifiers(data, identifier_mapping)
+    ids = get_identifiers(data, identifier_mapping)
     assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss="]
 
 
-def test_get_identifiers_from_data():
+def test_get_mids():
     agent = VisaAuth()
-    ids = agent.get_identifiers(tx_data)
+    ids = agent.get_mids(tx_data)
     assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=", "test-mid-456"]

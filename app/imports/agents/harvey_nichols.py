@@ -197,7 +197,7 @@ class HarveyNichols(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["id"]
 
-    def get_identifiers(self, data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         mid = data["store_id"]
         return STORE_ID_TO_MIDS.get(mid[:4], [mid])
 

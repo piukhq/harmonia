@@ -110,7 +110,7 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         """
         return data["Receipt No_"]
 
-    def get_identifiers(self, data: dict) -> t.List[str]:
+    def get_mids(self, data: dict) -> t.List[str]:
         return [data["EFT Merchant No_"]]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:

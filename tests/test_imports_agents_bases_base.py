@@ -128,43 +128,43 @@ def test_get_merchant_slug_secondary_identifier_visa(mid_secondary: int, db_sess
         assert slug == "loyalty_scheme"
 
 
-def test_get_identifier_from_mid_table_primary_identifier_visa(mid_primary: int, db_session: db.Session):
+def test_identify_mids_table_primary_identifier_visa(mid_primary: int, db_session: db.Session):
     agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table(data, db_session)
+    identifer = agent._identify_mids(data, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_get_identifier_from_mid_table_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
+def test_identify_mids_table_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
     agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table(data, db_session)
+    identifer = agent._identify_mids(data, db_session)
 
     assert identifer == [mid_secondary]
 
 
-def test_get_identifier_from_mid_table_multiple_identifiers_visa(
+def test_identify_mids_table_multiple_identifiers_visa(
     mid_primary: int, mid_secondary: int, db_session: db.Session
 ):
     agent = VisaAuth()
-    identifer = agent.get_identifier_from_mid_table(data, db_session)
+    identifer = agent._identify_mids(data, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_get_identifier_from_mid_table_no_matching_identifiers_visa(db_session: db.Session):
+def test_identify_mids_table_no_matching_identifiers_visa(db_session: db.Session):
     agent = VisaAuth()
     with pytest.raises(MissingMID) as e:
-        agent.get_identifier_from_mid_table(data, db_session)
+        agent._identify_mids(data, db_session)
 
     assert e.typename == "MissingMID"
 
 
-def test_get_identifier_from_mid_table_duplicate_identifiers_visa(
+def test_identify_mids_table_duplicate_identifiers_visa(
     mid_primary: int, mid_primary_duplicate: int, db_session: db.Session
 ):
     agent = VisaAuth()
     with pytest.raises(MIDDataError) as e:
-        agent.get_identifier_from_mid_table(data, db_session)
+        agent._identify_mids(data, db_session)
 
     assert e.typename == "MIDDataError"
     assert (

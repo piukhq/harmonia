@@ -35,7 +35,7 @@ def try_convert_settlement_mid(mid: str) -> str:
     return mid
 
 
-def get_valid_identifiers(data: dict, identifier_mapping: dict) -> list[str]:
+def get_identifiers(data: dict, identifier_mapping: dict) -> list[str]:
     ids = [
         get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
         get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
@@ -73,8 +73,8 @@ class VisaAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_identifiers(self, data: dict) -> list[str]:
-        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+    def get_mids(self, data: dict) -> list[str]:
+        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -122,8 +122,8 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_identifiers(self, data: dict) -> list[str]:
-        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+    def get_mids(self, data: dict) -> list[str]:
+        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -171,8 +171,8 @@ class VisaRefund(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
-    def get_identifiers(self, data: dict) -> list[str]:
-        return get_valid_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+    def get_mids(self, data: dict) -> list[str]:
+        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
