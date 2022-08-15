@@ -233,9 +233,7 @@ class BaseAgent:
             if len(ids) > 0:
                 ids = [ids[0]]
         else:
-            ids = identify_mids(
-                *mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session
-            )
+            ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
 
         if not ids or len(ids) == 0:
             raise MissingMID

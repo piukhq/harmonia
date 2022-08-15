@@ -142,9 +142,7 @@ def test_identify_mids_table_secondary_identifier_visa(mid_secondary: int, db_se
     assert identifer == [mid_secondary]
 
 
-def test_identify_mids_table_multiple_identifiers_visa(
-    mid_primary: int, mid_secondary: int, db_session: db.Session
-):
+def test_identify_mids_table_multiple_identifiers_visa(mid_primary: int, mid_secondary: int, db_session: db.Session):
     agent = VisaAuth()
     identifer = agent._identify_mids(data, db_session)
 
@@ -170,7 +168,7 @@ def test_identify_mids_table_duplicate_identifiers_visa(
     assert (
         e.value.args[0]
         == f"VisaAuth is a payment feed agent and must therefore only provide a single MID value per transaction. "
-        f"However, the agent mapped this identifier: test-mid-primary to these multiple identifier IDs: "
+        f"However, the agent mapped this MID: test-mid-primary to these multiple MID IDs: "
         f"[{mid_primary}, {mid_primary_duplicate}]. This indicates an issue with the MIDs loaded into the "
-        f"database. Please ensure that this identifier only maps to a single merchant_identifier record."
+        f"database. Please ensure that this MID only maps to a single merchant_identifier record."
     )
