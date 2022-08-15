@@ -36,14 +36,16 @@ def try_convert_settlement_mid(mid: str) -> str:
 
 
 def get_identifiers(data: dict, identifier_mapping: dict) -> list[str]:
-    ids = [
-        get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
-        get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
-        get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
-    ]
     # Remove empty strings
-    ids = [id for id in ids if id]
-    return ids
+    return [
+        identifier
+        for identifier in [
+            get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
+            get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
+            get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
+        ]
+        if identifier
+    ]
 
 
 class VisaAuth(QueueAgent):

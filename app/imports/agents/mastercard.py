@@ -116,7 +116,7 @@ class MastercardTS44Settlement(FileAgent):
         return data["transaction_sequence_number"]
 
     def get_mids(self, data: dict) -> list[str]:
-        return [data["mid"]]
+        return [try_convert_settlement_mid(data["mid"])]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['transaction_date']} {data['transaction_time']}"
@@ -195,7 +195,7 @@ class MastercardTGX2Settlement(FileAgent):
             return uuid4().hex
 
     def get_mids(self, data: dict) -> list[str]:
-        return [data["mid"], data["location_id"], data["aggregate_merchant_id"]]
+        return [try_convert_settlement_mid(data["mid"]), data["location_id"], data["aggregate_merchant_id"]]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"

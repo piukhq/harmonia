@@ -55,7 +55,7 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*identifiers: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
+def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
     def find_mids():
         q = session.query(models.MerchantIdentifier)
 
@@ -66,7 +66,7 @@ def identify_mids(*identifiers: str, feed_type: FeedType, provider_slug: str, se
         else:
             raise ValueError(f"Unsupported feed type: {feed_type}")
 
-        return q.filter(models.MerchantIdentifier.identifier.in_(identifiers)).all()
+        return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
 
     merchant_identifiers = db.run_query(
         find_mids,
@@ -161,7 +161,7 @@ class BaseAgent:
         return location_id_mid_map
 
     def get_mids(self, data: dict) -> list[str]:
-        raise NotImplementedError("Override get_identifiers in your agent.")
+        raise NotImplementedError("Override get_mids in your agent.")
 
     def get_merchant_slug(self, data: dict) -> str:
         mids = self.get_mids(data)
@@ -323,15 +323,15 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        identifiers = self.get_mids(tx_data)
+        mids = self.get_mids(tx_data)
 
         merchant_identifier_ids = []
         identified = True
         try:
             if self.feed_type != FeedType.MERCHANT:
-                merchant_identifier_ids.extend(self._identify_mids(identifiers, session=session))
+                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
             else:
-                merchant_identifier_ids.extend(self._identify_mids(identifiers, session=session))
+                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
         except MissingMID:
             identified = False
 
