@@ -84,6 +84,8 @@ else:
         ]
     )
 
+POSTGRES_CONNECT_ARGS = {"application_name": "harmonia"}
+
 # Connection details for Redis.
 # Redis is used as a configuration store that can be updated at runtime.
 REDIS_URL = getenv("TXM_REDIS_URL")
