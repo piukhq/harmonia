@@ -30,7 +30,7 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
-    connectable = create_engine(settings.POSTGRES_DSN, connect_args=settings.POSTGRES_CONNECT_ARGS)
+    connectable = create_engine(settings.POSTGRES_DSN)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

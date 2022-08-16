@@ -16,7 +16,6 @@ from app.reporting import get_logger
 
 engine = s.create_engine(
     settings.POSTGRES_DSN,
-    connect_args=settings.POSTGRES_CONNECT_ARGS,
     poolclass=NullPool,
     json_serializer=encoding.dumps,
     json_deserializer=encoding.loads,
