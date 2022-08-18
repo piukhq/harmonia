@@ -28,11 +28,13 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 
 ## Prerequisites
 
-- [pipenv](https://docs.pipenv.org)
+- [poetry](https://python-poetry.org/docs/master/)
 
 ## Dependencies
 
-The following is a list of the important dependencies used in the project. You do not need to install these manually. See [project setup](#project-setup) for installation instructions.
+The following is a list of the important dependencies used in the project. You
+do not need to install these manually. See [project setup](#project-setup) for
+installation instructions.
 
 - [SQLAlchemy](https://www.sqlalchemy.org) - Object-relational mapping library. Used for interacting with PostgreSQL.
 - [Alembic](http://alembic.zzzcomputing.com/en/latest) - SQLAlchemy migration library.
@@ -46,26 +48,30 @@ The following is a list of the important dependencies used in the project. You d
 
 ## Project Setup
 
-Pipenv is used for managing project dependencies and execution.
+Poetry is used for managing project dependencies and execution.
 
 ### MacOS Dependencies
 
-Before installing the project dependencies on MacOS, you will need to install a few homebrew dependencies, and let the system know where to find the OpenSSL libraries.
+Before installing the project dependencies on MacOS, you will need to install a
+few homebrew dependencies, and let the system know where to find the OpenSSL
+libraries.
 
 ```bash
 brew install postgres openssl
 export LDFLAGS="-L/usr/local/opt/openssl/lib"
 ```
 
-### Virtual Environment
+### Configuration
 
-To create a virtualenv and install required software packages:
+Project configuration is done through environment variables. A convenient way
+to set these is in a `.env` file in the project root. See `settings.py` for
+configuration options that can be set in this file.
 
-```bash
-pipenv install --dev
-```
-
-Project configuration is done through environment variables. A convenient way to set these is in a `.env` file in the project root. This file will be sourced by Pipenv when `pipenv run` and `pipenv shell` are used. See `settings.py` for configuration options that can be set in this file.
+Your code editor should support loading environment variables from the `.env`
+file either out of the box or with a plugin. For shell usages, you can have poetry
+automatically load these environment variables by using
+[poetry-dotenv-plugin](https://github.com/mpeteuil/poetry-dotenv-plugin), or
+use a tool like [direnv](https://direnv.net/).
 
 All transaction matching environment variables are prefixed with `TXM_`.
 
@@ -75,33 +81,27 @@ To make a `.env` file from the provided example:
 cp .env.example .env
 ```
 
-The provided example is sufficient as a basic configuration, but modification may be required for specific use-cases.
+The provided example is sufficient as a basic configuration, but modification
+may be required for specific use-cases.
 
-The `.env` file contains connection parameters for the two major services used in the project; PostgreSQL and Redis. The default connection parameters assume a local instance of these services listening on ports 5432 (PostgreSQL) and 6379 (Redis.)
+The `.env` file contains connection parameters for the two major services used
+in the project; PostgreSQL and Redis. The default connection parameters assume
+a local instance of these services listening on ports 5432 (PostgreSQL) and
+6379 (Redis.)
 
-To quickly create docker containers for the required services:
+### Bootstrap
+
+To install dependencies and set up the database:
 
 ```bash
 scripts/bootstrap
 ```
 
-This also installs dependencies and migrates database schemas.
-
-### Database Schema Migration
-
-If you used the `scripts/bootstrap` script then you can skip this step.
-
-Once PostgreSQL is running, you will need to create all the tables and indices required by the project.
-
-To apply all migrations:
-
-```bash
-scripts/migrate
-```
-
 ### Development API Server
 
-The flask development server is used for running the project locally. This should be replaced with a WSGI-compatible server for deployment to a live environment.
+The flask development server is used for running the project locally. This
+should be replaced with a WSGI-compatible server for deployment to a live
+environment.
 
 To run the flask development server:
 
@@ -115,7 +115,8 @@ You may see the following output in the flask server logs:
 Tip: There are .env files present. Do "pip install python-dotenv" to use them.
 ```
 
-This can safely be ignored; pipenv is loading the `.env` variables.
+This can safely be ignored; you should have your .env file being loaded already
+as described in the [configuration](#configuration) section.
 
 ### Unit Tests
 
@@ -135,13 +136,20 @@ You can test matching by running the end-to-end test harness.
 scripts/test-end-to-end -f harness/fixtures/harvey_nichols_amex.toml
 ```
 
-Look in `harness/fixtures/*.toml` for a list of fixtures to use. You can also clone one of these and tweak it for your own test scenarios.
+Look in `harness/fixtures/*.toml` for a list of fixtures to use. You can also
+clone one of these and tweak it for your own test scenarios.
 
 #### Testing with Flexible Transactions
 
-The default TOML file will test the happy path by generating a transaction for both the loyalty scheme and the payment scheme. There are cases where this may not be ideal, and the payment transaction and loyalty transaction will require some differences in order to test some matching functionality. For example, an agent may have fallback matching criteria in case multiple transactions are returned for the same amount and date e.g filtering by card number.
+The default TOML file will test the happy path by generating a transaction for
+both the loyalty scheme and the payment scheme. There are cases where this may
+not be ideal, and the payment transaction and loyalty transaction will require
+some differences in order to test some matching functionality. For example, an
+agent may have fallback matching criteria in case multiple transactions are
+returned for the same amount and date e.g filtering by card number.
 
-For these scenarios, it is possible to configure separate transactions for the loyalty scheme and the payment provider.
+For these scenarios, it is possible to configure separate transactions for the
+loyalty scheme and the payment provider.
 
 Example:
 
@@ -166,7 +174,8 @@ first_six = "123456"  # Payment card first six
 last_four = "7890"  # Payment card last four
 ```
 
-After running these tests, the PostgreSQL and Redis containers will be left intact for manual data inspection.
+After running these tests, the PostgreSQL and Redis containers will be left
+intact for manual data inspection.
 
 #### Inspecting PostgreSQL
 
@@ -207,18 +216,31 @@ scripts/cibuild
 
 ## Migrations
 
-[alembic](http://alembic.zzzcomputing.com/en/latest) is used for database schema migrations. The standard workflow for model changes is to use the autogenerate functionality to get a candidate migration, and then to manually inspect and edit where necessary.
+[alembic](http://alembic.zzzcomputing.com/en/latest) is used for database
+schema migrations. The standard workflow for model changes is to use the
+autogenerate functionality to get a candidate migration, and then to manually
+inspect and edit where necessary.
 
-Migrations should be manually squashed before each deployment for efficiency's sake. As a rule of thumb, each merge request should only include a single migration containing all the required changes for that feature. In some cases this will not be possible.
+Migrations should be manually squashed before each deployment for efficiency's
+sake. As a rule of thumb, each merge request should only include a single
+migration containing all the required changes for that feature. In some cases
+this will not be possible.
 
 ## Deployment
 
-There is a Dockerfile provided in the project root. Build an image from this to get a deployment-ready version of the project.
+There is a Dockerfile provided in the project root. Build an image from this to
+get a deployment-ready version of the project.
 
 ## Additional Documentation
 
 ### Entity Relationship Diagram
 
-A diagram of the Harmonia database structure can be found in `doc/entity-relationship.{png|svg}`.
+A diagram of the Harmonia database structure can be found in
+`doc/entity-relationship.{png|svg}`.
 
-The source of this diagram is provided in the same directory as `entity-relationship.uml`. This is a PlantUML description that can be generated with [planter](https://github.com/achiku/planter). Once the UML file is generated, a PlantUML renderer can be used to generate the diagram in a vector or raster format. One option requiring no install is [PlantText](https://www.planttext.com/).
+The source of this diagram is provided in the same directory as
+`entity-relationship.uml`. This is a PlantUML description that can be generated
+with [planter](https://github.com/achiku/planter). Once the UML file is
+generated, a PlantUML renderer can be used to generate the diagram in a vector
+or raster format. One option requiring no install is
+[PlantText](https://www.planttext.com/).

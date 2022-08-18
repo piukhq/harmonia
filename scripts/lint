@@ -18,7 +18,7 @@ mypy app
 hr
 
 info 'Running xenon...'
-pipenv run xenon --max-average A --max-modules B --max-absolute B .
+xenon --max-average A --max-modules B --max-absolute B .
 hr
 
 info 'Done!'
