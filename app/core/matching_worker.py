@@ -127,7 +127,7 @@ class MatchingWorker:
         self.log.debug("Persisting matched transaction.")
         self._persist(match_result.matched_transaction, session=session)
 
-        self.export_transaction(match_result, session=session)
+        self.export_transaction(match_result, payment_transaction, session=session)
 
     def _choose_matching_queue(self, scheme_transactions: t.List[models.SchemeTransaction]):
         """
@@ -303,7 +303,9 @@ class MatchingWorker:
 
         self._finalise_match(match_result, payment_transaction, session=session)
 
-    def export_transaction(self, match_result: MatchResult, *, session: db.Session) -> None:
+    def export_transaction(
+        self, match_result: MatchResult, payment_transaction: models.PaymentTransaction, *, session: db.Session
+    ) -> None:
         # Save transactions to export table for ongoing export to merchant
         matched_transaction = match_result.matched_transaction
         user_identity = match_result.user_identity
@@ -324,12 +326,12 @@ class MatchingWorker:
                 scheme_account_id=user_identity.scheme_account_id,
                 payment_card_account_id=user_identity.payment_card_account_id,
                 credentials=user_identity.credentials,
-                settlement_key=None,
+                settlement_key=payment_transaction.settlement_key,
                 last_four=user_identity.last_four,
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
-                payment_provider_slug=None,
-                auth_code="",
+                payment_provider_slug=payment_transaction.provider_slug,
+                auth_code=payment_transaction.auth_code,
                 approval_code="",
             ),
             session=session,
