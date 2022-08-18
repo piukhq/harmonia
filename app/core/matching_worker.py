@@ -303,7 +303,9 @@ class MatchingWorker:
 
         self._finalise_match(match_result, payment_transaction, session=session)
 
-    def export_transaction(self, match_result: MatchResult, payment_transaction: models.PaymentTransaction, *, session: db.Session) -> None:
+    def export_transaction(
+        self, match_result: MatchResult, payment_transaction: models.PaymentTransaction, *, session: db.Session
+    ) -> None:
         # Save transactions to export table for ongoing export to merchant
         matched_transaction = match_result.matched_transaction
         user_identity = match_result.user_identity
