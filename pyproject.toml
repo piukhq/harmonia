@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "harmonia"
-version = "2.15.1"
+version = "2.16.1"
 description = ""
 authors = ["Chris Latham <cl@bink.com>"]
 license = "MIT"
