@@ -402,7 +402,7 @@ def main(
     """
     Run an initial load of ballast fake data with something like:
 
-    pipenv run python harness/bulk_load_db.py
+    poetry run python harness/bulk_load_db.py
     --scheme-transaction-count=250000
     --import-transaction-count=250000
     --max-processes=18
@@ -413,7 +413,7 @@ def main(
 
     Then, to add in additional merchant specific schemes something like:
 
-    pipenv run python harness/bulk_load_db.py
+    poetry run python harness/bulk_load_db.py
     --scheme-transaction-count=250000
     --import-transaction-count=250000
     --max-processes=18

@@ -8,8 +8,8 @@ fi
 
 install() {
     info 'Installing dependencies...'
-    mkdir -p .venv # pipenv will use this instead of the default location
-    pipenv sync --dev
+    poetry config http-basic.bink-pypi 269fdc63-af3d-4eca-8101-8bddc22d6f14 b694b5b1-f97e-49e4-959e-f3c202e3ab91
+    poetry install
     hr
 }
 
@@ -83,5 +83,5 @@ ensure_redis() {
 
 install
 ensure_postgres
-pipenv run scripts/migrate
+poetry run scripts/migrate
 ensure_redis
