@@ -11,6 +11,7 @@ license = "MIT"
 readme = "README.md"
 packages = [
     { include = "app" },
+    { include = "harness" },
     { include = "settings.py" },
     { include = "rq_worker_settings.py" },
 ]
