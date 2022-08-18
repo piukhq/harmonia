@@ -9,7 +9,7 @@ COPY . .
 
 RUN poetry build
 
-FROM ghcr.io/binkhq/python:3.10
+FROM ghcr.io/binkhq/python:3.10 AS base
 
 ARG wheel=harmonia-*-py3-none-any.whl
 
@@ -24,3 +24,11 @@ ENV PROMETHEUS_MULTIPROC_DIR=/dev/shm
 ENTRYPOINT [ "linkerd-await", "--" ]
 CMD [ "gunicorn", "--workers=2", "--threads=2", "--error-logfile=-", \
     "--access-logfile=-", "--bind=0.0.0.0:9000", "app.api.app:app" ]
+
+FROM base AS harness
+
+RUN apt-get update && apt-get -y install tmux nano vim && \
+    apt-get clean && rm -rf /var/lib/apt/lists
+
+ENTRYPOINT [ "linkerd-await", "--" ]
+CMD ["tail", "-f", "/dev/null"]
