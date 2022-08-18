@@ -1,9 +1,24 @@
-FROM ghcr.io/binkhq/python:3.9
+FROM ghcr.io/binkhq/python:3.10 AS build
+
+WORKDIR /src
+
+RUN pip install poetry==1.2.0b3
+RUN poetry config virtualenvs.create false
+
+COPY . .
+
+RUN poetry build
+
+FROM ghcr.io/binkhq/python:3.10
+
+ARG wheel=harmonia-*-py3-none-any.whl
 
 WORKDIR /app
-ADD . .
 
-RUN pipenv install --system --deploy --ignore-pipfile
+COPY --from=build /src/dist/$wheel .
+
+ENV PIP_INDEX_URL=https://269fdc63-af3d-4eca-8101-8bddc22d6f14:b694b5b1-f97e-49e4-959e-f3c202e3ab91@pypi.uksouth.bink.sh/simple
+RUN pip install $wheel && rm $wheel
 
 ENV PROMETHEUS_MULTIPROC_DIR=/dev/shm
 ENTRYPOINT [ "linkerd-await", "--" ]
