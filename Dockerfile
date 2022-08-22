@@ -28,7 +28,9 @@ CMD [ "gunicorn", "--workers=2", "--threads=2", "--error-logfile=-", \
 FROM base AS harness
 
 RUN apt-get update && apt-get -y install tmux nano vim && \
-    apt-get clean && rm -rf /var/lib/apt/lists
+    apt-get clean && rm -rf /var/lib/apt/lists && \
+    pip install --no-cache-dir harmonia-fixtures
+ADD data_generation /app/data_generation
 
 ENTRYPOINT [ "linkerd-await", "--" ]
 CMD ["tail", "-f", "/dev/null"]
