@@ -4,7 +4,7 @@ import pytest
 
 from app import db, models
 from app.imports.agents.visa import VisaAuth
-from app.imports.exceptions import MIDDataError, MissingMID
+from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, LoyaltyScheme, PaymentProvider
 
 data = ["test-mid-primary", "test-mid-secondary", "test-mid-psimi"]
@@ -146,7 +146,7 @@ def test_identify_mids_table_multiple_identifiers_visa(mid_primary: int, mid_sec
     agent = VisaAuth()
     identifer = agent._identify_mids(data, db_session)
 
-    assert identifer == [mid_primary]
+    assert identifer == [mid_primary, mid_secondary]
 
 
 def test_identify_mids_table_no_matching_identifiers_visa(db_session: db.Session):
@@ -155,20 +155,3 @@ def test_identify_mids_table_no_matching_identifiers_visa(db_session: db.Session
         agent._identify_mids(data, db_session)
 
     assert e.typename == "MissingMID"
-
-
-def test_identify_mids_table_duplicate_identifiers_visa(
-    mid_primary: int, mid_primary_duplicate: int, db_session: db.Session
-):
-    agent = VisaAuth()
-    with pytest.raises(MIDDataError) as e:
-        agent._identify_mids(data, db_session)
-
-    assert e.typename == "MIDDataError"
-    assert (
-        e.value.args[0]
-        == f"VisaAuth is a payment feed agent and must therefore only provide a single MID value per transaction. "
-        f"However, the agent mapped this MID: test-mid-primary to these multiple MID IDs: "
-        f"[{mid_primary}, {mid_primary_duplicate}]. This indicates an issue with the MIDs loaded into the "
-        f"database. Please ensure that this MID only maps to a single merchant_identifier record."
-    )

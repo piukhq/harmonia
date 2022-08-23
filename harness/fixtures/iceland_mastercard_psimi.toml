@@ -34,5 +34,3 @@ amount = 1222
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "PSIMI"
-location_id = "411111083"
-aggregate_merchant_id = "664567"

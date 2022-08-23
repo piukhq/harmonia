@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pendulum
 import pytest
 import responses
@@ -17,6 +19,26 @@ def mid(db_session: db.Session) -> int:
         models.MerchantIdentifier,
         identifier="test-force-match-mid-1",
         identifier_type=IdentifierType.PRIMARY,
+        defaults={
+            "loyalty_scheme": loyalty_scheme,
+            "payment_provider": payment_provider,
+            "location": "test",
+            "postcode": "test",
+        },
+        session=db_session,
+    )
+
+    return mid.id
+
+
+@pytest.fixture
+def mid_secondary(db_session: db.Session) -> int:
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
+    mid, _ = db.get_or_create(
+        models.MerchantIdentifier,
+        identifier="test-multiple-mids-1",
+        identifier_type=IdentifierType.SECONDARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,
@@ -200,3 +222,21 @@ def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
         .one_or_none()
     )
     assert mtx is None  # should be no match created
+
+
+@mock.patch("app.registry.Registry.instantiate", return_value=None)
+@mock.patch("app.core.identifier.get_user_identity", return_value=None)
+def test_get_agent_for_payment_transaction_multiple_mids(
+    mock_get_user_identity, mock_instantiate, mid: int, mid_secondary: int, db_session: db.Session
+) -> None:
+    ptx = models.PaymentTransaction(
+        merchant_identifier_ids=[mid, mid_secondary],
+        provider_slug="amex",
+        transaction_id="test-force-match-transaction-2",
+        settlement_key="1234567890",
+        card_token="test-force-match-token-1",
+        **COMMON_TX_FIELDS,
+    )
+    worker = MatchingWorker()
+    worker._get_agent_for_payment_transaction(payment_transaction=ptx, session=db_session)
+    assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"

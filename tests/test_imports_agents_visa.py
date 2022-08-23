@@ -1,7 +1,6 @@
 import copy
 
 from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, get_identifiers
-from app.models import IdentifierType
 
 auth_tx_data = {
     "CardId": "744e4f00-",
@@ -106,24 +105,32 @@ refund_tx_data = {
 
 
 def test_get_identifiers():
-    identifier_mapping = {
-        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
-        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
-        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
-    }
-    ids = get_identifiers(auth_tx_data, identifier_mapping)
+    identifiers = ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+    ids = get_identifiers(auth_tx_data, identifiers)
     assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss=", "test-mid-456"]
 
 
 def test_get_identifiers_empty_string():
     data = copy.deepcopy(auth_tx_data)
     data["MessageElementsCollection"][7] = {"Key": "Transaction.VisaMerchantId", "Value": ""}
-    identifier_mapping = {
-        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
-        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
-        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
-    }
-    ids = get_identifiers(data, identifier_mapping)
+    identifiers = ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+    ids = get_identifiers(data, identifiers)
+    assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss="]
+
+
+def test_get_identifiers_zero_string():
+    data = copy.deepcopy(auth_tx_data)
+    data["MessageElementsCollection"][7] = {"Key": "Transaction.VisaMerchantId", "Value": "0"}
+    identifiers = ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+    ids = get_identifiers(data, identifiers)
+    assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss="]
+
+
+def test_get_identifiers_null_value():
+    data = copy.deepcopy(auth_tx_data)
+    data["MessageElementsCollection"][7] = {"Key": "Transaction.VisaMerchantId", "Value": None}
+    identifiers = ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+    ids = get_identifiers(data, identifiers)
     assert ids == ["test-mid-123", "N+4j+mjB3TDKdu3jO0F3SXQhI2kOITLgxs9isjyo8Ss="]
 
 

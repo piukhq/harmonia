@@ -30,8 +30,6 @@ amount = 11199
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "PRIMARY"
-location_id = "411111081"
-aggregate_merchant_id = "666667"
 
 [[users.transactions]]
 date = 2020-04-09T15:46:00Z
@@ -39,5 +37,3 @@ amount = -11199
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "PRIMARY"
-location_id = "411111081"
-aggregate_merchant_id = "666667"

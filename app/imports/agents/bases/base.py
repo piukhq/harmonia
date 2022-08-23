@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 import settings
 from app import db, models, tasks
 from app.feeds import FeedType
-from app.imports.exceptions import MIDDataError, MissingMID
+from app.imports.exceptions import MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.utils import missing_property
@@ -217,27 +217,10 @@ class BaseAgent:
 
         return new
 
-    def _identify_mids(self, mids: list[str], session: db.Session) -> list[int]:
-        if self.feed_type != FeedType.MERCHANT:
-            ids = []
-            for mid in mids:
-                id = identify_mids(mid, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
-                if len(id) > 1:
-                    raise MIDDataError(
-                        f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID "
-                        f"value per transaction. However, the agent mapped this MID: {mid} to these multiple "
-                        f"MID IDs: {id}. This indicates an issue with the MIDs loaded into the database. Please "
-                        f"ensure that this MID only maps to a single merchant_identifier record."
-                    )
-                ids.extend(id)
-            if len(ids) > 0:
-                ids = [ids[0]]
-        else:
-            ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
-
-        if not ids or len(ids) == 0:
+    def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
+        ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
+        if not ids:
             raise MissingMID
-
         return ids
 
     def _import_transactions(
@@ -326,10 +309,7 @@ class BaseAgent:
         merchant_identifier_ids = []
         identified = True
         try:
-            if self.feed_type != FeedType.MERCHANT:
-                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
-            else:
-                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
+            merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
         except MissingMID:
             identified = False
 

@@ -7,7 +7,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
-from app.models import IdentifierType
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -35,27 +34,19 @@ def try_convert_settlement_mid(mid: str) -> str:
     return mid
 
 
-def get_identifiers(data: dict, identifier_mapping: dict) -> list[str]:
-    # Remove empty strings
-    return [
-        identifier
-        for identifier in [
-            get_key_value(data, identifier_mapping[IdentifierType.PRIMARY]),
-            get_key_value(data, identifier_mapping[IdentifierType.SECONDARY]),
-            get_key_value(data, identifier_mapping[IdentifierType.PSIMI]),
-        ]
-        if identifier
-    ]
+def get_identifiers(data: dict, identifiers: list[str]) -> list[str]:
+    # Remove null, "0" or ""
+    ids = []
+    for identifier in identifiers:
+        value = get_key_value(data, identifier)
+        if value not in [None, "0", ""]:
+            ids.append(value)
+    return ids
 
 
 class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.AUTH
-    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
-        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
-        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
-    }
 
     def __init__(self):
         super().__init__()
@@ -76,7 +67,9 @@ class VisaAuth(QueueAgent):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> list[str]:
-        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+        return get_identifiers(
+            data, ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -98,11 +91,6 @@ class VisaAuth(QueueAgent):
 class VisaSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.SETTLED
-    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        IdentifierType.PRIMARY: "Transaction.MerchantCardAcceptorId",
-        IdentifierType.SECONDARY: "Transaction.VisaStoreId",
-        IdentifierType.PSIMI: "Transaction.VisaMerchantId",
-    }
 
     def __init__(self):
         super().__init__()
@@ -125,7 +113,9 @@ class VisaSettlement(QueueAgent):
         return get_key_value(data, "Transaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> list[str]:
-        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+        return get_identifiers(
+            data, ["Transaction.MerchantCardAcceptorId", "Transaction.VisaStoreId", "Transaction.VisaMerchantId"]
+        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
@@ -147,11 +137,6 @@ class VisaSettlement(QueueAgent):
 class VisaRefund(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.REFUND
-    IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING = {
-        IdentifierType.PRIMARY: "ReturnTransaction.CardAcceptorIdCode",
-        IdentifierType.SECONDARY: "ReturnTransaction.VisaStoreId",
-        IdentifierType.PSIMI: "ReturnTransaction.VisaMerchantId",
-    }
 
     def __init__(self):
         super().__init__()
@@ -174,7 +159,14 @@ class VisaRefund(QueueAgent):
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
     def get_mids(self, data: dict) -> list[str]:
-        return get_identifiers(data, self.IDENTIFIER_TYPE_TO_IDENTIFIER_MAPPING)
+        return get_identifiers(
+            data,
+            [
+                "ReturnTransaction.CardAcceptorIdCode",
+                "ReturnTransaction.VisaStoreId",
+                "ReturnTransaction.VisaMerchantId",
+            ],
+        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]

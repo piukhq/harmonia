@@ -28,8 +28,6 @@ amount = 11199
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "SECONDARY"
-location_id = "411111084"
-aggregate_merchant_id = "634567"
 
 [[users.transactions]]
 date = 2020-04-09T15:46:00Z
@@ -37,5 +35,3 @@ amount = -11199
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "SECONDARY"
-location_id = "411111084"
-aggregate_merchant_id = "634567"
