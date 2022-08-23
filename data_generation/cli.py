@@ -220,7 +220,7 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                         }
                     ),
                     "settlement_key": str(uuid.uuid4()),
-                    "mid": random.choice(mid_map),
+                    "identifier": random.choice(mid_map),
                     "location_id": location_id,
                 }
             )
