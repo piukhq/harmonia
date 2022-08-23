@@ -87,10 +87,7 @@ class VisaSettlement(BaseImportDataProvider):
                     {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "Transaction.VisaMerchantId", "Value": transaction["identifier"]},
                     {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
-                    {
-                        "Key": "Transaction.VisaStoreId",
-                        "Value": vsid(transaction["identifier"]),
-                    },
+                    {"Key": "Transaction.VisaStoreId", "Value": vsid(transaction["identifier"])},
                     {"Key": "Transaction.SettlementDate", "Value": pendulum.now().isoformat()},
                     {"Key": "Transaction.SettlementAmount", "Value": str(to_pounds(transaction["amount"]))},
                     {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 826},
@@ -139,10 +136,7 @@ class VisaRefund(BaseImportDataProvider):
                     {"Key": "ReturnTransaction.VisaMerchantName", "Value": "Bink Shop"},
                     {"Key": "ReturnTransaction.VisaMerchantId", "Value": transaction["identifier"]},
                     {"Key": "ReturnTransaction.VisaStoreName", "Value": "Bink Shop"},
-                    {
-                        "Key": "ReturnTransaction.VisaStoreId",
-                        "Value": vsid(transaction["identifier"]),
-                    },
+                    {"Key": "ReturnTransaction.VisaStoreId", "Value": vsid(transaction["identifier"])},
                     {"Key": "ReturnTransaction.AcquirerAmount", "Value": str(to_pounds(transaction["amount"]))},
                     {"Key": "ReturnTransaction.AcquirerCurrencyCode", "Value": 826},
                     {"Key": "ReturnTransaction.CurrencyCode", "Value": "840"},
