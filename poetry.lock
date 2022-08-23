@@ -706,6 +706,19 @@ url = "https://pypi.uksouth.bink.sh/simple"
 reference = "bink-pypi"
 
 [[package]]
+name = "harmonia-fixtures"
+version = "1.1.0"
+description = "Harmonia test fixtures"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.uksouth.bink.sh/simple"
+reference = "bink-pypi"
+
+[[package]]
 name = "hashids"
 version = "1.3.1"
 description = "Implements the hashids algorithm in python. For more information, visit http://hashids.org/"
@@ -2252,7 +2265,7 @@ reference = "bink-pypi"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "194985faa9ad3ddb86913885e842a6795483e5f573ab89c9e227d98d59d3b5c4"
+content-hash = "5df1f2a8e8ce01a6e9a018cab11b6fcd5e33cf326e8cdba45a8d8e9ac3f156d0"
 
 [metadata.files]
 alembic = [
@@ -2625,6 +2638,10 @@ greenlet = [
 gunicorn = [
     {file = "gunicorn-20.1.0-py3-none-any.whl", hash = "sha256:9dcc4547dbb1cb284accfb15ab5667a0e5d1881cc443e0677b4882a4067a807e"},
     {file = "gunicorn-20.1.0.tar.gz", hash = "sha256:e0a968b5ba15f8a328fdfd7ab1fcb5af4470c28aaf7e55df02a99bc13138e6e8"},
+]
+harmonia-fixtures = [
+    {file = "harmonia-fixtures-1.1.0.tar.gz", hash = "sha256:f1288aa42d99f1149abb76784b44a66f9668950db90295175100c46aeeb58e71"},
+    {file = "harmonia_fixtures-1.1.0-py3-none-any.whl", hash = "sha256:ea7cedb282a64fb4155c1ac032a576aeb27dae1c042fc9aa87687c49b35d5de4"},
 ]
 hashids = [
     {file = "hashids-1.3.1-py2.py3-none-any.whl", hash = "sha256:8bddd1acba501bfc9306e7e5a99a1667f4f2cacdc20cbd70bcc5ddfa5147c94c"},
