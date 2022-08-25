@@ -242,9 +242,7 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"
 
 
-def test_update_mids_to_single_primary_mid(
-    mid: int, mid_secondary: int, db_session: db.Session
-) -> None:
+def test_update_mids_to_single_primary_mid(mid: int, mid_secondary: int, db_session: db.Session) -> None:
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid, mid_secondary],
         provider_slug="amex",

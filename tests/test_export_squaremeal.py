@@ -84,7 +84,7 @@ def test_export_transaction_is_valid():
     squaremeal = SquareMeal()
     result = squaremeal._export_transaction_is_valid(exp_txn)
 
-    assert result == True
+    assert result is True
 
 
 def test_export_transaction_is_valid_missing_merchant_internal_id():
@@ -94,7 +94,7 @@ def test_export_transaction_is_valid_missing_merchant_internal_id():
     squaremeal = SquareMeal()
     result = squaremeal._export_transaction_is_valid(exp_txn)
 
-    assert result == False
+    assert result is False
 
 
 def test_export_transaction_is_valid_missing_location_id():
@@ -104,7 +104,7 @@ def test_export_transaction_is_valid_missing_location_id():
     squaremeal = SquareMeal()
     result = squaremeal._export_transaction_is_valid(exp_txn)
 
-    assert result == False
+    assert result is False
 
 
 def test_make_export_data(db_session: db.Session):

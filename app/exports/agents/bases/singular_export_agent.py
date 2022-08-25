@@ -97,7 +97,7 @@ class SingularExportAgent(BaseAgent):
             export_data = self.make_export_data(export_transaction, session)
         except MissingExportData:
             sentry_sdk.capture_message(
-                f"The export transaction id {export_transaction.transaction_id} has missing data and cannot "
+                f"The export transaction {export_transaction} has missing data and cannot "
                 f"be exported. {pending_export} will be discarded."
             )
             export_transaction.status = exp_model.ExportTransactionStatus.EXPORT_FAILED
