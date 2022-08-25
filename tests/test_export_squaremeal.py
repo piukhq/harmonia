@@ -1,8 +1,10 @@
 import pendulum
+import pytest
 import responses
 
 from app import db, models
 from app.exports.agents.squaremeal import SquareMeal
+from app.exports.exceptions import MissingExportData
 from app.feeds import FeedType
 
 
@@ -39,7 +41,7 @@ def create_export_transaction(transaction_id, merchant_identifier, settlement_ke
         loyalty_id=merchant_identifier,
         mid="1234567",
         provider_slug="squaremeal",
-        transaction_date=pendulum.now().in_timezone("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
+        transaction_date=pendulum.now().in_timezone("Europe/London"),
         spend_amount=5566,
         spend_currency="GBP",
         payment_card_account_id=1,
@@ -72,3 +74,42 @@ def test_get_settlement_key_with_settlement_key(db_session: db.Session) -> None:
     settlement_key = squaremeal.get_settlement_key(exp_txn, db_session)
 
     assert settlement_key == expected_settlement_key
+
+
+def test_export_transaction_is_valid():
+    exp_txn = create_export_transaction("1234567", 10, "123456")
+    exp_txn.merchant_internal_id = "9afcf26d-7d68-4baf-3847-8dc8a9e800ef"
+    exp_txn.location_id = "9afcf26d-7d68-4baf-3847-8dc8a9e800ef"
+
+    squaremeal = SquareMeal()
+    result = squaremeal._export_transaction_is_valid(exp_txn)
+
+    assert result == True
+
+
+def test_export_transaction_is_valid_missing_merchant_internal_id():
+    exp_txn = create_export_transaction("1234567", 10, "123456")
+    exp_txn.location_id = "9afcf26d-7d68-4baf-3847-8dc8a9e800ef"
+
+    squaremeal = SquareMeal()
+    result = squaremeal._export_transaction_is_valid(exp_txn)
+
+    assert result == False
+
+
+def test_export_transaction_is_valid_missing_location_id():
+    exp_txn = create_export_transaction("1234567", 10, "123456")
+    exp_txn.merchant_internal_id = "9afcf26d-7d68-4baf-3847-8dc8a9e800ef"
+
+    squaremeal = SquareMeal()
+    result = squaremeal._export_transaction_is_valid(exp_txn)
+
+    assert result == False
+
+
+def test_make_export_data(db_session: db.Session):
+    exp_txn = create_export_transaction("1234567", 10, "123456")
+    squaremeal = SquareMeal()
+
+    with pytest.raises(MissingExportData):
+        squaremeal.make_export_data(exp_txn, db_session)

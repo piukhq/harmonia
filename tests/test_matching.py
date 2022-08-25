@@ -240,3 +240,19 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     worker = MatchingWorker()
     worker._get_agent_for_payment_transaction(payment_transaction=ptx, session=db_session)
     assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"
+
+
+def test_update_mids_to_single_primary_mid(
+    mid: int, mid_secondary: int, db_session: db.Session
+) -> None:
+    ptx = models.PaymentTransaction(
+        merchant_identifier_ids=[mid, mid_secondary],
+        provider_slug="amex",
+        transaction_id="test-force-match-transaction-2",
+        settlement_key="1234567890",
+        card_token="test-force-match-token-1",
+        **COMMON_TX_FIELDS,
+    )
+    worker = MatchingWorker()
+    worker._update_mids_to_single_primary_mid(payment_transaction=ptx, session=db_session)
+    assert ptx.merchant_identifier_ids == [mid]

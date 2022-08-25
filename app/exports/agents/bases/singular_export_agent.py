@@ -10,6 +10,7 @@ from app import db, models
 from app.exports import models as exp_model
 from app.exports.agents import BaseAgent
 from app.exports.agents.bases.base import AgentExportData
+from app.exports.exceptions import MissingExportData
 from app.prometheus import bink_prometheus
 
 
@@ -92,7 +93,16 @@ class SingularExportAgent(BaseAgent):
             return
 
         self.log.info(f"{type(self).__name__} handling {export_transaction}.")
-        export_data = self.make_export_data(export_transaction, session)
+        try:
+            export_data = self.make_export_data(export_transaction, session)
+        except MissingExportData:
+            sentry_sdk.capture_message(
+                f"The export transaction id {export_transaction.transaction_id} has missing data and cannot "
+                f"be exported. {pending_export} will be discarded."
+            )
+            export_transaction.status = exp_model.ExportTransactionStatus.EXPORT_FAILED
+            self._delete_pending_export(pending_export, session=session)
+            return
 
         try:
             self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
