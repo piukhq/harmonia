@@ -47,7 +47,7 @@ with mocked_auth_decorator():
 # most of the export agents need this to be set to something.
 settings.EUROPA_URL = ""
 settings.VAULT_URL = ""
-settings.AUDIT_EXPORTS = True
+settings.AUDIT_EXPORTS = False
 
 
 PGP_PUBLIC_KEY = """-----BEGIN PGP PUBLIC KEY BLOCK-----

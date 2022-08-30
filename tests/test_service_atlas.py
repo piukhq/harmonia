@@ -2,7 +2,6 @@ import logging
 from unittest import mock
 
 import pendulum
-import pytest
 from requests.models import Response
 
 from app.reporting import get_logger
@@ -92,7 +91,6 @@ def test_queue_audit_message(mocked_queue):
     assert mocked_queue.call_args[0][0] == audit_message
 
 
-@pytest.fixture(autouse=True)
 @mock.patch("app.service.queue.add", autospec=True)
 def test_queue_problems_exceptions_handled(mocked_queue, caplog):
     mocked_queue.side_effect = Exception("test exception")
