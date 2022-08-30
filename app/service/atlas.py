@@ -2,6 +2,7 @@ import typing as t
 
 import pendulum
 import requests
+import sentry_sdk
 
 import settings
 from app import models
@@ -91,4 +92,10 @@ def queue_audit_message(message: MessagePayload) -> None:
         log.warning(f"Not queueing {provider_slug} audit because AUDIT_EXPORTS is disabled.")
         log.debug(f"Audit payload:\n{message}")
     else:
-        queue.add(t.cast(dict, message), provider=provider_slug, queue_name="tx_matching")
+        try:
+            queue.add(t.cast(dict, message), provider=provider_slug, queue_name="tx_matching")
+        except Exception as ex:
+            # Using a broad exception clause since we do not want any atlas fails or otherwise,
+            # to affect other Harmonia processes. Logging will tell us about an issues.
+            event_id = sentry_sdk.capture_exception()
+            log.warning(f"Problem during Atlas audit process. {type(ex).__name__}. Sentry event ID: {event_id}")

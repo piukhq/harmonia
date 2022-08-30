@@ -1,9 +1,13 @@
+import logging
 from unittest import mock
 
 import pendulum
 from requests.models import Response
 
+from app.reporting import get_logger
 from app.service import atlas
+
+log = get_logger("atlas")
 
 
 class MockUserIdentity:
@@ -85,6 +89,36 @@ def test_queue_audit_message(mocked_queue):
     atlas.queue_audit_message(audit_message)
     mocked_queue.assert_called()
     assert mocked_queue.call_args[0][0] == audit_message
+
+
+@mock.patch("app.service.queue.add", autospec=True)
+def test_queue_problems_exceptions_handled(mocked_queue, caplog):
+    mocked_queue.side_effect = Exception("test exception")
+    log.propagate = True
+    caplog.set_level(logging.WARNING)
+
+    dt = pendulum.now()
+    request_timestamp = pendulum.now().to_datetime_string()
+    response = mock.Mock(spec=Response)
+    response.json.return_value = {"outcome": "success"}
+    response.status_code = 200
+    response_timestamp = dt.to_datetime_string()
+
+    audit_message = atlas.make_audit_message(
+        "test-slug",
+        atlas.make_audit_transactions(
+            [MockExportTransaction(dt)], tx_loyalty_ident_callback=lambda mt: "customer-number"
+        ),
+        request=request_body,
+        request_timestamp=request_timestamp,
+        response=response,
+        response_timestamp=response_timestamp,
+        blob_names=["blob1", "blob2"],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        atlas.queue_audit_message(audit_message)
+    assert "Problem during Atlas audit process" in caplog.text
 
 
 def test_make_audit_message_non_json_response():
