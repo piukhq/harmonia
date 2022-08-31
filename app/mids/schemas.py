@@ -20,6 +20,12 @@ class MIDCreationListSchema(Schema):
 
 
 @define_schema
+class MIDCreationResultSchema(Schema):
+    total = fields.Integer()
+    onboarded = fields.Integer()
+
+
+@define_schema
 class MIDDeletionSchema(Schema):
     mid = fields.String(required=True, validate=NotBlank)
     payment_scheme = fields.String(required=True, validate=NotBlank)
@@ -29,3 +35,8 @@ class MIDDeletionSchema(Schema):
 class MIDDeletionListSchema(Schema):
     mids = fields.Nested(MIDDeletionSchema, many=True, required=True)
     locations = fields.List(fields.String(required=True, validate=NotBlank), required=True)
+
+
+@define_schema
+class MIDDeletionResultSchema(Schema):
+    deleted = fields.Integer()
