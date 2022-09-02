@@ -83,6 +83,10 @@ class Transaction(Base, ModelMixin):
     # list of related merchant_identifier record IDs.
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
 
+    # primary merchant_identifier that is used for matching
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(s.String(50), nullable=True)
+
     # hermes scheme & paymentcard slugs.
     merchant_slug = s.Column(s.String(50), nullable=False)
     payment_provider_slug = s.Column(s.String(50), nullable=False)

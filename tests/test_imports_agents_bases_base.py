@@ -1,11 +1,15 @@
 from unittest import mock
+from unittest.mock import ANY
 
+import pendulum
 import pytest
 
 from app import db, models
+from app.feeds import FeedType
+from app.imports.agents.bases.base import IdentifyArgs
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
-from app.models import IdentifierType, LoyaltyScheme, PaymentProvider
+from app.models import IdentifierType, LoyaltyScheme, PaymentProvider, TransactionStatus
 
 data = ["test-mid-primary", "test-mid-secondary", "test-mid-psimi"]
 
@@ -155,3 +159,49 @@ def test_identify_mids_table_no_matching_identifiers_visa(db_session: db.Session
         agent._identify_mids(data, db_session)
 
     assert e.typename == "MissingMID"
+
+
+def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Session):
+    match_group = "da34aa2a4abf4cc190c3519f7c6e2f88"
+    source = "AMQP: visa-auth"
+
+    agent = VisaAuth()
+    import_transaction_insert, transaction_insert, identify = agent._build_inserts(
+        tx_data=visa_transaction, match_group=match_group, source=source, session=db_session
+    )
+
+    assert import_transaction_insert == {
+        "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        "feed_type": FeedType.AUTH,
+        "provider_slug": "visa",
+        "identified": True,
+        "match_group": "da34aa2a4abf4cc190c3519f7c6e2f88",
+        "data": visa_transaction,
+        "source": "AMQP: visa-auth",
+    }
+    assert transaction_insert == {
+        "feed_type": FeedType.AUTH,
+        "status": TransactionStatus.IMPORTED,
+        "merchant_identifier_ids": [mid_primary, mid_secondary],
+        "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        "match_group": "da34aa2a4abf4cc190c3519f7c6e2f88",
+        "merchant_slug": None,
+        "payment_provider_slug": "visa",
+        "primary_identifier": "test-mid-primary",
+        "transaction_date": ANY,
+        "has_time": True,
+        "spend_amount": 8945,
+        "spend_multiplier": 100,
+        "spend_currency": "GBP",
+        "card_token": "token-123",
+        "settlement_key": "1d5d6772aa6be73dc2c76287de2c1429ef56259aa7e2c193613105304772b989",
+        "first_six": None,
+        "last_four": None,
+        "auth_code": "444444",
+        "approval_code": "",
+    }
+    assert identify == IdentifyArgs(
+        transaction_id="f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        merchant_identifier_ids=[mid_primary, mid_secondary],
+        card_token="token-123",
+    )

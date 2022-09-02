@@ -115,8 +115,11 @@ class MastercardTS44Settlement(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_sequence_number"]
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return try_convert_settlement_mid(data["merchant_id"])
+
     def get_mids(self, data: dict) -> list[str]:
-        return [try_convert_settlement_mid(data["merchant_id"])]
+        return [self.get_primary_identifier(data)]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['transaction_date']} {data['transaction_time']}"
@@ -194,8 +197,26 @@ class MastercardTGX2Settlement(FileAgent):
         else:
             return uuid4().hex
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return try_convert_settlement_mid(data["mid"])
+
+    def _get_secondary_identifier(self, data: dict) -> str:
+        return data["location_id"]
+
+    def _get_psimi_identifier(self, data: dict) -> str:
+        return data["aggregate_merchant_id"]
+
     def get_mids(self, data: dict) -> list[str]:
-        return [try_convert_settlement_mid(data["mid"]), data["location_id"], data["aggregate_merchant_id"]]
+        return list(
+            filter(
+                lambda item: item not in [None, ""],
+                [
+                    self.get_primary_identifier(data),
+                    self._get_secondary_identifier(data),
+                    self._get_psimi_identifier(data),
+                ],
+            )
+        )
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"
@@ -232,5 +253,8 @@ class MastercardAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return uuid4().hex
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return data["mid"]
+
     def get_mids(self, data: dict) -> list[str]:
-        return [data["mid"]]
+        return [self.get_primary_identifier(data)]

@@ -8,6 +8,7 @@ import settings
 from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
+from app.feeds import FeedType
 from app.models import IdentifierType
 
 
@@ -17,7 +18,7 @@ def mid(db_session: db.Session) -> int:
     payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
-        identifier="test-force-match-mid-1",
+        identifier="test-mid-primary",
         identifier_type=IdentifierType.PRIMARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
@@ -37,7 +38,7 @@ def mid_secondary(db_session: db.Session) -> int:
     payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
-        identifier="test-multiple-mids-1",
+        identifier="test-mid-secondary",
         identifier_type=IdentifierType.SECONDARY,
         defaults={
             "loyalty_scheme": loyalty_scheme,
@@ -232,9 +233,9 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid, mid_secondary],
         provider_slug="amex",
-        transaction_id="test-force-match-transaction-2",
+        transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
-        card_token="test-force-match-token-1",
+        card_token="test-single-primary-mid-token-1",
         **COMMON_TX_FIELDS,
     )
     worker = MatchingWorker()
@@ -243,14 +244,44 @@ def test_get_agent_for_payment_transaction_multiple_mids(
 
 
 def test_update_mids_to_single_primary_mid(mid: int, mid_secondary: int, db_session: db.Session) -> None:
+    primary_identifier = (
+        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid)[0].identifier
+    )
+
+    tx, _ = db.get_or_create(
+        models.Transaction,
+        feed_type=FeedType.AUTH,
+        merchant_identifier_ids=[mid, mid_secondary],
+        primary_identifier=primary_identifier,
+        transaction_id="test-single-primary-mid-transaction-1",
+        defaults={
+            "merchant_slug": "iceland-bonus-card",
+            "payment_provider_slug": "amex",
+            "settlement_key": "1234567890",
+            "approval_code": "",
+            "card_token": "test-single-primary-mid-token-1",
+            "transaction_date": pendulum.now(),
+            "has_time": True,
+            "spend_amount": 1699,
+            "spend_multiplier": 100,
+            "spend_currency": "GBP",
+            "first_six": "123456",
+            "last_four": "7890",
+            "status": models.TransactionStatus.IMPORTED,
+            "auth_code": "123456",
+            "match_group": "1234567890",
+        },
+        session=db_session,
+    )
+
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid, mid_secondary],
         provider_slug="amex",
-        transaction_id="test-force-match-transaction-2",
+        transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
-        card_token="test-force-match-token-1",
+        card_token="test-single-primary-mid-token-1",
         **COMMON_TX_FIELDS,
     )
     worker = MatchingWorker()
     worker._update_mids_to_single_primary_mid(payment_transaction=ptx, session=db_session)
-    assert ptx.merchant_identifier_ids == [mid]
+    assert ptx.merchant_identifier_ids == [primary_identifier]

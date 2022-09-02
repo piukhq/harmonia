@@ -9,7 +9,6 @@ from app.core import identifier
 from app.core.export_director import ExportFields, create_export
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.matching.agents.registry import matching_agents
-from app.models import IdentifierType
 from app.registry import NoSuchAgent, RegistryConfigurationError
 from app.reporting import get_logger
 
@@ -70,11 +69,12 @@ class MatchingWorker:
         self, payment_transaction: models.PaymentTransaction, session: db.Session
     ) -> None:
         primary_identifier = (
-            session.query(models.MerchantIdentifier)
-            .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
-            .filter(models.MerchantIdentifier.identifier_type == IdentifierType.PRIMARY)
-            .all()[0]
-            .id
+            session.query(models.Transaction)
+            .join(
+                models.MerchantIdentifier, models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids)
+            )
+            .first()
+            .primary_identifier
         )
 
         def update_transaction():
