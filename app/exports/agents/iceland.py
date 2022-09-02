@@ -107,6 +107,7 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response = self.api.merchant_request(request)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        body["request_url"] = response.url
         audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(

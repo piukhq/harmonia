@@ -67,6 +67,7 @@ class HarveyNichols(SingularExportAgent):
         response = api.claim_transaction(export_data.extra_data, body)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        body["request_url"] = response.url
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,

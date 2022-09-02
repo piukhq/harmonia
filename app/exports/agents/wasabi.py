@@ -97,6 +97,7 @@ class Wasabi(SingularExportAgent):
                 raise RequestException(response=response)
             self.log.warn(f"Acteol API response contained message: {msg}")
 
+        body["request_url"] = response.url
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,

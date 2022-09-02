@@ -86,6 +86,7 @@ class SquareMeal(SingularExportAgent):
         response = api.transactions(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
+        body["request_url"] = response.url
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,

@@ -67,6 +67,7 @@ class Bpl(SingularExportAgent):
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
             raise Exception(f"BPL - {self.provider_slug} transaction endpoint returned {response.status_code}")
 
+        body["request_url"] = response.url
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
