@@ -1,7 +1,5 @@
 from unittest import mock
-from unittest.mock import ANY
 
-import pendulum
 import pytest
 
 from app import db, models
@@ -188,7 +186,7 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
         "merchant_slug": None,
         "payment_provider_slug": "visa",
         "primary_identifier": "test-mid-primary",
-        "transaction_date": ANY,
+        "transaction_date": agent.pendulum_parse("2020-10-27T15:01:59+00:00", tz="GMT"),
         "has_time": True,
         "spend_amount": 8945,
         "spend_multiplier": 100,
