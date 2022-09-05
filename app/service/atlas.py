@@ -68,7 +68,7 @@ def make_audit_message(
     if request is not None:
         if type(request) == str:
             request = json.loads(request)
-        request["request_url"] = request_url
+        request["request_url"] = request_url  # type: ignore
         audit_data["request"] = {"body": request, "timestamp": request_timestamp}
 
     if response is not None:
