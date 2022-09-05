@@ -1,3 +1,4 @@
+import json
 import typing as t
 
 import pendulum
@@ -61,9 +62,13 @@ def make_audit_message(
     response: t.Optional[requests.Response] = None,
     response_timestamp: t.Optional[str] = None,
     blob_names: t.Optional[t.List[str]] = None,
+    request_url: str = None,
 ) -> MessagePayload:
     audit_data = AuditData()
     if request is not None:
+        if type(request) == str:
+            request = json.loads(request)
+        request["request_url"] = request_url
         audit_data["request"] = {"body": request, "timestamp": request_timestamp}
 
     if response is not None:
@@ -80,6 +85,7 @@ def make_audit_message(
             "status_code": response.status_code,
             "timestamp": response_timestamp,
         }
+        print("THIS IS AUDIT DATA", audit_data)
     if blob_names:
         audit_data["file_names"] = blob_names
 

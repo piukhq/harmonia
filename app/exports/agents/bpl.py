@@ -61,13 +61,14 @@ class Bpl(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session), self.provider_slug)
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.post_matched_transaction(self.merchant_name, body)
+        endpoint = f"/{self.merchant_name}/transaction"
+        response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
         if (300 <= response.status_code <= 399) or (response.status_code >= 500):
             raise Exception(f"BPL - {self.provider_slug} transaction endpoint returned {response.status_code}")
 
-        body["request_url"] = response.url
+        request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -78,6 +79,7 @@ class Bpl(SingularExportAgent):
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
+                request_url=request_url,
             )
         )
 

@@ -19,6 +19,5 @@ class SquareMeal:
         response.raise_for_status()
         return response
 
-    def transactions(self, body: dict) -> Response:
-        endpoint = "/api/BinkTransactions"
+    def transactions(self, body: dict, endpoint: str) -> Response:
         return self.post(endpoint, body, name="transactions")

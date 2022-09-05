@@ -64,10 +64,11 @@ class HarveyNichols(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.claim_transaction(export_data.extra_data, body)
+        endpoint = "/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
+        response = api.claim_transaction(export_data.extra_data, body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        body["request_url"] = response.url
+        request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -78,6 +79,7 @@ class HarveyNichols(SingularExportAgent):
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
+                request_url=request_url,
             )
         )
         if self.get_response_result(response) not in [SUCCESS, ALREADY_ASSIGNED]:

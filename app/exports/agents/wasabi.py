@@ -87,7 +87,8 @@ class Wasabi(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.post_matched_transaction(body)
+        endpoint = "/PostMatchedTransaction"
+        response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
         # raise exception for first 7 retries
@@ -97,7 +98,7 @@ class Wasabi(SingularExportAgent):
                 raise RequestException(response=response)
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        body["request_url"] = response.url
+        request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -108,6 +109,7 @@ class Wasabi(SingularExportAgent):
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
+                request_url=request_url,
             )
         )
 

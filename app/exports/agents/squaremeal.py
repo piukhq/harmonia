@@ -81,12 +81,12 @@ class SquareMeal(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
 
         api = squaremeal.SquareMeal(self.config.get("base_url", session))
-
+        endpoint = "/api/BinkTransactions"
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.transactions(body)
+        response = api.transactions(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        body["request_url"] = response.url
+        request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -97,5 +97,6 @@ class SquareMeal(SingularExportAgent):
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
+                request_url=request_url,
             )
         )
