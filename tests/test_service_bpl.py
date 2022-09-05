@@ -43,7 +43,7 @@ def test_merchant_request(mock_get_security_token, bpl: BplAPI) -> None:
     url = f"{TEST_BPL_URL}/bpl-merchant/transaction"
     responses.add(responses.POST, url=url, json=response_200, status=200)
 
-    resp = bpl.post_matched_transaction("bpl-merchant", request_data)
+    resp = bpl.post_matched_transaction(request_data, "/bpl-merchant/transaction")
 
     assert resp.json() == response_200
     assert resp.status_code == 200
@@ -56,7 +56,7 @@ def test_merchant_request_500(mock_get_security_token, bpl: BplAPI) -> None:
     url = f"{TEST_BPL_URL}/bpl-merchant/transaction"
     responses.add(responses.POST, url, json=response_500_error, status=500)
 
-    resp = bpl.post_matched_transaction("bpl-merchant", request_data)
+    resp = bpl.post_matched_transaction(request_data, "/bpl-merchant/transaction")
 
     assert resp.json() == response_500_error
     assert resp.status_code == 500
@@ -69,7 +69,7 @@ def test_merchant_request_bad_400(mock_get_security_token, bpl: BplAPI) -> None:
     url = f"{TEST_BPL_URL}/bpl-merchant/transaction"
     responses.add(responses.POST, url, json=response_400_error, status=400)
 
-    resp = bpl.post_matched_transaction("bpl-merchant", request_data)
+    resp = bpl.post_matched_transaction(request_data, "/bpl-merchant/transaction")
 
     assert resp.json() == response_400_error
     assert resp.status_code == 400

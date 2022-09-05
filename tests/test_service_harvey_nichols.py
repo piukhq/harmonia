@@ -28,7 +28,9 @@ def test_merchant_request(mock_get_token, harvey_nichols: HarveyNicholsAPI) -> N
 
     body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
 
-    resp = harvey_nichols.claim_transaction(extra_data, body_request)
+    resp = harvey_nichols.claim_transaction(
+        extra_data, body_request, "/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
+    )
     expected_resp = '{"CustomerClaimTransactionResponse": {"outcome": "Success"}}'
     assert resp.text == expected_resp
 
@@ -44,7 +46,9 @@ def test_merchant_request_bad_500(mock_get_token, harvey_nichols: HarveyNicholsA
 
     with pytest.raises(requests.HTTPError) as ex:
         body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
-        harvey_nichols.claim_transaction(extra_data, body_request)
+        harvey_nichols.claim_transaction(
+            extra_data, body_request, endpoint="/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
+        )
     assert ex.value.response.status_code == 500
 
 
@@ -59,5 +63,7 @@ def test_merchant_request_bad_400(mock_get_token, harvey_nichols: HarveyNicholsA
 
     with pytest.raises(requests.HTTPError) as ex:
         body_request = {"CustomerClaimTransactionRequest": {"token": "mock_token"}}
-        harvey_nichols.claim_transaction(extra_data, body_request)
+        harvey_nichols.claim_transaction(
+            extra_data, body_request, "/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
+        )
     assert ex.value.response.status_code == 400

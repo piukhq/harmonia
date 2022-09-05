@@ -78,8 +78,14 @@ def test_queue_audit_message(mocked_queue):
         ],
         "audit_data": {
             "request": {
-                "body": '{"CustomerClaimTransactionRequest": {"token": '
-                '"token", "customerNumber": "card_number", "id": "tx-id"}}',
+                "body": {
+                    "CustomerClaimTransactionRequest": {
+                        "token": "token",
+                        "customerNumber": "card_number",
+                        "id": "tx-id",
+                    },
+                    "request_url": None,
+                },
                 "timestamp": dt.to_datetime_string(),
             },
             "response": {"body": {"outcome": "success"}, "status_code": 200, "timestamp": dt.to_datetime_string()},
