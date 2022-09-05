@@ -19,6 +19,7 @@ def test_post_matched_transaction_origin_id_not_found(acteol: ActeolAPI) -> None
     responses.add(responses.POST, url=f"{TEST_ACTEOL_URL}/PostMatchedTransaction", json=response)
 
     resp = acteol.post_matched_transaction(
-        {"origin_id": hashlib.sha1("test@bink.com".encode()).hexdigest(), "ReceiptNo": "123456789"}, endpoint="/PostMatchedTransaction"
+        {"origin_id": hashlib.sha1("test@bink.com".encode()).hexdigest(), "ReceiptNo": "123456789"},
+        endpoint="/PostMatchedTransaction",
     )
     assert resp.json() == response
