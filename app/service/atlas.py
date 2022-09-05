@@ -85,7 +85,6 @@ def make_audit_message(
             "status_code": response.status_code,
             "timestamp": response_timestamp,
         }
-        print("THIS IS AUDIT DATA", audit_data)
     if blob_names:
         audit_data["file_names"] = blob_names
 

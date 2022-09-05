@@ -23,7 +23,7 @@ class HarveyNicholsAPI:
         # Save the request and response for billing and audit
         return response
 
-    def claim_transaction(self, extra_data: dict, body: dict, endpoint) -> requests.Response:
+    def claim_transaction(self, extra_data: dict, body: dict, endpoint: str) -> requests.Response:
         credentials = extra_data["credentials"]
         scheme_account_id = extra_data["scheme_account_id"]
 
