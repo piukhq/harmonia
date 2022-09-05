@@ -108,6 +108,8 @@ class Iceland(BatchExportAgent, SoteriaConfigMixin):
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = self.api.base_url
+        if type(body) == str:
+            body = json.loads(body)
         audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(

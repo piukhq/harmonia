@@ -57,7 +57,7 @@ def make_audit_message(
     provider_slug: str,
     transactions: t.List[AuditTransaction],
     *,
-    request: t.Optional[t.Union[dict, str]] = None,
+    request: t.Optional[dict] = None,
     request_timestamp: t.Optional[str] = None,
     response: t.Optional[requests.Response] = None,
     response_timestamp: t.Optional[str] = None,
@@ -66,8 +66,6 @@ def make_audit_message(
 ) -> MessagePayload:
     audit_data = AuditData()
     if request is not None:
-        if type(request) == str:
-            request = json.loads(request)
         request["request_url"] = request_url  # type: ignore
         audit_data["request"] = {"body": request, "timestamp": request_timestamp}
 
