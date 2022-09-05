@@ -96,7 +96,7 @@ class Wasabi(BaseMatchingAgent):
         ]
         return matched_transactions
 
-    def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions: Query, primary_identifier: int) -> t.Optional[MatchResult]:
         match = self._filter_scheme_transactions(scheme_transactions)
 
         if not match:
@@ -108,7 +108,7 @@ class Wasabi(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self.make_matched_transaction_fields(match),
+                **self.make_matched_transaction_fields(match, primary_identifier),
                 matching_type=models.MatchingType.LOYALTY,
             ),
             user_identity=self.user_identity,

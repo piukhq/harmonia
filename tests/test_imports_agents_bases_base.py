@@ -183,7 +183,7 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
         "merchant_identifier_ids": [mid_primary, mid_secondary],
         "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
         "match_group": "da34aa2a4abf4cc190c3519f7c6e2f88",
-        "merchant_slug": None,
+        "merchant_slug": "loyalty_scheme",
         "payment_provider_slug": "visa",
         "primary_identifier": "test-mid-primary",
         "transaction_date": agent.pendulum_parse("2020-10-27T15:01:59+00:00", tz="GMT"),

@@ -56,7 +56,7 @@ class Iceland(BaseMatchingAgent):
             "mastercard": self._filter_scheme_transactions_with_auth_code,
         }[self.payment_transaction.provider_slug](scheme_transactions)
 
-    def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions: Query, primary_identifier: int) -> t.Optional[MatchResult]:
         scheme_transactions = self._filter_scheme_transactions(scheme_transactions)
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
@@ -73,7 +73,7 @@ class Iceland(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self.make_matched_transaction_fields(match),
+                **self.make_matched_transaction_fields(match, primary_identifier),
                 matching_type=models.MatchingType.LOYALTY,
             ),
             user_identity=self.user_identity,

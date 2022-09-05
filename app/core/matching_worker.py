@@ -65,23 +65,6 @@ class MatchingWorker:
             )
             return None
 
-    def _update_mids_to_single_primary_mid(
-        self, payment_transaction: models.PaymentTransaction, session: db.Session
-    ) -> None:
-        primary_identifier = (
-            session.query(models.Transaction)
-            .join(
-                models.MerchantIdentifier, models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids)
-            )
-            .first()
-            .primary_identifier
-        )
-
-        def update_transaction():
-            payment_transaction.merchant_identifier_ids = [primary_identifier]
-
-        db.run_query(update_transaction, session=session, description="ensure single primary payment transaction mid")
-
     def _persist(self, matched_transaction: models.MatchedTransaction, *, session: db.Session):
         def add_transaction():
             session.add(matched_transaction)
@@ -108,7 +91,6 @@ class MatchingWorker:
         agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
         if agent is None:
             return None
-        self._update_mids_to_single_primary_mid(payment_transaction, session=session)
         return self._try_match(agent, session=session)
 
     def _finalise_match(
@@ -311,9 +293,18 @@ class MatchingWorker:
 
         self.log.warning(f"Creating forced match of {payment_transaction} and {scheme_transaction}")
 
+        primary_identifier = (
+            session.query(models.MerchantIdentifier)
+            .join(models.Transaction, models.Transaction.primary_identifier == models.MerchantIdentifier.identifier)
+            .filter(models.Transaction.merchant_identifier_ids.overlap(payment_transaction.merchant_identifier_ids))
+            .one()
+            .id
+        )
+
         match_result = MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **agent.make_matched_transaction_fields(scheme_transaction), matching_type=models.MatchingType.FORCED
+                **agent.make_matched_transaction_fields(scheme_transaction, primary_identifier),
+                matching_type=models.MatchingType.FORCED,
             ),
             user_identity=user_identity,
             scheme_transaction_id=scheme_transaction_id,

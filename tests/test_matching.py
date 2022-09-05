@@ -9,11 +9,12 @@ from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 from app.feeds import FeedType
-from app.models import IdentifierType
+from app.matching.agents.generic_spotted import GenericSpotted
+from app.models import IdentifierType, UserIdentity
 
 
 @pytest.fixture
-def mid(db_session: db.Session) -> int:
+def mid_primary(db_session: db.Session) -> int:
     loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
     payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
     mid, _ = db.get_or_create(
@@ -52,6 +53,38 @@ def mid_secondary(db_session: db.Session) -> int:
     return mid.id
 
 
+@pytest.fixture
+def transaction(mid_primary, mid_secondary, db_session: db.Session) -> models.Transaction:
+    tx, _ = db.get_or_create(
+        models.Transaction,
+        feed_type=FeedType.AUTH,
+        merchant_identifier_ids=[mid_primary, mid_secondary],
+        primary_identifier=db_session.query(models.MerchantIdentifier)
+        .filter(models.MerchantIdentifier.id == mid_primary)[0]
+        .identifier,
+        transaction_id="test-transaction-1",
+        defaults={
+            "merchant_slug": "iceland-bonus-card",
+            "payment_provider_slug": "amex",
+            "settlement_key": "1234567890",
+            "approval_code": "",
+            "card_token": "test-token-1",
+            "transaction_date": pendulum.now(),
+            "has_time": True,
+            "spend_amount": 1699,
+            "spend_multiplier": 100,
+            "spend_currency": "GBP",
+            "first_six": "123456",
+            "last_four": "7890",
+            "status": models.TransactionStatus.IMPORTED,
+            "auth_code": "123456",
+            "match_group": "1234567890",
+        },
+        session=db_session,
+    )
+    return tx
+
+
 COMMON_TX_FIELDS = dict(
     transaction_date=pendulum.now(),
     has_time=True,
@@ -68,7 +101,7 @@ COMMON_TX_FIELDS = dict(
 
 
 @responses.activate
-def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
+def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) -> None:
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
@@ -77,7 +110,7 @@ def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
     )
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -86,7 +119,7 @@ def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -116,7 +149,9 @@ def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
 
 
 @responses.activate
-def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> None:
+def test_force_match_late_user_identity(
+    mid_primary: int, transaction: models.Transaction, db_session: db.Session
+) -> None:
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
@@ -136,7 +171,7 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
     )
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -145,7 +180,7 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -180,14 +215,14 @@ def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> Non
 
 
 @responses.activate
-def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
+def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> None:
     """
     By not adding the request via `responses.add` we can simulate hermes being unavailable.
     """
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -196,7 +231,7 @@ def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -228,10 +263,10 @@ def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
 @mock.patch("app.registry.Registry.instantiate", return_value=None)
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_get_agent_for_payment_transaction_multiple_mids(
-    mock_get_user_identity, mock_instantiate, mid: int, mid_secondary: int, db_session: db.Session
+    mock_get_user_identity, mock_instantiate, mid_primary: int, mid_secondary: int, db_session: db.Session
 ) -> None:
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid, mid_secondary],
+        merchant_identifier_ids=[mid_primary, mid_secondary],
         provider_slug="amex",
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
@@ -243,45 +278,49 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"
 
 
-def test_update_mids_to_single_primary_mid(mid: int, mid_secondary: int, db_session: db.Session) -> None:
-    primary_identifier = (
-        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid)[0].identifier
-    )
-
-    tx, _ = db.get_or_create(
-        models.Transaction,
-        feed_type=FeedType.AUTH,
-        merchant_identifier_ids=[mid, mid_secondary],
-        primary_identifier=primary_identifier,
-        transaction_id="test-single-primary-mid-transaction-1",
-        defaults={
-            "merchant_slug": "iceland-bonus-card",
-            "payment_provider_slug": "amex",
-            "settlement_key": "1234567890",
-            "approval_code": "",
-            "card_token": "test-single-primary-mid-token-1",
-            "transaction_date": pendulum.now(),
-            "has_time": True,
-            "spend_amount": 1699,
-            "spend_multiplier": 100,
-            "spend_currency": "GBP",
-            "first_six": "123456",
-            "last_four": "7890",
-            "status": models.TransactionStatus.IMPORTED,
-            "auth_code": "123456",
-            "match_group": "1234567890",
-        },
-        session=db_session,
-    )
+def test_get_primary_identifier_from_transaction(
+    mid_primary: int, mid_secondary: int, transaction: models.Transaction, db_session: db.Session
+) -> None:
+    # tx, _ = db.get_or_create(
+    #     models.Transaction,
+    #     feed_type=FeedType.AUTH,
+    #     merchant_identifier_ids=[mid_primary, mid_secondary],
+    #     primary_identifier=db_session.query(models.MerchantIdentifier)
+    #     .filter(models.MerchantIdentifier.id == mid_primary)[0]
+    #     .identifier,
+    #     transaction_id="test-single-primary-mid-transaction-1",
+    #     defaults={
+    #         "merchant_slug": "iceland-bonus-card",
+    #         "payment_provider_slug": "amex",
+    #         "settlement_key": "1234567890",
+    #         "approval_code": "",
+    #         "card_token": "test-single-primary-mid-token-1",
+    #         "transaction_date": pendulum.now(),
+    #         "has_time": True,
+    #         "spend_amount": 1699,
+    #         "spend_multiplier": 100,
+    #         "spend_currency": "GBP",
+    #         "first_six": "123456",
+    #         "last_four": "7890",
+    #         "status": models.TransactionStatus.IMPORTED,
+    #         "auth_code": "123456",
+    #         "match_group": "1234567890",
+    #     },
+    #     session=db_session,
+    # )
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid, mid_secondary],
+        merchant_identifier_ids=[mid_primary, mid_secondary],
         provider_slug="amex",
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
         card_token="test-single-primary-mid-token-1",
         **COMMON_TX_FIELDS,
     )
-    worker = MatchingWorker()
-    worker._update_mids_to_single_primary_mid(payment_transaction=ptx, session=db_session)
-    assert ptx.merchant_identifier_ids == [primary_identifier]
+
+    user_id = UserIdentity()
+    agent = GenericSpotted(payment_transaction=ptx, user_identity=user_id)
+    agent.payment_transaction = ptx
+    primary_id = agent._get_primary_identifier_from_transaction(session=db_session)
+
+    assert primary_id == mid_primary
