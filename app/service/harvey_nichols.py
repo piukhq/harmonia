@@ -23,12 +23,11 @@ class HarveyNicholsAPI:
         # Save the request and response for billing and audit
         return response
 
-    def claim_transaction(self, extra_data: dict, body: dict) -> requests.Response:
+    def claim_transaction(self, extra_data: dict, body: dict, endpoint: str) -> requests.Response:
         credentials = extra_data["credentials"]
         scheme_account_id = extra_data["scheme_account_id"]
 
         token = self.get_token(credentials, scheme_account_id)
-        endpoint = "/WebCustomerLoyalty/services/CustomerLoyalty/ClaimTransaction"
         body["CustomerClaimTransactionRequest"]["token"] = token
 
         response = self.post(endpoint, body, name="claim_transaction")
