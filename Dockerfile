@@ -17,7 +17,7 @@ WORKDIR /app
 
 COPY --from=build /src/dist/$wheel .
 
-ENV PIP_INDEX_URL=https://269fdc63-af3d-4eca-8101-8bddc22d6f14:b694b5b1-f97e-49e4-959e-f3c202e3ab91@pypi.uksouth.bink.sh/simple
+ENV PIP_INDEX_URL=https://269fdc63-af3d-4eca-8101-8bddc22d6f14:b694b5b1-f97e-49e4-959e-f3c202e3ab91@pypi.tools.uksouth.bink.sh/simple
 RUN pip install $wheel && rm $wheel
 
 ENV PROMETHEUS_MULTIPROC_DIR=/dev/shm
