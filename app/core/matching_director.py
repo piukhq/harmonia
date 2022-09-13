@@ -59,6 +59,7 @@ class MatchingDirector:
         scheme_transactions = [
             models.SchemeTransaction(
                 merchant_identifier_ids=transaction.merchant_identifier_ids,
+                primary_identifier=transaction.primary_identifier,
                 provider_slug=transaction.merchant_slug,
                 payment_provider_slug=transaction.payment_provider_slug,
                 transaction_id=transaction.transaction_id,
@@ -83,6 +84,7 @@ class MatchingDirector:
         payment_transactions = [
             models.PaymentTransaction(
                 merchant_identifier_ids=transaction.merchant_identifier_ids,
+                primary_identifier=transaction.primary_identifier,
                 provider_slug=transaction.payment_provider_slug,
                 transaction_id=transaction.transaction_id,
                 settlement_key=transaction.settlement_key,

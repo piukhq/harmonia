@@ -1,11 +1,11 @@
 import typing as t
 
-from app import models
+from app import db, models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
 class GenericLoyalty(BaseMatchingAgent):
-    def do_match(self, scheme_transactions, primary_identifier) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions, db_session: db.Session) -> t.Optional[MatchResult]:
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount
         )
@@ -15,8 +15,7 @@ class GenericLoyalty(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self.make_matched_transaction_fields(match, primary_identifier),
-                matching_type=models.MatchingType.LOYALTY
+                **self.make_matched_transaction_fields(match, db_session), matching_type=models.MatchingType.LOYALTY
             ),
             user_identity=self.user_identity,
             scheme_transaction_id=match.id,

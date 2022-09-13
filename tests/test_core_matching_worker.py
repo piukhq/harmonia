@@ -9,8 +9,7 @@ from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 from app.feeds import FeedType
-from app.matching.agents.generic_spotted import GenericSpotted
-from app.models import IdentifierType, UserIdentity
+from app.models import IdentifierType
 
 
 @pytest.fixture
@@ -276,51 +275,3 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     worker = MatchingWorker()
     worker._get_agent_for_payment_transaction(payment_transaction=ptx, session=db_session)
     assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"
-
-
-def test_get_primary_identifier_from_transaction(
-    mid_primary: int, mid_secondary: int, transaction: models.Transaction, db_session: db.Session
-) -> None:
-    # tx, _ = db.get_or_create(
-    #     models.Transaction,
-    #     feed_type=FeedType.AUTH,
-    #     merchant_identifier_ids=[mid_primary, mid_secondary],
-    #     primary_identifier=db_session.query(models.MerchantIdentifier)
-    #     .filter(models.MerchantIdentifier.id == mid_primary)[0]
-    #     .identifier,
-    #     transaction_id="test-single-primary-mid-transaction-1",
-    #     defaults={
-    #         "merchant_slug": "iceland-bonus-card",
-    #         "payment_provider_slug": "amex",
-    #         "settlement_key": "1234567890",
-    #         "approval_code": "",
-    #         "card_token": "test-single-primary-mid-token-1",
-    #         "transaction_date": pendulum.now(),
-    #         "has_time": True,
-    #         "spend_amount": 1699,
-    #         "spend_multiplier": 100,
-    #         "spend_currency": "GBP",
-    #         "first_six": "123456",
-    #         "last_four": "7890",
-    #         "status": models.TransactionStatus.IMPORTED,
-    #         "auth_code": "123456",
-    #         "match_group": "1234567890",
-    #     },
-    #     session=db_session,
-    # )
-
-    ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary, mid_secondary],
-        provider_slug="amex",
-        transaction_id="test-single-primary-mid-transaction-2",
-        settlement_key="1234567890",
-        card_token="test-single-primary-mid-token-1",
-        **COMMON_TX_FIELDS,
-    )
-
-    user_id = UserIdentity()
-    agent = GenericSpotted(payment_transaction=ptx, user_identity=user_id)
-    agent.payment_transaction = ptx
-    primary_id = agent._get_primary_identifier_from_transaction(session=db_session)
-
-    assert primary_id == mid_primary

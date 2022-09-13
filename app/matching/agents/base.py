@@ -76,7 +76,7 @@ class BaseMatchingAgent:
         since = pendulum.now().date().add(days=-14)
         return db.run_query(
             lambda: session.query(models.SchemeTransaction).filter(
-                models.SchemeTransaction.merchant_identifier_ids == self.payment_transaction.merchant_identifier_ids,
+                models.SchemeTransaction.primary_identifier == self.payment_transaction.primary_identifier,
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
                 models.SchemeTransaction.created_at >= since.isoformat(),
             ),
@@ -85,9 +85,12 @@ class BaseMatchingAgent:
             description="find pending scheme transactions for matching",
         )
 
-    def make_spotted_transaction_fields(self, primary_identifier):
+    def make_spotted_transaction_fields(self, db_session: db.Session):
         return {
-            "merchant_identifier_id": primary_identifier,
+            "merchant_identifier_id": self.get_priority_mid_used_for_identification(
+                self.payment_transaction.merchant_identifier_ids, db_session
+            ),
+            "primary_identifier": self.payment_transaction.primary_identifier,
             "transaction_id": self.payment_transaction.transaction_id,
             "transaction_date": self.payment_transaction.transaction_date,
             "spend_amount": self.payment_transaction.spend_amount,
@@ -98,7 +101,7 @@ class BaseMatchingAgent:
         }
 
     def make_matched_transaction_fields(
-        self, scheme_transaction: models.SchemeTransaction, primary_identifier: int
+        self, scheme_transaction: models.SchemeTransaction, db_session: db.Session
     ) -> dict:
         st_fields = {
             k: getattr(scheme_transaction, k)
@@ -111,30 +114,31 @@ class BaseMatchingAgent:
             )
         }
         return {
-            "merchant_identifier_id": primary_identifier,
+            "merchant_identifier_id": self.get_priority_mid_used_for_identification(
+                self.payment_transaction.merchant_identifier_ids, db_session
+            ),
+            "primary_identifier": self.payment_transaction.primary_identifier,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
             "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
         }
 
-    def _get_primary_identifier_from_transaction(self, session: db.Session) -> int:
-        return (
-            session.query(models.MerchantIdentifier)
-            .join(models.Transaction, models.Transaction.primary_identifier == models.MerchantIdentifier.identifier)
-            .filter(
-                models.Transaction.merchant_identifier_ids.overlap(self.payment_transaction.merchant_identifier_ids)
-            )
-            .one()
-            .id
-        )
+    def get_priority_mid_used_for_identification(self, merchant_identifier_ids: list, db_session: db.Session) -> int:
+        if len(merchant_identifier_ids) == 1:
+            return merchant_identifier_ids[0]
+        else:
+            mid_type_dict = {}
+            for id in merchant_identifier_ids:
+                mid = db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == id).first()
+                mid_type_dict[mid.identifier_type.value] = mid.identifier
+            return sorted(mid_type_dict.items())[0][1]
 
     def match(self, *, session: db.Session) -> t.Optional[MatchResult]:
         self.log.info(f"Matching {self.payment_transaction}.")
         scheme_transactions = self._find_applicable_scheme_transactions(session=session)
-        primary_identifier = self._get_primary_identifier_from_transaction(session=session)
-        return self.do_match(scheme_transactions, primary_identifier)
+        return self.do_match(scheme_transactions, session)
 
-    def do_match(self, scheme_transactions, primary_identifier) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions, db_session) -> t.Optional[MatchResult]:
         raise NotImplementedError("Matching agents must implement the do_match method")
 
     """

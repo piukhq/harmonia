@@ -36,7 +36,11 @@ class ExportTransaction(Base, ModelMixin):
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
     spend_currency = s.Column(s.String(3), nullable=False)  # ISO 4217 alphabetic code for the currency involved
     loyalty_id = s.Column(s.String(100), nullable=False)  # Merchant loyalty identifier/membership number
-    mid = s.Column(s.String(50), nullable=False)  # merchant identifier for identifying the store purchase made
+    mid = s.Column(s.String(50), nullable=False)  # merchant identifier used to identify the store purchase made
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(
+        s.String(50), nullable=True
+    )  # merchant identifier that reflects on both merchant and payment transaction
     location_id = s.Column(s.String(50), nullable=True)
     merchant_internal_id = s.Column(s.String(50), nullable=True)
     user_id = s.Column(s.Integer, nullable=False)

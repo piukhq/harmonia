@@ -59,6 +59,7 @@ def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: 
     def find_mids():
         q = session.query(models.MerchantIdentifier)
 
+        # This would never be utilised by merchant feeds
         if feed_type == FeedType.MERCHANT:
             q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
         elif feed_type in (FeedType.SETTLED, FeedType.AUTH, FeedType.REFUND):
@@ -220,6 +221,7 @@ class BaseAgent:
 
         return new
 
+    # This would never be utilised by merchant transactions
     def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
         ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
         if not ids:
@@ -312,10 +314,13 @@ class BaseAgent:
 
         merchant_identifier_ids = []
         identified = True
-        try:
-            merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
-        except MissingMID:
-            identified = False
+        # We don't identify mids for merchant transactions since some merchants don't know their
+        # primary mids and therefor won't import
+        if self.feed_type_is_payment:
+            try:
+                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
+            except MissingMID:
+                identified = False
 
         import_transaction_insert = dict(
             transaction_id=tid,
