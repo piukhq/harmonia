@@ -55,17 +55,10 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
+def identify_mids(*mids: str, provider_slug: str, session: db.Session) -> t.List[int]:
     def find_mids():
         q = session.query(models.MerchantIdentifier)
-
-        # This would never be utilised by merchant feeds
-        if feed_type == FeedType.MERCHANT:
-            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
-        elif feed_type in (FeedType.SETTLED, FeedType.AUTH, FeedType.REFUND):
-            q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
-        else:
-            raise ValueError(f"Unsupported feed type: {feed_type}")
+        q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
 
         return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
 
@@ -162,7 +155,7 @@ class BaseAgent:
         return location_id_mid_map
 
     def get_primary_identifier(self, data: dict) -> str:
-        raise NotImplementedError("Override get_primary_mid in your agent.")
+        raise NotImplementedError("Override get_primary_identifier in your agent.")
 
     def get_mids(self, data: dict) -> list[str]:
         raise NotImplementedError("Override get_mids in your agent.")
@@ -223,7 +216,7 @@ class BaseAgent:
 
     # This would never be utilised by merchant transactions
     def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
-        ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
+        ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)
         if not ids:
             raise MissingMID
         return ids
