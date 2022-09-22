@@ -17,4 +17,5 @@ class SoteriaConfigMixin:
             settings.VAULT_URL,
             None,
             settings.EUROPA_URL,
+            settings.AAD_TENANT_ID,
         )
