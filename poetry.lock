@@ -1948,7 +1948,7 @@ reference = "bink-pypi"
 
 [[package]]
 name = "soteria"
-version = "1.5.4"
+version = "1.6.0"
 description = "Configuration and security methods for the merchant API framework"
 category = "main"
 optional = false
@@ -3135,8 +3135,8 @@ six = [
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 soteria = [
-    {file = "soteria-1.5.4-py3-none-any.whl", hash = "sha256:5ef364577aacca8e9d87b294743a6a1e0dfe7210085ffb1c9f059bc6084b677f"},
-    {file = "soteria-1.5.4.tar.gz", hash = "sha256:ff9f76e0f7a89589ad225f1b8bce0ff1b24910c511d4b1b98078ed3742bdab16"},
+    {file = "soteria-1.6.0-py3-none-any.whl", hash = "sha256:e935045376b8c8425a5f0981436dd44f5f883d75fdec4b5a8f92f05b54a147d1"},
+    {file = "soteria-1.6.0.tar.gz", hash = "sha256:ad3db312ebe5659ac41b6d4ffadd8b1cb9e37e33e8897e9df09ceaba7c7e6412"},
 ]
 sqlalchemy = [
     {file = "SQLAlchemy-1.4.41-cp27-cp27m-macosx_10_14_x86_64.whl", hash = "sha256:13e397a9371ecd25573a7b90bd037db604331cf403f5318038c46ee44908c44d"},
