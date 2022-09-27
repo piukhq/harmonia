@@ -217,11 +217,13 @@ class BaseAgent:
 
     # This is not currently utilised by merchant transactions
     def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
+        # Queries the MerchantIdentifier table for all possible mid matches in dictionary form identifier_type: mid_id,
+        # then sorts the dictionary per identifier_type (enum values) and returns the mid_id of the first element
         ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)
         if not ids:
             raise MissingMID
-        ids_sorted_by_id_type = dict(sorted(ids.items()))
-        id = ids_sorted_by_id_type[next(iter(ids_sorted_by_id_type))]
+        ids_sorted_by_id_type_enum_value = dict(sorted(ids.items()))
+        id = ids_sorted_by_id_type_enum_value[next(iter(ids_sorted_by_id_type_enum_value))]
         return [id]
 
     def _import_transactions(
