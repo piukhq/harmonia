@@ -48,7 +48,7 @@ COMMON_TX_FIELDS = dict(
 
 
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
-def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: int, db_session: db.Session) -> None:
+def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
 
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
@@ -67,7 +67,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
     )
 
     agent = GenericLoyalty(ptx, mock_get_user_identity)
-    result = agent.make_matched_transaction_fields(stx, db_session)
+    result = agent.make_matched_transaction_fields(stx)
     assert result == {
         "merchant_identifier_id": mid_primary,
         "primary_identifier": None,
@@ -82,7 +82,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
 
 
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
-def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: int, db_session: db.Session) -> None:
+def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
 
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
@@ -94,7 +94,7 @@ def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: in
     )
 
     agent = GenericSpotted(ptx, mock_get_user_identity)
-    result = agent.make_spotted_transaction_fields(db_session)
+    result = agent.make_spotted_transaction_fields()
     assert result == {
         "merchant_identifier_id": mid_primary,
         "primary_identifier": None,

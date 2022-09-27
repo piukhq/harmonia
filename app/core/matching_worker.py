@@ -283,7 +283,7 @@ class MatchingWorker:
 
         match_result = MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **agent.make_matched_transaction_fields(scheme_transaction, session),
+                **agent.make_matched_transaction_fields(scheme_transaction),
                 matching_type=models.MatchingType.FORCED,
             ),
             user_identity=user_identity,

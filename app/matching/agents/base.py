@@ -85,7 +85,7 @@ class BaseMatchingAgent:
             description="find pending scheme transactions for matching",
         )
 
-    def make_spotted_transaction_fields(self, db_session: db.Session):
+    def make_spotted_transaction_fields(self):
         return {
             "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
             "primary_identifier": self.payment_transaction.primary_identifier,
@@ -98,9 +98,7 @@ class BaseMatchingAgent:
             "extra_fields": self.payment_transaction.extra_fields,
         }
 
-    def make_matched_transaction_fields(
-        self, scheme_transaction: models.SchemeTransaction, db_session: db.Session
-    ) -> dict:
+    def make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
         st_fields = {
             k: getattr(scheme_transaction, k)
             for k in (
@@ -122,9 +120,9 @@ class BaseMatchingAgent:
     def match(self, *, session: db.Session) -> t.Optional[MatchResult]:
         self.log.info(f"Matching {self.payment_transaction}.")
         scheme_transactions = self._find_applicable_scheme_transactions(session=session)
-        return self.do_match(scheme_transactions, session)
+        return self.do_match(scheme_transactions)
 
-    def do_match(self, scheme_transactions, db_session) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
         raise NotImplementedError("Matching agents must implement the do_match method")
 
     """

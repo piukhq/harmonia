@@ -4,7 +4,7 @@ from datetime import datetime, time
 import pendulum
 from sqlalchemy.orm.query import Query
 
-from app import db, models
+from app import models
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 
@@ -96,7 +96,7 @@ class Wasabi(BaseMatchingAgent):
         ]
         return matched_transactions
 
-    def do_match(self, scheme_transactions: Query, db_session: db.Session) -> t.Optional[MatchResult]:
+    def do_match(self, scheme_transactions: Query) -> t.Optional[MatchResult]:
         match = self._filter_scheme_transactions(scheme_transactions)
 
         if not match:
@@ -108,7 +108,7 @@ class Wasabi(BaseMatchingAgent):
 
         return MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **self.make_matched_transaction_fields(match, db_session),
+                **self.make_matched_transaction_fields(match),
                 matching_type=models.MatchingType.LOYALTY,
             ),
             user_identity=self.user_identity,
