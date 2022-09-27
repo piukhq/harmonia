@@ -262,10 +262,10 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
 @mock.patch("app.registry.Registry.instantiate", return_value=None)
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_get_agent_for_payment_transaction_multiple_mids(
-    mock_get_user_identity, mock_instantiate, mid_primary: int, mid_secondary: int, db_session: db.Session
+    mock_get_user_identity, mock_instantiate, mid_primary: int, db_session: db.Session
 ) -> None:
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary, mid_secondary],
+        merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",

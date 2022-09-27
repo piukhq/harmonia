@@ -87,9 +87,7 @@ class BaseMatchingAgent:
 
     def make_spotted_transaction_fields(self, db_session: db.Session):
         return {
-            "merchant_identifier_id": self.get_priority_mid_used_for_identification(
-                self.payment_transaction.merchant_identifier_ids, db_session
-            ),
+            "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
             "primary_identifier": self.payment_transaction.primary_identifier,
             "transaction_id": self.payment_transaction.transaction_id,
             "transaction_date": self.payment_transaction.transaction_date,
@@ -114,24 +112,12 @@ class BaseMatchingAgent:
             )
         }
         return {
-            "merchant_identifier_id": self.get_priority_mid_used_for_identification(
-                self.payment_transaction.merchant_identifier_ids, db_session
-            ),
+            "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
             "primary_identifier": self.payment_transaction.primary_identifier,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
             "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
         }
-
-    def get_priority_mid_used_for_identification(self, merchant_identifier_ids: list, db_session: db.Session) -> int:
-        if len(merchant_identifier_ids) == 1:
-            return merchant_identifier_ids[0]
-        else:
-            mid_type_dict = {}
-            for id in merchant_identifier_ids:
-                mid = db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == id).first()
-                mid_type_dict[mid.identifier_type.value] = mid.identifier
-            return sorted(mid_type_dict.items())[0][1]
 
     def match(self, *, session: db.Session) -> t.Optional[MatchResult]:
         self.log.info(f"Matching {self.payment_transaction}.")

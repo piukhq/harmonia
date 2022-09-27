@@ -4,7 +4,7 @@ import pytest
 
 from app import db, models
 from app.feeds import FeedType
-from app.imports.agents.bases.base import IdentifyArgs
+from app.imports.agents.bases.base import IdentifyArgs, identify_mids
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, LoyaltyScheme, PaymentProvider, TransactionStatus
@@ -130,28 +130,36 @@ def test_get_merchant_slug_secondary_identifier_visa(mid_secondary: int, db_sess
         assert slug == "loyalty_scheme"
 
 
-def test_identify_mids_table_primary_identifier_visa(mid_primary: int, db_session: db.Session):
+def test_identify_mids_primary_identifier_visa(mid_primary: int, db_session: db.Session):
     agent = VisaAuth()
     identifer = agent._identify_mids(data, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_identify_mids_table_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
+def test_identify_mids_secondary_identifier_visa(mid_secondary: int, db_session: db.Session):
     agent = VisaAuth()
     identifer = agent._identify_mids(data, db_session)
 
     assert identifer == [mid_secondary]
 
 
-def test_identify_mids_table_multiple_identifiers_visa(mid_primary: int, mid_secondary: int, db_session: db.Session):
+def test_identify_mids_multiple_identifiers_visa(mid_secondary: int, mid_primary: int, db_session: db.Session):
     agent = VisaAuth()
     identifer = agent._identify_mids(data, db_session)
 
-    assert identifer == [mid_primary, mid_secondary]
+    assert identifer == [mid_primary]
 
 
-def test_identify_mids_table_no_matching_identifiers_visa(db_session: db.Session):
+def test_identify_mids_multiple_identifiers(mid_secondary: int, mid_primary: int, db_session: db.Session):
+    mids = ["test-mid-secondary", "test-mid-psimi", "test-mid-primary"]
+    provider_slug = "visa"
+    identifer_dict = identify_mids(*mids, provider_slug=provider_slug, session=db_session)
+
+    assert identifer_dict == {IdentifierType.SECONDARY.value: mid_secondary, IdentifierType.PRIMARY.value: mid_primary}
+
+
+def test_identify_mids_no_matching_identifiers_visa(db_session: db.Session):
     agent = VisaAuth()
     with pytest.raises(MissingMID) as e:
         agent._identify_mids(data, db_session)
@@ -180,7 +188,7 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
     assert transaction_insert == {
         "feed_type": FeedType.AUTH,
         "status": TransactionStatus.IMPORTED,
-        "merchant_identifier_ids": [mid_primary, mid_secondary],
+        "merchant_identifier_ids": [mid_primary],
         "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
         "match_group": "da34aa2a4abf4cc190c3519f7c6e2f88",
         "merchant_slug": "loyalty_scheme",
@@ -200,6 +208,6 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
     }
     assert identify == IdentifyArgs(
         transaction_id="f237df3e-c93a-4976-bdd4-ca0525ed3e20",
-        merchant_identifier_ids=[mid_primary, mid_secondary],
+        merchant_identifier_ids=[mid_primary],
         card_token="token-123",
     )

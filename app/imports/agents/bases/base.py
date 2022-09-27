@@ -55,7 +55,7 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: str, provider_slug: str, session: db.Session) -> t.List[int]:
+def identify_mids(*mids: str, provider_slug: str, session: db.Session) -> dict:
     def find_mids():
         q = session.query(models.MerchantIdentifier)
         q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
@@ -68,7 +68,8 @@ def identify_mids(*mids: str, provider_slug: str, session: db.Session) -> t.List
         read_only=True,
         description=f"find {provider_slug} identifier",
     )
-    return [mid.id for mid in merchant_identifiers]
+
+    return {mid.identifier_type.value: mid.id for mid in merchant_identifiers}
 
 
 @lru_cache(maxsize=2048)
@@ -214,12 +215,14 @@ class BaseAgent:
 
         return new
 
-    # This would never be utilised by merchant transactions
+    # This is not currently utilised by merchant transactions
     def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
         ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)
         if not ids:
             raise MissingMID
-        return ids
+        ids_sorted_by_id_type = dict(sorted(ids.items()))
+        id = ids_sorted_by_id_type[next(iter(ids_sorted_by_id_type))]
+        return [id]
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
@@ -302,15 +305,15 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        mids = self.get_mids(tx_data)
         primary_id = self.get_primary_identifier(tx_data)
 
         merchant_identifier_ids = []
         identified = True
         # We don't identify mids for merchant transactions since some merchants don't know their
-        # primary mids and therefor won't import
+        # primary mids and therefore won't import
         if self.feed_type_is_payment:
             try:
+                mids = self.get_mids(tx_data)
                 merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
             except MissingMID:
                 identified = False
