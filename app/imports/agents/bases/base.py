@@ -6,6 +6,7 @@ from uuid import uuid4
 import pendulum
 import redis.lock
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql import tuple_
 
 import settings
 from app import db, models, tasks
@@ -55,12 +56,19 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: str, provider_slug: str, session: db.Session) -> dict:
+def identify_mids(*mids: tuple, provider_slug: str, session: db.Session) -> dict:
     def find_mids():
-        q = session.query(models.MerchantIdentifier)
-        q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
-
-        return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
+        return (
+            session.query(models.MerchantIdentifier)
+            .join(models.MerchantIdentifier.payment_provider)
+            .filter(models.PaymentProvider.slug == provider_slug)
+            .filter(
+                tuple_(models.MerchantIdentifier.identifier_type, models.MerchantIdentifier.identifier).in_(
+                    [(identifier_type, identifier) for identifier_type, identifier in mids]
+                )
+            )
+            .all()
+        )
 
     merchant_identifiers = db.run_query(
         find_mids,
@@ -83,7 +91,8 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
                 .join(models.MerchantIdentifier)
                 .join(models.PaymentProvider)
                 .filter(
-                    models.MerchantIdentifier.identifier.in_(mids), models.PaymentProvider.slug == payment_provider_slug
+                    models.MerchantIdentifier.identifier.in_([identifier for _, identifier in mids]),
+                    models.PaymentProvider.slug == payment_provider_slug,
                 )
                 .scalar()
             )
@@ -158,7 +167,7 @@ class BaseAgent:
     def get_primary_identifier(self, data: dict) -> str:
         raise NotImplementedError("Override get_primary_identifier in your agent.")
 
-    def get_mids(self, data: dict) -> list[str]:
+    def get_mids(self, data: dict) -> list[tuple]:
         raise NotImplementedError("Override get_mids in your agent.")
 
     def get_merchant_slug(self, data: dict) -> str:
@@ -216,7 +225,7 @@ class BaseAgent:
         return new
 
     # This is not currently utilised by merchant transactions
-    def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
+    def _identify_mids(self, mids: list[tuple], session: db.Session) -> list[int]:
         # Queries the MerchantIdentifier table for all possible mid matches in dictionary form identifier_type: mid_id,
         # then sorts the dictionary per identifier_type (enum values) and returns the mid_id of the first element
         ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)

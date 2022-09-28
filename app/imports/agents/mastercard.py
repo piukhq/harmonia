@@ -10,6 +10,7 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
+from app.models import IdentifierType
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
@@ -118,8 +119,8 @@ class MastercardTS44Settlement(FileAgent):
     def get_primary_identifier(self, data: dict) -> str:
         return try_convert_settlement_mid(data["merchant_id"])
 
-    def get_mids(self, data: dict) -> list[str]:
-        return [self.get_primary_identifier(data)]
+    def get_mids(self, data: dict) -> list[tuple]:
+        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['transaction_date']} {data['transaction_time']}"
@@ -206,14 +207,14 @@ class MastercardTGX2Settlement(FileAgent):
     def _get_psimi_identifier(self, data: dict) -> str:
         return data["aggregate_merchant_id"]
 
-    def get_mids(self, data: dict) -> list[str]:
+    def get_mids(self, data: dict) -> list[tuple]:
         return list(
             filter(
-                lambda item: item not in [None, ""],
+                lambda item: item[1] not in [None, ""],
                 [
-                    self.get_primary_identifier(data),
-                    self._get_secondary_identifier(data),
-                    self._get_psimi_identifier(data),
+                    (IdentifierType.PRIMARY, self.get_primary_identifier(data)),
+                    (IdentifierType.SECONDARY, self._get_secondary_identifier(data)),
+                    (IdentifierType.PSIMI, self._get_psimi_identifier(data)),
                 ],
             )
         )
@@ -256,5 +257,5 @@ class MastercardAuth(QueueAgent):
     def get_primary_identifier(self, data: dict) -> str:
         return data["mid"]
 
-    def get_mids(self, data: dict) -> list[str]:
-        return [self.get_primary_identifier(data)]
+    def get_mids(self, data: dict) -> list[tuple]:
+        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]

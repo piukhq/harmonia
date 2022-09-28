@@ -1,4 +1,5 @@
 from app.imports.agents.amex import AmexAuth, AmexSettlement
+from app.models import IdentifierType
 
 auth_tx_data = {
     "transaction_id": "a46d15b6-5f9f-481f-8649-983e8d291b7e",
@@ -28,10 +29,10 @@ settlement_tx_data = {
 def test_auth_get_mids():
     agent = AmexAuth()
     ids = agent.get_mids(auth_tx_data)
-    assert ids == ["test-mid-123"]
+    assert ids == [(IdentifierType.PRIMARY, "test-mid-123")]
 
 
 def test_settlement_get_mids():
     agent = AmexSettlement()
     ids = agent.get_mids(settlement_tx_data)
-    assert ids == ["test-mid-123"]
+    assert ids == [(IdentifierType.PRIMARY, "test-mid-123")]

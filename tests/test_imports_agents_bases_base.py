@@ -9,7 +9,11 @@ from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, LoyaltyScheme, PaymentProvider, TransactionStatus
 
-data = ["test-mid-primary", "test-mid-secondary", "test-mid-psimi"]
+data = [
+    (IdentifierType.PRIMARY, "test-mid-primary"),
+    (IdentifierType.SECONDARY, "test-mid-secondary"),
+    (IdentifierType.PSIMI, "test-mid-psimi"),
+]
 
 visa_transaction = {
     "CardId": "f237df3e-",
@@ -152,7 +156,11 @@ def test_identify_mids_multiple_identifiers_visa(mid_secondary: int, mid_primary
 
 
 def test_identify_mids_multiple_identifiers(mid_secondary: int, mid_primary: int, db_session: db.Session):
-    mids = ["test-mid-secondary", "test-mid-psimi", "test-mid-primary"]
+    mids = [
+        (IdentifierType.SECONDARY, "test-mid-secondary"),
+        (IdentifierType.PSIMI, "test-mid-psimi"),
+        (IdentifierType.PRIMARY, "test-mid-primary"),
+    ]
     provider_slug = "visa"
     identifer_dict = identify_mids(*mids, provider_slug=provider_slug, session=db_session)
 
