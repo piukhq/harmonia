@@ -27,6 +27,8 @@ class ExportedTransaction(t.TypedDict):
     merchant_internal_id: t.Optional[int]
     payment_card_account_id: t.Optional[str]
     settlement_key: t.Optional[str]
+    authorisation_code: t.Optional[str]
+    approval_code: t.Optional[str]
 
 
 def exported_event(transactions: t.List[ExportTransaction]):
@@ -52,6 +54,8 @@ def exported_event(transactions: t.List[ExportTransaction]):
             merchant_internal_id=transaction.merchant_internal_id,
             payment_card_account_id=transaction.payment_card_account_id,
             settlement_key=transaction.settlement_key,
+            authorisation_code=transaction.auth_code,
+            approval_code=transaction.approval_code,
         )
 
         # Send the message via a rabbit queue

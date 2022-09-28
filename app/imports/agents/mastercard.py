@@ -228,6 +228,8 @@ class MastercardAuth(QueueAgent):
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
+        if data.get("third_party_id"):
+            return data["third_party_id"]
         return uuid4().hex
 
     def get_mids(self, data: dict) -> t.List[str]:
