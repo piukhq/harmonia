@@ -34,11 +34,14 @@ class MatchingWorker:
     def _get_agent_for_payment_transaction(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> t.Optional[BaseMatchingAgent]:
-        slug = (
-            session.query(models.MerchantIdentifier)
+        slug = db.run_query(
+            lambda: session.query(models.MerchantIdentifier)
             .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
             .one()
-            .loyalty_scheme.slug
+            .loyalty_scheme.slug,
+            session=session,
+            read_only=True,
+            description="find payment transaction MID slug",
         )
 
         user_identity = identifier.get_user_identity(payment_transaction.transaction_id, session=session)
