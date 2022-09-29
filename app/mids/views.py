@@ -203,6 +203,23 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
 @api.route("/", methods=["POST"])
 @requires_service_auth
 def onboard_mids() -> tuple[dict, int]:
+    """
+    Onboard identifiers
+    ---
+    post:
+        description: Onboard a number of MIDs, Secondary MIDs, or PSIMIs.
+        parameters:
+        - in: body
+          schema: MIDCreationListSchema
+        responses:
+            200:
+                description: "The identifiers were onboarded successfully"
+                schema: MIDCreationResultSchema
+            400:
+                description: "Bad request content type"
+            422:
+                description: "Invalid request schema"
+    """
     if not request.is_json:
         return {"title": "Bad request", "description": "Expected JSON content type"}, 400
 
@@ -237,6 +254,23 @@ def onboard_mids() -> tuple[dict, int]:
 @api.route("/deletion", methods=["POST"])
 @requires_service_auth
 def offboard_mids() -> tuple[dict, int]:
+    """
+    Offboard identifiers
+    ---
+    post:
+        description: Offboard a number of MIDs, Secondary MIDs, or PSIMIs.
+        parameters:
+        - in: body
+          schema: MIDDeletionListSchema
+        responses:
+            200:
+                description: "The identifiers were offboarded successfully"
+                schema: MIDDeletionResultSchema
+            400:
+                description: "Bad request content type"
+            422:
+                description: "Invalid request schema"
+    """
     if not request.is_json:
         return {"title": "Bad request", "description": "Expected JSON content type"}, 400
 
