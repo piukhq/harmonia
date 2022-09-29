@@ -32,5 +32,5 @@ email = "test@binktest.com"
 date = 2020-08-05T16:28:52Z
 amount = 9000
 auth_code = "999999"
-identifier = "619210498958065"
+identifier = "test-mid-456"
 identifier_type = "PRIMARY"

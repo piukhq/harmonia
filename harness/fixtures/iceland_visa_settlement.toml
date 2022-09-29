@@ -34,8 +34,8 @@ amount = 1099
 auth_code = "666665"
 identifier = "test-mid-234"
 identifier_type = "PRIMARY"
-#[users.transactions.payment_provider_overrides]
-#auth_code = "6666667"
+[users.transactions.payment_provider_overrides]
+auth_code = "6666667"
 
 [[users.transactions]]
 date = 2020-06-02T17:46:00Z
