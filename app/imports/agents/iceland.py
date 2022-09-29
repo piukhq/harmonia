@@ -10,7 +10,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
-from app.models import IdentifierType
 from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "iceland-bonus-card"
@@ -91,8 +90,8 @@ class Iceland(FileAgent):
     def get_primary_identifier(self, data: dict) -> str:
         return data["TransactionStore_Id"]
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
+    def get_mids(self, data: dict) -> t.List[str]:
+        return [data["TransactionStore_Id"]]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         return data["TransactionTimestamp"]

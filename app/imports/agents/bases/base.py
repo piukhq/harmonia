@@ -6,12 +6,11 @@ from uuid import uuid4
 import pendulum
 import redis.lock
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql import tuple_
 
 import settings
 from app import db, models, tasks
 from app.feeds import FeedType
-from app.imports.exceptions import MissingMID
+from app.imports.exceptions import MIDDataError, MissingMID
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.utils import missing_property
@@ -56,28 +55,26 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: tuple, provider_slug: str, session: db.Session) -> dict:
+def identify_mids(*mids: str, feed_type: FeedType, provider_slug: str, session: db.Session) -> t.List[int]:
     def find_mids():
-        return (
-            session.query(models.MerchantIdentifier)
-            .join(models.MerchantIdentifier.payment_provider)
-            .filter(models.PaymentProvider.slug == provider_slug)
-            .filter(
-                tuple_(models.MerchantIdentifier.identifier_type, models.MerchantIdentifier.identifier).in_(
-                    [(identifier_type, identifier) for identifier_type, identifier in mids]
-                )
-            )
-            .all()
-        )
+        q = session.query(models.MerchantIdentifier)
+
+        if feed_type == FeedType.MERCHANT:
+            q = q.join(models.MerchantIdentifier.loyalty_scheme).filter(models.LoyaltyScheme.slug == provider_slug)
+        elif feed_type in (FeedType.SETTLED, FeedType.AUTH, FeedType.REFUND):
+            q = q.join(models.MerchantIdentifier.payment_provider).filter(models.PaymentProvider.slug == provider_slug)
+        else:
+            raise ValueError(f"Unsupported feed type: {feed_type}")
+
+        return q.filter(models.MerchantIdentifier.identifier.in_(mids)).all()
 
     merchant_identifiers = db.run_query(
         find_mids,
         session=session,
         read_only=True,
-        description=f"find {provider_slug} identifier",
+        description=f"find {provider_slug} MID",
     )
-
-    return {mid.identifier_type.value: mid.id for mid in merchant_identifiers}
+    return [mid.id for mid in merchant_identifiers]
 
 
 @lru_cache(maxsize=2048)
@@ -91,8 +88,7 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
                 .join(models.MerchantIdentifier)
                 .join(models.PaymentProvider)
                 .filter(
-                    models.MerchantIdentifier.identifier.in_([identifier for _, identifier in mids]),
-                    models.PaymentProvider.slug == payment_provider_slug,
+                    models.MerchantIdentifier.identifier.in_(mids), models.PaymentProvider.slug == payment_provider_slug
                 )
                 .scalar()
             )
@@ -167,7 +163,7 @@ class BaseAgent:
     def get_primary_identifier(self, data: dict) -> str:
         raise NotImplementedError("Override get_primary_identifier in your agent.")
 
-    def get_mids(self, data: dict) -> list[tuple]:
+    def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
 
     def get_merchant_slug(self, data: dict) -> str:
@@ -224,16 +220,22 @@ class BaseAgent:
 
         return new
 
-    # This is not currently utilised by merchant transactions
-    def _identify_mids(self, mids: list[tuple], session: db.Session) -> list[int]:
-        # Queries the MerchantIdentifier table for all possible mid matches in dictionary form identifier_type: mid_id,
-        # then sorts the dictionary per identifier_type (enum values) and returns the mid_id of the first element
-        ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)
+    def _identify_mids(self, mids: list[str], session: db.Session) -> t.List[int]:
+        ids = identify_mids(*mids, feed_type=self.feed_type, provider_slug=self.provider_slug, session=session)
         if not ids:
             raise MissingMID
-        ids_sorted_by_id_type_enum_value = dict(sorted(ids.items()))
-        id = ids_sorted_by_id_type_enum_value[next(iter(ids_sorted_by_id_type_enum_value))]
-        return [id]
+
+        if self.feed_type != FeedType.MERCHANT and len(ids) > 1:
+            raise MIDDataError(
+                f"{type(self).__name__} is a payment feed agent and must therefore only provide a single MID value per "
+                f"transaction. However, the agent mapped this MIDs list: {mids} to these multiple IDs: {ids}. "
+                "This indicates an issue with the MIDs loaded into the database. Please ensure that this combination "
+                "of MIDs only maps to a single merchant_identifier record.\n"
+                "Note, Visa MIDs are given as [MID, VSID]. If this is a Visa issue, ensure that either the MID or the "
+                "VSID is loaded, and not both."
+            )
+
+        return ids
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
@@ -316,18 +318,15 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
+        mids = self.get_mids(tx_data)
         primary_id = self.get_primary_identifier(tx_data)
 
         merchant_identifier_ids = []
         identified = True
-        # We don't identify mids for merchant transactions since some merchants don't know their
-        # primary mids and therefore won't import
-        if self.feed_type_is_payment:
-            try:
-                mids = self.get_mids(tx_data)
-                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
-            except MissingMID:
-                identified = False
+        try:
+            merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
+        except MissingMID:
+            identified = False
 
         import_transaction_insert = dict(
             transaction_id=tid,

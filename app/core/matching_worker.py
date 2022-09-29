@@ -34,15 +34,24 @@ class MatchingWorker:
     def _get_agent_for_payment_transaction(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
     ) -> t.Optional[BaseMatchingAgent]:
-        slug = db.run_query(
+        merchant_identifiers = db.run_query(
             lambda: session.query(models.MerchantIdentifier)
             .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
-            .one()
-            .loyalty_scheme.slug,
+            .all(),
             session=session,
             read_only=True,
-            description="find payment transaction MID slug",
+            description="find payment transaction MIDs",
         )
+
+        slugs = {merchant_identifier.loyalty_scheme.slug for merchant_identifier in merchant_identifiers}
+
+        if len(slugs) > 1:
+            raise ValueError(
+                f"{payment_transaction} maps to multiple scheme slugs! This is likely caused by an error in the MIDs. "
+                f"Conflicting slugs: {slugs}."
+            )
+
+        slug = slugs.pop()
 
         user_identity = identifier.get_user_identity(payment_transaction.transaction_id, session=session)
 
@@ -185,13 +194,13 @@ class MatchingWorker:
 
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
-        mid = {scheme_transaction.primary_identifier for scheme_transaction in scheme_transactions}
+        mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.merchant_identifier_ids}
 
         since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(
-                models.PaymentTransaction.primary_identifier == mid.pop(),
+                models.PaymentTransaction.merchant_identifier_ids.overlap(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.created_at >= since.isoformat(),
             )
@@ -286,8 +295,7 @@ class MatchingWorker:
 
         match_result = MatchResult(
             matched_transaction=models.MatchedTransaction(
-                **agent.make_matched_transaction_fields(scheme_transaction),
-                matching_type=models.MatchingType.FORCED,
+                **agent.make_matched_transaction_fields(scheme_transaction), matching_type=models.MatchingType.FORCED
             ),
             user_identity=user_identity,
             scheme_transaction_id=scheme_transaction_id,

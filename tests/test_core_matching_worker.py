@@ -1,5 +1,3 @@
-from unittest import mock
-
 import pendulum
 import pytest
 import responses
@@ -8,18 +6,16 @@ import settings
 from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
-from app.feeds import FeedType
-from app.models import IdentifierType
 
 
 @pytest.fixture
-def mid_primary(db_session: db.Session) -> int:
+def mid(db_session: db.Session) -> int:
     loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
     payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
-        identifier="test-mid-primary",
-        identifier_type=IdentifierType.PRIMARY,
+        identifier="test-force-match-mid-1",
+        identifier_type="PRIMARY",
         defaults={
             "loyalty_scheme": loyalty_scheme,
             "payment_provider": payment_provider,
@@ -30,58 +26,6 @@ def mid_primary(db_session: db.Session) -> int:
     )
 
     return mid.id
-
-
-@pytest.fixture
-def mid_secondary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
-        identifier="test-mid-secondary",
-        identifier_type=IdentifierType.SECONDARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
-        session=db_session,
-    )
-
-    return mid.id
-
-
-@pytest.fixture
-def transaction(mid_primary, mid_secondary, db_session: db.Session) -> models.Transaction:
-    tx, _ = db.get_or_create(
-        models.Transaction,
-        feed_type=FeedType.AUTH,
-        merchant_identifier_ids=[mid_primary, mid_secondary],
-        primary_identifier=db_session.query(models.MerchantIdentifier)
-        .filter(models.MerchantIdentifier.id == mid_primary)[0]
-        .identifier,
-        transaction_id="test-transaction-1",
-        defaults={
-            "merchant_slug": "iceland-bonus-card",
-            "payment_provider_slug": "amex",
-            "settlement_key": "1234567890",
-            "approval_code": "",
-            "card_token": "test-token-1",
-            "transaction_date": pendulum.now(),
-            "has_time": True,
-            "spend_amount": 1699,
-            "spend_multiplier": 100,
-            "spend_currency": "GBP",
-            "first_six": "123456",
-            "last_four": "7890",
-            "status": models.TransactionStatus.IMPORTED,
-            "auth_code": "123456",
-            "match_group": "1234567890",
-        },
-        session=db_session,
-    )
-    return tx
 
 
 COMMON_TX_FIELDS = dict(
@@ -100,7 +44,7 @@ COMMON_TX_FIELDS = dict(
 
 
 @responses.activate
-def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) -> None:
+def test_force_match_no_user_identity(mid: int, db_session: db.Session) -> None:
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
@@ -109,7 +53,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
     )
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -118,7 +62,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -148,9 +92,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
 
 @responses.activate
-def test_force_match_late_user_identity(
-    mid_primary: int, transaction: models.Transaction, db_session: db.Session
-) -> None:
+def test_force_match_late_user_identity(mid: int, db_session: db.Session) -> None:
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
@@ -170,7 +112,7 @@ def test_force_match_late_user_identity(
     )
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -179,7 +121,7 @@ def test_force_match_late_user_identity(
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -214,14 +156,14 @@ def test_force_match_late_user_identity(
 
 
 @responses.activate
-def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> None:
+def test_force_match_hermes_down(mid: int, db_session: db.Session) -> None:
     """
     By not adding the request via `responses.add` we can simulate hermes being unavailable.
     """
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
 
     ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="amex",
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
@@ -230,7 +172,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
     )
 
     stx = models.SchemeTransaction(
-        merchant_identifier_ids=[mid_primary],
+        merchant_identifier_ids=[mid],
         provider_slug="iceland-bonus-card",
         payment_provider_slug="amex",
         transaction_id="test-force-match-transaction-1",
@@ -257,21 +199,3 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
         .one_or_none()
     )
     assert mtx is None  # should be no match created
-
-
-@mock.patch("app.registry.Registry.instantiate", return_value=None)
-@mock.patch("app.core.identifier.get_user_identity", return_value=None)
-def test_get_agent_for_payment_transaction_multiple_mids(
-    mock_get_user_identity, mock_instantiate, mid_primary: int, db_session: db.Session
-) -> None:
-    ptx = models.PaymentTransaction(
-        merchant_identifier_ids=[mid_primary],
-        provider_slug="amex",
-        transaction_id="test-single-primary-mid-transaction-2",
-        settlement_key="1234567890",
-        card_token="test-single-primary-mid-token-1",
-        **COMMON_TX_FIELDS,
-    )
-    worker = MatchingWorker()
-    worker._get_agent_for_payment_transaction(payment_transaction=ptx, session=db_session)
-    assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"

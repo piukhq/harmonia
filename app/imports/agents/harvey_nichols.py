@@ -8,7 +8,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
-from app.models import IdentifierType
 from app.service.hermes import PaymentProviderSlug
 
 PROVIDER_SLUG = "harvey-nichols"
@@ -203,9 +202,9 @@ class HarveyNichols(FileAgent):
         # Harvey Nichols is currently not operational - rethink if and when reinstated
         return data["store_id"]
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        mid = self.get_primary_identifier(data)
-        return [(IdentifierType.PRIMARY, STORE_ID_TO_MIDS.get(mid[:4], [mid]))]
+    def get_mids(self, data: dict) -> t.List[str]:
+        mid = data["store_id"]
+        return STORE_ID_TO_MIDS.get(mid[:4], [mid])
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         return self.pendulum_parse(data["timestamp"], tz="Europe/London")
