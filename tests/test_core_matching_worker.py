@@ -96,6 +96,7 @@ COMMON_TX_FIELDS = dict(
     auth_code="123456",
     match_group="1234567890",
     extra_fields={},
+    primary_identifier="test-mid-primary",
 )
 
 

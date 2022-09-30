@@ -29,6 +29,7 @@ def create_transaction_record(db_session: db.Session):
             first_six="666666",
             last_four="4444",
             auth_code="666655",
+            primary_identifier="test-mid-primary",
         ),
         session=db_session,
     )
@@ -50,6 +51,7 @@ def create_export_transaction(transaction_id, merchant_identifier, settlement_ke
         user_id=1,
         scheme_account_id=1,
         credentials="something",
+        primary_identifier="test-mid-primary",
     )
     return exp_txn
 
