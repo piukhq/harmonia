@@ -99,6 +99,7 @@ class BaseMatchingAgent:
 
         return {
             "merchant_identifier_id": merchant_identifier_ids[0],
+            "primary_identifier": self.payment_transaction.primary_identifier,
             "transaction_id": self.payment_transaction.transaction_id,
             "transaction_date": self.payment_transaction.transaction_date,
             "spend_amount": self.payment_transaction.spend_amount,
@@ -134,6 +135,7 @@ class BaseMatchingAgent:
         }
         return {
             "merchant_identifier_id": matching_merchant_identifier_ids[0],
+            "primary_identifier": self.payment_transaction.primary_identifier,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
             "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},

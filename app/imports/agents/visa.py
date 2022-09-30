@@ -66,6 +66,9 @@ class VisaAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return get_key_value(data, "Transaction.MerchantCardAcceptorId")
+
     def get_mids(self, data: dict) -> t.List[str]:
         return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
 
@@ -110,6 +113,9 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return get_key_value(data, "Transaction.MerchantCardAcceptorId")
+
     def get_mids(self, data: dict) -> t.List[str]:
         return get_mid_and_vsid(data, mid_key="Transaction.MerchantCardAcceptorId", vsid_key="Transaction.VisaStoreId")
 
@@ -153,6 +159,9 @@ class VisaRefund(QueueAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
+
+    def get_primary_identifier(self, data: dict) -> str:
+        return get_key_value(data, "ReturnTransaction.CardAcceptorIdCode")
 
     def get_mids(self, data: dict) -> t.List[str]:
         return get_mid_and_vsid(
