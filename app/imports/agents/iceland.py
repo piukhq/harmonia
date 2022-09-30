@@ -87,6 +87,9 @@ class Iceland(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["TransactionId"]
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return data["TransactionStore_Id"]
+
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["TransactionStore_Id"]]
 

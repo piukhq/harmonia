@@ -160,6 +160,9 @@ class BaseAgent:
             location_id_mid_map[location_id].append(mid)
         return location_id_mid_map
 
+    def get_primary_identifier(self, data: dict) -> str:
+        raise NotImplementedError("Override get_primary_identifier in your agent.")
+
     def get_mids(self, data: dict) -> t.List[str]:
         raise NotImplementedError("Override get_mids in your agent.")
 
@@ -316,6 +319,7 @@ class BaseAgent:
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
         mids = self.get_mids(tx_data)
+        primary_id = self.get_primary_identifier(tx_data)
 
         merchant_identifier_ids = []
         identified = True
@@ -343,6 +347,7 @@ class BaseAgent:
                     feed_type=self.feed_type,
                     status=models.TransactionStatus.IMPORTED,
                     merchant_identifier_ids=merchant_identifier_ids,
+                    primary_identifier=primary_id,
                     transaction_id=tid,
                     match_group=match_group,
                     **transaction_fields._asdict(),

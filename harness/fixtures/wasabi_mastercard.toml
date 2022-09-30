@@ -34,5 +34,3 @@ amount = 9000
 auth_code = "999999"
 identifier = "test-mid-456"
 identifier_type = "PRIMARY"
-# [users.transactions.merchant_overrides]
-# auth_code = "777777"

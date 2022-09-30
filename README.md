@@ -158,9 +158,6 @@ Example:
 [[payment_provider.transactions]]
 date = 2020-06-02T15:46:30Z  # Datetime representing the transaction time
 amount = 1222  # Transaction amount in pennies
-
-# Settlement key of the payment transaction - should be kept to 9 chars or less for Mastercard
-settlement_key = "1111111111"
 token = "1111"  # Payment token
 
 # Which user to link the payment to - does not need to be changed in most cases as there is not much need to test with more than one user.
@@ -172,6 +169,8 @@ date = 2020-06-02T15:47:45Z
 amount = 1222
 first_six = "123456"  # Payment card first six
 last_four = "7890"  # Payment card last four
+identifier = "test-mid-234"
+identifier_type = "PRIMARY"  # PRIMARY, SECONDARY OR PSIMI
 ```
 
 After running these tests, the PostgreSQL and Redis containers will be left

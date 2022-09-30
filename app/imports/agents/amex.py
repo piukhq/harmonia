@@ -66,6 +66,9 @@ class AmexAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
+    def get_primary_identifier(self, data: dict) -> str:
+        return data["merchant_number"]
+
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchant_number"]]
 
@@ -103,6 +106,9 @@ class AmexSettlement(QueueAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         return data["transactionId"]
+
+    def get_primary_identifier(self, data: dict) -> str:
+        return data["merchantNumber"]
 
     def get_mids(self, data: dict) -> t.List[str]:
         return [data["merchantNumber"]]

@@ -320,6 +320,7 @@ class MatchingWorker:
                 spend_currency=matched_transaction.spend_currency,
                 loyalty_id=user_identity.loyalty_id,
                 mid=matched_transaction.merchant_identifier.identifier,
+                primary_identifier=matched_transaction.primary_identifier,
                 location_id=matched_transaction.merchant_identifier.location_id,
                 merchant_internal_id=matched_transaction.merchant_identifier.merchant_internal_id,
                 user_id=user_identity.user_id,

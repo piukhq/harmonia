@@ -83,6 +83,10 @@ class Transaction(Base, ModelMixin):
     # list of related merchant_identifier record IDs.
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
 
+    # primary merchant_identifier that is used for matching
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(s.String(50), nullable=True)
+
     # hermes scheme & paymentcard slugs.
     merchant_slug = s.Column(s.String(50), nullable=False)
     payment_provider_slug = s.Column(s.String(50), nullable=False)
@@ -115,6 +119,8 @@ class SchemeTransaction(Base, ModelMixin):
     __tablename__ = "scheme_transaction"
 
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(s.String(50), nullable=True)
     provider_slug = s.Column(s.String(50), nullable=False)  # hermes scheme slug
     payment_provider_slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant
@@ -137,6 +143,8 @@ class PaymentTransaction(Base, ModelMixin):
     __tablename__ = "payment_transaction"
 
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(s.String(50), nullable=True)
     provider_slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the provider
     settlement_key = s.Column(s.String(100), nullable=True, index=True)  # key to match auth & settled transactions
@@ -175,6 +183,8 @@ class MatchedTransaction(Base, ModelMixin):
     __tablename__ = "matched_transaction"
 
     merchant_identifier_id = s.Column(s.Integer, s.ForeignKey("merchant_identifier.id"))
+    # TODO make nullable=False once Transaction table purged of historical records that don't contain it
+    primary_identifier = s.Column(s.String(50), nullable=True)
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant/provider
     transaction_date = s.Column(s.DateTime, nullable=False)  # date this transaction was originally made
     spend_amount = s.Column(s.Integer, nullable=False)  # the amount of money that was involved in the transaction
