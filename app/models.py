@@ -158,6 +158,7 @@ class PaymentTransaction(Base, ModelMixin):
     last_four = s.Column(s.Text, nullable=True)  # last four digits of card number, if present
     status = s.Column(s.Enum(TransactionStatus), nullable=False, default=TransactionStatus.PENDING)
     auth_code = s.Column(s.String(20), nullable=False, default="")
+    approval_code = s.Column(s.String(20), nullable=False, default="")
     match_group = s.Column(s.String(36), nullable=False, index=True)  # currently unused
     extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
