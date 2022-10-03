@@ -98,6 +98,7 @@ class MatchingDirector:
                 last_four=transaction.last_four,
                 status=models.TransactionStatus.PENDING,
                 auth_code=transaction.auth_code,
+                approval_code=transaction.approval_code,
                 match_group=match_group,
                 extra_fields={},
             )
