@@ -26,6 +26,8 @@ class MockFullExportTransaction:
     credentials = {"card_number": "loyalty-123", "merchant_identifier": "876543"}
     status = ExportTransactionStatus.EXPORTED
     settlement_key = "ghy54rth4rty43r"
+    auth_code = "123"
+    approval_code = "123"
 
 
 class MockPartExportTransaction:
@@ -47,6 +49,8 @@ class MockPartExportTransaction:
     credentials = {"card_number": "loyalty-123", "merchant_identifier": "876543"}
     status = ExportTransactionStatus.EXPORTED
     settlement_key = None
+    auth_code = "123"
+    approval_code = "123"
 
 
 @mock.patch("app.service.queue.add", autospec=True)

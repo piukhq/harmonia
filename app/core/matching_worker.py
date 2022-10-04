@@ -325,7 +325,7 @@ class MatchingWorker:
                 expiry_year=user_identity.expiry_year,
                 payment_provider_slug=payment_transaction.provider_slug,
                 auth_code=payment_transaction.auth_code,
-                approval_code="",
+                approval_code=payment_transaction.approval_code,
             ),
             session=session,
         )
