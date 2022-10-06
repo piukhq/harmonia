@@ -1,8 +1,8 @@
 """make primary_identifier field not nullable
 
-Revision ID: 3544cc4e8e2e
-Revises: 76de66565f46
-Create Date: 2022-09-30 11:11:54.990694+00:00
+Revision ID: 09c76ce2bf05
+Revises: 5477ff60b0b3
+Create Date: 2022-10-06 14:59:37.796077+00:00
 
 """
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "3544cc4e8e2e"
-down_revision = "76de66565f46"
+revision = "09c76ce2bf05"
+down_revision = "5477ff60b0b3"
 branch_labels = None
 depends_on = None
 
