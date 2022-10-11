@@ -1,14 +1,15 @@
 from marshmallow import Schema, fields, validate
 
 from app.api.app import define_schema
+from app.models import IdentifierType
 
 NotBlank = validate.Length(min=1)
 
 
 @define_schema
-class MIDCreationSchema(Schema):
+class IdentifierCreationSchema(Schema):
     identifier = fields.String(required=True, validate=NotBlank)
-    identifier_type = fields.String(required=True, validate=NotBlank)
+    identifier_type = fields.String(required=True, validate=validate.OneOf(IdentifierType._member_map_.keys()))
     loyalty_plan = fields.String(required=True, validate=NotBlank)
     payment_scheme = fields.String(required=True, validate=NotBlank)
     location_id = fields.String(required=False, validate=NotBlank)
@@ -16,28 +17,29 @@ class MIDCreationSchema(Schema):
 
 
 @define_schema
-class MIDCreationListSchema(Schema):
-    identifiers = fields.Nested(MIDCreationSchema, many=True, required=True)
+class IdentifierCreationListSchema(Schema):
+    identifiers = fields.Nested(IdentifierCreationSchema, many=True, required=True)
 
 
 @define_schema
-class MIDCreationResultSchema(Schema):
+class IdentifierCreationResultSchema(Schema):
     total = fields.Integer()
     onboarded = fields.Integer()
 
 
 @define_schema
-class MIDDeletionSchema(Schema):
-    mid = fields.String(required=True, validate=NotBlank)
+class IdentifierDeletionSchema(Schema):
+    identifier = fields.String(required=True, validate=NotBlank)
     payment_scheme = fields.String(required=True, validate=NotBlank)
+    identifier_type = fields.String(required=True, validate=validate.OneOf(IdentifierType._member_map_.keys()))
 
 
 @define_schema
-class MIDDeletionListSchema(Schema):
-    mids = fields.Nested(MIDDeletionSchema, many=True, required=True)
+class IdentifierDeletionListSchema(Schema):
+    identifiers = fields.Nested(IdentifierDeletionSchema, many=True, required=True)
     locations = fields.List(fields.String(required=True, validate=NotBlank), required=True)
 
 
 @define_schema
-class MIDDeletionResultSchema(Schema):
+class IdentifierDeletionResultSchema(Schema):
     deleted = fields.Integer()
