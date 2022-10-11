@@ -7,7 +7,8 @@ NotBlank = validate.Length(min=1)
 
 @define_schema
 class MIDCreationSchema(Schema):
-    mid = fields.String(required=True, validate=NotBlank)
+    identifier = fields.String(required=True, validate=NotBlank)
+    identifier_type = fields.String(required=True, validate=NotBlank)
     loyalty_plan = fields.String(required=True, validate=NotBlank)
     payment_scheme = fields.String(required=True, validate=NotBlank)
     location_id = fields.String(required=False, validate=NotBlank)
@@ -16,7 +17,7 @@ class MIDCreationSchema(Schema):
 
 @define_schema
 class MIDCreationListSchema(Schema):
-    mids = fields.Nested(MIDCreationSchema, many=True, required=True)
+    identifiers = fields.Nested(MIDCreationSchema, many=True, required=True)
 
 
 @define_schema

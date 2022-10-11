@@ -15,9 +15,9 @@ from app.api.auth import auth_decorator, requires_service_auth
 from app.api.utils import view_session
 from app.mids import schemas
 
-api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
+api = Blueprint("identifiers_api", __name__, url_prefix=f"{settings.URL_PREFIX}/identifiers")
 requires_auth = auth_decorator()
-log = reporting.get_logger("mids-api")
+log = reporting.get_logger("identifiers-api")
 
 
 class CSVDialect(csv.Dialect):
@@ -103,7 +103,9 @@ def insert_mids(mids_data: list[dict], session: db.Session) -> int:
     return mids_table_after - mids_table_before
 
 
-def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session) -> tuple[int, int]:
+def add_identifiers_from_csv(
+    file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session
+) -> tuple[int, int]:
     mark = _get_first_character(file_storage)
     if mark not in string.printable:
         raise ValueError(
@@ -162,12 +164,12 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
 @api.route("/csv", methods=["POST"])
 @requires_auth(auth_scopes="mids:write")
 @view_session
-def import_mids(*, session: db.Session) -> tuple[dict, int]:
+def import_identifiers(*, session: db.Session) -> tuple[dict, int]:
     """
-    Import MIDs
+    Import identifiers
     ---
     post:
-        description: Upload MIDs CSV file
+        description: Upload identifiers CSV file
         responses:
             200:
                 description: "Import was successful"
@@ -179,12 +181,12 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
         failed.append({"file": filepath, "reason": reason})
 
     for filepath, file_storage in request.files.items():
-        log.debug(f'Attempting to import MIDs file "{filepath}"')
+        log.debug(f'Attempting to import identifiers file "{filepath}"')
         if file_storage.content_type != "text/csv":
             fail(filepath, f"Expected file content type text/csv, got {file_storage.content_type}")
             continue
         try:
-            n_mids_in_file, n_mids_imported = add_mids_from_csv(file_storage, session=session)
+            n_mids_in_file, n_mids_imported = add_identifiers_from_csv(file_storage, session=session)
         except Exception as ex:
             error_message = f"{type(ex).__name__}: {ex}"
             if len(error_message) > 250:
@@ -202,7 +204,7 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
 
 @api.route("/", methods=["POST"])
 @requires_service_auth
-def onboard_mids() -> tuple[dict, int]:
+def onboard_identifiers() -> tuple[dict, int]:
     """
     Onboard identifiers
     ---
@@ -231,24 +233,24 @@ def onboard_mids() -> tuple[dict, int]:
         return {"title": "Validation error", "description": ex.messages}, 422
 
     with db.session_scope() as session:
-        mids = [
+        identifiers = [
             create_merchant_identifier_fields(
-                identifier=mid["mid"],
-                identifier_type=validate_identifier_type(mid.get("identifier_type")),
-                location_id=mid.get("location_id"),
-                merchant_internal_id=mid.get("merchant_internal_id"),
-                loyalty_scheme_slug=mid["loyalty_plan"],
-                payment_provider_slug=mid["payment_scheme"],
+                identifier=identifier["identifier"],
+                identifier_type=validate_identifier_type(identifier.get("identifier_type")),
+                location_id=identifier.get("location_id"),
+                merchant_internal_id=identifier.get("merchant_internal_id"),
+                loyalty_scheme_slug=identifier["loyalty_plan"],
+                payment_provider_slug=identifier["payment_scheme"],
                 location="",
                 postcode="",
                 session=session,
             )
-            for mid in data["mids"]
+            for identifier in data["identifiers"]
         ]
 
-        count = insert_mids(mids, session=session)
+        count = insert_mids(identifiers, session=session)
 
-    return {"total": len(mids), "onboarded": count}, 200
+    return {"total": len(identifiers), "onboarded": count}, 200
 
 
 @api.route("/deletion", methods=["POST"])

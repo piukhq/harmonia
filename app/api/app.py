@@ -53,11 +53,11 @@ def create_app() -> flask.Flask:
     from app.api.views import api as core_api
     from app.config.views import api as config_api
     from app.matching.views import api as matching_api
-    from app.mids.views import api as mids_api
+    from app.mids.views import api as identifiers_api
 
     app.register_blueprint(core_api)
     app.register_blueprint(config_api)
-    app.register_blueprint(mids_api)
+    app.register_blueprint(identifiers_api)
     app.register_blueprint(matching_api)
 
     with app.test_request_context():
