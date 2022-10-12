@@ -94,7 +94,7 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
             )
 
         return db.run_query(
-            find_slug, session=session, read_only=True, description=f"find merchant slug for mids {mids}"
+            find_slug, session=session, read_only=True, description=f"find merchant slug for identifiers {mids}"
         )
 
 
