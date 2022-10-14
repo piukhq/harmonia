@@ -4,6 +4,8 @@ from uuid import uuid4
 
 import pendulum
 
+from app import models
+from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -211,6 +213,25 @@ class MastercardAuth(QueueAgent):
     feed_type = FeedType.AUTH
 
     config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
+
+    def _find_duplicate_import_transactions(self, yield_per: int, tids_in_set, session: db.Session):
+        return {
+            row[0]
+            for row in db.run_query(
+                lambda: session.query(models.ImportTransaction.transaction_id)
+                .distinct()
+                .yield_per(yield_per)
+                .filter(
+                    models.ImportTransaction.provider_slug == self.provider_slug,
+                    models.ImportTransaction.transaction_id.in_(tids_in_set),
+                    models.ImportTransaction.feed_type == self.feed_type,
+                ),
+                session=session,
+                read_only=True,
+                description=f"find duplicated {self.provider_slug} import transactions",
+            )
+            if row[0] in tids_in_set
+        }
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")

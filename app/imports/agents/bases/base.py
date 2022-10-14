@@ -179,6 +179,25 @@ class BaseAgent:
         # https://github.com/sdispater/pendulum/pull/452
         return pendulum.parse(date_time, tz=tz)  # type: ignore
 
+    def _find_duplicate_import_transactions(self, yield_per: int, tids_in_set, session: db.Session):
+        return {
+            row[0]
+            for row in db.run_query(
+                lambda: session.query(models.ImportTransaction.transaction_id)
+                .distinct()
+                .yield_per(yield_per)
+                .filter(
+                    models.ImportTransaction.provider_slug == self.provider_slug,
+                    models.ImportTransaction.transaction_id.in_(tids_in_set),
+                    models.ImportTransaction.feed_type == self.feed_type,
+                ),
+                session=session,
+                read_only=True,
+                description=f"find duplicated {self.provider_slug} import transactions",
+            )
+            if row[0] in tids_in_set
+        }
+
     def _find_new_transactions(self, provider_transactions: t.List[dict], *, session: db.Session) -> t.List[dict]:
         """Returns a subset of provider_transactions whose transaction IDs do not appear in the DB yet."""
         tids_in_set = {self.get_transaction_id(t) for t in provider_transactions}
@@ -207,7 +226,7 @@ class BaseAgent:
         }
 
         # Use list of duplicate transaction IDs to find new transactions.
-        new: t.List[dict] = []
+        new: list[dict] = []
         for tx in provider_transactions:
             tid = self.get_transaction_id(tx)
             if tid not in seen_tids:
