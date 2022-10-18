@@ -1,98 +1,103 @@
-from decimal import Decimal
-
-import pendulum
+import json
 
 from app import db, models
 from app.feeds import FeedType
 from app.imports.agents.visa import VisaAuth
 
+transaction_1_id = "MTY1NzkzM0EtNDI1OS00MjA2LUIxNjEtRUE1RTE2NDY3ODM0"
+transaction_1 = {
+    "CardId": "NTI4QjdBNUEtRDE0QS00Q0YzLTkyOTAtQkI4NkQxNjJDMkU2",
+    "ExternalUserId": "test_card_token_1",
+    "MessageElementsCollection": [
+        {"Key": "Transaction.MerchantCardAcceptorId", "Value": "test_primary_identifier_1"},
+        {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
+        {"Key": "Transaction.TransactionAmount", "Value": "96.00"},
+        {"Key": "Transaction.VipTransactionId", "Value": transaction_1_id},
+        {"Key": "Transaction.VisaMerchantName", "Value": ""},
+        {"Key": "Transaction.VisaMerchantId", "Value": ""},
+        {"Key": "Transaction.VisaStoreName", "Value": ""},
+        {"Key": "Transaction.VisaStoreId", "Value": ""},
+        {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
+        {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
+        {"Key": "Transaction.USDAmount", "Value": "96.00"},
+        {"Key": "Transaction.MerchantLocalPurchaseDate", "Value": "2022-10-14"},
+        {"Key": "Transaction.MerchantGroup.0.Name", "Value": "ICELAND-BONUS-CARD"},
+        {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "Iceland"},
+        {"Key": "Transaction.AuthCode", "Value": "822643"},
+        {"Key": "Transaction.PanLastFour", "Value": "7890"},
+        {"Key": "Transaction.MerchantDateTimeGMT", "Value": "2022-10-14 12:52:24"},
+        {"Key": "Transaction.BillingAmount", "Value": "96.00"},
+        {"Key": "Transaction.TimeStampYYMMDD", "Value": "2022-10-14 12:52:24"},
+        {"Key": "Transaction.SettlementDate", "Value": ""},
+        {"Key": "Transaction.SettlementAmount", "Value": "0"},
+        {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "0"},
+        {"Key": "Transaction.SettlementBillingAmount", "Value": "0"},
+        {"Key": "Transaction.SettlementBillingCurrency", "Value": ""},
+        {"Key": "Transaction.SettlementUSDAmount", "Value": "0"},
+    ],
+    "MessageId": "B0997DCE-7025-4E28-B890-09E755575698",
+    "MessageName": "AuthMessageTest",
+    "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "Auth"}],
+    "UserProfileId": "510D7DE9-4C4F-407D-8072-53C747192226",
+}
+transaction_2 = {
+    "CardId": "MkNGQjc3QjktOUFDMy00RTM2LUIwRTMtM0QyMjU0NkY4OEFB",
+    "ExternalUserId": "test_token_2",
+    "MessageElementsCollection": [
+        {"Key": "Transaction.MerchantCardAcceptorId", "Value": "test_primary_identifier_2"},
+        {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
+        {"Key": "Transaction.TransactionAmount", "Value": "41.00"},
+        {"Key": "Transaction.VipTransactionId", "Value": "RDRGOEFEMkYtQkJFMC00MzhGLTk5MDktQjVCOEQ0M0VBM0ZD"},
+        {"Key": "Transaction.VisaMerchantName", "Value": ""},
+        {"Key": "Transaction.VisaMerchantId", "Value": ""},
+        {"Key": "Transaction.VisaStoreName", "Value": ""},
+        {"Key": "Transaction.VisaStoreId", "Value": ""},
+        {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
+        {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
+        {"Key": "Transaction.USDAmount", "Value": "41.00"},
+        {"Key": "Transaction.MerchantLocalPurchaseDate", "Value": "2022-10-14"},
+        {"Key": "Transaction.MerchantGroup.0.Name", "Value": "ICELAND-BONUS-CARD"},
+        {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "Iceland"},
+        {"Key": "Transaction.AuthCode", "Value": "745615"},
+        {"Key": "Transaction.PanLastFour", "Value": "8901"},
+        {"Key": "Transaction.MerchantDateTimeGMT", "Value": "2022-10-14 12:54:59"},
+        {"Key": "Transaction.BillingAmount", "Value": "41.00"},
+        {"Key": "Transaction.TimeStampYYMMDD", "Value": "2022-10-14 12:54:59"},
+        {"Key": "Transaction.SettlementDate", "Value": ""},
+        {"Key": "Transaction.SettlementAmount", "Value": "0"},
+        {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "0"},
+        {"Key": "Transaction.SettlementBillingAmount", "Value": "0"},
+        {"Key": "Transaction.SettlementBillingCurrency", "Value": ""},
+        {"Key": "Transaction.SettlementUSDAmount", "Value": "0"},
+    ],
+    "MessageId": "9F4707B5-7787-40AF-8976-C7B6DBC5AF68",
+    "MessageName": "AuthMessageTest",
+    "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "Auth"}],
+    "UserProfileId": "88BD801E-8A2C-4952-A448-CAA5D1E9BDCD",
+}
+
 
 def create_transaction_record(db_session: db.Session):
-    import_transaction, _ = db.get_or_create(
+    db.get_or_create(
         models.ImportTransaction,
-        transaction_id="1234567",
-        data={
-            "CardId": "8eaa27e5-",
-            "ExternalUserId": "token-234",
-            "MessageElementsCollection": [
-                {"Key": "Transaction.BillingAmount", "Value": "10.99"},
-                {"Key": "Transaction.TimeStampYYMMDD", "Value": "2020-06-02T15:46:00+00:00"},
-                {"Key": "Transaction.MerchantCardAcceptorId", "Value": "test-mid-234"},
-                {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
-                {"Key": "Transaction.TransactionAmount", "Value": "10.99"},
-                {"Key": "Transaction.VipTransactionId", "Value": "8eaa27e5-d9ac-489d-9499-002e78cd32c4"},
-                {"Key": "Transaction.VisaMerchantName", "Value": "Bink Shop"},
-                {"Key": "Transaction.VisaMerchantId", "Value": "test-mid-234"},
-                {"Key": "Transaction.VisaStoreName", "Value": "Bink Shop"},
-                {"Key": "Transaction.VisaStoreId", "Value": "tEQeBQRnglCdxJJJSjjqQK7JlosEXy6N0f9756leIh8="},
-                {"Key": "Transaction.SettlementDate", "Value": ""},
-                {"Key": "Transaction.SettlementAmount", "Value": 0},
-                {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": 0},
-                {"Key": "Transaction.SettlementBillingAmount", "Value": 0},
-                {"Key": "Transaction.SettlementBillingCurrency", "Value": ""},
-                {"Key": "Transaction.SettlementUSDAmount", "Value": 0},
-                {"Key": "Transaction.CurrencyCodeNumeric", "Value": "840"},
-                {"Key": "Transaction.BillingCurrencyCode", "Value": "840"},
-                {"Key": "Transaction.USDAmount", "Value": "10.99"},
-                {"Key": "Transaction.MerchantLocalPurchaseDate ", "Value": "2019-12-19"},
-                {"Key": "Transaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
-                {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "MYSTORE"},
-                {"Key": "Transaction.MerchantDateTimeGMT ", "Value": "2019-12-19T23:40:00"},
-                {"Key": "Transaction.AuthCode", "Value": "6666667"},
-                {"Key": "Transaction.PanLastFour", "Value": "2345"},
-            ],
-            "MessageId": "12345678",
-            "MessageName": "AuthMessageTest",
-            "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "AUTH"}],
-            "UserProfileId": "f292f99d-babf-528a-8d8a-19fa5f14f4",
-        },
+        transaction_id=transaction_1_id,
         defaults=dict(
             feed_type=FeedType.AUTH,
             provider_slug="visa",
             identified=True,
-            match_group="98765",
+            match_group="e5ccfe848bd94825b921b677d3baf1b1",
             source="AMQP: visa-auth",
+            data=json.dumps(transaction_1),
         ),
         session=db_session,
     )
-    return import_transaction
 
 
 def test_find_new_transactions(db_session: db.Session):
     create_transaction_record(db_session)
-    provider_transactions = [
-        {
-            "TransactionCardFirst6": "434567",
-            "TransactionCardLast4": "7890",
-            "TransactionCardExpiry": "01/80",
-            "TransactionCardSchemeId": 2,
-            "TransactionCardScheme": "Visa",
-            "TransactionStore_Id": "test-mid-234",
-            "TransactionTimestamp": pendulum.DateTime(2020, 6, 2, 16, 46, 0, tzinfo=pendulum.timezone("Europe/London")),
-            "TransactionAmountValue": 1099,
-            "TransactionAmountUnit": "GBP",
-            "TransactionCashbackValue": Decimal("0.00"),
-            "TransactionCashbackUnit": "GBP",
-            "TransactionId": "b0e2ef76-4dcc-44f9-bd59-f82d3e7c9d3c",
-            "TransactionAuthCode": "666665",
-        },
-        {
-            "TransactionCardFirst6": "434567",
-            "TransactionCardLast4": "7890",
-            "TransactionCardExpiry": "01/80",
-            "TransactionCardSchemeId": 2,
-            "TransactionCardScheme": "Visa",
-            "TransactionStore_Id": "test-mid-234",
-            "TransactionTimestamp": pendulum.DateTime(2020, 6, 2, 18, 46, 0, tzinfo=pendulum.timezone("Europe/London")),
-            "TransactionAmountValue": 1099,
-            "TransactionAmountUnit": "GBP",
-            "TransactionCashbackValue": Decimal("0.00"),
-            "TransactionCashbackUnit": "GBP",
-            "TransactionId": "09cd8488-243a-44a4-a12f-a4cdaa43b4f4",
-            "TransactionAuthCode": "666666",
-        },
-    ]
+    provider_transactions = [transaction_1, transaction_2]
 
     agent = VisaAuth()
-    agent._find_new_transactions(provider_transactions, db_session)
-    pass
+    new_transactions = agent._find_new_transactions(provider_transactions, session=db_session)
+
+    assert new_transactions[0] == transaction_2
