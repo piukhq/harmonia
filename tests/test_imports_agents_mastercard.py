@@ -36,7 +36,7 @@ settlement_transaction = {
 def create_transaction_record(db_session: db.Session):
     db.get_or_create(
         models.ImportTransaction,
-        transaction_id=auth_transaction_1_id + "_" + auth_transaction_1["time"][0:10],
+        transaction_id=auth_transaction_1_id + "_" + auth_transaction_1["time"][0:10].replace("-", ""),
         defaults=dict(
             feed_type=FeedType.AUTH,
             provider_slug="mastercard",
