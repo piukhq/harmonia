@@ -207,7 +207,7 @@ class BaseAgent:
         }
 
         # Use list of duplicate transaction IDs to find new transactions.
-        new: t.List[dict] = []
+        new: list[dict] = []
         for tx in provider_transactions:
             tid = self.get_transaction_id(tx)
             if tid not in seen_tids:
