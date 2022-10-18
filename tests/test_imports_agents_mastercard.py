@@ -62,7 +62,7 @@ def test_find_new_transactions(db_session: db.Session):
 def test_get_transaction_id_auth():
     agent = MastercardAuth()
     transaction_id = agent.get_transaction_id(auth_transaction_1)
-    assert transaction_id == "NTI4QjdBN_2022-10-14"
+    assert transaction_id == "NTI4QjdBN_20221014"
 
 
 def test_get_transaction_id_settlement():
