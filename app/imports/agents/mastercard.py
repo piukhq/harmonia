@@ -194,7 +194,8 @@ class MastercardTGX2Settlement(FileAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         if transaction_id := data.get("transaction_id"):
-            return transaction_id
+            # Mastercard could use the same transaction_id in days following - make unique with date
+            return transaction_id + "_" + data["date"]
         else:
             return uuid4().hex
 
@@ -253,7 +254,8 @@ class MastercardAuth(QueueAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         if data.get("third_party_id"):
-            return data["third_party_id"]
+            # Mastercard could use the same transaction_id in days following - make unique with date
+            return data["third_party_id"] + "_" + data["time"][0:10].replace("-", "")
         return uuid4().hex
 
     def get_primary_identifier(self, data: dict) -> str:

@@ -13,11 +13,11 @@ import settings
 from app import db, models, reporting
 from app.api.auth import auth_decorator, requires_service_auth
 from app.api.utils import view_session
-from app.mids import schemas
+from app.identifiers import schemas
 
-api = Blueprint("mids_api", __name__, url_prefix=f"{settings.URL_PREFIX}/mids")
+api = Blueprint("identifiers_api", __name__, url_prefix=f"{settings.URL_PREFIX}/identifiers")
 requires_auth = auth_decorator()
-log = reporting.get_logger("mids-api")
+log = reporting.get_logger("identifiers-api")
 
 
 class CSVDialect(csv.Dialect):
@@ -81,29 +81,31 @@ def _get_first_character(file_storage: werkzeug.datastructures.FileStorage) -> s
     return char
 
 
-def insert_mids(mids_data: list[dict], session: db.Session) -> int:
+def insert_identifiers(identifiers_data: list[dict], session: db.Session) -> int:
     def do_insert():
-        db.engine.execute(insert(models.MerchantIdentifier.__table__).values(mids_data).on_conflict_do_nothing())
+        db.engine.execute(insert(models.MerchantIdentifier.__table__).values(identifiers_data).on_conflict_do_nothing())
         session.commit()
 
-    mids_table_before = db.run_query(
+    identifiers_table_before = db.run_query(
         session.query(models.MerchantIdentifier).count,
         session=session,
         read_only=True,
-        description="count MIDs before import",
+        description="count identifiers before import",
     )
-    db.run_query(do_insert, session=session, description="onboard MIDs")
-    mids_table_after = db.run_query(
+    db.run_query(do_insert, session=session, description="onboard identifiers")
+    identifiers_table_after = db.run_query(
         session.query(models.MerchantIdentifier).count,
         session=session,
         read_only=True,
-        description="count MIDs after import",
+        description="count identifiers after import",
     )
 
-    return mids_table_after - mids_table_before
+    return identifiers_table_after - identifiers_table_before
 
 
-def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session) -> tuple[int, int]:
+def add_identifiers_from_csv(
+    file_storage: werkzeug.datastructures.FileStorage, *, session: db.Session
+) -> tuple[int, int]:
     mark = _get_first_character(file_storage)
     if mark not in string.printable:
         raise ValueError(
@@ -112,9 +114,9 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
 
     reader = csv.reader((line.decode() for line in file_storage), dialect=CSVDialect())
 
-    log.debug("Processing MIDs...")
+    log.debug("Processing identifiers...")
 
-    mids_fields: list[dict] = []
+    identifiers_fields: list[dict] = []
     for line, row in enumerate(reader):
         row = [value.strip() for value in row]
         try:
@@ -138,7 +140,7 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
 
         identifier_type = validate_identifier_type(identifier_type)
 
-        mid_fields = create_merchant_identifier_fields(
+        identifier_fields = create_merchant_identifier_fields(
             payment_provider_slug,
             identifier,
             identifier_type,
@@ -149,25 +151,25 @@ def add_mids_from_csv(file_storage: werkzeug.datastructures.FileStorage, *, sess
             postcode,
             session=session,
         )
-        mids_fields.append(mid_fields)
+        identifiers_fields.append(identifier_fields)
 
-    n_mids_in_file = len(mids_fields)
-    log.debug(f'Importing {n_mids_in_file} MIDs from "{file_storage.name}"')
+    n_identifiers_in_file = len(identifiers_fields)
+    log.debug(f'Importing {n_identifiers_in_file} identifiers from "{file_storage.name}"')
 
-    count = insert_mids(mids_fields, session=session)
+    count = insert_identifiers(identifiers_fields, session=session)
 
-    return n_mids_in_file, count
+    return n_identifiers_in_file, count
 
 
 @api.route("/csv", methods=["POST"])
-@requires_auth(auth_scopes="mids:write")
+@requires_auth(auth_scopes="identifiers:write")
 @view_session
-def import_mids(*, session: db.Session) -> tuple[dict, int]:
+def import_identifiers(*, session: db.Session) -> tuple[dict, int]:
     """
-    Import MIDs
+    Import identifiers
     ---
     post:
-        description: Upload MIDs CSV file
+        description: Upload identifiers CSV file
         responses:
             200:
                 description: "Import was successful"
@@ -179,19 +181,19 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
         failed.append({"file": filepath, "reason": reason})
 
     for filepath, file_storage in request.files.items():
-        log.debug(f'Attempting to import MIDs file "{filepath}"')
+        log.debug(f'Attempting to import identifiers file "{filepath}"')
         if file_storage.content_type != "text/csv":
             fail(filepath, f"Expected file content type text/csv, got {file_storage.content_type}")
             continue
         try:
-            n_mids_in_file, n_mids_imported = add_mids_from_csv(file_storage, session=session)
+            n_identifiers_in_file, n_identifiers_imported = add_identifiers_from_csv(file_storage, session=session)
         except Exception as ex:
             error_message = f"{type(ex).__name__}: {ex}"
             if len(error_message) > 250:
                 error_message = f"{error_message[:248]} …"
             fail(filepath, error_message)
         else:
-            imported.append({"file": filepath, "in_file": n_mids_in_file, "imported": n_mids_imported})
+            imported.append({"file": filepath, "in_file": n_identifiers_in_file, "imported": n_identifiers_imported})
 
     # clear the caches to avoid getting cached objects from old sessions
     get_loyalty_scheme.cache_clear()
@@ -202,19 +204,19 @@ def import_mids(*, session: db.Session) -> tuple[dict, int]:
 
 @api.route("/", methods=["POST"])
 @requires_service_auth
-def onboard_mids() -> tuple[dict, int]:
+def onboard_identifiers() -> tuple[dict, int]:
     """
     Onboard identifiers
     ---
     post:
-        description: Onboard a number of MIDs, Secondary MIDs, or PSIMIs.
+        description: Onboard a number of Primary identifiers, Secondary identifiers, or PSIMIs.
         parameters:
         - in: body
-          schema: MIDCreationListSchema
+          schema: IdentifierCreationListSchema
         responses:
             200:
                 description: "The identifiers were onboarded successfully"
-                schema: MIDCreationResultSchema
+                schema: IdentifierCreationResultSchema
             400:
                 description: "Bad request content type"
             422:
@@ -223,7 +225,7 @@ def onboard_mids() -> tuple[dict, int]:
     if not request.is_json:
         return {"title": "Bad request", "description": "Expected JSON content type"}, 400
 
-    request_schema = schemas.MIDCreationListSchema()
+    request_schema = schemas.IdentifierCreationListSchema()
 
     try:
         data = request_schema.load(request.json)
@@ -231,41 +233,41 @@ def onboard_mids() -> tuple[dict, int]:
         return {"title": "Validation error", "description": ex.messages}, 422
 
     with db.session_scope() as session:
-        mids = [
+        identifiers = [
             create_merchant_identifier_fields(
-                identifier=mid["mid"],
-                identifier_type=validate_identifier_type(mid.get("identifier_type")),
-                location_id=mid.get("location_id"),
-                merchant_internal_id=mid.get("merchant_internal_id"),
-                loyalty_scheme_slug=mid["loyalty_plan"],
-                payment_provider_slug=mid["payment_scheme"],
+                identifier=identifier["identifier"],
+                identifier_type=identifier.get("identifier_type"),
+                location_id=identifier.get("location_id"),
+                merchant_internal_id=identifier.get("merchant_internal_id"),
+                loyalty_scheme_slug=identifier["loyalty_plan"],
+                payment_provider_slug=identifier["payment_scheme"],
                 location="",
                 postcode="",
                 session=session,
             )
-            for mid in data["mids"]
+            for identifier in data["identifiers"]
         ]
 
-        count = insert_mids(mids, session=session)
+        count = insert_identifiers(identifiers, session=session)
 
-    return {"total": len(mids), "onboarded": count}, 200
+    return {"total": len(identifiers), "onboarded": count}, 200
 
 
 @api.route("/deletion", methods=["POST"])
 @requires_service_auth
-def offboard_mids() -> tuple[dict, int]:
+def offboard_identifiers() -> tuple[dict, int]:
     """
     Offboard identifiers
     ---
     post:
-        description: Offboard a number of MIDs, Secondary MIDs, or PSIMIs.
+        description: Offboard a number of Primary identifiers, Secondary identifiers, or PSIMIs.
         parameters:
         - in: body
-          schema: MIDDeletionListSchema
+          schema: IdentifierDeletionListSchema
         responses:
             200:
                 description: "The identifiers were offboarded successfully"
-                schema: MIDDeletionResultSchema
+                schema: IdentifierDeletionResultSchema
             400:
                 description: "Bad request content type"
             422:
@@ -274,7 +276,7 @@ def offboard_mids() -> tuple[dict, int]:
     if not request.is_json:
         return {"title": "Bad request", "description": "Expected JSON content type"}, 400
 
-    request_schema = schemas.MIDDeletionListSchema()
+    request_schema = schemas.IdentifierDeletionListSchema()
     try:
         data = request_schema.load(request.json)
     except marshmallow.ValidationError as ex:
@@ -285,24 +287,31 @@ def offboard_mids() -> tuple[dict, int]:
             session.query(models.MerchantIdentifier.id)
             .join(models.PaymentProvider)
             .filter(
-                tuple_(models.MerchantIdentifier.identifier, models.PaymentProvider.slug).in_(
-                    [(mid["mid"], mid["payment_scheme"]) for mid in data["mids"]]
+                tuple_(
+                    models.MerchantIdentifier.identifier,
+                    models.MerchantIdentifier.identifier_type,
+                    models.PaymentProvider.slug,
+                ).in_(
+                    [
+                        (identifier["identifier"], identifier["identifier_type"], identifier["payment_scheme"])
+                        for identifier in data["identifiers"]
+                    ]
                 )
                 | models.MerchantIdentifier.location_id.in_(data["locations"])
             )
         )
-        mid_ids = db.run_query(
+        identifier_ids = db.run_query(
             q.all,
             session=session,
-            description="find MID IDs for offboarding by (mid, payment_slug) or location",
+            description="find identifiers for offboarding by (identifier, payment_slug) or location",
         )
 
         count = db.run_query(
             session.query(models.MerchantIdentifier)
-            .filter(models.MerchantIdentifier.id.in_([r.id for r in mid_ids]))
+            .filter(models.MerchantIdentifier.id.in_([r.id for r in identifier_ids]))
             .delete,
             session=session,
-            description="delete MIDs by ID",
+            description="delete identifiers by ID",
         )
 
     return {"deleted": count}, 200
