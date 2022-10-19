@@ -25,24 +25,6 @@ auth_transaction_2 = {
 settlement_transaction = {
     "record_type": "D",
     "mid": "test-mid-123",
-    "amount": 1222,
-    "date": "20201027",
-    "time": "1501",
-    "token": "token-123",
-    "transaction_id": "9f2f764b-",
-    "auth_code": "666666",
-}
-auth_tx_data = {
-    "third_party_id": "48156a45-",
-    "time": "2020-10-27 15:01:59",
-    "amount": "12.22",
-    "currency_code": "GBP",
-    "payment_card_token": "token-123",
-    "mid": "test-mid-123",
-}
-settlement_tx_data = {
-    "record_type": "D",
-    "mid": "test-mid-123",
     "location_id": "411111083",
     "aggregate_merchant_id": "664567",
     "amount": 1222,
@@ -52,7 +34,7 @@ settlement_tx_data = {
     "transaction_id": "48156a45-",
     "auth_code": "666666",
 }
-settlement_tx_data_empty_psimi = {
+settlement_transaction_empty_psimi = {
     "record_type": "D",
     "mid": "test-mid-123",
     "location_id": "411111083",
@@ -95,24 +77,25 @@ def test_find_new_transactions(db_session: db.Session):
 def test_get_transaction_id_auth():
     agent = MastercardAuth()
     transaction_id = agent.get_transaction_id(auth_transaction_1)
-    assert transaction_id == "NTI4QjdBN_20221014"
+    expected_transaction_id = auth_transaction_1_id + "_" + auth_transaction_1["time"][0:10].replace("-", "")
+    assert transaction_id == expected_transaction_id
 
 
 def test_get_transaction_id_settlement():
     agent = MastercardTGX2Settlement()
     transaction_id = agent.get_transaction_id(settlement_transaction)
-    assert transaction_id == "9f2f764b-_20201027"
+    assert transaction_id == "48156a45-_20201027"
 
 
 def test_auth_get_mids():
     agent = MastercardAuth()
-    ids = agent.get_mids(auth_tx_data)
-    assert ids == [(IdentifierType.PRIMARY, "test-mid-123")]
+    ids = agent.get_mids(auth_transaction_1)
+    assert ids == [(IdentifierType.PRIMARY, "test_primary_identifier_1")]
 
 
 def test_tgx2_settlement_get_mids():
     agent = MastercardTGX2Settlement()
-    ids = agent.get_mids(settlement_tx_data)
+    ids = agent.get_mids(settlement_transaction)
     assert ids == [
         (IdentifierType.PRIMARY, "test-mid-123"),
         (IdentifierType.SECONDARY, "411111083"),
@@ -122,7 +105,7 @@ def test_tgx2_settlement_get_mids():
 
 def test_tgx2_settlement_get_mids_empty_psimi():
     agent = MastercardTGX2Settlement()
-    ids = agent.get_mids(settlement_tx_data_empty_psimi)
+    ids = agent.get_mids(settlement_transaction_empty_psimi)
     assert ids == [
         (IdentifierType.PRIMARY, "test-mid-123"),
         (IdentifierType.SECONDARY, "411111083"),
