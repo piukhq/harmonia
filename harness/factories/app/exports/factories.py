@@ -1,7 +1,7 @@
 import factory
 
 from app import models
-from app.exports.models import ExportTransaction, FileSequenceNumber, PendingExport, ExportTransactionStatus
+from app.exports.models import ExportTransaction, ExportTransactionStatus, FileSequenceNumber, PendingExport
 from harness.factories.common import generic, session
 
 
