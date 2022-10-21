@@ -65,6 +65,29 @@ class PaymentProviderFactory(factory.alchemy.SQLAlchemyModelFactory):
     slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
 
 
+class TransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
+    class Meta:
+        model = models.Transaction
+        sqlalchemy_session = session
+        sqlalchemy_session_persistence = None
+
+    feed_type = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in models.FeedType]))
+    status = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in models.TransactionStatus]))
+    merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numeric.random.randints(amount=5, a=1, b=1000000))
+    primary_identifier = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    merchant_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    payment_provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
+    match_group = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=36))
+    transaction_date = factory.LazyAttribute(lambda o: generic.transaction_date_provider.transaction_date(days=30))
+    has_time = factory.LazyAttribute(lambda o: generic.development.boolean())
+    spend_amount = factory.LazyAttribute(lambda o: generic.numeric.integer_number(start=1))
+    spend_multiplier = factory.LazyAttribute(lambda o: generic.numeric.integer_number(start=1))
+    spend_currency = factory.LazyAttribute(lambda o: generic.finance.currency_iso_code(allow_random=True))
+    auth_code = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=20))
+    approval_code = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=20))
+
+
 class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = models.SchemeTransaction
