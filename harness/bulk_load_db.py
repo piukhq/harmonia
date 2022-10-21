@@ -177,80 +177,46 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
             new_session.commit()
 
 
-def do_async_tables(
+def fill_transaction_table(
+    create_transactions_method: callable,
     transaction_count: int,
-    scheme_transaction_count: int,
-    import_transaction_count: int,
-    payment_transaction_count: int,
     max_processes: int,
+    number_of_tables: int,
     batchsize: int,
     scheme_slug: t.Optional[str] = None,
 ):
-    """
-    These three tables (import_transactions, payment_transactions and scheme_transactions) are the big ones and
-    can be asynchronously appended to.
-    """
-    transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
+    # The processes are divided between the number of tables to fill
+    transactions_max_processes = int(max_processes / number_of_tables)
     create_transactions_executor = ProcessPoolExecutor(max_workers=transactions_max_processes)
-    transactions_per_process = int(import_transaction_count / transactions_max_processes)
+    transactions_per_process = int(transaction_count / transactions_max_processes)
     # Create the params for the task
     transaction_counts = [transactions_per_process for x in range(transactions_max_processes)]
     transaction_batchsizes = [batchsize for x in range(len(transaction_counts))]
     transaction_scheme_slugs = [scheme_slug for x in range(len(transaction_counts))]
     # Create task map
     create_transactions_executor.map(
-        create_transactions,
+        create_transactions_method,
         transaction_counts,
         transaction_batchsizes,
         transaction_scheme_slugs,
     )
 
-    import_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    create_import_transactions_executor = ProcessPoolExecutor(max_workers=import_transactions_max_processes)
-    import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
-    # Create the params for the task
-    import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
-    import_transaction_batchsizes = [batchsize for x in range(len(import_transaction_counts))]
-    import_transaction_scheme_slugs = [scheme_slug for x in range(len(import_transaction_counts))]
-    # Create task map
-    create_import_transactions_executor.map(
-        create_import_transactions,
-        import_transaction_counts,
-        import_transaction_batchsizes,
-        import_transaction_scheme_slugs,
-    )
 
-    payment_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    create_payment_transactions_executor = ProcessPoolExecutor(max_workers=payment_transactions_max_processes)
-    payment_transactions_per_process = int(payment_transaction_count / payment_transactions_max_processes)
-    # Create the params for the task
-    payment_transaction_counts = [
-        payment_transactions_per_process for x in range(payment_transactions_max_processes)
-    ]
-    payment_transaction_batchsizes = [batchsize for x in range(len(payment_transaction_counts))]
-    payment_transaction_scheme_slugs = [scheme_slug for x in range(len(payment_transaction_counts))]
-    # Create task map
-    create_payment_transactions_executor.map(
-        create_payment_transactions,
-        payment_transaction_counts,
-        payment_transaction_batchsizes,
-        payment_transaction_scheme_slugs,
-    )
-
-    scheme_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    create_scheme_transactions_executor = ProcessPoolExecutor(max_workers=scheme_transactions_max_processes)
-    scheme_transactions_per_process = int(scheme_transaction_count / scheme_transactions_max_processes)
-    # Create the params for the task
-    scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
-    scheme_transaction_batchsizes = [batchsize for x in range(len(scheme_transaction_counts))]
-    scheme_transaction_scheme_slugs = [scheme_slug for x in range(len(scheme_transaction_counts))]
-    # Create task map
-    create_scheme_transactions_executor.map(
-        create_scheme_transactions,
-        scheme_transaction_counts,
-        scheme_transaction_batchsizes,
-        scheme_transaction_scheme_slugs,
-    )
+def do_async_tables(
+    tables: list[tuple[callable, int]],
+    max_processes: int,
+    batchsize: int,
+    scheme_slug: t.Optional[str] = None,
+):
+    """
+    These four tables (transactions, import_transactions, payment_transactions and scheme_transactions)
+    are the big ones and can be asynchronously appended to.
+    """
+    number_of_tables = len(tables)
+    for create_transactions_method, transaction_count in tables:
+        fill_transaction_table(
+            create_transactions_method, transaction_count, max_processes, number_of_tables, batchsize, scheme_slug
+        )
 
 
 def bulk_load_db(
@@ -293,10 +259,12 @@ def bulk_load_db(
 
     # Do the big transaction tables
     do_async_tables(
-        transaction_count=transaction_count,
-        scheme_transaction_count=scheme_transaction_count,
-        import_transaction_count=import_transaction_count,
-        payment_transaction_count=payment_transaction_count,
+        tables=[
+            (create_transactions, transaction_count),
+            (create_scheme_transactions, scheme_transaction_count),
+            (create_import_transactions, import_transaction_count),
+            (create_payment_transactions, payment_transaction_count),
+        ],
         max_processes=max_processes,
         batchsize=batchsize,
         scheme_slug=scheme_slug,
@@ -410,7 +378,9 @@ def bulk_load_db(
     default=MAX_PROCESSES,
     show_default=True,
     required=False,
-    help="Total number of processes to spawn",
+    help="Total number of processes to spawn. Note that this impacts the number of chunks"
+    "that can be processed for the transaction, scheme_transaction, import_transaction"
+    "and payment_transaction processes.",
 )
 @click.option(
     "--batchsize",
