@@ -235,6 +235,7 @@ def bulk_load_db(
     Main loading function
     """
 
+    # TODO remove? Constraints no longer issue
     # Drop constraints?
     if drop_constraints:
         drop_import_transaction_constraints = "ALTER TABLE import_transaction DISABLE TRIGGER ALL"
@@ -257,7 +258,7 @@ def bulk_load_db(
         # Create our primary records
         create_base_records(loyalty_scheme_count=loyalty_scheme_count, scheme_slug=scheme_slug)
 
-    # Do the big transaction tables
+    # Do the big transaction tables - Transaction, SchemeTransaction, ImportTransaction, PaymentTransaction
     do_async_tables(
         tables=[
             (create_transactions, transaction_count),
@@ -301,6 +302,7 @@ def bulk_load_db(
     exports_factories.FileSequenceNumberFactory.create_batch(FILE_SEQUENCE_COUNT, **factory_kwargs)
     session.commit()
 
+    # TODO remove? Constraints no longer issue
     # Re-enable constraints?
     if drop_constraints:
         enable_import_transaction_constraints = "ALTER TABLE import_transaction ENABLE TRIGGER ALL"
