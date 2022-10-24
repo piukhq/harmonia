@@ -1,5 +1,6 @@
 import factory
 
+from app.feeds import FeedType
 from app.imports.models import ImportTransaction
 from harness.factories.common import generic, session
 
@@ -11,6 +12,7 @@ class ImportTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
+    feed_type = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in FeedType]))
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     identified = factory.LazyAttribute(lambda o: generic.development.boolean())
     match_group = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=36))
