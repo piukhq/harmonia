@@ -16,6 +16,7 @@ LOYALTY_SCHEME_COUNT = 10
 PAYMENT_PROVIDERS = ["visa", "mastercard", "amex"]
 MERCHANT_IDENTIFIER_COUNT = 200
 USER_IDENTITY_COUNT = 10
+TRANSACTION_COUNT = 2000
 PAYMENT_TRANSACTION_COUNT = 200
 SCHEME_TRANSACTION_COUNT = 2000
 MATCHED_TRANSACTION_COUNT = 100
@@ -60,6 +61,34 @@ def get_batch_chunks(transaction_count, batchsize):
         else:  # The remainder
             yield transaction_count
         transaction_count -= batchsize
+
+
+def create_transactions(transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
+    # Create random transactions
+    click.secho(
+        f"Creating {transaction_count} transactions",
+        fg="cyan",
+        bold=True,
+    )
+    factory_kwargs = {}
+    if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
+        factory_kwargs = {
+            "transaction_date": factory.LazyAttribute(
+                lambda o: generic.transaction_date_provider.transaction_date(days=7)
+            ),
+        }
+    # Get new session for this process
+    with db.session_scope() as new_session:
+        app_factories.TransactionFactory._meta.sqlalchemy_session = new_session
+        chunks = get_batch_chunks(transaction_count, batchsize=batchsize)
+        for chunk in chunks:
+            click.secho(
+                f"Creating chunk of {chunk} transactions",
+                fg="cyan",
+                bold=True,
+            )
+            app_factories.TransactionFactory.create_batch(chunk, **factory_kwargs)
+            new_session.commit()
 
 
 def create_payment_transactions(payment_transaction_count: int, batchsize: int, scheme_slug: t.Optional[str] = None):
@@ -148,73 +177,50 @@ def create_import_transactions(import_transaction_count: int, batchsize: int, sc
             new_session.commit()
 
 
+def fill_transaction_table(
+    create_transactions_method: callable,
+    transaction_count: int,
+    max_processes: int,
+    number_of_tables: int,
+    batchsize: int,
+    scheme_slug: t.Optional[str] = None,
+):
+    # The processes are divided between the number of tables to fill
+    transactions_max_processes = int(max_processes / number_of_tables)
+    create_transactions_executor = ProcessPoolExecutor(max_workers=transactions_max_processes)
+    transactions_per_process = int(transaction_count / transactions_max_processes)
+    # Create the params for the task
+    transaction_counts = [transactions_per_process for x in range(transactions_max_processes)]
+    transaction_batchsizes = [batchsize for x in range(len(transaction_counts))]
+    transaction_scheme_slugs = [scheme_slug for x in range(len(transaction_counts))]
+    # Create task map
+    create_transactions_executor.map(
+        create_transactions_method,
+        transaction_counts,
+        transaction_batchsizes,
+        transaction_scheme_slugs,
+    )
+
+
 def do_async_tables(
-    scheme_transaction_count: int,
-    import_transaction_count: int,
-    payment_transaction_count: int,
+    tables: list[tuple[callable, int]],
     max_processes: int,
     batchsize: int,
     scheme_slug: t.Optional[str] = None,
 ):
     """
-    These three tables (import_transactions, payment_transactions and scheme_transactions) are the big ones and
-    can be asynchronously appended to.
+    These four tables (transactions, import_transactions, payment_transactions and scheme_transactions)
+    are the big ones and can be asynchronously appended to.
     """
-    #  import_transactions is a standalone table and data can just be pushed into it
-    #  i.e. it has no foreign keys in other tables
-    import_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    create_import_transactions_executor = ProcessPoolExecutor(max_workers=import_transactions_max_processes)
-    import_transactions_per_process = int(import_transaction_count / import_transactions_max_processes)
-    # Create the params for the task
-    import_transaction_counts = [import_transactions_per_process for x in range(import_transactions_max_processes)]
-    import_transaction_batchsizes = [batchsize for x in range(len(import_transaction_counts))]
-    import_transaction_scheme_slugs = [scheme_slug for x in range(len(import_transaction_counts))]
-    # Create task map
-    create_import_transactions_executor.map(
-        create_import_transactions,
-        import_transaction_counts,
-        import_transaction_batchsizes,
-        import_transaction_scheme_slugs,
-    )
-
-    # payment_transactions provides foreign key links for following tables, so we need to wait for it to
-    # complete by using a context manager
-    payment_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    with ProcessPoolExecutor(max_workers=payment_transactions_max_processes) as create_payment_transactions_executor:
-        payment_transactions_per_process = int(payment_transaction_count / payment_transactions_max_processes)
-        # Create the params for the task
-        payment_transaction_counts = [
-            payment_transactions_per_process for x in range(payment_transactions_max_processes)
-        ]
-        payment_transaction_batchsizes = [batchsize for x in range(len(payment_transaction_counts))]
-        payment_transaction_scheme_slugs = [scheme_slug for x in range(len(payment_transaction_counts))]
-        # Create task map
-        create_payment_transactions_executor.map(
-            create_payment_transactions,
-            payment_transaction_counts,
-            payment_transaction_batchsizes,
-            payment_transaction_scheme_slugs,
-        )
-
-    # scheme_transactions provides foreign key links for following tables, so we need to wait for it to
-    # complete by using a context manager
-    scheme_transactions_max_processes = int(max_processes / 3)  # There are 3 tables to divide the processes between
-    with ProcessPoolExecutor(max_workers=scheme_transactions_max_processes) as create_scheme_transactions_executor:
-        scheme_transactions_per_process = int(scheme_transaction_count / scheme_transactions_max_processes)
-        # Create the params for the task
-        scheme_transaction_counts = [scheme_transactions_per_process for x in range(scheme_transactions_max_processes)]
-        scheme_transaction_batchsizes = [batchsize for x in range(len(scheme_transaction_counts))]
-        scheme_transaction_scheme_slugs = [scheme_slug for x in range(len(scheme_transaction_counts))]
-        # Create task map
-        create_scheme_transactions_executor.map(
-            create_scheme_transactions,
-            scheme_transaction_counts,
-            scheme_transaction_batchsizes,
-            scheme_transaction_scheme_slugs,
+    number_of_tables = len(tables)
+    for create_transactions_method, transaction_count in tables:
+        fill_transaction_table(
+            create_transactions_method, transaction_count, max_processes, number_of_tables, batchsize, scheme_slug
         )
 
 
 def bulk_load_db(
+    transaction_count: int,
     scheme_transaction_count: int,
     import_transaction_count: int,
     loyalty_scheme_count: int,
@@ -229,6 +235,7 @@ def bulk_load_db(
     Main loading function
     """
 
+    # TODO remove? Constraints no longer issue
     # Drop constraints?
     if drop_constraints:
         drop_import_transaction_constraints = "ALTER TABLE import_transaction DISABLE TRIGGER ALL"
@@ -251,11 +258,14 @@ def bulk_load_db(
         # Create our primary records
         create_base_records(loyalty_scheme_count=loyalty_scheme_count, scheme_slug=scheme_slug)
 
-    # Do the big transaction tables
+    # Do the big transaction tables - Transaction, SchemeTransaction, ImportTransaction, PaymentTransaction
     do_async_tables(
-        scheme_transaction_count=scheme_transaction_count,
-        import_transaction_count=import_transaction_count,
-        payment_transaction_count=payment_transaction_count,
+        tables=[
+            (create_transactions, transaction_count),
+            (create_scheme_transactions, scheme_transaction_count),
+            (create_import_transactions, import_transaction_count),
+            (create_payment_transactions, payment_transaction_count),
+        ],
         max_processes=max_processes,
         batchsize=batchsize,
         scheme_slug=scheme_slug,
@@ -292,6 +302,7 @@ def bulk_load_db(
     exports_factories.FileSequenceNumberFactory.create_batch(FILE_SEQUENCE_COUNT, **factory_kwargs)
     session.commit()
 
+    # TODO remove? Constraints no longer issue
     # Re-enable constraints?
     if drop_constraints:
         enable_import_transaction_constraints = "ALTER TABLE import_transaction ENABLE TRIGGER ALL"
@@ -313,6 +324,14 @@ def bulk_load_db(
 
 
 @click.command()
+@click.option(
+    "--transaction-count",
+    type=click.INT,
+    default=TRANSACTION_COUNT,
+    show_default=True,
+    required=False,
+    help="Num records for transaction table",
+)
 @click.option(
     "--scheme-transaction-count",
     type=click.INT,
@@ -361,7 +380,9 @@ def bulk_load_db(
     default=MAX_PROCESSES,
     show_default=True,
     required=False,
-    help="Total number of processes to spawn",
+    help="Total number of processes to spawn. Note that this impacts the number of chunks"
+    "that can be processed for the transaction, scheme_transaction, import_transaction"
+    "and payment_transaction processes.",
 )
 @click.option(
     "--batchsize",
@@ -375,7 +396,7 @@ def bulk_load_db(
     "--scheme-slug",
     type=click.STRING,
     required=False,
-    help="Loyalty scheme slug e.g. harvey-nichols, wasabi-club",
+    help="Loyalty scheme slug e.g. iceland-bonus-card, wasabi-club",
 )
 @click.option(
     "--drop-constraints",
@@ -389,6 +410,7 @@ def bulk_load_db(
     default=False,
 )
 def main(
+    transaction_count: int,
     scheme_transaction_count: int,
     import_transaction_count: int,
     loyalty_scheme_count: int,
@@ -435,6 +457,7 @@ def main(
     print(f"Start time: {start_time}")
 
     bulk_load_db(
+        transaction_count=transaction_count,
         scheme_transaction_count=scheme_transaction_count,
         import_transaction_count=import_transaction_count,
         loyalty_scheme_count=loyalty_scheme_count,
