@@ -177,6 +177,3 @@ API_AUTH_ENABLED = getenv("TXM_API_AUTH_ENABLED", default="true", conv=boolconv)
 # Azure AD application details
 AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID", required=API_AUTH_ENABLED)
 AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
-
-# TEMPORARY: Mastercard agent selection
-MASTERCARD_TGX2_ENABLED = getenv("TXM_MASTERCARD_TGX2_ENABLED", default="false", conv=boolconv)
