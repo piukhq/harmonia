@@ -54,7 +54,7 @@ gunicorn = "^20.1.0"
 user-token-store = "^1.1.4"
 azure-oidc = "^1.0.0"
 soteria = "^1.5.2"
-harmonia-fixtures = "^1.1.0"
+harmonia-fixtures = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.2"
