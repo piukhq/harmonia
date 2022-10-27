@@ -25,6 +25,7 @@ from app.imports.agents.registry import import_agents
 from app.models import IdentifierType
 from app.reporting import get_logger
 from app.service.sftp import SFTP
+from app.streaming.agents.registry import streaming_agents
 from harness.providers.registry import BaseImportDataProvider, import_data_providers
 
 DEFAULT_NUM_TX = 10000
@@ -184,8 +185,16 @@ def mids_data(merchant_slug: str, payment_slug: str) -> dict:
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())
     payment_provider_slug = PAYMENT_AGENT_TO_PROVIDER_SLUG[payment_provider_agent]
+
+    if merchant_slug in streaming_agents:
+        logger.info(f"Streaming merchant: {merchant_slug} & {payment_provider_agent}...")
+        slugs = [{"slug": payment_provider_agent}, ]
+    else:
+        logger.info(f"Matching or spotting merchant: {merchant_slug} & {payment_provider_agent}...")
+        slugs = [{"slug": payment_provider_agent}, {"slug": merchant_slug}]
+
     fixture: t.Dict[str, t.Any] = {
-        "agents": [{"slug": payment_provider_agent}, {"slug": merchant_slug}],
+        "agents": slugs,
         "users": [],
         "payment_provider": {"slug": payment_provider_slug},
     }
@@ -275,7 +284,8 @@ def generate(
     stdout: bool = False,
 ):
     logger.info(f"Generating fixture for {merchant_slug} & {payment_provider_agent}...")
-    fixture = make_fixture(merchant_slug, payment_provider_agent, num_merchant_tx)
+    num_transactions = num_merchant_tx if num_merchant_tx > 0 else num_payment_tx
+    fixture = make_fixture(merchant_slug, payment_provider_agent, num_transactions)
     logger.info(f"Finished generating fixture for {merchant_slug} & {payment_provider_agent}")
 
     agent_data = {}
