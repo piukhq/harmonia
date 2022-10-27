@@ -188,7 +188,9 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
 
     if merchant_slug in streaming_agents:
         logger.info(f"Streaming merchant: {merchant_slug} & {payment_provider_agent}...")
-        slugs = [{"slug": payment_provider_agent}, ]
+        slugs = [
+            {"slug": payment_provider_agent},
+        ]
     else:
         logger.info(f"Matching or spotting merchant: {merchant_slug} & {payment_provider_agent}...")
         slugs = [{"slug": payment_provider_agent}, {"slug": merchant_slug}]
