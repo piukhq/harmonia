@@ -8,6 +8,7 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
+from app.models import IdentifierType
 
 PROVIDER_SLUG = "cooperative"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -43,8 +44,8 @@ class Cooperative(FileAgent):
     def get_primary_identifier(self, data: dict) -> str:
         return data["store_id"]
 
-    def get_mids(self, data: dict) -> t.List[str]:
-        return [data["store_id"]]
+    def get_mids(self, data: dict) -> list[tuple]:
+        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         return self.pendulum_parse(data["timestamp"], tz="GMT")

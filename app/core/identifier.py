@@ -23,7 +23,6 @@ class RetryableLookupFailure(Exception):
 
 
 def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, session: db.Session) -> dict:
-    # TODO: this query exists in app/core/matching_worker.py:50 as well, should we combine?
     merchant_identifiers = db.run_query(
         lambda: session.query(models.MerchantIdentifier)
         .filter(models.MerchantIdentifier.id.in_(merchant_identifier_ids))
@@ -35,7 +34,6 @@ def payment_card_user_info(merchant_identifier_ids: list[int], token: str, *, se
 
     slugs = {merchant_identifier.loyalty_scheme.slug for merchant_identifier in merchant_identifiers}
 
-    # TODO: this check exists in app/core/matching_worker.py:58 as well, should we combine?
     if len(slugs) > 1:
         raise ValueError(
             f"{merchant_identifier_ids} contains multiple scheme slugs! This is likely caused by an error in the MIDs. "

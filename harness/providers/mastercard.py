@@ -41,8 +41,10 @@ class MastercardTGX2Settlement(BaseImportDataProvider):
                 ("", 51),
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYYMMDD"), 8),
                 ("", 341),
-                (transaction["identifier"], 15),
-                ("", 52),
+                (transaction["identifier"], 15),  # merchant identifier
+                ("", 34),
+                (transaction["identifier"][:12], 12),  # location id
+                (transaction["identifier"][:6], 6),  # aggregate merchant id
                 (f"{transaction['amount']:012}", 12),
                 ("", 33),
                 (pendulum.instance(transaction["date"]).in_tz("Europe/London").format("HHmm"), 4),

@@ -1,0 +1,2 @@
+class MissingExportData(Exception):
+    pass

@@ -76,9 +76,7 @@ class BaseMatchingAgent:
         since = pendulum.now().date().add(days=-14)
         return db.run_query(
             lambda: session.query(models.SchemeTransaction).filter(
-                models.SchemeTransaction.merchant_identifier_ids.overlap(
-                    self.payment_transaction.merchant_identifier_ids
-                ),
+                models.SchemeTransaction.primary_identifier == self.payment_transaction.primary_identifier,
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
                 models.SchemeTransaction.created_at >= since.isoformat(),
             ),
@@ -88,17 +86,8 @@ class BaseMatchingAgent:
         )
 
     def make_spotted_transaction_fields(self):
-        merchant_identifier_ids = self.payment_transaction.merchant_identifier_ids
-
-        if len(merchant_identifier_ids) > 1:
-            self.log.warning(
-                f"More than one MID is present on {self.payment_transaction}! "
-                f"MIDs: {merchant_identifier_ids}. "
-                "The first MID will be assumed to be the correct one."
-            )
-
         return {
-            "merchant_identifier_id": merchant_identifier_ids[0],
+            "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
             "primary_identifier": self.payment_transaction.primary_identifier,
             "transaction_id": self.payment_transaction.transaction_id,
             "transaction_date": self.payment_transaction.transaction_date,
@@ -110,19 +99,6 @@ class BaseMatchingAgent:
         }
 
     def make_matched_transaction_fields(self, scheme_transaction: models.SchemeTransaction) -> dict:
-        matching_merchant_identifier_ids = list(
-            set(self.payment_transaction.merchant_identifier_ids).intersection(
-                scheme_transaction.merchant_identifier_ids
-            )
-        )
-
-        if len(matching_merchant_identifier_ids) > 1:
-            self.log.warning(
-                f"More than one MID is common to {self.payment_transaction} and {scheme_transaction}! "
-                f"Matching MIDs: {matching_merchant_identifier_ids}. "
-                "The first MID will be assumed to be the correct one."
-            )
-
         st_fields = {
             k: getattr(scheme_transaction, k)
             for k in (
@@ -134,7 +110,7 @@ class BaseMatchingAgent:
             )
         }
         return {
-            "merchant_identifier_id": matching_merchant_identifier_ids[0],
+            "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
             "primary_identifier": self.payment_transaction.primary_identifier,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
