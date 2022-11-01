@@ -6,7 +6,6 @@ from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
-from app.exports.exceptions import MissingExportData
 from app.feeds import FeedType
 from app.service import atlas, squaremeal
 
@@ -41,18 +40,8 @@ class SquareMeal(SingularExportAgent):
         self.log.warning(f"Settlement key not found for SquareMeal transaction: {export_transaction}")
         return settlement_key
 
-    @staticmethod
-    def _export_transaction_is_valid(export_transaction: models.ExportTransaction) -> bool:
-        if not export_transaction.location_id or not export_transaction.merchant_internal_id:
-            return False
-        return True
-
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         dt = pendulum.instance(export_transaction.transaction_date)
-
-        # Squaremeal requires that certain data is available in the export transaction
-        if not self._export_transaction_is_valid(export_transaction):
-            raise MissingExportData
 
         return AgentExportData(
             outputs=[
