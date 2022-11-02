@@ -48,6 +48,11 @@ auth_transaction_1 = {
     "UserDefinedFieldsCollection": [{"Key": "TransactionType", "Value": "Auth"}],
     "UserProfileId": "510D7DE9-4C4F-407D-8072-53C747192226",
 }
+
+auth1_auth_code_index = auth_transaction_1.get("MessageElementsCollection").index(
+    {"Key": "Transaction.AuthCode", "Value": "822643"}
+)
+
 auth_psimi_index = auth_transaction_1.get("MessageElementsCollection").index(
     {"Key": "Transaction.VisaMerchantId", "Value": transaction_1_psimi_id}
 )
@@ -126,7 +131,9 @@ settlement_transaction = {
 settlement_psimi_index = settlement_transaction.get("MessageElementsCollection").index(
     {"Key": "Transaction.VisaMerchantId", "Value": transaction_1_psimi_id}
 )
-
+settlement_auth_index = settlement_transaction.get("MessageElementsCollection").index(
+    {"Key": "Transaction.AuthCode", "Value": "6666667"}
+)
 
 refund_transaction = {
     "CardId": "d5e121cf-",
@@ -157,6 +164,10 @@ refund_transaction = {
 }
 refund_psimi_index = refund_transaction.get("MessageElementsCollection").index(
     {"Key": "ReturnTransaction.VisaMerchantId", "Value": transaction_1_psimi_id}
+)
+
+refund_auth_index = refund_transaction.get("MessageElementsCollection").index(
+    {"Key": "ReturnTransaction.AuthCode", "Value": "444444"}
 )
 
 
@@ -369,3 +380,36 @@ def test_refund_get_mids_zero_string():
         (IdentifierType.PRIMARY, transaction_1_primary_id),
         (IdentifierType.SECONDARY, transaction_1_secondary_id),
     ]
+
+
+def test_auth_auth_code_field_is_missing():
+    data = copy.deepcopy(auth_transaction_1)
+    data["MessageElementsCollection"][auth1_auth_code_index] = {"Key": "Transaction.AuthCode", "Value": ""}
+    agent = VisaAuth()
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""
+    data["MessageElementsCollection"].pop(auth1_auth_code_index)
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""
+
+
+def test_refund_auth_code_field_is_missing():
+    data = copy.deepcopy(refund_transaction)
+    data["MessageElementsCollection"][refund_auth_index] = {"Key": "ReturnTransaction.AuthCode", "Value": ""}
+    agent = VisaRefund()
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""
+    data["MessageElementsCollection"].pop(refund_auth_index)
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""
+
+
+def test_settlement_auth_code_field_is_missing():
+    data = copy.deepcopy(settlement_transaction)
+    data["MessageElementsCollection"][refund_auth_index] = {"Key": "Transaction.AuthCode", "Value": ""}
+    agent = VisaSettlement()
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""
+    data["MessageElementsCollection"].pop(settlement_auth_index)
+    fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == ""

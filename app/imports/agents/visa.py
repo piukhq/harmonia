@@ -20,6 +20,14 @@ def _make_settlement_key(key_id: str) -> str:
     return sha256(f"visa.{key_id}".encode()).hexdigest()
 
 
+def _get_auth_code(data: dict, transaction_type: str):
+    for d in data["MessageElementsCollection"]:
+        if d["Key"] == f"{transaction_type}.AuthCode":
+            return d["Value"]
+
+    return ""
+
+
 def get_key_value(data: dict, key: str) -> str:
     for d in data["MessageElementsCollection"]:
         if d["Key"] == key:
@@ -88,6 +96,7 @@ class VisaAuth(QueueAgent):
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
+
         return PaymentTransactionFields(
             merchant_slug=self.get_merchant_slug(data),
             payment_provider_slug=self.provider_slug,
@@ -98,7 +107,7 @@ class VisaAuth(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=get_key_value(data, "Transaction.AuthCode"),
+            auth_code=_get_auth_code(data, "Transaction"),
         )
 
 
@@ -157,7 +166,7 @@ class VisaSettlement(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=get_key_value(data, "Transaction.AuthCode"),
+            auth_code=_get_auth_code(data, "Transaction"),
         )
 
 
@@ -219,5 +228,5 @@ class VisaRefund(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "ReturnTransaction.VipTransactionId")),
-            auth_code=get_key_value(data, "ReturnTransaction.AuthCode"),
+            auth_code=_get_auth_code(data, "ReturnTransaction"),
         )
