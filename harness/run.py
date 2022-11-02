@@ -176,7 +176,7 @@ class IdentityDateTimeField(fields.DateTime):
 class FixtureUserTransactionSchema(Schema):
     date = IdentityDateTimeField(required=True, allow_none=False)
     amount = fields.Integer(required=True, allow_none=False, strict=True)
-    auth_code = fields.String(required=False)
+    auth_code = fields.String(required=False, validate=validate.Length(equal=6))
     merchant_overrides = fields.Dict(required=False)
     payment_provider_overrides = fields.Dict(required=False)
     identifier = fields.String(required=True, allow_none=False)
