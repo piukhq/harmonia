@@ -20,20 +20,15 @@ def _make_settlement_key(key_id: str) -> str:
     return sha256(f"visa.{key_id}".encode()).hexdigest()
 
 
-def _get_auth_code(data: dict, transaction_type: str):
-    for d in data["MessageElementsCollection"]:
-        if d["Key"] == f"{transaction_type}.AuthCode":
-            return d["Value"]
-
-    return ""
-
-
 def get_key_value(data: dict, key: str) -> str:
     for d in data["MessageElementsCollection"]:
         if d["Key"] == key:
             return d["Value"]
 
-    raise KeyError(f"Key {key} not found in data: {data}")
+    if "AuthCode" in key:
+        return ""
+    else:
+        raise KeyError(f"Key {key} not found in data: {data}")
 
 
 def try_convert_settlement_mid(mid: str) -> str:
@@ -107,7 +102,7 @@ class VisaAuth(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "Transaction"),
+            auth_code=get_key_value(data, "Transaction.AuthCode"),
         )
 
 
@@ -166,7 +161,7 @@ class VisaSettlement(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "Transaction"),
+            auth_code=get_key_value(data, "Transaction.AuthCode"),
         )
 
 
@@ -228,5 +223,5 @@ class VisaRefund(QueueAgent):
             spend_currency="GBP",
             card_token=ext_user_id,
             settlement_key=_make_settlement_key(get_key_value(data, "ReturnTransaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "ReturnTransaction"),
+            auth_code=get_key_value(data, "ReturnTransaction.AuthCode"),
         )
