@@ -131,6 +131,7 @@ settlement_transaction = {
 settlement_psimi_index = settlement_transaction.get("MessageElementsCollection").index(
     {"Key": "Transaction.VisaMerchantId", "Value": transaction_1_psimi_id}
 )
+
 settlement_auth_index = settlement_transaction.get("MessageElementsCollection").index(
     {"Key": "Transaction.AuthCode", "Value": "6666667"}
 )
