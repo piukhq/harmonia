@@ -1,5 +1,6 @@
 import copy
 import json
+from unittest.mock import patch
 
 import pytest
 
@@ -383,7 +384,8 @@ def test_refund_get_mids_zero_string():
     ]
 
 
-def test_auth_auth_code_field_is_missing():
+@patch('app.imports.agents.visa.VisaAuth.get_merchant_slug', return_value="merchant")
+def test_auth_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(auth_transaction_1)
     data["MessageElementsCollection"][auth1_auth_code_index] = {"Key": "Transaction.AuthCode", "Value": ""}
     agent = VisaAuth()
@@ -394,7 +396,8 @@ def test_auth_auth_code_field_is_missing():
     assert fields.auth_code == ""
 
 
-def test_refund_auth_code_field_is_missing():
+@patch('app.imports.agents.visa.VisaRefund.get_merchant_slug', return_value="merchant")
+def test_refund_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(refund_transaction)
     data["MessageElementsCollection"][refund_auth_index] = {"Key": "ReturnTransaction.AuthCode", "Value": ""}
     agent = VisaRefund()
@@ -405,7 +408,8 @@ def test_refund_auth_code_field_is_missing():
     assert fields.auth_code == ""
 
 
-def test_settlement_auth_code_field_is_missing():
+@patch('app.imports.agents.visa.VisaSettlement.get_merchant_slug', return_value="merchant")
+def test_settlement_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(settlement_transaction)
     data["MessageElementsCollection"][refund_auth_index] = {"Key": "Transaction.AuthCode", "Value": ""}
     agent = VisaSettlement()
