@@ -14,8 +14,8 @@ settings.VAULT_URL = "https://vault"
 
 MOCK_URL = "http://iceland.test"
 
-primary_identifier="test-mid-123"
-secondary_identifier="test-mid-456"
+primary_identifier = "test-mid-123"
+secondary_identifier = "test-mid-456"
 
 
 def add_mock_routes():
