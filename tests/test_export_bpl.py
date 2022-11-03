@@ -14,6 +14,9 @@ settings.VAULT_URL = "https://vault"
 
 MOCK_URL = "http://iceland.test"
 
+primary_identifier = "test-mid-123"
+secondary_identifier = "test-mid-456"
+
 
 def add_mock_routes():
     responses.add(
@@ -54,7 +57,7 @@ def create_export_transaction() -> ExportTransaction:
     return ExportTransaction(
         transaction_id="76b7408b-c750-48f9-a727-fbb33cad9531",
         loyalty_id="loyalty-123",
-        mid="test-mid-123",
+        mid=secondary_identifier,
         provider_slug="bpl-asos",
         transaction_date=pendulum.now().in_timezone("Europe/London"),
         spend_amount=5566,
@@ -67,6 +70,7 @@ def create_export_transaction() -> ExportTransaction:
         credentials=encryption.encrypt_credentials(
             {"card_number": "loyalty-123", "merchant_identifier": "88899966", "email": "test-123@testbink.com"}
         ),
+        primary_identifier=primary_identifier,
     )
 
 
@@ -114,6 +118,6 @@ def test_make_export_data(db_session: db.Session):
     assert "bpl-asos-" in data["id"]
     assert data["transaction_total"] == export_transaction.spend_amount
     assert data["datetime"] == export_transaction.transaction_date.int_timestamp
-    assert data["MID"] == export_transaction.mid
+    assert data["MID"] == primary_identifier
     assert data["loyalty_id"] == "88899966"
     assert data["transaction_id"] == export_transaction.transaction_id
