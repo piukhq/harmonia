@@ -33,6 +33,7 @@ RUN apt-get update && apt-get -y install tmux nano vim && \
     apt-get clean && rm -rf /var/lib/apt/lists && \
     pip install --no-cache-dir harmonia-fixtures
 ADD data_generation /app/data_generation
+ADD bulk_load /app/harness
 
 ENTRYPOINT [ "linkerd-await", "--" ]
 CMD ["tail", "-f", "/dev/null"]
