@@ -46,7 +46,7 @@ class Bpl(SingularExportAgent):
                         "id": self.export_transaction_id(export_transaction, transaction_datetime),
                         "transaction_total": export_transaction.spend_amount,
                         "datetime": transaction_datetime,
-                        "MID": export_transaction.mid,
+                        "MID": export_transaction.primary_identifier,
                         "loyalty_id": self.get_loyalty_identifier(export_transaction),
                         "transaction_id": export_transaction.transaction_id,
                     },
