@@ -7,7 +7,6 @@ from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.squaremeal import SquareMeal
 from app.feeds import FeedType
 
-
 transaction_id = "1234567"
 primary_identifier = "test-mid-primary"
 secondary_identifier = "test-mid-secondary"
@@ -21,7 +20,7 @@ request_body = {
     "loyalty_id": loyalty_id,
     "auth": True,
     "cleared": False,
-    "mid": secondary_identifier,
+    "mid": primary_identifier,
     "transaction_date": transaction_date.format("YYYY-MM-DDTHH:mm:ss"),
     "transaction_amount": 5566,
     "transaction_currency": "GBP",
