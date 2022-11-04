@@ -31,7 +31,7 @@ FROM base AS harness
 
 RUN apt-get update && apt-get -y install tmux nano vim && \
     apt-get clean && rm -rf /var/lib/apt/lists && \
-    pip install --no-cache-dir harmonia-fixtures factory-boy
+    pip install --no-cache-dir harmonia-fixtures factory-boy mimesis
 ADD data_generation /app/data_generation
 ADD harness/bulk_load_db.py /app/bulk_load_db.py
 
