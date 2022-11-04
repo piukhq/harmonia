@@ -6,6 +6,7 @@ from app import db, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.squaremeal import SquareMeal
 from app.feeds import FeedType
+from tests.fixtures import create_transaction_record
 
 transaction_id = "1234567"
 primary_identifier = "test-mid-primary"
@@ -39,33 +40,19 @@ response_body = {
 }
 
 
-# TODO once fixture file is created, move
-def create_transaction_record(db_session: db.Session):
-    transaction = db.get_or_create(
-        models.Transaction,
-        transaction_id=transaction_id,
-        defaults=dict(
-            payment_provider_slug="amex",
-            feed_type=FeedType.AUTH,
-            status="IMPORTED",
-            merchant_identifier_ids=[1],
-            merchant_slug=loyalty_slug,
-            settlement_key=settlement_key,
-            match_group="98765",
-            transaction_date=pendulum.now(),
-            has_time=True,
-            spend_amount=5566,
-            spend_multiplier=1,
-            spend_currency="GBR",
-            card_token="9876543",
-            first_six="666666",
-            last_four="4444",
-            auth_code="666655",
-            primary_identifier=primary_identifier,
-        ),
+def create_txn_record(db_session: db.Session):
+    create_transaction_record(
         session=db_session,
+        transaction_id=transaction_id,
+        merchant_identifier_ids=[1],
+        primary_identifier=primary_identifier,
+        merchant_slug=loyalty_slug,
+        settlement_key=settlement_key,
+        card_token="9876543",
+        first_six="666666",
+        last_four="4444",
+        auth_code="666655",
     )
-    return transaction
 
 
 # TODO once fixture file is created, move and make args more descriptive
@@ -90,7 +77,7 @@ def create_export_transaction(txn_id, loy_id, set_key) -> models.ExportTransacti
 
 
 def test_get_settlement_key_without_settlement_key(db_session: db.Session) -> None:
-    create_transaction_record(db_session)
+    create_txn_record(db_session)
     exp_txn = create_export_transaction(transaction_id, loyalty_id, None)
     expected_settlement_key = settlement_key
     squaremeal = SquareMeal()
@@ -100,7 +87,7 @@ def test_get_settlement_key_without_settlement_key(db_session: db.Session) -> No
 
 
 def test_get_settlement_key_with_settlement_key(db_session: db.Session) -> None:
-    create_transaction_record(db_session)
+    create_txn_record(db_session)
     exp_txn = create_export_transaction(transaction_id, loyalty_id, settlement_key)
     expected_settlement_key = settlement_key
     squaremeal = SquareMeal()
