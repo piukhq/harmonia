@@ -20,7 +20,7 @@ def _make_settlement_key(key_id: str) -> str:
     return sha256(f"visa.{key_id}".encode()).hexdigest()
 
 
-def _get_auth_code(data: dict, transaction_type: str):
+def _get_auth_code(data: dict, transaction_type: str) -> str:
     for d in data["MessageElementsCollection"]:
         if d["Key"] == f"{transaction_type}.AuthCode":
             return d["Value"]
