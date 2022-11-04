@@ -50,7 +50,7 @@ auth_transaction_1 = {
     "UserProfileId": "510D7DE9-4C4F-407D-8072-53C747192226",
 }
 
-auth1_auth_code_index = auth_transaction_1.get("MessageElementsCollection").index(
+auth_tx1_auth_code_index = auth_transaction_1.get("MessageElementsCollection").index(
     {"Key": "Transaction.AuthCode", "Value": "822643"}
 )
 
@@ -133,7 +133,7 @@ settlement_psimi_index = settlement_transaction.get("MessageElementsCollection")
     {"Key": "Transaction.VisaMerchantId", "Value": transaction_1_psimi_id}
 )
 
-settlement_auth_index = settlement_transaction.get("MessageElementsCollection").index(
+settlement_auth_code_index = settlement_transaction.get("MessageElementsCollection").index(
     {"Key": "Transaction.AuthCode", "Value": "6666667"}
 )
 
@@ -168,7 +168,7 @@ refund_psimi_index = refund_transaction.get("MessageElementsCollection").index(
     {"Key": "ReturnTransaction.VisaMerchantId", "Value": transaction_1_psimi_id}
 )
 
-refund_auth_index = refund_transaction.get("MessageElementsCollection").index(
+refund_auth_code_index = refund_transaction.get("MessageElementsCollection").index(
     {"Key": "ReturnTransaction.AuthCode", "Value": "444444"}
 )
 
@@ -387,11 +387,13 @@ def test_refund_get_mids_zero_string():
 @patch("app.imports.agents.visa.VisaAuth.get_merchant_slug", return_value="merchant")
 def test_auth_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(auth_transaction_1)
-    data["MessageElementsCollection"][auth1_auth_code_index] = {"Key": "Transaction.AuthCode", "Value": ""}
     agent = VisaAuth()
     fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == "822643"
+    data["MessageElementsCollection"][auth_tx1_auth_code_index] = {"Key": "Transaction.AuthCode", "Value": ""}
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
-    data["MessageElementsCollection"].pop(auth1_auth_code_index)
+    data["MessageElementsCollection"].pop(auth_tx1_auth_code_index)
     fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
 
@@ -399,11 +401,13 @@ def test_auth_auth_code_field_is_missing(mock_get_merchant_slug):
 @patch("app.imports.agents.visa.VisaRefund.get_merchant_slug", return_value="merchant")
 def test_refund_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(refund_transaction)
-    data["MessageElementsCollection"][refund_auth_index] = {"Key": "ReturnTransaction.AuthCode", "Value": ""}
     agent = VisaRefund()
     fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == "444444"
+    data["MessageElementsCollection"][refund_auth_code_index] = {"Key": "ReturnTransaction.AuthCode", "Value": ""}
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
-    data["MessageElementsCollection"].pop(refund_auth_index)
+    data["MessageElementsCollection"].pop(refund_auth_code_index)
     fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
 
@@ -411,10 +415,12 @@ def test_refund_auth_code_field_is_missing(mock_get_merchant_slug):
 @patch("app.imports.agents.visa.VisaSettlement.get_merchant_slug", return_value="merchant")
 def test_settlement_auth_code_field_is_missing(mock_get_merchant_slug):
     data = copy.deepcopy(settlement_transaction)
-    data["MessageElementsCollection"][refund_auth_index] = {"Key": "Transaction.AuthCode", "Value": ""}
     agent = VisaSettlement()
     fields = agent.to_transaction_fields(data)
+    assert fields.auth_code == "6666667"
+    data["MessageElementsCollection"][settlement_auth_code_index] = {"Key": "Transaction.AuthCode", "Value": ""}
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
-    data["MessageElementsCollection"].pop(settlement_auth_index)
+    data["MessageElementsCollection"].pop(settlement_auth_code_index)
     fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
