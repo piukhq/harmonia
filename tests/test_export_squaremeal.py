@@ -6,14 +6,14 @@ from app import db, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.squaremeal import SquareMeal
 from app.feeds import FeedType
-from tests.fixtures import create_transaction_record
+from tests.fixtures import Default, create_export_transaction, create_transaction
 
 transaction_id = "1234567"
-primary_identifier = "test-mid-primary"
-secondary_identifier = "test-mid-secondary"
+primary_identifier = Default.primary_identifier
+secondary_identifier = Default.secondary_identifier
 transaction_date = pendulum.DateTime(2022, 11, 1, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))
 settlement_key = "123456"
-loyalty_id = 10
+loyalty_id = "10"
 loyalty_slug = "squaremeal"
 
 request_body = {
@@ -23,7 +23,7 @@ request_body = {
     "cleared": False,
     "mid": primary_identifier,
     "transaction_date": transaction_date.format("YYYY-MM-DDTHH:mm:ss"),
-    "transaction_amount": 5566,
+    "transaction_amount": 55.66,
     "transaction_currency": "GBP",
     "payment_card_account_id": 1,
     "store_id": None,
@@ -40,8 +40,8 @@ response_body = {
 }
 
 
-def create_txn_record(db_session: db.Session):
-    create_transaction_record(
+def create_transaction_record(db_session: db.Session) -> None:
+    create_transaction(
         session=db_session,
         transaction_id=transaction_id,
         merchant_identifier_ids=[1],
@@ -55,30 +55,23 @@ def create_txn_record(db_session: db.Session):
     )
 
 
-# TODO once fixture file is created, move and make args more descriptive
-def create_export_transaction(txn_id, loy_id, set_key) -> models.ExportTransaction:
-    exp_txn = models.ExportTransaction(
-        transaction_id=txn_id,
-        loyalty_id=loy_id,
-        mid=secondary_identifier,
+def create_export_transaction_object(settlement_key) -> models.ExportTransaction:
+    return create_export_transaction(
+        transaction_id=transaction_id,
         provider_slug=loyalty_slug,
         transaction_date=transaction_date,
-        spend_amount=5566,
-        spend_currency="GBP",
-        payment_card_account_id=1,
-        feed_type=FeedType.AUTH,
-        settlement_key=set_key,
-        user_id=1,
-        scheme_account_id=1,
-        credentials="something",
+        loyalty_id=loyalty_id,
+        mid=secondary_identifier,
         primary_identifier=primary_identifier,
+        feed_type=FeedType.AUTH,
+        settlement_key=settlement_key,
+        payment_card_account_id=1,
     )
-    return exp_txn
 
 
 def test_get_settlement_key_without_settlement_key(db_session: db.Session) -> None:
-    create_txn_record(db_session)
-    exp_txn = create_export_transaction(transaction_id, loyalty_id, None)
+    create_transaction_record(db_session)
+    exp_txn = create_export_transaction_object(None)
     expected_settlement_key = settlement_key
     squaremeal = SquareMeal()
     result_settlement_key = squaremeal.get_settlement_key(exp_txn, db_session)
@@ -87,8 +80,8 @@ def test_get_settlement_key_without_settlement_key(db_session: db.Session) -> No
 
 
 def test_get_settlement_key_with_settlement_key(db_session: db.Session) -> None:
-    create_txn_record(db_session)
-    exp_txn = create_export_transaction(transaction_id, loyalty_id, settlement_key)
+    create_transaction_record(db_session)
+    exp_txn = create_export_transaction_object(settlement_key)
     expected_settlement_key = settlement_key
     squaremeal = SquareMeal()
     result_settlement_key = squaremeal.get_settlement_key(exp_txn, db_session)
@@ -97,7 +90,7 @@ def test_get_settlement_key_with_settlement_key(db_session: db.Session) -> None:
 
 
 def test_make_export_data(db_session: db.Session) -> None:
-    exp_txn = create_export_transaction(transaction_id, loyalty_id, settlement_key)
+    exp_txn = create_export_transaction_object(settlement_key)
     squaremeal = SquareMeal()
 
     expected_result = AgentExportData(
@@ -118,7 +111,7 @@ def test_make_export_data(db_session: db.Session) -> None:
 @mock.patch("app.exports.agents.squaremeal.atlas")
 @mock.patch("app.service.squaremeal.SquareMeal.transactions", return_value=response_body)
 def test_export(mock_squaremeal_post, mock_atlas, db_session: db.Session) -> None:
-    exp_txn = create_export_transaction(transaction_id, loyalty_id, settlement_key)
+    exp_txn = create_export_transaction_object(settlement_key)
     squaremeal = SquareMeal()
     export_data = squaremeal.make_export_data(exp_txn, db_session)
 

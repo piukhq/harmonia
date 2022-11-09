@@ -11,6 +11,7 @@ from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 from app.feeds import FeedType
 from app.models import IdentifierType
+from tests.fixtures import create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "visa"
 MERCHANT_SLUG = "iceland-bonus-card"
@@ -18,19 +19,12 @@ MERCHANT_SLUG = "iceland-bonus-card"
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
+    mid = create_merchant_identifier(
         identifier="test-mid-primary",
-        identifier_type=IdentifierType.PRIMARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
         session=db_session,
+        identifier_type=IdentifierType.PRIMARY,
+        merchant_slug="iceland-bonus-card",
+        payment_provider_slug="amex",
     )
 
     return mid.id
@@ -38,19 +32,12 @@ def mid_primary(db_session: db.Session) -> int:
 
 @pytest.fixture
 def mid_secondary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
+    mid = create_merchant_identifier(
         identifier="test-mid-secondary",
-        identifier_type=IdentifierType.SECONDARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
         session=db_session,
+        identifier_type=IdentifierType.PRIMARY,
+        merchant_slug="iceland-bonus-card",
+        payment_provider_slug="amex",
     )
 
     return mid.id
@@ -102,68 +89,6 @@ COMMON_TX_FIELDS = dict(
     extra_fields={},
     primary_identifier="test-mid-primary",
 )
-
-
-def create_scheme_transaction_record(
-    session: db.Session,
-    merchant_identifier_ids: list[int],
-    primary_identifier: str,
-    provider_slug: str,
-    payment_provider_slug: str,
-    transaction_id: str,
-    transaction_date: pendulum.DateTime,
-    spend_amount: int,
-    spend_multiplier: int,
-    spend_currency: str,
-    **kwargs,
-) -> None:
-    db.get_or_create(
-        models.SchemeTransaction,
-        transaction_id=transaction_id,
-        defaults=dict(
-            merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifier=primary_identifier,
-            provider_slug=provider_slug,
-            payment_provider_slug=payment_provider_slug,
-            transaction_date=transaction_date,
-            spend_amount=spend_amount,
-            spend_multiplier=spend_multiplier,
-            spend_currency=spend_currency,
-            **kwargs,
-        ),
-        session=session,
-    )
-
-
-def create_payment_transaction_record(
-    session: db.Session,
-    merchant_identifier_ids: list[int],
-    primary_identifier: str,
-    provider_slug: str,
-    transaction_id: str,
-    transaction_date: pendulum.DateTime,
-    spend_amount: int,
-    spend_multiplier: int,
-    spend_currency: str,
-    card_token: str,
-    **kwargs,
-) -> None:
-    db.get_or_create(
-        models.PaymentTransaction,
-        transaction_id=transaction_id,
-        defaults=dict(
-            merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifier=primary_identifier,
-            provider_slug=provider_slug,
-            transaction_date=transaction_date,
-            spend_amount=spend_amount,
-            spend_multiplier=spend_multiplier,
-            spend_currency=spend_currency,
-            card_token=card_token,
-            **kwargs,
-        ),
-        session=session,
-    )
 
 
 @responses.activate

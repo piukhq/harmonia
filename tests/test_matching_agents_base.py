@@ -7,29 +7,22 @@ from app import db, models
 from app.matching.agents.generic_loyalty import GenericLoyalty
 from app.matching.agents.generic_spotted import GenericSpotted
 from app.models import IdentifierType
+from tests.fixtures import Default, create_merchant_identifier, create_payment_transaction, create_scheme_transaction
+
+TRANSACTION_DATE = pendulum.now()
+PRIMARY_IDENTIFIER = Default.primary_identifier
 
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
-        identifier="test-mid-primary",
-        identifier_type=IdentifierType.PRIMARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
+    mid = create_merchant_identifier(
         session=db_session,
+        identifier_type=IdentifierType.PRIMARY,
+        merchant_slug="iceland-bonus-card",
+        payment_provider_slug="amex",
     )
 
     return mid.id
-
-
-TRANSACTION_DATE = pendulum.now()
 
 
 COMMON_TX_FIELDS = dict(
@@ -50,7 +43,7 @@ COMMON_TX_FIELDS = dict(
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
 
-    ptx = models.PaymentTransaction(
+    ptx = create_payment_transaction(
         merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-make-matched-transaction-fields-transaction-1",
@@ -58,7 +51,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
         card_token="test-make-matched-transaction-fields-token-1",
         **COMMON_TX_FIELDS,
     )
-    stx = models.SchemeTransaction(
+    stx = create_scheme_transaction(
         merchant_identifier_ids=[mid_primary],
         transaction_id="test-make-matched-transaction-fields-transaction-2",
         provider_slug="iceland-bonus-card",
@@ -70,7 +63,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
     result = agent.make_matched_transaction_fields(stx)
     assert result == {
         "merchant_identifier_id": mid_primary,
-        "primary_identifier": None,
+        "primary_identifier": PRIMARY_IDENTIFIER,
         "transaction_id": "test-make-matched-transaction-fields-transaction-2",
         "transaction_date": TRANSACTION_DATE,
         "spend_amount": 1699,
@@ -83,8 +76,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
 
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
-
-    ptx = models.PaymentTransaction(
+    ptx = create_payment_transaction(
         merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-make-spotted-transaction-fields-transaction-1",
@@ -97,7 +89,7 @@ def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: in
     result = agent.make_spotted_transaction_fields()
     assert result == {
         "merchant_identifier_id": mid_primary,
-        "primary_identifier": None,
+        "primary_identifier": PRIMARY_IDENTIFIER,
         "transaction_id": "test-make-spotted-transaction-fields-transaction-1",
         "transaction_date": TRANSACTION_DATE,
         "spend_amount": 1699,

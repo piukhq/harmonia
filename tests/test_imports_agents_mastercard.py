@@ -4,24 +4,22 @@ from app import db, models
 from app.feeds import FeedType
 from app.imports.agents.mastercard import MastercardAuth, MastercardTGX2Settlement
 from app.models import IdentifierType
+from tests.fixtures import SampleTransactions, create_import_transaction
 
 auth_transaction_1_id = "NTI4QjdBN"
-auth_transaction_1 = {
-    "amount": 96,
-    "currency_code": "GBP",
-    "mid": "test_primary_identifier_1",
-    "payment_card_token": "test_card_token_1",
-    "third_party_id": auth_transaction_1_id,
-    "time": "2022-10-14 13:52:24",
-}
-auth_transaction_2 = {
-    "amount": 41,
-    "currency_code": "GBP",
-    "mid": "test_primary_identifier_2",
-    "payment_card_token": "test_token_2",
-    "third_party_id": "MkNGQjc3Q",
-    "time": "2022-10-14 13:54:59",
-}
+auth_transaction_1 = SampleTransactions().mastercard_auth(
+    amount=96,
+    mid="test_primary_identifier_1",
+    payment_card_token="test_card_token_1",
+    third_party_id=auth_transaction_1_id,
+    time="2022-10-14 13:52:24",
+)
+auth_transaction_2 = SampleTransactions().mastercard_auth(
+    amount=41,
+    mid="test_primary_identifier_2",
+    payment_card_token="test_token_2",
+    time="2022-10-14 13:54:59",
+)
 settlement_transaction = {
     "record_type": "D",
     "mid": "test-mid-123",
@@ -46,21 +44,19 @@ settlement_transaction_empty_psimi = {
     "transaction_id": "48156a45-",
     "auth_code": "666666",
 }
+mastercard_settlement_file = SampleTransactions().mastercard_settlement_file()
 
 
 def create_transaction_record(db_session: db.Session):
-    db.get_or_create(
-        models.ImportTransaction,
-        transaction_id=auth_transaction_1_id + "_" + auth_transaction_1["time"][0:10].replace("-", ""),
-        defaults=dict(
-            feed_type=FeedType.AUTH,
-            provider_slug="mastercard",
-            identified=True,
-            match_group="5652d8f5546d4dee9c31b97ba10a6a7c",
-            source="AMQP: mastercard-auth",
-            data=json.dumps(auth_transaction_1),
-        ),
+    create_import_transaction(
         session=db_session,
+        transaction_id=auth_transaction_1_id + "_" + auth_transaction_1["time"][0:10].replace("-", ""),
+        feed_type=FeedType.AUTH,
+        provider_slug="mastercard",
+        identified=True,
+        match_group="5652d8f5546d4dee9c31b97ba10a6a7c",
+        source="AMQP: mastercard-auth",
+        data=json.dumps(auth_transaction_1),
     )
 
 
