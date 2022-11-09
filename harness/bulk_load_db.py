@@ -73,6 +73,7 @@ def create_transactions(transaction_count: int, batchsize: int, scheme_slug: t.O
     factory_kwargs = {}
     if scheme_slug:  # We need to override some factory attributes if scheme_slug has been passed in
         factory_kwargs = {
+            "merchant_slug": scheme_slug,
             "transaction_date": factory.LazyAttribute(
                 lambda o: generic.transaction_date_provider.transaction_date(days=7)
             ),
