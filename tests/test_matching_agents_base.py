@@ -7,7 +7,12 @@ from app import db, models
 from app.matching.agents.generic_loyalty import GenericLoyalty
 from app.matching.agents.generic_spotted import GenericSpotted
 from app.models import IdentifierType
-from tests.fixtures import Default, create_merchant_identifier, create_payment_transaction, create_scheme_transaction
+from tests.fixtures import (
+    Default,
+    get_or_create_merchant_identifier,
+    get_or_create_payment_transaction,
+    get_or_create_scheme_transaction,
+)
 
 TRANSACTION_DATE = pendulum.now()
 PRIMARY_IDENTIFIER = Default.primary_identifier
@@ -15,7 +20,7 @@ PRIMARY_IDENTIFIER = Default.primary_identifier
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         session=db_session,
         identifier_type=IdentifierType.PRIMARY,
         merchant_slug="iceland-bonus-card",
@@ -43,7 +48,7 @@ COMMON_TX_FIELDS = dict(
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
 
-    ptx = create_payment_transaction(
+    ptx = get_or_create_payment_transaction(
         merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-make-matched-transaction-fields-transaction-1",
@@ -51,7 +56,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
         card_token="test-make-matched-transaction-fields-token-1",
         **COMMON_TX_FIELDS,
     )
-    stx = create_scheme_transaction(
+    stx = get_or_create_scheme_transaction(
         merchant_identifier_ids=[mid_primary],
         transaction_id="test-make-matched-transaction-fields-transaction-2",
         provider_slug="iceland-bonus-card",
@@ -76,7 +81,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
 
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
-    ptx = create_payment_transaction(
+    ptx = get_or_create_payment_transaction(
         merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
         transaction_id="test-make-spotted-transaction-fields-transaction-1",

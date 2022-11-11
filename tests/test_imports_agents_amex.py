@@ -5,11 +5,11 @@ from tests.fixtures import Default, SampleTransactions
 
 def test_auth_get_mids():
     agent = AmexAuth()
-    ids = agent.get_mids(SampleTransactions.amex_auth)
+    ids = agent.get_mids(SampleTransactions().amex_auth())
     assert ids == [(IdentifierType.PRIMARY, Default.primary_identifier)]
 
 
 def test_settlement_get_mids():
     agent = AmexSettlement()
-    ids = agent.get_mids(SampleTransactions.amex_settlement)
+    ids = agent.get_mids(SampleTransactions().amex_settlement())
     assert ids == [(IdentifierType.PRIMARY, Default.primary_identifier)]

@@ -8,35 +8,29 @@ from app.imports.agents.bases.base import IdentifyArgs, identify_mids
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, TransactionStatus
-from tests.fixtures import Default, SampleTransactions, create_merchant_identifier
+from tests.fixtures import Default, SampleTransactions, get_or_create_merchant_identifier
 
-PRIMARY_IDENTIFIER = "test-mid-primary"
-SECONDARY_IDENTIFIER = "test-mid-secondary"
-PSIMI_IDENTIFIER = "test-mid-psimi"
-MERCHANT_SLUG = "loyalty_scheme"
+TRANSACTION_ID = "f237df3e-c93a-4976-bdd4-ca0525ed3e20"
+PRIMARY_IDENTIFIER = Default.primary_identifier
+SECONDARY_IDENTIFIER = Default.secondary_identifier
+MERCHANT_SLUG = Default.merchant_slug
 PAYMENT_PROVIDER_SLUG = "visa"
 
 DATA = [
     (IdentifierType.PRIMARY, PRIMARY_IDENTIFIER),
     (IdentifierType.SECONDARY, SECONDARY_IDENTIFIER),
-    (IdentifierType.PSIMI, PSIMI_IDENTIFIER),
+    (IdentifierType.PSIMI, Default.psimi_identifier),
 ]
 
 VISA_TRANSACTION = SampleTransactions().visa_auth(
-    transaction_id="f237df3e-c93a-4976-bdd4-ca0525ed3e20",
-    transaction_date="2022-11-04 15:55:50",
-    primary_identifier=PRIMARY_IDENTIFIER,
-    secondary_identifier=SECONDARY_IDENTIFIER,
-    psimi_identifier=PSIMI_IDENTIFIER,
+    transaction_id=TRANSACTION_ID,
 )
 
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         session=db_session,
-        identifier=PRIMARY_IDENTIFIER,
-        merchant_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
     )
 
@@ -45,23 +39,21 @@ def mid_primary(db_session: db.Session) -> int:
 
 @pytest.fixture
 def mid_secondary(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         session=db_session,
         identifier=SECONDARY_IDENTIFIER,
         identifier_type=IdentifierType.SECONDARY,
-        merchant_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
     )
     return mid.id
 
 
+# TODO: this isn't used, but should be to test this edge case
 @pytest.fixture
 def mid_primary_duplicate(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         session=db_session,
-        identifier=PRIMARY_IDENTIFIER,
         identifier_type=IdentifierType.PSIMI,
-        merchant_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
     )
     return mid.id
@@ -103,11 +95,7 @@ def test_identify_mids_multiple_identifiers_visa(mid_secondary: int, mid_primary
 
 
 def test_identify_mids_multiple_identifiers(mid_secondary: int, mid_primary: int, db_session: db.Session):
-    mids = [
-        (IdentifierType.SECONDARY, SECONDARY_IDENTIFIER),
-        (IdentifierType.PSIMI, PSIMI_IDENTIFIER),
-        (IdentifierType.PRIMARY, PRIMARY_IDENTIFIER),
-    ]
+    mids = DATA
     provider_slug = PAYMENT_PROVIDER_SLUG
     identifer_dict = identify_mids(*mids, provider_slug=provider_slug, session=db_session)
 
@@ -122,7 +110,8 @@ def test_identify_mids_no_matching_identifiers_visa(db_session: db.Session):
     assert e.typename == "MissingMID"
 
 
-def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Session):
+@mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=MERCHANT_SLUG)
+def test_build_inserts(mock_get_merchant_slug, mid_primary: int, mid_secondary: int, db_session: db.Session):
     match_group = "da34aa2a4abf4cc190c3519f7c6e2f88"
     source = "AMQP: visa-auth"
 
@@ -132,7 +121,7 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
     )
 
     assert import_transaction_insert == {
-        "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        "transaction_id": TRANSACTION_ID,
         "feed_type": FeedType.AUTH,
         "provider_slug": PAYMENT_PROVIDER_SLUG,
         "identified": True,
@@ -144,15 +133,15 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
         "feed_type": FeedType.AUTH,
         "status": TransactionStatus.IMPORTED,
         "merchant_identifier_ids": [mid_primary],
-        "transaction_id": "f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        "transaction_id": TRANSACTION_ID,
         "match_group": "da34aa2a4abf4cc190c3519f7c6e2f88",
         "merchant_slug": MERCHANT_SLUG,
         "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
         "primary_identifier": PRIMARY_IDENTIFIER,
-        "transaction_date": Default.transaction_date,
+        "transaction_date": Default.transaction_date.replace(microsecond=0),
         "has_time": True,
-        "spend_amount": Default.spend_amount * 100,
-        "spend_multiplier": 100,
+        "spend_amount": int(Default.spend_amount * Default.spend_multiplier),
+        "spend_multiplier": Default.spend_multiplier,
         "spend_currency": "GBP",
         "card_token": Default.user_token,
         "settlement_key": "1d5d6772aa6be73dc2c76287de2c1429ef56259aa7e2c193613105304772b989",
@@ -162,7 +151,7 @@ def test_build_inserts(mid_primary: int, mid_secondary: int, db_session: db.Sess
         "approval_code": "",
     }
     assert identify == IdentifyArgs(
-        transaction_id="f237df3e-c93a-4976-bdd4-ca0525ed3e20",
+        transaction_id=TRANSACTION_ID,
         merchant_identifier_ids=[mid_primary],
         card_token=Default.user_token,
     )

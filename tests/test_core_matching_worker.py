@@ -9,9 +9,8 @@ import settings
 from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
-from app.feeds import FeedType
 from app.models import IdentifierType
-from tests.fixtures import create_merchant_identifier
+from tests.fixtures import get_or_create_merchant_identifier, get_or_create_transaction
 
 PAYMENT_PROVIDER_SLUG = "visa"
 MERCHANT_SLUG = "iceland-bonus-card"
@@ -19,7 +18,7 @@ MERCHANT_SLUG = "iceland-bonus-card"
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         identifier="test-mid-primary",
         session=db_session,
         identifier_type=IdentifierType.PRIMARY,
@@ -32,7 +31,7 @@ def mid_primary(db_session: db.Session) -> int:
 
 @pytest.fixture
 def mid_secondary(db_session: db.Session) -> int:
-    mid = create_merchant_identifier(
+    mid = get_or_create_merchant_identifier(
         identifier="test-mid-secondary",
         session=db_session,
         identifier_type=IdentifierType.PRIMARY,
@@ -41,38 +40,6 @@ def mid_secondary(db_session: db.Session) -> int:
     )
 
     return mid.id
-
-
-@pytest.fixture
-def transaction(mid_primary, mid_secondary, db_session: db.Session) -> models.Transaction:
-    tx, _ = db.get_or_create(
-        models.Transaction,
-        feed_type=FeedType.AUTH,
-        merchant_identifier_ids=[mid_primary, mid_secondary],
-        primary_identifier=db_session.query(models.MerchantIdentifier)
-        .filter(models.MerchantIdentifier.id == mid_primary)[0]
-        .identifier,
-        transaction_id="test-transaction-1",
-        defaults={
-            "merchant_slug": MERCHANT_SLUG,
-            "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
-            "settlement_key": "1234567890",
-            "approval_code": "",
-            "card_token": "test-token-1",
-            "transaction_date": pendulum.now(),
-            "has_time": True,
-            "spend_amount": 1699,
-            "spend_multiplier": 100,
-            "spend_currency": "GBP",
-            "first_six": "123456",
-            "last_four": "7890",
-            "status": models.TransactionStatus.IMPORTED,
-            "auth_code": "123456",
-            "match_group": "1234567890",
-        },
-        session=db_session,
-    )
-    return tx
 
 
 COMMON_TX_FIELDS = dict(
@@ -140,9 +107,31 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
 
 @responses.activate
-def test_force_match_late_user_identity(
-    mid_primary: int, transaction: models.Transaction, db_session: db.Session
-) -> None:
+def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db_session: db.Session) -> None:
+    primary_identifier = (
+        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
+    )
+    get_or_create_transaction(
+        session=db_session,
+        transaction_id="test-transaction-1",
+        merchant_identifier_ids=[mid_primary, mid_secondary],
+        primary_identifier=primary_identifier,
+        merchant_slug=MERCHANT_SLUG,
+        settlement_key="1234567890",
+        approval_code="",
+        card_token="test-token-1",
+        transaction_date=pendulum.now(),
+        has_time=True,
+        spend_amount=1699,
+        spend_multiplier=100,
+        spend_currency="GBP",
+        first_six="123456",
+        last_four="7890",
+        status=models.TransactionStatus.IMPORTED.name,
+        auth_code="123456",
+        match_group="1234567890",
+    )
+
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
