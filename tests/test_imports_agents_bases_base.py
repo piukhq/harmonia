@@ -54,7 +54,6 @@ def mid_primary_duplicate(db_session: db.Session) -> int:
     mid = get_or_create_merchant_identifier(
         session=db_session,
         identifier_type=IdentifierType.PSIMI,
-        merchant_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
     )
     return mid.id
