@@ -185,13 +185,13 @@ class MatchingWorker:
 
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
-        mid = {scheme_transaction.primary_identifier for scheme_transaction in scheme_transactions}
+        mids = {scheme_transaction.primary_identifier for scheme_transaction in scheme_transactions}
 
         since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(
-                models.PaymentTransaction.primary_identifier == mid.pop(),
+                models.PaymentTransaction.primary_identifier.in_(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.created_at >= since.isoformat(),
             )
