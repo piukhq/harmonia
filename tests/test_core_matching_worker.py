@@ -408,8 +408,13 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
     worker = MatchingWorker()
     worker.handle_scheme_transactions(match_group, session=db_session)
 
-    logs = [mock_logger_debug.mock_calls[2].args[0], mock_logger_debug.mock_calls[3].args[0]]
+    logs = []
+    for i in range(len(mock_logger_debug.mock_calls)):
+        try:
+            logs.append(mock_logger_debug.mock_calls[i].args[0])
+        except IndexError:
+            pass
 
     assert "Received 2 scheme transactions. Looking for potential matches now." in logs
     assert "Found 2 potential matching payment transactions. Enqueueing matching jobs on matching_slow queue." in logs
-    mock_enqueue.call_count == 2
+    assert mock_enqueue.call_count == 2
