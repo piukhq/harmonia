@@ -1,3 +1,4 @@
+import uuid
 from unittest import mock
 
 import pendulum
@@ -11,11 +12,14 @@ from app.core.matching_worker import MatchingWorker
 from app.feeds import FeedType
 from app.models import IdentifierType
 
+PAYMENT_PROVIDER_SLUG = "visa"
+MERCHANT_SLUG = "iceland-bonus-card"
+
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-mid-primary",
@@ -34,8 +38,8 @@ def mid_primary(db_session: db.Session) -> int:
 
 @pytest.fixture
 def mid_secondary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug="iceland-bonus-card", session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug="amex", session=db_session)
+    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
+    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
     mid, _ = db.get_or_create(
         models.MerchantIdentifier,
         identifier="test-mid-secondary",
@@ -63,8 +67,8 @@ def transaction(mid_primary, mid_secondary, db_session: db.Session) -> models.Tr
         .identifier,
         transaction_id="test-transaction-1",
         defaults={
-            "merchant_slug": "iceland-bonus-card",
-            "payment_provider_slug": "amex",
+            "merchant_slug": MERCHANT_SLUG,
+            "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
             "settlement_key": "1234567890",
             "approval_code": "",
             "card_token": "test-token-1",
@@ -100,6 +104,68 @@ COMMON_TX_FIELDS = dict(
 )
 
 
+def create_scheme_transaction_record(
+    session: db.Session,
+    merchant_identifier_ids: list[int],
+    primary_identifier: str,
+    provider_slug: str,
+    payment_provider_slug: str,
+    transaction_id: str,
+    transaction_date: pendulum.DateTime,
+    spend_amount: int,
+    spend_multiplier: int,
+    spend_currency: str,
+    **kwargs,
+) -> None:
+    db.get_or_create(
+        models.SchemeTransaction,
+        transaction_id=transaction_id,
+        defaults=dict(
+            merchant_identifier_ids=merchant_identifier_ids,
+            primary_identifier=primary_identifier,
+            provider_slug=provider_slug,
+            payment_provider_slug=payment_provider_slug,
+            transaction_date=transaction_date,
+            spend_amount=spend_amount,
+            spend_multiplier=spend_multiplier,
+            spend_currency=spend_currency,
+            **kwargs,
+        ),
+        session=session,
+    )
+
+
+def create_payment_transaction_record(
+    session: db.Session,
+    merchant_identifier_ids: list[int],
+    primary_identifier: str,
+    provider_slug: str,
+    transaction_id: str,
+    transaction_date: pendulum.DateTime,
+    spend_amount: int,
+    spend_multiplier: int,
+    spend_currency: str,
+    card_token: str,
+    **kwargs,
+) -> None:
+    db.get_or_create(
+        models.PaymentTransaction,
+        transaction_id=transaction_id,
+        defaults=dict(
+            merchant_identifier_ids=merchant_identifier_ids,
+            primary_identifier=primary_identifier,
+            provider_slug=provider_slug,
+            transaction_date=transaction_date,
+            spend_amount=spend_amount,
+            spend_multiplier=spend_multiplier,
+            spend_currency=spend_currency,
+            card_token=card_token,
+            **kwargs,
+        ),
+        session=session,
+    )
+
+
 @responses.activate
 def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) -> None:
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
@@ -111,7 +177,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="amex",
+        provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
@@ -120,8 +186,8 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
     stx = models.SchemeTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="iceland-bonus-card",
-        payment_provider_slug="amex",
+        provider_slug=MERCHANT_SLUG,
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
         **COMMON_TX_FIELDS,
     )
@@ -172,7 +238,7 @@ def test_force_match_late_user_identity(
 
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="amex",
+        provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
@@ -181,8 +247,8 @@ def test_force_match_late_user_identity(
 
     stx = models.SchemeTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="iceland-bonus-card",
-        payment_provider_slug="amex",
+        provider_slug=MERCHANT_SLUG,
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
         **COMMON_TX_FIELDS,
     )
@@ -223,7 +289,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
 
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="amex",
+        provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
@@ -232,8 +298,8 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
 
     stx = models.SchemeTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="iceland-bonus-card",
-        payment_provider_slug="amex",
+        provider_slug=MERCHANT_SLUG,
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
         **COMMON_TX_FIELDS,
     )
@@ -267,7 +333,7 @@ def test_get_agent_for_payment_transaction_multiple_mids(
 ) -> None:
     ptx = models.PaymentTransaction(
         merchant_identifier_ids=[mid_primary],
-        provider_slug="amex",
+        provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
         card_token="test-single-primary-mid-token-1",
@@ -275,4 +341,78 @@ def test_get_agent_for_payment_transaction_multiple_mids(
     )
     worker = MatchingWorker()
     worker._get_agent_for_payment_transaction(payment_transaction=ptx, session=db_session)
-    assert mock_instantiate.call_args[0][0] == "iceland-bonus-card"
+    assert mock_instantiate.call_args[0][0] == MERCHANT_SLUG
+
+
+@mock.patch("app.tasks.LoggedQueue.enqueue")
+@mock.patch("app.core.matching_worker.get_logger")
+def test_handle_scheme_transactions_multiple_payment_transaction_mids(
+    mock_logger_debug, mock_enqueue, mid_primary, mid_secondary, db_session: db.Session
+) -> None:
+    match_group = "73e3a7b5-48df-4b0b-bdfd-a64d79337eb4"
+
+    COMMON = dict(
+        transaction_date=pendulum.now(),
+        spend_multiplier=100,
+        spend_currency="GBP",
+    )
+
+    create_payment_transaction_record(
+        session=db_session,
+        merchant_identifier_ids=[mid_primary],
+        primary_identifier="test_mid_primary_1",
+        provider_slug=PAYMENT_PROVIDER_SLUG,
+        transaction_id="ptx1_id",
+        spend_amount=2400,
+        card_token="ptx1_token",
+        match_group=uuid.uuid4(),
+        **COMMON,
+    )
+
+    create_payment_transaction_record(
+        session=db_session,
+        merchant_identifier_ids=[mid_secondary],
+        primary_identifier="test_mid_primary_2",
+        provider_slug="visa",
+        transaction_id="ptx2_id",
+        spend_amount=1300,
+        card_token="ptx2_token",
+        match_group=uuid.uuid4(),
+        **COMMON,
+    )
+
+    create_scheme_transaction_record(
+        session=db_session,
+        merchant_identifier_ids=[],
+        primary_identifier="test_mid_primary_1",
+        provider_slug=MERCHANT_SLUG,
+        payment_provider_slug="visa",
+        transaction_id="stx1_id",
+        spend_amount=2400,
+        match_group=match_group,
+        **COMMON,
+    )
+
+    create_scheme_transaction_record(
+        session=db_session,
+        merchant_identifier_ids=[],
+        primary_identifier="test_mid_primary_2",
+        provider_slug=MERCHANT_SLUG,
+        payment_provider_slug="visa",
+        transaction_id="stx2_id",
+        spend_amount=1300,
+        match_group=match_group,
+        **COMMON,
+    )
+
+    worker = MatchingWorker()
+    worker.handle_scheme_transactions(match_group, session=db_session)
+
+    assert (
+        mock_logger_debug.mock_calls[2].args[0] == "Received 2 scheme transactions. Looking for potential matches now."
+    )
+    assert (
+        mock_logger_debug.mock_calls[3].args[0]
+        == "Found 2 potential matching payment transactions. Enqueueing matching jobs on matching_slow queue."
+    )
+    mock_enqueue.call_count == 2
