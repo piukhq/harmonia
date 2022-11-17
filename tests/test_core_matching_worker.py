@@ -10,7 +10,12 @@ from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 from app.models import IdentifierType
-from tests.fixtures import get_or_create_merchant_identifier, get_or_create_transaction
+from tests.fixtures import (
+    get_or_create_merchant_identifier,
+    get_or_create_payment_transaction,
+    get_or_create_scheme_transaction,
+    get_or_create_transaction,
+)
 
 PAYMENT_PROVIDER_SLUG = "visa"
 MERCHANT_SLUG = "iceland-bonus-card"
@@ -271,7 +276,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         spend_currency="GBP",
     )
 
-    create_payment_transaction_record(
+    get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_primary],
         primary_identifier="test_mid_primary_1",
@@ -283,7 +288,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_payment_transaction_record(
+    get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_secondary],
         primary_identifier="test_mid_primary_2",
@@ -295,7 +300,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_scheme_transaction_record(
+    get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
         primary_identifier="test_mid_primary_1",
@@ -307,7 +312,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_scheme_transaction_record(
+    get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
         primary_identifier="test_mid_primary_2",
