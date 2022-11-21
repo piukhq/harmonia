@@ -9,8 +9,13 @@ import settings
 from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
-from app.feeds import FeedType
 from app.models import IdentifierType
+from tests.fixtures import (
+    get_or_create_merchant_identifier,
+    get_or_create_payment_transaction,
+    get_or_create_scheme_transaction,
+    get_or_create_transaction,
+)
 
 PAYMENT_PROVIDER_SLUG = "visa"
 MERCHANT_SLUG = "iceland-bonus-card"
@@ -18,19 +23,12 @@ MERCHANT_SLUG = "iceland-bonus-card"
 
 @pytest.fixture
 def mid_primary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
+    mid = get_or_create_merchant_identifier(
         identifier="test-mid-primary",
-        identifier_type=IdentifierType.PRIMARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
         session=db_session,
+        identifier_type=IdentifierType.PRIMARY,
+        merchant_slug="iceland-bonus-card",
+        payment_provider_slug="amex",
     )
 
     return mid.id
@@ -38,54 +36,15 @@ def mid_primary(db_session: db.Session) -> int:
 
 @pytest.fixture
 def mid_secondary(db_session: db.Session) -> int:
-    loyalty_scheme, _ = db.get_or_create(models.LoyaltyScheme, slug=MERCHANT_SLUG, session=db_session)
-    payment_provider, _ = db.get_or_create(models.PaymentProvider, slug=PAYMENT_PROVIDER_SLUG, session=db_session)
-    mid, _ = db.get_or_create(
-        models.MerchantIdentifier,
+    mid = get_or_create_merchant_identifier(
         identifier="test-mid-secondary",
-        identifier_type=IdentifierType.SECONDARY,
-        defaults={
-            "loyalty_scheme": loyalty_scheme,
-            "payment_provider": payment_provider,
-            "location": "test",
-            "postcode": "test",
-        },
         session=db_session,
+        identifier_type=IdentifierType.PRIMARY,
+        merchant_slug="iceland-bonus-card",
+        payment_provider_slug="amex",
     )
 
     return mid.id
-
-
-@pytest.fixture
-def transaction(mid_primary, mid_secondary, db_session: db.Session) -> models.Transaction:
-    tx, _ = db.get_or_create(
-        models.Transaction,
-        feed_type=FeedType.AUTH,
-        merchant_identifier_ids=[mid_primary, mid_secondary],
-        primary_identifier=db_session.query(models.MerchantIdentifier)
-        .filter(models.MerchantIdentifier.id == mid_primary)[0]
-        .identifier,
-        transaction_id="test-transaction-1",
-        defaults={
-            "merchant_slug": MERCHANT_SLUG,
-            "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
-            "settlement_key": "1234567890",
-            "approval_code": "",
-            "card_token": "test-token-1",
-            "transaction_date": pendulum.now(),
-            "has_time": True,
-            "spend_amount": 1699,
-            "spend_multiplier": 100,
-            "spend_currency": "GBP",
-            "first_six": "123456",
-            "last_four": "7890",
-            "status": models.TransactionStatus.IMPORTED,
-            "auth_code": "123456",
-            "match_group": "1234567890",
-        },
-        session=db_session,
-    )
-    return tx
 
 
 COMMON_TX_FIELDS = dict(
@@ -102,68 +61,6 @@ COMMON_TX_FIELDS = dict(
     extra_fields={},
     primary_identifier="test-mid-primary",
 )
-
-
-def create_scheme_transaction_record(
-    session: db.Session,
-    merchant_identifier_ids: list[int],
-    primary_identifier: str,
-    provider_slug: str,
-    payment_provider_slug: str,
-    transaction_id: str,
-    transaction_date: pendulum.DateTime,
-    spend_amount: int,
-    spend_multiplier: int,
-    spend_currency: str,
-    **kwargs,
-) -> None:
-    db.get_or_create(
-        models.SchemeTransaction,
-        transaction_id=transaction_id,
-        defaults=dict(
-            merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifier=primary_identifier,
-            provider_slug=provider_slug,
-            payment_provider_slug=payment_provider_slug,
-            transaction_date=transaction_date,
-            spend_amount=spend_amount,
-            spend_multiplier=spend_multiplier,
-            spend_currency=spend_currency,
-            **kwargs,
-        ),
-        session=session,
-    )
-
-
-def create_payment_transaction_record(
-    session: db.Session,
-    merchant_identifier_ids: list[int],
-    primary_identifier: str,
-    provider_slug: str,
-    transaction_id: str,
-    transaction_date: pendulum.DateTime,
-    spend_amount: int,
-    spend_multiplier: int,
-    spend_currency: str,
-    card_token: str,
-    **kwargs,
-) -> None:
-    db.get_or_create(
-        models.PaymentTransaction,
-        transaction_id=transaction_id,
-        defaults=dict(
-            merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifier=primary_identifier,
-            provider_slug=provider_slug,
-            transaction_date=transaction_date,
-            spend_amount=spend_amount,
-            spend_multiplier=spend_multiplier,
-            spend_currency=spend_currency,
-            card_token=card_token,
-            **kwargs,
-        ),
-        session=session,
-    )
 
 
 @responses.activate
@@ -215,9 +112,31 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
 
 @responses.activate
-def test_force_match_late_user_identity(
-    mid_primary: int, transaction: models.Transaction, db_session: db.Session
-) -> None:
+def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db_session: db.Session) -> None:
+    primary_identifier = (
+        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
+    )
+    get_or_create_transaction(
+        session=db_session,
+        transaction_id="test-transaction-1",
+        merchant_identifier_ids=[mid_primary, mid_secondary],
+        primary_identifier=primary_identifier,
+        merchant_slug=MERCHANT_SLUG,
+        settlement_key="1234567890",
+        approval_code="",
+        card_token="test-token-1",
+        transaction_date=pendulum.now(),
+        has_time=True,
+        spend_amount=1699,
+        spend_multiplier=100,
+        spend_currency="GBP",
+        first_six="123456",
+        last_four="7890",
+        status=models.TransactionStatus.IMPORTED.name,
+        auth_code="123456",
+        match_group="1234567890",
+    )
+
     pcui_endpoint = f"{settings.HERMES_URL}/payment_cards/accounts/payment_card_user_info/iceland-bonus-card"
     responses.add(
         "POST",
@@ -357,7 +276,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         spend_currency="GBP",
     )
 
-    create_payment_transaction_record(
+    get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_primary],
         primary_identifier="test_mid_primary_1",
@@ -369,7 +288,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_payment_transaction_record(
+    get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_secondary],
         primary_identifier="test_mid_primary_2",
@@ -381,7 +300,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_scheme_transaction_record(
+    get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
         primary_identifier="test_mid_primary_1",
@@ -393,7 +312,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
         **COMMON,
     )
 
-    create_scheme_transaction_record(
+    get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
         primary_identifier="test_mid_primary_2",
