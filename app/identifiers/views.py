@@ -59,7 +59,6 @@ def create_merchant_identifier_fields(
     *,
     session: db.Session,
 ) -> dict:
-    payment_provider_slug = payment_provider_slug.lower()
     loyalty_scheme = get_loyalty_scheme(loyalty_scheme_slug, session=session)
     payment_provider = get_payment_provider(payment_provider_slug, session=session)
 
