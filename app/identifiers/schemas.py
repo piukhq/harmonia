@@ -19,7 +19,7 @@ class IdentifierCreationSchema(Schema):
 
     @validates_schema
     def validate_slug(self, data, **kwargs):
-        validator = re.compile("^[a-z0-9]+(-[a-z0-9]+)*$")
+        validator = re.compile("^[a-z0-9][-\w]+$")
         loyalty_plan = validator.match(data["loyalty_plan"])
         payment_scheme = validator.match(data["payment_scheme"])
         if not loyalty_plan:
