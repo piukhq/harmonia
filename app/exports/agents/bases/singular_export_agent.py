@@ -73,7 +73,7 @@ class SingularExportAgent(BaseAgent):
 
         if matched_transaction is None:
             self.log.warning(
-                f"Failed to load matched transaction #{pending_export.matched_transaction_id}. "
+                f"Failed to load matched transaction #{pending_export.export_transaction_id}. "
                 "Record may have been deleted."
             )
             raise db.NoResultFound

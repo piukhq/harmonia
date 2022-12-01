@@ -59,7 +59,7 @@ class Default:
     third_party_id: str = "MjAwRUZGQ"
     credentials = get_default_credentials(
         card_number,
-        primary_identifier,
+        loyalty_id,
         email,
     )
 
@@ -338,6 +338,7 @@ def get_or_create_export_transaction(
                 credentials=credentials,
                 **kwargs,
             ),
+            session=session,
         )
     else:
         export_transaction = models.ExportTransaction(
@@ -355,6 +356,31 @@ def get_or_create_export_transaction(
             **kwargs,
         )
     return export_transaction
+
+
+def get_or_create_pending_export(
+    session: db.Session | None = None,
+    export_transaction: models.ExportTransaction = None,
+    provider_slug: str = Default.merchant_slug,
+    **kwargs,
+) -> models.PendingExport:
+    if session:
+        pending_export, _ = db.get_or_create(
+            models.PendingExport,
+            export_transaction=export_transaction,
+            defaults=dict(
+                provider_slug=provider_slug,
+                **kwargs,
+            ),
+            session=session,
+        )
+    else:
+        pending_export = models.PendingExport(
+            export_transaction=export_transaction,
+            provider_slug=provider_slug,
+            **kwargs,
+        )
+    return pending_export
 
 
 class SampleTransactions:
