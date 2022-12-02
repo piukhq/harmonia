@@ -11,7 +11,7 @@ identifiers_json = {
             "identifier_type": "PRIMARY",
             "location_id": " ",
             "merchant_internal_id": " ",
-            "loyalty_plan": "test_plan",
+            "loyalty_plan": "test-plan",
             "payment_scheme": "visa",
         },
         {
@@ -19,7 +19,7 @@ identifiers_json = {
             "identifier_type": "SECONDARY",
             "location_id": "34567654",
             "merchant_internal_id": "3456765",
-            "loyalty_plan": "test_plan",
+            "loyalty_plan": "test-plan",
             "payment_scheme": "visa",
         },
         {
@@ -27,7 +27,7 @@ identifiers_json = {
             "identifier_type": "PSIMI",
             "location_id": "34567654",
             "merchant_internal_id": "3456765",
-            "loyalty_plan": "test_plan",
+            "loyalty_plan": "test-plan",
             "payment_scheme": "visa",
         },
     ]
@@ -132,7 +132,7 @@ def test_post_identifiers_reject_duplicate_identifier(test_client, db_session):
                 "identifier_type": "PRIMARY",
                 "location_id": " ",
                 "merchant_internal_id": " ",
-                "loyalty_plan": "test_plan",
+                "loyalty_plan": "test-plan",
                 "payment_scheme": "visa",
             },
         ]
