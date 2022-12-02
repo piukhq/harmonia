@@ -10,8 +10,8 @@ NotBlank = validate.Length(min=1)
 class IdentifierCreationSchema(Schema):
     identifier = fields.String(required=True, validate=NotBlank)
     identifier_type = fields.String(required=True, validate=validate.OneOf(IdentifierType._member_map_.keys()))
-    loyalty_plan = fields.String(required=True, validate=validate.regex("^[a-z0-9]+(?:-[a-z0-9]+)*$"))
-    payment_scheme = fields.String(required=True, validate=validate.regex("^[a-z0-9]+(?:-[a-z0-9]+)*$"))
+    loyalty_plan = fields.String(required=True, validate=[NotBlank, validate.regex("^[a-z0-9]+(?:-[a-z0-9]+)*$")])
+    payment_scheme = fields.String(required=True, validate=[NotBlank, validate.regex("^[a-z0-9]+(?:-[a-z0-9]+)*$")])
     location_id = fields.String(required=False, validate=NotBlank)
     merchant_internal_id = fields.String(required=False, validate=NotBlank)
 
