@@ -36,7 +36,7 @@ class BatchExportAgent(BaseAgent):
         scheduler.run()
 
     def handle_pending_export(self, pending_export, *, session: db.Session):
-        self.log.debug(f"Ignoring {pending_export} for singular export.")
+        self.log.debug(f"Ignoring {pending_export} for batch export.")
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
         pass

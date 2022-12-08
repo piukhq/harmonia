@@ -46,15 +46,15 @@ def pending_export(export_transaction: models.ExportTransaction, db_session: db.
     )
 
 
-def raise_missing_export_data_exception(export_transaction, session):
+def raise_missing_export_data_exception(export_transaction, session) -> None:
     raise MissingExportData("Something is missing")
 
 
-def raise_exception(export_data, retry_count, session):
+def raise_exception(export_data, retry_count, session) -> None:
     raise Exception("Something went wrong")
 
 
-def make_export_data(export_transaction, session):
+def make_export_data(export_transaction, session) -> AgentExportData:
     return AgentExportData(
         outputs=[],
         transactions=[export_transaction],
@@ -62,7 +62,7 @@ def make_export_data(export_transaction, session):
     )
 
 
-def drop_export_transaction_constraints(db_session: db.Session, export_transaction: models.ExportTransaction) -> None:
+def drop_export_transaction(db_session: db.Session, export_transaction: models.ExportTransaction) -> None:
     drop_export_transaction_constraints = "ALTER TABLE export_transaction DISABLE TRIGGER ALL"
     db_session.execute(drop_export_transaction_constraints)
     db_session.delete(export_transaction)
@@ -70,7 +70,7 @@ def drop_export_transaction_constraints(db_session: db.Session, export_transacti
 
 
 @time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "Europe/London"))
-def test_simple_retry(mock_singular_export_agent: MockSingularExportAgent):
+def test_simple_retry(mock_singular_export_agent: MockSingularExportAgent) -> None:
     simple_retry = mock_singular_export_agent.simple_retry(
         retry_count=3, delay=pendulum.duration(minutes=20), max_tries=4
     )
@@ -79,7 +79,7 @@ def test_simple_retry(mock_singular_export_agent: MockSingularExportAgent):
 
 
 @time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "Europe/London"))
-def test_simple_retry_count_exceeds_max_retries(mock_singular_export_agent: MockSingularExportAgent):
+def test_simple_retry_count_exceeds_max_retries(mock_singular_export_agent: MockSingularExportAgent) -> None:
     simple_retry = mock_singular_export_agent.simple_retry(
         retry_count=3, delay=pendulum.duration(minutes=20), max_tries=2
     )
@@ -88,7 +88,7 @@ def test_simple_retry_count_exceeds_max_retries(mock_singular_export_agent: Mock
 
 
 @time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "Europe/London"))
-def test_get_retry_datetime(mock_singular_export_agent: MockSingularExportAgent):
+def test_get_retry_datetime(mock_singular_export_agent: MockSingularExportAgent) -> None:
     simple_retry = mock_singular_export_agent.get_retry_datetime(
         retry_count=3,
     )
@@ -96,7 +96,7 @@ def test_get_retry_datetime(mock_singular_export_agent: MockSingularExportAgent)
     assert simple_retry == pendulum.datetime(2022, 11, 24, 9, 20, 0, 0, "Europe/London")
 
 
-def test_run(mock_singular_export_agent: MockSingularExportAgent):
+def test_run(mock_singular_export_agent: MockSingularExportAgent) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.run()
 
@@ -106,7 +106,7 @@ def test_run(mock_singular_export_agent: MockSingularExportAgent):
     )
 
 
-def test_export(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session):
+def test_export(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.export(
             AgentExportData(outputs={}, transactions={}, extra_data={}), session=db_session
@@ -118,7 +118,7 @@ def test_export(mock_singular_export_agent: MockSingularExportAgent, db_session:
     )
 
 
-def test_export_all(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session):
+def test_export_all(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.export_all(session=db_session)
 
@@ -133,7 +133,7 @@ def test_find_export_transaction(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
+) -> None:
     matched_transaction = mock_singular_export_agent.find_export_transaction(pending_export, session=db_session)
 
     assert matched_transaction == export_transaction
@@ -144,8 +144,8 @@ def test_find_export_transaction_no_match(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
-    drop_export_transaction_constraints(db_session, export_transaction)
+) -> None:
+    drop_export_transaction(db_session, export_transaction)
     with pytest.raises(NoResultFound):
         mock_singular_export_agent.find_export_transaction(pending_export, session=db_session)
 
@@ -155,8 +155,8 @@ def test_handle_pending_export_no_export_transaction(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
-    drop_export_transaction_constraints(db_session, export_transaction)
+) -> None:
+    drop_export_transaction(db_session, export_transaction)
 
     assert db_session.query(models.PendingExport).one() == pending_export
 
@@ -172,7 +172,7 @@ def test_handle_pending_export_missing_export_data(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
+) -> None:
     assert db_session.query(models.PendingExport).one() == pending_export
 
     mock_singular_export_agent.handle_pending_export(pending_export, session=db_session)
@@ -192,7 +192,7 @@ def test_handle_pending_export_exception_sending_export_data(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
+) -> None:
     assert db_session.query(models.PendingExport).one() == pending_export
 
     mock_singular_export_agent.handle_pending_export(pending_export, session=db_session)
@@ -212,7 +212,7 @@ def test_handle_pending_export_exception_sending_export_data_no_retry_at(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
+) -> None:
     assert db_session.query(models.PendingExport).one() == pending_export
 
     mock_singular_export_agent.handle_pending_export(pending_export, session=db_session)
@@ -227,7 +227,7 @@ def test_retry_pending_export(
     db_session: db.Session,
     export_transaction: models.ExportTransaction,
     pending_export: models.PendingExport,
-):
+) -> None:
     mock_singular_export_agent._retry_pending_export(pending_export, pendulum.now().add(minutes=20), session=db_session)
 
     assert db_session.query(models.PendingExport).one().retry_at == pendulum.datetime(2022, 11, 24, 9, 20).naive()
@@ -242,7 +242,7 @@ def test_try_get_result_from_exception_request_exception(mock_singular_export_ag
 @mock.patch.object(SingularExportAgent, "get_response_result", side_effect=Exception)
 def test_try_get_result_from_exception_when_exception_raised(
     mock_get_response_result, mock_singular_export_agent: MockSingularExportAgent
-):
+) -> None:
     response_result = mock_singular_export_agent._try_get_result_from_exception(RequestException(response={}))
 
     assert response_result == ""
@@ -260,7 +260,7 @@ def test_delete_pending_export(
     pending_export: models.PendingExport,
     mock_singular_export_agent: MockSingularExportAgent,
     db_session: db.Session,
-):
+) -> None:
     assert db_session.query(models.PendingExport).one() == pending_export
 
     mock_singular_export_agent._delete_pending_export(pending_export, session=db_session)
@@ -268,14 +268,14 @@ def test_delete_pending_export(
     assert db_session.query(models.PendingExport).one_or_none() is None
 
 
-def test_get_response_result(mock_singular_export_agent: MockSingularExportAgent):
+def test_get_response_result(mock_singular_export_agent: MockSingularExportAgent) -> None:
     response = responses.Response(method="POST", url="http://singular_export_agent.test")
     response_result = mock_singular_export_agent.get_response_result(response)
 
     assert response_result is None
 
 
-def test_make_export_data(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session):
+def test_make_export_data(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.make_export_data(models.MatchedTransaction(), session=db_session)
 

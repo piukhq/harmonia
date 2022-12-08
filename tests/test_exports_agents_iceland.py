@@ -1,14 +1,15 @@
 import json
+import logging
 from unittest import mock
 
 import pytest
 import responses
+from soteria.configuration import Configuration
 
 import settings
 from app import db, encryption, models
 from app.exports.agents.iceland import Iceland, hash_ids
-from tests.fixtures import Default, get_or_create_export_transaction
-from soteria.configuration import Configuration
+from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_pending_export
 
 settings.EUROPA_URL = "http://europa"
 settings.VAULT_URL = "https://vault"
@@ -74,12 +75,27 @@ def iceland() -> Iceland:
 
 
 @pytest.fixture
-def export_transaction() -> models.ExportTransaction:
+def export_transaction(db_session: db.Session) -> models.ExportTransaction:
     return get_or_create_export_transaction(
+        session=db_session,
         provider_slug=MERCHANT_SLUG,
         mid=PRIMARY_IDENTIFIER,
         primary_identifier=PRIMARY_IDENTIFIER,
     )
+
+
+@pytest.fixture
+def pending_export(export_transaction: models.ExportTransaction, db_session: db.Session) -> models.PendingExport:
+    return get_or_create_pending_export(
+        session=db_session, export_transaction=export_transaction, provider_slug=MERCHANT_SLUG
+    )
+
+
+def drop_export_transaction(db_session: db.Session, export_transaction: models.ExportTransaction) -> None:
+    drop_export_transaction_constraints = "ALTER TABLE export_transaction DISABLE TRIGGER ALL"
+    db_session.execute(drop_export_transaction_constraints)
+    db_session.delete(export_transaction)
+    db_session.commit()
 
 
 class Expected:
@@ -194,6 +210,70 @@ def test_yield_export_data(
             }
         ],
     }
+
+
+@mock.patch("app.db.run_query")
+@mock.patch.object(Iceland, "_save_export_transactions")
+@mock.patch("app.service.atlas.queue_audit_message")
+@mock.patch.object(Iceland, "send_export_data")
+@mock.patch.object(Iceland, "_update_metrics")
+def test_export_all(
+    mock_update_metrics,
+    mock_send_export_data,
+    mock_queue_audit_message,
+    mock_save_export_transactions,
+    mock_run_query,
+    iceland: Iceland,
+    export_transaction: models.ExportTransaction,
+    pending_export: models.PendingExport,
+    db_session: db.Session,
+) -> None:
+    audit_message = {"audit_data": "some_audit_data"}
+    mock_send_export_data.return_value = audit_message
+
+    iceland.export_all(session=db_session)
+
+    assert mock_update_metrics.call_args.args[0].transactions[0] == export_transaction
+    assert mock_send_export_data.call_args.args[0].transactions[0] == export_transaction
+    assert mock_queue_audit_message.call_args.args[0] == audit_message
+    assert mock_save_export_transactions.call_args.args[0].transactions[0] == export_transaction
+
+
+def test_export_all_no_transactions(
+    iceland: Iceland,
+    export_transaction: models.ExportTransaction,
+    db_session: db.Session,
+) -> None:
+    drop_export_transaction(db_session, export_transaction)
+    result = iceland.export_all(session=db_session)
+
+    assert result is None
+
+
+@mock.patch.object(Iceland, "_save_export_transactions")
+@mock.patch("app.service.atlas.queue_audit_message")
+@mock.patch.object(Iceland, "send_export_data")
+@mock.patch.object(Iceland, "_update_metrics")
+def test_export_all_pending_transaction_deleted(
+    mock_update_metrics,
+    mock_send_export_data,
+    mock_queue_audit_message,
+    mock_save_export_transactions,
+    iceland: Iceland,
+    pending_export: models.PendingExport,
+    db_session: db.Session,
+    caplog,
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    iceland.log.propagate = True
+
+    assert db_session.query(models.PendingExport).one_or_none() == pending_export
+
+    iceland.export_all(session=db_session)
+
+    assert "Exporting 1 transactions." in caplog.messages
+    assert "Deleted 1 pending exports." in caplog.messages
+    assert db_session.query(models.PendingExport).one_or_none() is None
 
 
 @responses.activate

@@ -95,7 +95,7 @@ def test_make_export_data(export_transaction: ExportTransaction, db_session: db.
 @responses.activate
 @mock.patch("app.exports.agents.bpl.atlas")
 @mock.patch("app.service.bpl.BplAPI.get_security_token", return_value="test_token")
-def test_export(
+def test_export_bpl(
     mock_get_security_token, mock_atlas, export_transaction: ExportTransaction, db_session: db.Session
 ) -> None:
     responses.add(responses.POST, url=REQUEST_URL, json=RESPONSE, status=200)
@@ -110,6 +110,19 @@ def test_export(
     responses.assert_call_count("http://localhost/trenette/transaction", 1)
     assert json.loads(responses.calls[0].request.body) == REQUEST
     assert responses.calls[0].response.json() == RESPONSE
+
+
+@responses.activate
+@mock.patch("app.exports.agents.bpl.atlas")
+@mock.patch("app.service.bpl.BplAPI.get_security_token", return_value="test_token")
+def test_export_atlas(
+    mock_get_security_token, mock_atlas, export_transaction: ExportTransaction, db_session: db.Session
+) -> None:
+    responses.add(responses.POST, url=REQUEST_URL, json=RESPONSE, status=200)
+    agent = Trenette()
+    export_data = agent.make_export_data(export_transaction, db_session)
+
+    agent.export(export_data, session=db_session)
 
     # Post to Atlas
     assert mock_atlas.make_audit_transactions.call_args.args[0] == [export_transaction]
