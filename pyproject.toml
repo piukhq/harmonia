@@ -55,6 +55,7 @@ user-token-store = "^1.1.4"
 azure-oidc = "^1.0.0"
 soteria = "^1.5.2"
 harmonia-fixtures = "^1.2.0"
+time-machine = "^2.8.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.2"
