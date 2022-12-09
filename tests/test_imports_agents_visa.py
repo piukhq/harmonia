@@ -6,7 +6,7 @@ import pytest
 
 from app import db
 from app.feeds import FeedType
-from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, validate_mids
+from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, validate_mids, get_key_value
 from app.models import IdentifierType
 from tests.fixtures import Default, SampleTransactions, get_or_create_import_transaction
 
@@ -72,23 +72,14 @@ REFUND_AUTH_CODE_INDEX = REFUND_TRANSACTION.get("MessageElementsCollection").ind
 )
 
 
-def test_find_new_transactions(db_session: db.Session):
-    get_or_create_import_transaction(
-        session=db_session,
-        transaction_id=AUTH_TX1_ID,
-        feed_type=FeedType.AUTH,
-        provider_slug="visa",
-        identified=True,
-        match_group="e5ccfe848bd94825b921b677d3baf1b1",
-        source="AMQP: visa-auth",
-        data=json.dumps(AUTH_TX1),
-    )
-    provider_transactions = [AUTH_TX1, AUTH_TX_2]
+def test_get_key_value() -> None:
+    data = copy.deepcopy(AUTH_TX1)
 
-    agent = VisaAuth()
-    new_transactions = agent._find_new_transactions(provider_transactions, session=db_session)
+    assert get_key_value(data, 'Transaction.MerchantCardAcceptorId') == PRIMARY_ID
 
-    assert new_transactions[0] == AUTH_TX_2
+    with pytest.raises(KeyError) as e:
+        get_key_value(data, 'not_a_valid_key')
+    assert e.value.args[0] == f"Key not_a_valid_key not found in data: {data}"
 
 
 @pytest.mark.parametrize(
@@ -141,15 +132,31 @@ def test_find_new_transactions(db_session: db.Session):
         ),
     ],
 )
-def test_get_identifiers(input, expected):
-    identifiers = input
-    ids = validate_mids(identifiers)
+def test_validate_mids(input, expected) -> None:
+    ids = validate_mids(input)
     assert ids == expected
 
 
-def test_auth_get_mids():
-    agent = VisaAuth()
-    ids = agent.get_mids(AUTH_TX1)
+def test_find_new_transactions(db_session: db.Session) -> None:
+    get_or_create_import_transaction(
+        session=db_session,
+        transaction_id=AUTH_TX1_ID,
+        feed_type=FeedType.AUTH,
+        provider_slug="visa",
+        identified=True,
+        match_group="e5ccfe848bd94825b921b677d3baf1b1",
+        source="AMQP: visa-auth",
+        data=json.dumps(AUTH_TX1),
+    )
+    provider_transactions = [AUTH_TX1, AUTH_TX_2]
+
+    new_transactions = VisaAuth()._find_new_transactions(provider_transactions, session=db_session)
+
+    assert new_transactions[0] == AUTH_TX_2
+
+
+def test_auth_get_mids() -> None:
+    ids = VisaAuth().get_mids(AUTH_TX1)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
@@ -157,42 +164,43 @@ def test_auth_get_mids():
     ]
 
 
-def test_auth_get_mids_empty_string():
+def test_auth_get_mids_empty_string() -> None:
     data = copy.deepcopy(AUTH_TX1)
     data["MessageElementsCollection"][AUTH_TX1_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": ""}
-    agent = VisaAuth()
-    ids = agent.get_mids(data)
+    ids = VisaAuth().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_auth_get_mids_null_value():
+def test_auth_get_mids_null_value() -> None:
     data = copy.deepcopy(AUTH_TX1)
     data["MessageElementsCollection"][AUTH_TX1_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": None}
-    agent = VisaAuth()
-    ids = agent.get_mids(data)
+    ids = VisaAuth().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_auth_get_mids_zero_string():
+def test_auth_get_mids_zero_string() -> None:
     data = copy.deepcopy(AUTH_TX1)
     data["MessageElementsCollection"][AUTH_TX1_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": "0"}
-    agent = VisaAuth()
-    ids = agent.get_mids(data)
+    ids = VisaAuth().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_settlement_get_mids():
-    agent = VisaSettlement()
-    ids = agent.get_mids(SETTLEMENT_TRANSACTION)
+def test_settlement_get_transaction_id() -> None:
+    transaction_id = VisaSettlement().get_transaction_id(SETTLEMENT_TRANSACTION)
+    assert transaction_id == "32c26a8d-95be-4923-b78e-e49ac7d8812d"
+
+
+def test_settlement_get_mids() -> None:
+    ids = VisaSettlement().get_mids(SETTLEMENT_TRANSACTION)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
@@ -200,42 +208,43 @@ def test_settlement_get_mids():
     ]
 
 
-def test_settlement_get_mids_empty_string():
+def test_settlement_get_mids_empty_string() -> None:
     data = copy.deepcopy(SETTLEMENT_TRANSACTION)
     data["MessageElementsCollection"][SETTLEMENT_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": ""}
-    agent = VisaSettlement()
-    ids = agent.get_mids(data)
+    ids = VisaSettlement().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_settlement_get_mids_null_value():
+def test_settlement_get_mids_null_value() -> None:
     data = copy.deepcopy(SETTLEMENT_TRANSACTION)
     data["MessageElementsCollection"][SETTLEMENT_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": None}
-    agent = VisaSettlement()
-    ids = agent.get_mids(data)
+    ids = VisaSettlement().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_settlement_get_mids_zero_string():
+def test_settlement_get_mids_zero_string() -> None:
     data = copy.deepcopy(SETTLEMENT_TRANSACTION)
     data["MessageElementsCollection"][SETTLEMENT_PSIMI_INDEX] = {"Key": "Transaction.VisaMerchantId", "Value": "0"}
-    agent = VisaSettlement()
-    ids = agent.get_mids(data)
+    ids = VisaSettlement().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_refund_get_mids():
-    agent = VisaRefund()
-    ids = agent.get_mids(REFUND_TRANSACTION)
+def test_refund_get_transaction_id() -> None:
+    transaction_id = VisaRefund().get_transaction_id(REFUND_TRANSACTION)
+    assert transaction_id == "d5e121cf-f34a-47ac-be19-908fc09db1ad"
+
+
+def test_refund_get_mids() -> None:
+    ids = VisaRefund().get_mids(REFUND_TRANSACTION)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
@@ -243,33 +252,30 @@ def test_refund_get_mids():
     ]
 
 
-def test_refund_get_mids_empty_string():
+def test_refund_get_mids_empty_string() -> None:
     data = copy.deepcopy(REFUND_TRANSACTION)
     data["MessageElementsCollection"][REFUND_PSIMI_INDEX] = {"Key": "ReturnTransaction.VisaMerchantId", "Value": ""}
-    agent = VisaRefund()
-    ids = agent.get_mids(data)
+    ids = VisaRefund().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_refund_get_mids_null_value():
+def test_refund_get_mids_null_value() -> None:
     data = copy.deepcopy(REFUND_TRANSACTION)
     data["MessageElementsCollection"][REFUND_PSIMI_INDEX] = {"Key": "ReturnTransaction.VisaMerchantId", "Value": None}
-    agent = VisaRefund()
-    ids = agent.get_mids(data)
+    ids = VisaRefund().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
     ]
 
 
-def test_refund_get_mids_zero_string():
+def test_refund_get_mids_zero_string() -> None:
     data = copy.deepcopy(REFUND_TRANSACTION)
     data["MessageElementsCollection"][REFUND_PSIMI_INDEX] = {"Key": "ReturnTransaction.VisaMerchantId", "Value": "0"}
-    agent = VisaRefund()
-    ids = agent.get_mids(data)
+    ids = VisaRefund().get_mids(data)
     assert ids == [
         (IdentifierType.PRIMARY, PRIMARY_ID),
         (IdentifierType.SECONDARY, SECONDARY_ID),
@@ -277,7 +283,7 @@ def test_refund_get_mids_zero_string():
 
 
 @patch("app.imports.agents.visa.VisaAuth.get_merchant_slug", return_value="merchant")
-def test_auth_auth_code_field_is_missing(mock_get_merchant_slug):
+def test_auth_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(AUTH_TX1)
     agent = VisaAuth()
     fields = agent.to_transaction_fields(data)
@@ -291,7 +297,7 @@ def test_auth_auth_code_field_is_missing(mock_get_merchant_slug):
 
 
 @patch("app.imports.agents.visa.VisaRefund.get_merchant_slug", return_value="merchant")
-def test_refund_auth_code_field_is_missing(mock_get_merchant_slug):
+def test_refund_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(REFUND_TRANSACTION)
     agent = VisaRefund()
     fields = agent.to_transaction_fields(data)
@@ -305,7 +311,7 @@ def test_refund_auth_code_field_is_missing(mock_get_merchant_slug):
 
 
 @patch("app.imports.agents.visa.VisaSettlement.get_merchant_slug", return_value="merchant")
-def test_settlement_auth_code_field_is_missing(mock_get_merchant_slug):
+def test_settlement_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(SETTLEMENT_TRANSACTION)
     agent = VisaSettlement()
     fields = agent.to_transaction_fields(data)

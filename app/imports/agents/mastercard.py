@@ -38,6 +38,46 @@ def _make_settlement_key(*, third_party_id: t.Optional[str], transaction_date: p
     return sha256(f"mastercard.{'.'.join(hash_parts)}".encode()).hexdigest()
 
 
+class MastercardAuth(QueueAgent):
+    provider_slug = PROVIDER_SLUG
+    feed_type = FeedType.AUTH
+
+    config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
+
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+        transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
+        card_token = data["payment_card_token"]
+        return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
+            settlement_key=_make_settlement_key(
+                third_party_id=data["third_party_id"],
+                transaction_date=transaction_date,
+                mid=data["mid"],
+                token=card_token,
+            ),
+            transaction_date=transaction_date,
+            has_time=True,
+            spend_amount=to_pennies(data["amount"]),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            card_token=card_token,
+        )
+
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        if data.get("third_party_id"):
+            # Mastercard could use the same transaction_id in days following - make unique with date
+            return data["third_party_id"] + "_" + data["time"][0:10].replace("-", "")
+        return uuid4().hex
+
+    def get_primary_identifier(self, data: dict) -> str:
+        return data["mid"]
+
+    def get_mids(self, data: dict) -> list[tuple]:
+        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
+
+
 class MastercardTGX2Settlement(FileAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.SETTLED
@@ -134,43 +174,3 @@ class MastercardTGX2Settlement(FileAgent):
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"
         return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
-
-
-class MastercardAuth(QueueAgent):
-    provider_slug = PROVIDER_SLUG
-    feed_type = FeedType.AUTH
-
-    config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
-
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
-        transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
-        card_token = data["payment_card_token"]
-        return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
-            payment_provider_slug=self.provider_slug,
-            settlement_key=_make_settlement_key(
-                third_party_id=data["third_party_id"],
-                transaction_date=transaction_date,
-                mid=data["mid"],
-                token=card_token,
-            ),
-            transaction_date=transaction_date,
-            has_time=True,
-            spend_amount=to_pennies(data["amount"]),
-            spend_multiplier=100,
-            spend_currency=data["currency_code"],
-            card_token=card_token,
-        )
-
-    @staticmethod
-    def get_transaction_id(data: dict) -> str:
-        if data.get("third_party_id"):
-            # Mastercard could use the same transaction_id in days following - make unique with date
-            return data["third_party_id"] + "_" + data["time"][0:10].replace("-", "")
-        return uuid4().hex
-
-    def get_primary_identifier(self, data: dict) -> str:
-        return data["mid"]
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
