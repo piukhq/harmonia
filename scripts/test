@@ -2,7 +2,7 @@
 . scripts/_common
 
 info 'Running tests...'
-pytest --cov app
+pytest --cov app --cov-report term-missing
 hr
 
 info 'Done!'
