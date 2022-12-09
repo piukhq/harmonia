@@ -26,11 +26,6 @@ class MockBatchExportAgent(BatchExportAgent):
 
 
 @pytest.fixture
-def mock_batch_export_agent() -> MockBatchExportAgent:
-    return MockBatchExportAgent()
-
-
-@pytest.fixture
 def export_transaction(db_session: db.Session) -> models.ExportTransaction:
     return get_or_create_export_transaction(
         session=db_session,
@@ -53,35 +48,28 @@ def make_export_data(export_transaction) -> AgentExportData:
     )
 
 
-@pytest.fixture
-def export_data(export_transaction: models.ExportTransaction) -> AgentExportData:
-    return make_export_data(export_transaction)
-
-
-def test_schedule(mock_batch_export_agent: MockBatchExportAgent, db_session: db.Session) -> None:
-    schedule = mock_batch_export_agent.schedule
+def test_schedule(db_session: db.Session) -> None:
+    schedule = MockBatchExportAgent().schedule
 
     assert schedule == "* * * * *"
 
 
 @mock.patch("app.scheduler.CronScheduler.run")
-def test_run(
-    mock_cron_scheduler_run, mock_batch_export_agent: MockBatchExportAgent, db_session: db.Session, caplog
-) -> None:
+def test_run(mock_cron_scheduler_run, db_session: db.Session, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    mock_batch_export_agent.log.propagate = True
-    mock_batch_export_agent.run()
+    agent = MockBatchExportAgent()
+    agent.log.propagate = True
+    agent.run()
 
     assert "Beginning schedule CronScheduler with schedule '* * * * *'." in caplog.messages
     mock_cron_scheduler_run.assert_called_once()
 
 
-def test_handle_pending_export(
-    mock_batch_export_agent: MockBatchExportAgent, pending_export: models.PendingExport, db_session: db.Session, caplog
-) -> None:
+def test_handle_pending_export(pending_export: models.PendingExport, db_session: db.Session, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    mock_batch_export_agent.log.propagate = True
-    mock_batch_export_agent.handle_pending_export(pending_export, session=db_session)
+    agent = MockBatchExportAgent()
+    agent.log.propagate = True
+    agent.handle_pending_export(pending_export, session=db_session)
 
     assert (
         caplog.messages[0] == f"Ignoring PendingExport(id={pending_export.id}, "
@@ -90,23 +78,22 @@ def test_handle_pending_export(
 
 
 @mock.patch.object(BatchExportAgent, "export_all")
-def test_callback(mock_export_all, mock_batch_export_agent: MockBatchExportAgent, db_session: db.Session) -> None:
-    mock_batch_export_agent.callback()
+def test_callback(mock_export_all, db_session: db.Session) -> None:
+    MockBatchExportAgent().callback()
 
     mock_export_all.assert_called_once()
 
 
-def test_yield_export_data(mock_batch_export_agent: MockBatchExportAgent, db_session: db.Session) -> None:
+def test_yield_export_data(db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
-        mock_batch_export_agent.yield_export_data(models.MatchedTransaction(), session=db_session)
+        MockBatchExportAgent().yield_export_data(models.MatchedTransaction(), session=db_session)
 
     assert e.value.args[0] == "Override the yield_export_data method in your agent."
 
 
-def test_send_export_data(
-    mock_batch_export_agent: MockBatchExportAgent, export_data: AgentExportData, db_session: db.Session
-) -> None:
+def test_send_export_data(export_transaction: models.ExportTransaction, db_session: db.Session) -> None:
+    export_data = make_export_data(export_transaction)
     with pytest.raises(NotImplementedError) as e:
-        mock_batch_export_agent.send_export_data(export_data, session=db_session)
+        MockBatchExportAgent().send_export_data(export_data, session=db_session)
 
     assert e.value.args[0] == "Override the send_export_data method in your agent."
