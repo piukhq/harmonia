@@ -384,11 +384,11 @@ def get_or_create_pending_export(
 
 
 class SampleTransactions:
-    def amex_auth(self):
+    def amex_auth(self, identifier: str = Default.primary_identifier) -> dict:
         return {
             "approval_code": "472624",
             "cm_alias": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
-            "merchant_number": Default.primary_identifier,
+            "merchant_number": identifier,
             "offer_id": "0",
             "transaction_amount": Default.spend_amount,
             "transaction_currency": "UKL",
@@ -396,13 +396,13 @@ class SampleTransactions:
             "transaction_time": "2022-11-04 08:55:50",
         }
 
-    def amex_settlement(self):
+    def amex_settlement(self, identifier: str = Default.primary_identifier) -> dict:
         return {
             "approvalCode": "472624",
             "cardToken": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
             "currencyCode": "840",
             "dpan": "123456XXXXX7890",
-            "merchantNumber": Default.primary_identifier,
+            "merchantNumber": identifier,
             "offerId": "0",
             "partnerId": "AADP0050",
             "recordId": "NUE3QTUyNzktMDFEMi00ODQwLUI5NDItRTkzQjMwNUQ0QTBBAADP00400",
@@ -418,7 +418,7 @@ class SampleTransactions:
         mid: str = Default.primary_identifier,
         payment_card_token: str = Default.card_token,
         third_party_id: str = Default.third_party_id,
-        time: str = Default.transaction_date,
+        time: str = Default.transaction_date.to_atom_string(),
     ):
         return {
             "amount": amount,
@@ -432,7 +432,7 @@ class SampleTransactions:
     def visa_auth(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = Default.transaction_date.to_atom_string(),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -462,7 +462,7 @@ class SampleTransactions:
                 {"Key": "Transaction.PanLastFour", "Value": "7890"},
                 {"Key": "Transaction.MerchantDateTimeGMT", "Value": "2022-11-04 15:55:50"},
                 {"Key": "Transaction.BillingAmount", "Value": str(spend_amount)},
-                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date},
+                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date.to_atom_string()},
                 {"Key": "Transaction.SettlementDate", "Value": ""},
                 {"Key": "Transaction.SettlementAmount", "Value": "0"},
                 {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "0"},

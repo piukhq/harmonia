@@ -1,5 +1,4 @@
 import json
-from copy import copy
 from unittest import mock
 from uuid import UUID
 
