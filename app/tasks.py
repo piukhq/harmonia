@@ -1,6 +1,7 @@
 import typing as t
 from functools import cached_property
 
+import redis
 import rq
 import sentry_sdk
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -10,6 +11,11 @@ from app.core import export_director, identifier, import_director, matching_dire
 from app.feeds import FeedType
 
 log = reporting.get_logger("tasks")
+
+
+class TasksRedisException(Exception):
+    """Exception for any redis error bubbling back through rq"""
+    pass
 
 
 class LoggedQueue(rq.Queue):
@@ -33,8 +39,12 @@ class LoggedQueue(rq.Queue):
         reraise=True,
     )
     def enqueue(self, f, *args, **kwargs):
-        result = super().enqueue(f, retry=rq.Retry(max=3, interval=[10, 30, 60]), *args, **kwargs)
-        log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
+        try:
+            result = super().enqueue(f, retry=rq.Retry(max=3, interval=[10, 30, 60]), *args, **kwargs)
+            log.debug(f"Task {f.__name__} enqueued on queue {self.name}")
+        except redis.RedisError:
+            raise TasksRedisException
+
         return result
 
     @cached_property
