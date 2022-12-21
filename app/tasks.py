@@ -15,6 +15,7 @@ log = reporting.get_logger("tasks")
 
 class TasksRedisException(Exception):
     """Exception for any redis error bubbling back through rq"""
+
     pass
 
 
