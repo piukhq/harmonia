@@ -13,9 +13,9 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
 
-class MockFileAgent:
+class MockFileAgent(FileAgent):
     provider_slug = "mock-provider-slug"
-    feed_type = FeedType.MERCHANT
+    feed_type = FeedType.SETTLED
 
     config = Config(
         ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
@@ -24,7 +24,7 @@ class MockFileAgent:
 
 
 class TestFileSourceBase:
-    def test_file_source_base_provide(self) -> None:
+    def test_file_source_base_provide_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError) as e:
             FileSourceBase(path=Path(), logger=logging.Logger()).provide(callback=None)
 
@@ -38,11 +38,11 @@ class TestFileAgent:
     def test_update_file_metrics(self) -> None:
         pass
 
-    def test_yield_transactions_data(self) -> None:
+    def test_yield_transactions_data_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
             FileAgent().yield_transactions_data(data=b'')
 
-    def test_get_transaction_date(self) -> None:
+    def test_get_transaction_date_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
             FileAgent().get_transaction_date(data={})
 

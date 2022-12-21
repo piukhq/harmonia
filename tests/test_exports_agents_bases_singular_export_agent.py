@@ -96,7 +96,7 @@ def test_get_retry_datetime(mock_singular_export_agent: MockSingularExportAgent)
     assert simple_retry == pendulum.datetime(2022, 11, 24, 9, 20, 0, 0, "Europe/London")
 
 
-def test_run(mock_singular_export_agent: MockSingularExportAgent) -> None:
+def test_run_not_implemented(mock_singular_export_agent: MockSingularExportAgent) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.run()
 
@@ -106,7 +106,7 @@ def test_run(mock_singular_export_agent: MockSingularExportAgent) -> None:
     )
 
 
-def test_export(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
+def test_export_not_implemented(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.export(
             AgentExportData(outputs={}, transactions={}, extra_data={}), session=db_session
@@ -118,7 +118,7 @@ def test_export(mock_singular_export_agent: MockSingularExportAgent, db_session:
     )
 
 
-def test_export_all(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
+def test_export_all_not_implemented(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.export_all(session=db_session)
 
@@ -275,7 +275,7 @@ def test_get_response_result(mock_singular_export_agent: MockSingularExportAgent
     assert response_result is None
 
 
-def test_make_export_data(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
+def test_make_export_data_not_implemented(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.make_export_data(models.MatchedTransaction(), session=db_session)
 

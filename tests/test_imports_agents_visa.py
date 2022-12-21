@@ -2,6 +2,7 @@ import copy
 import json
 from unittest.mock import patch
 
+import pendulum
 import pytest
 
 from app import db
@@ -20,7 +21,7 @@ REFUND_TX_AUTH_CODE = "444444"
 
 AUTH_TX1 = SampleTransactions().visa_auth(
     transaction_id=AUTH_TX1_ID,
-    transaction_date="2022-10-14 12:52:24",
+    transaction_date=pendulum.DateTime(2022, 10, 14, 12, 52, 24, tzinfo=pendulum.timezone("UCT")),
     user_token="test_card_token_1",
     spend_amount=96.00,
     auth_code=AUTH_TX1_AUTH_CODE,
@@ -34,7 +35,7 @@ AUTH_TX1_PSIMI_INDEX = AUTH_TX1.get("MessageElementsCollection").index(
 
 AUTH_TX_2 = SampleTransactions().visa_auth(
     transaction_id="RDRGOEFEMkYtQkJFMC00MzhGLTk5MDktQjVCOEQ0M0VBM0ZD",
-    transaction_date="2022-10-14 12:54:59",
+    transaction_date=pendulum.DateTime(2022, 10, 14, 12, 54, 59, tzinfo=pendulum.timezone("UCT")),
     primary_identifier="test_primary_identifier_2",
     secondary_identifier="",
     psimi_identifier="",
@@ -45,7 +46,7 @@ AUTH_TX_2 = SampleTransactions().visa_auth(
 
 SETTLEMENT_TRANSACTION = SampleTransactions().visa_settlement(
     transaction_id="32c26a8d-95be-4923-b78e-e49ac7d8812d",
-    transaction_date="2020-06-02T15:46:00+00:00",
+    transaction_date=pendulum.DateTime(2020, 6, 2, 15, 46, 0, tzinfo=pendulum.timezone("UCT")),
     user_token="token-234",
     spend_amount=10.99,
     auth_code=SETTLEMENT_TX_AUTH_CODE,
@@ -59,7 +60,7 @@ SETTLEMENT_AUTH_CODE_INDEX = SETTLEMENT_TRANSACTION.get("MessageElementsCollecti
 
 REFUND_TRANSACTION = SampleTransactions().visa_refund(
     transaction_id="d5e121cf-f34a-47ac-be19-908fc09db1ad",
-    transaction_date="10/27/2020 3:1:59 PM",
+    transaction_date=pendulum.DateTime(2020, 10, 27, 15, 1, 59, tzinfo=pendulum.timezone("UCT")),
     user_token="token-123",
     spend_amount=89.45,
     auth_code=REFUND_TX_AUTH_CODE,

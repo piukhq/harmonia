@@ -8,7 +8,13 @@ from redis.lock import Lock
 
 from app import db, models
 from app.feeds import FeedType
-from app.imports.agents.bases.base import BaseAgent, IdentifyArgs, PaymentTransactionFields, identify_mids
+from app.imports.agents.bases.base import (
+    BaseAgent,
+    IdentifyArgs,
+    PaymentTransactionFields,
+    SchemeTransactionFields,
+    identify_mids,
+)
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, TransactionStatus
@@ -22,6 +28,7 @@ PAYMENT_PROVIDER_SLUG = "visa"
 MATCH_GROUP = "da34aa2a4abf4cc190c3519f7c6e2f88"
 SOURCE = "AMQP: visa-auth"
 TRANSACTION_DATE = pendulum.DateTime(2022, 12, 20, 9, 0, 0, tzinfo=pendulum.timezone("UCT"))
+CARD_TOKEN = "CqN58fD9MI1s7ePn0M5F1RxRu1P"
 
 MIDS_DATA = [
     (IdentifierType.PRIMARY, PRIMARY_IDENTIFIER),
@@ -74,12 +81,21 @@ PAYMENT_TRANSACTION_FIELDS = PaymentTransactionFields(
     spend_amount=5566,
     spend_multiplier=100,
     spend_currency="GBP",
-    card_token="CqN58fD9MI1s7ePn0M5F1RxRu1P",
+    card_token=CARD_TOKEN,
     settlement_key="33ffec57b443bec64d34d84f20590a6c88f4d0f4fad548bb2a5fb545d817128e",
     first_six=None,
     last_four=None,
     auth_code="472624",
     approval_code="",
+)
+SCHEME_TRANSACTION_FIELDS = SchemeTransactionFields(
+    merchant_slug=MERCHANT_SLUG,
+    payment_provider_slug=PAYMENT_PROVIDER_SLUG,
+    transaction_date=TRANSACTION_DATE,
+    has_time=True,
+    spend_amount=6000,
+    spend_multiplier=100,
+    spend_currency="GBP",
 )
 
 
@@ -240,7 +256,6 @@ def test_get_mids_not_implemented() -> None:
     assert e.value.args[0] == "Override get_mids in your agent."
 
 
-# @mock.patch.object(BaseAgent, "_persist_and_enqueue")
 @mock.patch.object(BaseAgent, "_build_inserts")
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
 @mock.patch.object(BaseAgent, "get_primary_identifier", return_value=PRIMARY_IDENTIFIER)
@@ -252,7 +267,6 @@ def test_import_transactions(
     mock_get_primary_identifier,
     mock_get_mids,
     mock_build_inserts,
-    # mock_persist_and_enqueue,
     mid_primary: int,
     db_session: db.Session,
     caplog,
@@ -261,16 +275,17 @@ def test_import_transactions(
     agent = MockBaseAgent()
     caplog.set_level(logging.DEBUG)
     agent.log.propagate = True
-
     mock_build_inserts.return_value = IMPORT_TRANSACTION_INSERT, TRANSACTION_INSERT, IDENTIFY
 
     # Check that there are no existing import transactions
     assert db_session.query(models.ImportTransaction).count() == 0
+    assert db_session.query(models.Transaction).count() == 0
 
     # Check that one import transaction is added, with the expected transaction_id
     result = list(agent._import_transactions([body], source=SOURCE, session=db_session))
     assert result == [None]
     assert db_session.query(models.ImportTransaction.transaction_id).one()[0] == TRANSACTION_ID
+    assert db_session.query(models.Transaction.transaction_id).one()[0] == TRANSACTION_ID
 
     # Check that there are no new import transactions once one has been added
     result = list(agent._import_transactions([body], source=SOURCE, session=db_session))
@@ -302,15 +317,47 @@ def test_import_transactions_lock_acquire_false(
     ]
 
 
-def test_persist_and_enqueue(db_session: db.Session) -> None:
+@mock.patch("app.imports.agents.bases.base.tasks.import_queue.enqueue")
+@mock.patch("app.imports.agents.bases.base.tasks.identify_user_queue.enqueue")
+@mock.patch.object(BaseAgent, "_update_metrics")
+@mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
+def test_persist_and_enqueue_payment_feed(
+    mock_feed_type,
+    mock_update_metrics,
+    mock_enqueue_identify_user_queue,
+    mock_enqueue_import_queue,
+    db_session: db.Session,
+) -> None:
     agent = MockBaseAgent()
-    agent._persist_and_enqueue(
-        [IMPORT_TRANSACTION_INSERT],
-        [TRANSACTION_INSERT],
-        [IDENTIFY],
-        MATCH_GROUP
-    )
-    pass
+    agent._persist_and_enqueue([IMPORT_TRANSACTION_INSERT], [TRANSACTION_INSERT], [IDENTIFY], MATCH_GROUP)
+
+    assert mock_enqueue_identify_user_queue.call_args.args[0].__name__ == "identify_user"
+    assert mock_enqueue_identify_user_queue.call_args.kwargs == {
+        "feed_type": FeedType.AUTH,
+        "transaction_id": TRANSACTION_ID,
+        "merchant_identifier_ids": [1],
+        "card_token": CARD_TOKEN,
+    }
+    assert mock_enqueue_import_queue.called is False
+
+
+@mock.patch("app.imports.agents.bases.base.tasks.import_queue.enqueue")
+@mock.patch("app.imports.agents.bases.base.tasks.identify_user_queue.enqueue")
+@mock.patch.object(BaseAgent, "_update_metrics")
+@mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.MERCHANT)
+def test_persist_and_enqueue_merchant_feed(
+    mock_feed_type,
+    mock_update_metrics,
+    mock_enqueue_identify_user_queue,
+    mock_enqueue_import_queue,
+    db_session: db.Session,
+) -> None:
+    agent = MockBaseAgent()
+    agent._persist_and_enqueue([IMPORT_TRANSACTION_INSERT], [TRANSACTION_INSERT], [IDENTIFY], MATCH_GROUP)
+
+    assert mock_enqueue_identify_user_queue.called is False
+    assert mock_enqueue_import_queue.call_args.args[0].__name__ == "import_transactions"
+    assert mock_enqueue_import_queue.call_args.args[1] == MATCH_GROUP
 
 
 @mock.patch.object(BaseAgent, "to_transaction_fields", return_value=PAYMENT_TRANSACTION_FIELDS)
@@ -339,5 +386,28 @@ def test_build_inserts(
     assert identify == IDENTIFY
 
 
-def test_update_metrics() -> None:
-    pass
+@mock.patch.object(BaseAgent, "to_transaction_fields", return_value=SCHEME_TRANSACTION_FIELDS)
+@mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
+@mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
+@mock.patch.object(BaseAgent, "get_primary_identifier", return_value=PRIMARY_IDENTIFIER)
+@mock.patch.object(BaseAgent, "get_transaction_id", return_value=TRANSACTION_ID)
+@mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=MERCHANT_SLUG)
+def test_build_inserts_import_error(
+    mock_get_merchant_slug,
+    mock_get_transaction_id,
+    mock_get_primary_identifier,
+    mock_feed_type,
+    mock_get_mids,
+    mid_primary: int,
+    mid_secondary: int,
+    db_session: db.Session,
+) -> None:
+    agent = MockBaseAgent()
+    with pytest.raises(BaseAgent.ImportError) as e:
+        agent._build_inserts(tx_data=VISA_TRANSACTION, match_group=MATCH_GROUP, source=SOURCE, session=db_session)
+
+    assert (
+        e.value.args[0]
+        == "visa agent is configured with a feed type of FeedType.AUTH,  but provided "
+           "SchemeTransactionFields instead of PaymentTransactionFields"
+    )

@@ -479,7 +479,7 @@ class SampleTransactions:
     def visa_settlement(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = Default.transaction_date.isoformat(),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -507,9 +507,9 @@ class SampleTransactions:
                 {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "Trenette"},
                 {"Key": "Transaction.AuthCode", "Value": auth_code},
                 {"Key": "Transaction.PanLastFour", "Value": "7890"},
-                {"Key": "Transaction.MerchantDateTimeGMT", "Value": transaction_date},
+                {"Key": "Transaction.MerchantDateTimeGMT", "Value": transaction_date.isoformat()},
                 {"Key": "Transaction.BillingAmount", "Value": str(spend_amount)},
-                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date},
+                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date.isoformat()},
                 {"Key": "Transaction.SettlementDate", "Value": pendulum.now().isoformat()},
                 {"Key": "Transaction.SettlementAmount", "Value": str(spend_amount)},
                 {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "826"},
@@ -526,7 +526,7 @@ class SampleTransactions:
     def visa_refund(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = pendulum.instance(Default.transaction_date).format("M/D/YYYY h:m:s A"),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -554,7 +554,7 @@ class SampleTransactions:
                 {"Key": "ReturnTransaction.TransactionUSDAmount", "Value": str(spend_amount)},
                 {
                     "Key": "ReturnTransaction.DateTime",
-                    "Value": transaction_date,
+                    "Value": pendulum.instance(transaction_date).format("M/D/YYYY h:m:s A"),
                 },
                 {"Key": "ReturnTransaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
                 {"Key": "ReturnTransaction.MerchantGroupName.0.ExternalId", "Value": "Trenette"},

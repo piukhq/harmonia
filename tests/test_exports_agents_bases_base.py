@@ -47,7 +47,7 @@ def export_data(export_transaction: models.ExportTransaction) -> AgentExportData
     return make_export_data(export_transaction)
 
 
-def test_provider_slug() -> None:
+def test_provider_slug_not_implemented() -> None:
     with pytest.raises(NotImplementedError) as e:
         BaseAgent()
 
@@ -66,14 +66,14 @@ def test_str(mock_base_agent: MockBaseAgent) -> None:
     assert str == "export agent MockBaseAgent for mock-base-agent"
 
 
-def test_run(mock_base_agent: MockBaseAgent) -> None:
+def test_run_not_implemented(mock_base_agent: MockBaseAgent) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent.run()
 
     assert e.value.args[0] == "This method should be overridden by specialised base agents."
 
 
-def test_handle_pending_export(
+def test_handle_pending_export_not_implemented(
     mock_base_agent: MockBaseAgent, pending_export: models.PendingExport, db_session: db.Session
 ) -> None:
     with pytest.raises(NotImplementedError) as e:
@@ -82,7 +82,7 @@ def test_handle_pending_export(
     assert e.value.args[0] == "This method should be overridden by specialised base agents."
 
 
-def test_export(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
+def test_export_not_implemented(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent.export(export_data, session=db_session)
 
@@ -92,7 +92,7 @@ def test_export(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db
     )
 
 
-def test_export_all(mock_base_agent: MockBaseAgent, db_session: db.Session) -> None:
+def test_export_all_not_implemented(mock_base_agent: MockBaseAgent, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent.export_all(session=db_session)
 
@@ -118,7 +118,7 @@ def test_save_export_transactions(
     assert db_session.query(models.ExportTransaction).one().status == ExportTransactionStatus.EXPORTED
 
 
-def test_update_metrics(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
+def test_update_metrics_not_implemented(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent._update_metrics(export_data, session=db_session)
 
