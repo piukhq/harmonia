@@ -1,6 +1,6 @@
 import fakeredis
-
 import pytest
+
 from app.tasks import LoggedQueue, TasksRedisException
 
 
@@ -15,4 +15,4 @@ def test_enqueue_exception() -> None:
     test_queue = LoggedQueue(name="testing", connection=fakeredis.FakeRedis(server=server))
 
     with pytest.raises(TasksRedisException):
-        test_queue.enqueue(do_a_job, 'test_thing')
+        test_queue.enqueue(do_a_job, "test_thing")
