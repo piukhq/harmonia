@@ -1,5 +1,6 @@
 import logging
 from pathlib import PosixPath
+from unittest import mock
 
 import pendulum
 import pytest
@@ -7,6 +8,7 @@ import responses
 from soteria.configuration import Configuration
 
 import settings
+from app import db
 from app.imports.agents.wasabi import Wasabi
 from app.models import IdentifierType
 from app.prometheus import BinkPrometheus
@@ -103,9 +105,10 @@ def test_skey() -> None:
 
 
 @responses.activate
-def test_filesource() -> None:
+def test_filesource(db_session: db.Session) -> None:
     add_mock_routes()
-    filename = Wasabi().filesource
+    with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):
+        filename = Wasabi().filesource
 
     assert filename.path == PosixPath("/")
     assert type(filename.log) == logging.Logger

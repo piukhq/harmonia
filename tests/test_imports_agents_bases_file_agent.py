@@ -1,8 +1,10 @@
 import logging
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
+from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 
 from app.feeds import FeedType
@@ -26,7 +28,7 @@ class MockFileAgent(FileAgent):
 class TestFileSourceBase:
     def test_file_source_base_provide_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError) as e:
-            FileSourceBase(path=Path(), logger=logging.Logger()).provide(callback=None)
+            FileSourceBase(path=Path(), logger=logging.Logger(name="test_logger")).provide(callback=None)
 
         assert e.value.args[0] == "FileSourceBase does not implement provide()"
 
@@ -46,7 +48,10 @@ class TestFileAgent:
         with pytest.raises(NotImplementedError):
             FileAgent().get_transaction_date(data={})
 
-    def test_fileagent_config(self) -> None:
+    def test_fileagent_config(self, db_session: db.Session) -> None:
+        with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):
+            file_agent_config = MockFileAgent().fileagent_config
+
         pass
 
     def test_filesource(self) -> None:

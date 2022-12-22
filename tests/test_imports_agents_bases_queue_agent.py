@@ -11,8 +11,9 @@ from app.imports.agents.visa import VisaAuth
 from tests.fixtures import SampleTransactions
 
 
-def test_queue_agent_queue_name() -> None:
-    assert VisaAuth().queue_name == "visa-auth"
+def test_queue_agent_queue_name(db_session: db.Session) -> None:
+    with mock.patch("app.imports.agents.bases.queue_agent.db.session_scope", return_value=db_session):
+        assert VisaAuth().queue_name == "visa-auth"
 
 
 @mock.patch.object(Consumer, "run")
