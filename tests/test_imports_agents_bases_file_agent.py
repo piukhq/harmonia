@@ -1,14 +1,14 @@
 import logging
-from pathlib import Path
+from pathlib import Path, PosixPath
 from unittest import mock
 
 import pytest
 
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
-
 from app.feeds import FeedType
-from app.imports.agents.bases.file_agent import FileSourceBase, LocalFileSource, FileAgent
+from app.imports.agents.bases.file_agent import FileAgent, FileSourceBase, LocalFileSource
+from app.reporting import get_logger
 
 PROVIDER_SLUG = "mock-provider-slug"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -42,7 +42,7 @@ class TestFileAgent:
 
     def test_yield_transactions_data_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
-            FileAgent().yield_transactions_data(data=b'')
+            FileAgent().yield_transactions_data(data=b"")
 
     def test_get_transaction_date_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
@@ -52,13 +52,52 @@ class TestFileAgent:
         with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):
             file_agent_config = MockFileAgent().fileagent_config
 
-        pass
+        assert file_agent_config == FileAgent._FileAgentConfig(path="mock-provider-slug/", schedule="* * * * *")
 
     def test_filesource(self) -> None:
-        pass
+        filesource = MockFileAgent().filesource
 
-    def test_run(self) -> None:
-        pass
+        assert filesource.path == PosixPath("files/imports/mock-provider-slug")
+        assert filesource.log == get_logger("import-agent.mock-provider-slug")
 
-    def test_callback(self) -> None:
-        pass
+    @mock.patch("app.scheduler.CronScheduler.run")
+    def test_run(self, mock_cron_scheduler_run, caplog) -> None:
+        caplog.set_level(logging.DEBUG)
+        agent = MockFileAgent()
+        agent.log.propagate = True
+        agent.run()
+
+        mock_cron_scheduler_run.assert_called_once()
+        assert caplog.messages == [
+            "Watching files/imports/mock-provider-slug for files via LocalFileSource.",
+            "Beginning CronScheduler with schedule '* * * * *'.",
+        ]
+
+    def has_capacity_yielder(self) -> bool:
+        yield False
+        yield True
+
+    @mock.patch.object(LocalFileSource, "provide")
+    @mock.patch("app.imports.agents.bases.file_agent.tasks.import_queue.has_capacity")
+    def test_callback_import_queue_is_at_capacity(self, mock_has_capacity, mock_provide, caplog) -> None:
+        mock_has_capacity.side_effect = self.has_capacity_yielder()
+        caplog.set_level(logging.DEBUG)
+        agent = MockFileAgent()
+        agent.log.propagate = True
+        agent.callback()
+
+        assert mock_has_capacity.call_count == 2
+        mock_provide.assert_called_once()
+        assert caplog.messages == ["Import queue is at capacity. Suspending for a second."]
+
+    @mock.patch.object(LocalFileSource, "provide")
+    @mock.patch("app.imports.agents.bases.file_agent.retry.exponential_delay")
+    @mock.patch("app.imports.agents.bases.file_agent.tasks.import_queue.has_capacity", return_value=True)
+    def test_callback_import_queue_has_capacity(
+        self, mock_has_capacity, mock_retry_exponential_delay, mock_provide
+    ) -> None:
+        MockFileAgent().callback()
+
+        mock_has_capacity.assert_called_once()
+        mock_retry_exponential_delay.assert_not_called()
+        mock_provide.assert_called_once()
