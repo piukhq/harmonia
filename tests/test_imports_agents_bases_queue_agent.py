@@ -1,7 +1,6 @@
 import logging
 from unittest import mock
 
-import kombu.mixins
 import pytest
 
 import settings
@@ -43,15 +42,3 @@ def test_queue_agent_do_import(db_session: db.Session) -> None:
     agent._do_import(SampleTransactions().visa_auth())
 
     assert db_session.query(models.ImportTransaction.transaction_id).one()[0] == "db0b14a3-0ca8-4281-9a77-57b5b88ec0a4"
-
-
-def test_consumer_get_consumers() -> None:
-    # agent = VisaAuth()
-    # with kombu.Connection(settings.RABBITMQ_DSN) as conn:
-    #     consumer = Consumer(conn, "visa-auth", agent)
-    # consumers = consumer.get_consumers(kombu.Consumer, "")
-    pass
-
-
-def test_consumer_on_message() -> None:
-    pass

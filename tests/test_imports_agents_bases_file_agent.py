@@ -2,7 +2,9 @@ import logging
 from pathlib import Path, PosixPath
 from unittest import mock
 
+import pendulum
 import pytest
+import time_machine
 
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -34,19 +36,35 @@ class TestFileSourceBase:
 
 
 class TestFileAgent:
-    def test_do_import(self, caplog) -> None:
-        pass
+    @time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "UTC"))
+    @mock.patch("app.imports.agents.bases.file_agent.bink_prometheus.update_gauge")
+    @mock.patch("app.imports.agents.bases.file_agent.bink_prometheus.increment_counter")
+    def test_update_file_metrics(self, mock_increment_counter, mock_update_gauge) -> None:
+        agent = MockFileAgent()
+        agent._update_file_metrics(pendulum.now().int_timestamp)
 
-    def test_update_file_metrics(self) -> None:
-        pass
+        assert mock_increment_counter.call_args.kwargs == {
+            "agent": agent,
+            "counter_name": "files_received",
+            "increment_by": 1,
+            "process_type": "import",
+            "slug": "mock-provider-slug",
+        }
+        assert mock_update_gauge.call_args.kwargs == {
+            "agent": agent,
+            "gauge_name": "last_file_timestamp",
+            "value": 1669280400,
+            "process_type": "import",
+            "slug": "mock-provider-slug",
+        }
 
     def test_yield_transactions_data_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
-            FileAgent().yield_transactions_data(data=b"")
+            MockFileAgent().yield_transactions_data(data=b"")
 
     def test_get_transaction_date_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError):
-            FileAgent().get_transaction_date(data={})
+            MockFileAgent().get_transaction_date(data={})
 
     def test_fileagent_config(self, db_session: db.Session) -> None:
         with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):

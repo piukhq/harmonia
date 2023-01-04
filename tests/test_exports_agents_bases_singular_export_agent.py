@@ -118,7 +118,9 @@ def test_export_not_implemented(mock_singular_export_agent: MockSingularExportAg
     )
 
 
-def test_export_all_not_implemented(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
+def test_export_all_not_implemented(
+    mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session
+) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.export_all(session=db_session)
 
@@ -275,7 +277,9 @@ def test_get_response_result(mock_singular_export_agent: MockSingularExportAgent
     assert response_result is None
 
 
-def test_make_export_data_not_implemented(mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session) -> None:
+def test_make_export_data_not_implemented(
+    mock_singular_export_agent: MockSingularExportAgent, db_session: db.Session
+) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_singular_export_agent.make_export_data(models.MatchedTransaction(), session=db_session)
 

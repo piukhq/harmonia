@@ -7,7 +7,7 @@ import pytest
 
 from app import db
 from app.feeds import FeedType
-from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, validate_mids, get_key_value
+from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, get_key_value, validate_mids
 from app.models import IdentifierType
 from tests.fixtures import Default, SampleTransactions, get_or_create_import_transaction
 
@@ -76,10 +76,10 @@ REFUND_AUTH_CODE_INDEX = REFUND_TRANSACTION.get("MessageElementsCollection").ind
 def test_get_key_value() -> None:
     data = copy.deepcopy(AUTH_TX1)
 
-    assert get_key_value(data, 'Transaction.MerchantCardAcceptorId') == PRIMARY_ID
+    assert get_key_value(data, "Transaction.MerchantCardAcceptorId") == PRIMARY_ID
 
     with pytest.raises(KeyError) as e:
-        get_key_value(data, 'not_a_valid_key')
+        get_key_value(data, "not_a_valid_key")
     assert e.value.args[0] == f"Key not_a_valid_key not found in data: {data}"
 
 

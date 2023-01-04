@@ -407,7 +407,6 @@ def test_build_inserts_import_error(
         agent._build_inserts(tx_data=VISA_TRANSACTION, match_group=MATCH_GROUP, source=SOURCE, session=db_session)
 
     assert (
-        e.value.args[0]
-        == "visa agent is configured with a feed type of FeedType.AUTH,  but provided "
-           "SchemeTransactionFields instead of PaymentTransactionFields"
+        e.value.args[0] == "visa agent is configured with a feed type of FeedType.AUTH,  but provided "
+        "SchemeTransactionFields instead of PaymentTransactionFields"
     )

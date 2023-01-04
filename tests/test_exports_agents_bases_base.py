@@ -82,7 +82,9 @@ def test_handle_pending_export_not_implemented(
     assert e.value.args[0] == "This method should be overridden by specialised base agents."
 
 
-def test_export_not_implemented(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
+def test_export_not_implemented(
+    mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session
+) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent.export(export_data, session=db_session)
 
@@ -118,7 +120,9 @@ def test_save_export_transactions(
     assert db_session.query(models.ExportTransaction).one().status == ExportTransactionStatus.EXPORTED
 
 
-def test_update_metrics_not_implemented(mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session) -> None:
+def test_update_metrics_not_implemented(
+    mock_base_agent: MockBaseAgent, export_data: AgentExportData, db_session: db.Session
+) -> None:
     with pytest.raises(NotImplementedError) as e:
         mock_base_agent._update_metrics(export_data, session=db_session)
 
