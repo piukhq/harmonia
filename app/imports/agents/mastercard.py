@@ -38,13 +38,6 @@ def _make_settlement_key(*, third_party_id: t.Optional[str], transaction_date: p
     return sha256(f"mastercard.{'.'.join(hash_parts)}".encode()).hexdigest()
 
 
-def try_convert_settlement_mid(mid: str) -> str:
-    prefix = "0000000"
-    if mid.startswith(prefix):
-        return mid[len(prefix) :]
-    return mid
-
-
 class MastercardTGX2Settlement(FileAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.SETTLED
@@ -118,7 +111,7 @@ class MastercardTGX2Settlement(FileAgent):
             return uuid4().hex
 
     def get_primary_identifier(self, data: dict) -> str:
-        return try_convert_settlement_mid(data["mid"])
+        return data["mid"]
 
     def _get_secondary_identifier(self, data: dict) -> str:
         return data["location_id"]
