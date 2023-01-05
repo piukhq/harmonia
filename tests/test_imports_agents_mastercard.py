@@ -16,7 +16,7 @@ from tests.fixtures import SampleTransactions, get_or_create_import_transaction,
 PAYMENT_PROVIDER_SLUG = "mastercard"
 
 AUTH_TRANSACTION_1_ID = "NTI4QjdBN"
-AUTH_TRANSACTION_1_DATE = "2022-10-14 13:52:24"
+AUTH_TRANSACTION_1_DATE = pendulum.DateTime(2022, 10, 14, 13, 52, 24)
 AUTH_TRANSACTION_1_MID = "test_primary_identifier_1"
 AUTH_TRANSACTION_1_TOKEN = "test_card_token_1"
 AUTH_TRANSACTION_1 = SampleTransactions().mastercard_auth(
@@ -30,7 +30,7 @@ AUTH_TRANSACTION_2 = SampleTransactions().mastercard_auth(
     amount=41,
     mid="test_primary_identifier_2",
     payment_card_token="test_token_2",
-    time="2022-10-14 13:54:59",
+    time=pendulum.DateTime(2022, 10, 14, 13, 54, 59),
 )
 # TODO - create fixture mastercard sample transaction for settlements
 SETTLEMENT_TRANSACTION = {
@@ -62,7 +62,7 @@ SETTLEMENT_TRANSACTION_EMPTY_PSIMI = {
 def test_make_settlement_key() -> None:
     settlement_key = _make_settlement_key(
         third_party_id=AUTH_TRANSACTION_1_ID,
-        transaction_date=pendulum.from_format(AUTH_TRANSACTION_1_DATE, "YYYY-MM-DD HH:mm:ss", tz="Europe/London"),
+        transaction_date=AUTH_TRANSACTION_1_DATE,
         mid=AUTH_TRANSACTION_1_MID,
         token=AUTH_TRANSACTION_1_TOKEN,
     )
@@ -153,81 +153,25 @@ def test_tgx2_settlement_parse_line() -> None:
 
 
 def test_tgx2_settlement_yield_transaction_data() -> None:
-    data = (
-        b"H20221209035349                                                                          "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                 \nD                    token-asos-123   "
-        b"                                                                20200409                 "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                         test-mid-123                    "
-        b"                 test-mid-123test-m000000011199                                 1646666666"
-        b"                                                                                         "
-        b"                                                                                         "
-        b"          295d3aaa-\nT20221209035349                                                               "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                            "
-    )
+    data = SampleTransactions().MastercardTGX2Settlement(date=pendulum.DateTime(2020, 4, 9, 16, 46, 59))
     yield_transactions_data = MastercardTGX2Settlement().yield_transactions_data(data)
     assert next(yield_transactions_data) == {
         "record_type": "D",
-        "mid": "test-mid-123",
+        "mid": "test_primary_id",
         "location_id": "test-mid-123",
         "aggregate_merchant_id": "test-m",
-        "amount": 11199,
+        "amount": 5566,
         "date": "20200409",
         "time": "1646",
-        "token": "token-asos-123",
-        "transaction_id": "295d3aaa-",
-        "auth_code": "666666",
+        "token": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
+        "transaction_id": "db0b14a3-",
+        "auth_code": "472624",
     }
 
 
 def test_tgx2_settlement_yield_transaction_data_incorrect_record_type() -> None:
-    data = (
-        b"H20221209035349                                                                          "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                 \nA                    token-asos-123   "
-        b"                                                                20200409                 "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                         test-mid-123                    "
-        b"                 test-mid-123test-m000000011199                                 1646666666"
-        b"                                                                                         "
-        b"                                                                                         "
-        b"          295d3aaa-\nT20221209035349                                                               "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                                                         "
-        b"                                                            "
+    data = SampleTransactions().MastercardTGX2Settlement(
+        record_type="A", date=pendulum.DateTime(2020, 4, 9, 16, 46, 59)
     )
     with pytest.raises(StopIteration):
         next(MastercardTGX2Settlement().yield_transactions_data(data))

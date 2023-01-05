@@ -98,14 +98,14 @@ def test_sftp_credentials() -> None:
 
 
 @responses.activate
-def test_skey() -> None:
+def test_skey_returns_expected_value() -> None:
     add_mock_routes()
 
     assert Wasabi().skey == {"value": ""}
 
 
 @responses.activate
-def test_filesource(db_session: db.Session) -> None:
+def test_filesource_returns_correct_object(db_session: db.Session) -> None:
     add_mock_routes()
     with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):
         filename = Wasabi().filesource

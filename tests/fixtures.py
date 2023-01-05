@@ -8,6 +8,8 @@ from app import db, encryption, models
 from app.feeds import FeedType
 from app.models import IdentifierType
 
+import typing as t
+
 settings.VAULT_URL = "https://vault"
 
 
@@ -418,7 +420,7 @@ class SampleTransactions:
         mid: str = Default.primary_identifier,
         payment_card_token: str = Default.card_token,
         third_party_id: str = Default.third_party_id,
-        time: str = Default.transaction_date.to_atom_string(),
+        time: pendulum.DateTime = Default.transaction_date,
     ):
         return {
             "amount": amount,
@@ -426,8 +428,71 @@ class SampleTransactions:
             "mid": mid,
             "payment_card_token": payment_card_token,
             "third_party_id": third_party_id,
-            "time": time,
+            "time": time.to_atom_string(),
         }
+
+    def MastercardTGX2Settlement(
+        self,
+        record_type: str = "D",
+        token: str = Default.user_token,
+        date: pendulum.DateTime = Default.transaction_date,
+        mid: str = Default.primary_identifier,
+        location_id: str = "test-mid-123",
+        aggregate_merchant_id: str = "test-m",
+        amount: int = Default.spend_amount * 100,
+        auth_code: str = Default.auth_code,
+        transaction_id: str = Default.transaction_id,
+    ) -> bytes:
+
+        def join(*args: t.Tuple[t.Any, int]) -> str:
+            return "".join(str(value).ljust(length) for value, length in args)
+
+        now = pendulum.now()
+        lines = []
+
+        # header
+        lines.append(
+            join(
+                ("H", 1),
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),
+            )
+        )
+
+        # detail
+        lines.append(
+            join(
+                (record_type, 1),
+                ("", 20),
+                (token[:30], 30),
+                ("", 51),
+                (date.in_tz("Europe/London").format("YYYYMMDD"), 8),
+                ("", 341),
+                (mid[:15], 15),
+                ("", 34),
+                (location_id[:12], 12),
+                (aggregate_merchant_id[:6], 6),
+                (str(int(amount))[:12], 12),
+                ("", 33),
+                (date.in_tz("Europe/London").format("HHmm"), 4),
+                (auth_code[:6], 6),
+                ("", 188),
+                (transaction_id[:9], 9),
+            )
+        )
+
+        # trailer
+        lines.append(
+            join(
+                ("T", 1),
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),
+            )
+        )
+
+        return "\n".join(lines).encode()
 
     def visa_auth(
         self,
