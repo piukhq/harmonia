@@ -18,8 +18,10 @@ def test_queue_agent_queue_name(db_session: db.Session) -> None:
 @mock.patch.object(Consumer, "run")
 def test_queue_agent_run(mock_run, caplog) -> None:
     settings.RABBITMQ_HOST = "dummy"
+    settings.RABBITMQ_PORT = 1234
     settings.RABBITMQ_USER = "dummy"
     settings.RABBITMQ_PASS = "dummy"
+    settings.RABBITMQ_DSN = 'amqp://dummy:dummy@dummy:1234//'
 
     agent = VisaAuth()
     caplog.set_level(logging.DEBUG)
