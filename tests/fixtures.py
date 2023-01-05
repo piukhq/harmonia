@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pendulum
 import responses
 
@@ -7,8 +9,6 @@ import settings
 from app import db, encryption, models
 from app.feeds import FeedType
 from app.models import IdentifierType
-
-import typing as t
 
 settings.VAULT_URL = "https://vault"
 
@@ -443,8 +443,7 @@ class SampleTransactions:
         auth_code: str = Default.auth_code,
         transaction_id: str = Default.transaction_id,
     ) -> bytes:
-
-        def join(*args: t.Tuple[t.Any, int]) -> str:
+        def join(*args: tuple[Any, int]) -> str:
             return "".join(str(value).ljust(length) for value, length in args)
 
         now = pendulum.now()
