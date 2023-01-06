@@ -84,14 +84,14 @@ def test_callback(mock_export_all, db_session: db.Session) -> None:
     mock_export_all.assert_called_once()
 
 
-def test_yield_export_data(db_session: db.Session) -> None:
+def test_yield_export_data_not_implemented(db_session: db.Session) -> None:
     with pytest.raises(NotImplementedError) as e:
         MockBatchExportAgent().yield_export_data(models.MatchedTransaction(), session=db_session)
 
     assert e.value.args[0] == "Override the yield_export_data method in your agent."
 
 
-def test_send_export_data(export_transaction: models.ExportTransaction, db_session: db.Session) -> None:
+def test_send_export_data_not_implemented(export_transaction: models.ExportTransaction, db_session: db.Session) -> None:
     export_data = make_export_data(export_transaction)
     with pytest.raises(NotImplementedError) as e:
         MockBatchExportAgent().send_export_data(export_data, session=db_session)

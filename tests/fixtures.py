@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pendulum
 import responses
 
@@ -384,11 +386,11 @@ def get_or_create_pending_export(
 
 
 class SampleTransactions:
-    def amex_auth(self):
+    def amex_auth(self, identifier: str = Default.primary_identifier) -> dict:
         return {
             "approval_code": "472624",
             "cm_alias": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
-            "merchant_number": Default.primary_identifier,
+            "merchant_number": identifier,
             "offer_id": "0",
             "transaction_amount": Default.spend_amount,
             "transaction_currency": "UKL",
@@ -396,13 +398,13 @@ class SampleTransactions:
             "transaction_time": "2022-11-04 08:55:50",
         }
 
-    def amex_settlement(self):
+    def amex_settlement(self, identifier: str = Default.primary_identifier) -> dict:
         return {
             "approvalCode": "472624",
             "cardToken": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
             "currencyCode": "840",
             "dpan": "123456XXXXX7890",
-            "merchantNumber": Default.primary_identifier,
+            "merchantNumber": identifier,
             "offerId": "0",
             "partnerId": "AADP0050",
             "recordId": "NUE3QTUyNzktMDFEMi00ODQwLUI5NDItRTkzQjMwNUQ0QTBBAADP00400",
@@ -418,7 +420,7 @@ class SampleTransactions:
         mid: str = Default.primary_identifier,
         payment_card_token: str = Default.card_token,
         third_party_id: str = Default.third_party_id,
-        time: str = Default.transaction_date,
+        time: pendulum.DateTime = Default.transaction_date,
     ):
         return {
             "amount": amount,
@@ -426,13 +428,75 @@ class SampleTransactions:
             "mid": mid,
             "payment_card_token": payment_card_token,
             "third_party_id": third_party_id,
-            "time": time,
+            "time": time.to_atom_string(),
         }
+
+    def MastercardTGX2Settlement(
+        self,
+        record_type: str = "D",
+        token: str = Default.user_token,
+        date: pendulum.DateTime = Default.transaction_date,
+        mid: str = Default.primary_identifier,
+        location_id: str = "test-mid-123",
+        aggregate_merchant_id: str = "test-m",
+        amount: int = Default.spend_amount * 100,
+        auth_code: str = Default.auth_code,
+        transaction_id: str = Default.transaction_id,
+    ) -> bytes:
+        def join(*args: tuple[Any, int]) -> str:
+            return "".join(str(value).ljust(length) for value, length in args)
+
+        now = pendulum.now()
+        lines = []
+
+        # header
+        lines.append(
+            join(
+                ("H", 1),
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),
+            )
+        )
+
+        # detail
+        lines.append(
+            join(
+                (record_type, 1),
+                ("", 20),
+                (token[:30], 30),
+                ("", 51),
+                (date.in_tz("Europe/London").format("YYYYMMDD"), 8),
+                ("", 341),
+                (mid[:15], 15),
+                ("", 34),
+                (location_id[:12], 12),
+                (aggregate_merchant_id[:6], 6),
+                (str(int(amount))[:12], 12),
+                ("", 33),
+                (date.in_tz("Europe/London").format("HHmm"), 4),
+                (auth_code[:6], 6),
+                ("", 188),
+                (transaction_id[:9], 9),
+            )
+        )
+
+        # trailer
+        lines.append(
+            join(
+                ("T", 1),
+                (now.format("YYYYMMDD"), 8),
+                (now.format("hhmmss"), 6),
+                ("", 835),
+            )
+        )
+
+        return "\n".join(lines).encode()
 
     def visa_auth(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = Default.transaction_date.to_atom_string(),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -462,7 +526,7 @@ class SampleTransactions:
                 {"Key": "Transaction.PanLastFour", "Value": "7890"},
                 {"Key": "Transaction.MerchantDateTimeGMT", "Value": "2022-11-04 15:55:50"},
                 {"Key": "Transaction.BillingAmount", "Value": str(spend_amount)},
-                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date},
+                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date.to_atom_string()},
                 {"Key": "Transaction.SettlementDate", "Value": ""},
                 {"Key": "Transaction.SettlementAmount", "Value": "0"},
                 {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "0"},
@@ -479,7 +543,7 @@ class SampleTransactions:
     def visa_settlement(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = Default.transaction_date.isoformat(),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -507,9 +571,9 @@ class SampleTransactions:
                 {"Key": "Transaction.MerchantGroup.0.ExternalId", "Value": "Trenette"},
                 {"Key": "Transaction.AuthCode", "Value": auth_code},
                 {"Key": "Transaction.PanLastFour", "Value": "7890"},
-                {"Key": "Transaction.MerchantDateTimeGMT", "Value": transaction_date},
+                {"Key": "Transaction.MerchantDateTimeGMT", "Value": transaction_date.isoformat()},
                 {"Key": "Transaction.BillingAmount", "Value": str(spend_amount)},
-                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date},
+                {"Key": "Transaction.TimeStampYYMMDD", "Value": transaction_date.isoformat()},
                 {"Key": "Transaction.SettlementDate", "Value": pendulum.now().isoformat()},
                 {"Key": "Transaction.SettlementAmount", "Value": str(spend_amount)},
                 {"Key": "Transaction.SettlementCurrencyCodeNumeric", "Value": "826"},
@@ -526,7 +590,7 @@ class SampleTransactions:
     def visa_refund(
         self,
         transaction_id: str = Default.transaction_id,
-        transaction_date: str = pendulum.instance(Default.transaction_date).format("M/D/YYYY h:m:s A"),
+        transaction_date: pendulum.DateTime = Default.transaction_date,
         primary_identifier: str = Default.primary_identifier,
         secondary_identifier: str = Default.secondary_identifier,
         psimi_identifier: str = Default.psimi_identifier,
@@ -554,7 +618,7 @@ class SampleTransactions:
                 {"Key": "ReturnTransaction.TransactionUSDAmount", "Value": str(spend_amount)},
                 {
                     "Key": "ReturnTransaction.DateTime",
-                    "Value": transaction_date,
+                    "Value": pendulum.instance(transaction_date).format("M/D/YYYY h:m:s A"),
                 },
                 {"Key": "ReturnTransaction.MerchantGroup.0.Name", "Value": "TEST_MG"},
                 {"Key": "ReturnTransaction.MerchantGroupName.0.ExternalId", "Value": "Trenette"},

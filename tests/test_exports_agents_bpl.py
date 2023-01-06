@@ -44,7 +44,7 @@ def export_transaction() -> ExportTransaction:
 
 
 @mock.patch("app.exports.agents.bases.base.BaseAgent.provider_slug", return_value="bpl-trenette")
-def test_merchant_name(mock_provider_slug) -> None:
+def test_merchant_name_not_implemented(mock_provider_slug) -> None:
     agent = Bpl()
     with pytest.raises(NotImplementedError) as e:
         agent.merchant_name
