@@ -8,7 +8,7 @@ import sentry_sdk
 import settings
 from app import models
 from app.reporting import get_logger
-from app.service import queue
+from app.service import exchange
 
 log = get_logger("atlas")
 
@@ -20,6 +20,13 @@ class AuditTransaction(t.TypedDict):
     transaction_date: str
     loyalty_identifier: str
     record_uid: t.Optional[str]
+    scheme_account_id: str
+    encrypted_credentials: str
+    status: str
+    feed_type: str
+    location_id: str
+    merchant_internal_id: str
+    settlement_key: str
 
 
 class AuditData(t.TypedDict, total=False):
@@ -48,6 +55,13 @@ def make_audit_transactions(
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
             loyalty_identifier=tx_loyalty_ident_callback(tx),
             record_uid=tx_record_uid_callback(tx) if tx_record_uid_callback else None,
+            scheme_account_id=tx.scheme_account_id,
+            encrypted_credentials=tx.credentials,
+            status=tx.status.name if tx.status else None,
+            feed_type=tx.feed_type.name if tx.feed_type else None,
+            location_id=tx.location_id,
+            merchant_internal_id=tx.merchant_internal_id,
+            settlement_key=tx.settlement_key,
         )
         for tx in transactions
     ]
@@ -98,7 +112,7 @@ def queue_audit_message(message: MessagePayload) -> None:
         log.debug(f"Audit payload:\n{message}")
     else:
         try:
-            queue.add(t.cast(dict, message), provider=provider_slug, queue_name="tx_matching")
+            exchange.publish(t.cast(dict, message), provider=provider_slug)
         except Exception as ex:
             # Using a broad exception clause since we do not want any atlas fails or otherwise,
             # to affect other Harmonia processes. Logging will tell us about an issues.
