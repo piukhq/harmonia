@@ -39,6 +39,7 @@ class MessagePayload(t.TypedDict):
     provider_slug: str
     transactions: t.List[AuditTransaction]
     audit_data: AuditData
+    retry_count: int
 
 
 def make_audit_transactions(
@@ -77,6 +78,7 @@ def make_audit_message(
     response_timestamp: t.Optional[str] = None,
     blob_names: t.Optional[t.List[str]] = None,
     request_url: t.Optional[str] = None,
+    retry_count: int = 0,
 ) -> MessagePayload:
     audit_data = AuditData()
     if request is not None:
@@ -102,7 +104,9 @@ def make_audit_message(
     if blob_names:
         audit_data["file_names"] = blob_names
 
-    return MessagePayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data)
+    return MessagePayload(
+        provider_slug=provider_slug, transactions=transactions, audit_data=audit_data, retry_count=retry_count
+    )
 
 
 def queue_audit_message(message: MessagePayload) -> None:

@@ -80,6 +80,7 @@ class Bpl(SingularExportAgent):
                 response=response,
                 response_timestamp=response_timestamp,
                 request_url=request_url,
+                retry_count=retry_count,
             )
         )
 

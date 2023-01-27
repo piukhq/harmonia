@@ -6,9 +6,9 @@ import settings
 
 log = logging.getLogger(__name__)
 
-exchange = Exchange("harmonia_fanout", type="fanout", durable=False)
-atlas_queue = Queue("tx_atlas", exchange=exchange)
-plutus_queue = Queue("tx_plutus", exchange=exchange)
+exchange = Exchange("tx_audit_exchange", type="fanout", durable=False)
+atlas_queue = Queue("tx_matching", exchange=exchange)
+plutus_queue = Queue("tx_plutus_dw", exchange=exchange)
 
 
 def _on_error(exc, interval):
