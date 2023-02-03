@@ -6,7 +6,7 @@ import settings
 
 log = logging.getLogger(__name__)
 
-exchange = Exchange("tx_audit_exchange", type="fanout", durable=False)
+exchange = Exchange("tx_export_exchange", type="fanout", durable=False)
 atlas_queue = Queue("tx_matching", exchange=exchange)
 plutus_queue = Queue("tx_plutus_dw", exchange=exchange)
 

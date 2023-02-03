@@ -7,6 +7,7 @@ import sentry_sdk
 
 import settings
 from app import models
+from app.exports.models import ExportTransactionStatus
 from app.reporting import get_logger
 from app.service import exchange
 
@@ -14,19 +15,27 @@ log = get_logger("atlas")
 
 
 class AuditTransaction(t.TypedDict):
-    transaction_id: str
+    event_date_time: str
     user_id: str
-    spend_amount: int
+    transaction_id: str
     transaction_date: str
-    loyalty_identifier: str
-    record_uid: t.Optional[str]
+    spend_amount: int
+    spend_currency: str
+    loyalty_id: str
+    mid: str
     scheme_account_id: str
     encrypted_credentials: str
     status: str
     feed_type: str
     location_id: str
     merchant_internal_id: str
+    payment_card_account_id: str
     settlement_key: str
+    authorisation_code: str
+    approval_code: str
+    loyalty_identifier: str
+    record_uid: t.Optional[str]
+    export_uid: str
 
 
 class AuditData(t.TypedDict, total=False):
@@ -50,19 +59,27 @@ def make_audit_transactions(
 ) -> t.List[AuditTransaction]:
     return [
         AuditTransaction(
-            transaction_id=tx.transaction_id,
+            event_date_time=tx.created_at.isoformat(),
             user_id=tx.user_id,
-            spend_amount=tx.spend_amount,
+            transaction_id=tx.transaction_id,
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
-            loyalty_identifier=tx_loyalty_ident_callback(tx),
-            record_uid=tx_record_uid_callback(tx) if tx_record_uid_callback else None,
+            spend_amount=tx.spend_amount,
+            spend_currency=tx.spend_currency,
+            loyalty_id=tx.transaction_id,
+            mid=tx.mid,
             scheme_account_id=tx.scheme_account_id,
             encrypted_credentials=tx.credentials,
-            status=tx.status.name if tx.status else None,
+            status=ExportTransactionStatus.EXPORTED.name,
             feed_type=tx.feed_type.name if tx.feed_type else None,
             location_id=tx.location_id,
             merchant_internal_id=tx.merchant_internal_id,
+            payment_card_account_id=tx.payment_card_account_id,
             settlement_key=tx.settlement_key,
+            authorisation_code=tx.auth_code,
+            approval_code=tx.approval_code,
+            loyalty_identifier=tx_loyalty_ident_callback(tx),
+            record_uid=tx_record_uid_callback(tx) if tx_record_uid_callback else None,
+            export_uid=tx.export_uid,
         )
         for tx in transactions
     ]
