@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from typing import Optional, cast
 
@@ -69,6 +70,7 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             payment_provider_slug=fields.payment_provider_slug,
             auth_code=fields.auth_code,
             approval_code=fields.approval_code,
+            export_uid=uuid.uuid4(),
         )
         session.add(export_transaction)
         session.commit()
