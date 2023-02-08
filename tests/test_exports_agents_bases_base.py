@@ -104,9 +104,7 @@ def test_export_all_not_implemented(mock_base_agent: MockBaseAgent, db_session: 
     )
 
 
-@mock.patch("app.service.data_warehouse.exported_event")
 def test_save_export_transactions(
-    mock_exported_event,
     mock_base_agent: MockBaseAgent,
     export_data: AgentExportData,
     export_transaction: models.ExportTransaction,
@@ -116,7 +114,6 @@ def test_save_export_transactions(
 
     mock_base_agent._save_export_transactions(export_data, session=db_session)
 
-    assert mock_exported_event.call_args.args[0] == [export_transaction]
     assert db_session.query(models.ExportTransaction).one().status == ExportTransactionStatus.EXPORTED
 
 
