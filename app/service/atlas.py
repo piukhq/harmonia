@@ -80,7 +80,7 @@ def make_audit_transactions(
             approval_code=tx.approval_code,
             loyalty_identifier=tx_loyalty_ident_callback(tx),
             record_uid=tx_record_uid_callback(tx) if tx_record_uid_callback else None,
-            export_uid=tx.export_uid if tx.export_uid else uuid.uuid4()
+            export_uid=tx.export_uid if tx.export_uid else uuid.uuid4(),
         )
         for tx in transactions
     ]
