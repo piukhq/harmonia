@@ -19,7 +19,7 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 RECEIPT_NO_NOT_FOUND = "receipt no not found"
 ORIGIN_ID_NOT_FOUND = "origin id not found"
 retryable_messages = [RECEIPT_NO_NOT_FOUND]
-MAX_RETRY_COUNT = 7
+MAX_RETRY_COUNT = 6
 
 
 class Wasabi(SingularExportAgent):
@@ -50,7 +50,7 @@ class Wasabi(SingularExportAgent):
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
-        elif retry_count < MAX_RETRY_COUNT:
+        elif retry_count <= MAX_RETRY_COUNT:
             # second retry at 10 AM the next day.
             return self.next_available_retry_time(10)
         else:
