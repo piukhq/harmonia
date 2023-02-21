@@ -9,7 +9,6 @@ import sentry_sdk
 from app import db, models
 from app.exports.models import ExportTransactionStatus
 from app.reporting import get_logger
-from app.service import data_warehouse
 from app.service.blob_storage import BlobStorageClient
 from app.utils import missing_property
 
@@ -94,8 +93,6 @@ class BaseAgent:
             session.commit()
 
         db.run_query(update_export_status, session=session, description="update export status")
-
-        data_warehouse.exported_event(export_data.transactions)
 
     @contextmanager
     def _update_metrics(self, export_data: AgentExportData, session: t.Optional[db.Session]) -> t.Iterator[None]:

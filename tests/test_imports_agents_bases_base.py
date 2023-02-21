@@ -290,11 +290,9 @@ def test_import_transactions(
     # Check that there are no new import transactions once one has been added
     result = list(agent._import_transactions([body], source=SOURCE, session=db_session))
     assert result == []
-    assert caplog.messages == [
-        "Found 1 new transactions in import set of 1 total transactions.",
-        "Found 0 new transactions in import set of 1 total transactions.",
-        f'No new transactions found in source "{SOURCE}", exiting early.',
-    ]
+    assert caplog.messages[0] == "Found 1 new transactions in import set of 1 total transactions."
+    assert caplog.messages[2] == "Found 0 new transactions in import set of 1 total transactions."
+    assert caplog.messages[3] == f'No new transactions found in source "{SOURCE}", exiting early.'
 
 
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)

@@ -80,6 +80,7 @@ class HarveyNichols(SingularExportAgent):
                 response=response,
                 response_timestamp=response_timestamp,
                 request_url=request_url,
+                retry_count=retry_count,
             )
         )
         if self.get_response_result(response) not in [SUCCESS, ALREADY_ASSIGNED]:

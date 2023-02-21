@@ -19,6 +19,7 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 RECEIPT_NO_NOT_FOUND = "receipt no not found"
 ORIGIN_ID_NOT_FOUND = "origin id not found"
 retryable_messages = [RECEIPT_NO_NOT_FOUND]
+MAX_RETRY_COUNT = 6
 
 
 class Wasabi(SingularExportAgent):
@@ -49,7 +50,7 @@ class Wasabi(SingularExportAgent):
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
-        elif retry_count <= 6:
+        elif retry_count <= MAX_RETRY_COUNT:
             # second retry at 10 AM the next day.
             return self.next_available_retry_time(10)
         else:
@@ -91,13 +92,6 @@ class Wasabi(SingularExportAgent):
         response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        # raise exception for first 7 retries
-        if msg := self.get_response_result(response):
-            if msg == RECEIPT_NO_NOT_FOUND and self.get_retry_datetime(retry_count):
-                # fail the export for it to be retried later
-                raise RequestException(response=response)
-            self.log.warn(f"Acteol API response contained message: {msg}")
-
         request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
@@ -110,13 +104,16 @@ class Wasabi(SingularExportAgent):
                 response=response,
                 response_timestamp=response_timestamp,
                 request_url=request_url,
+                retry_count=retry_count,
             )
         )
 
-        # count the final receipt no not found
+        # raise exception for first 7 retries
         if msg := self.get_response_result(response):
-            if msg in (RECEIPT_NO_NOT_FOUND, ORIGIN_ID_NOT_FOUND):
+            if msg == RECEIPT_NO_NOT_FOUND and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
+                # fail the export for it to be retried later
                 raise RequestException(response=response)
+            self.log.warn(f"Acteol API response contained message: {msg}")
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
         if msg := response.json().get("Message"):

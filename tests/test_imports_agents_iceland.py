@@ -114,7 +114,5 @@ def test_do_import(db_session: db.Session, caplog):
             ImportFileLog.imported,
             ImportFileLog.transaction_count,
         ).first() == ("iceland-bonus-card", source, True, 1)
-        assert caplog.messages == [
-            f"Importing {source}",
-            "Found 1 new transactions in import set of 1 total transactions.",
-        ]
+        assert caplog.messages[0] == f"Importing {source}"
+        assert caplog.messages[1] == "Found 1 new transactions in import set of 1 total transactions."

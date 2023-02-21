@@ -131,5 +131,6 @@ def test_export(
         "response": RESPONSE_BODY,
         "response_timestamp": mock.ANY,
         "request_url": "https://uk-bink-transactions-dev.azurewebsites.net/api/BinkTransactions",
+        "retry_count": 0,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
