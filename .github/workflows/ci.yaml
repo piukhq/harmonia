@@ -52,7 +52,7 @@ jobs:
           exit-code: 1
           severity: HIGH,CRITICAL
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - run: pip install poetry==1.2.0b3
@@ -70,8 +70,7 @@ jobs:
     needs: [tests]
     steps:
       - uses: actions/checkout@v2
-      - run: echo "::set-output name=date::$(date +'%FT%H%M%SZ')"
-        id: date
+      - run: echo "container_tag=$(date +'%FT%H%M%SZ')" >> $GITHUB_ENV
       - uses: docker/login-action@v1
         with:
           registry: binkcore.azurecr.io
@@ -82,14 +81,14 @@ jobs:
           push: true
           target: base
           tags: |
-            binkcore.azurecr.io/${{ github.event.repository.name }}:${{ steps.date.outputs.date }}
+            binkcore.azurecr.io/${{ github.event.repository.name }}:${{ env.container_tag }}
             binkcore.azurecr.io/${{ github.event.repository.name }}:latest
       - uses: docker/build-push-action@v2
         with:
           push: true
           target: harness
           tags: |
-            binkcore.azurecr.io/${{ github.event.repository.name }}:harness-${{ steps.date.outputs.date }}
+            binkcore.azurecr.io/${{ github.event.repository.name }}:harness-${{ env.container_tag }}
 
   release_staging:
     if: github.event_name == 'release' && github.event.action == 'published'
