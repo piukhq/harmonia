@@ -66,7 +66,7 @@ def make_audit_transactions(
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
             spend_amount=tx.spend_amount,
             spend_currency=tx.spend_currency,
-            loyalty_id=tx.transaction_id,
+            loyalty_id=tx.loyalty_id,
             mid=tx.mid,
             scheme_account_id=tx.scheme_account_id,
             encrypted_credentials=tx.credentials,
