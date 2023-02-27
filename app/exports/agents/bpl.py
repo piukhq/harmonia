@@ -65,9 +65,6 @@ class Bpl(SingularExportAgent):
         response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        if (300 <= response.status_code <= 399) or (response.status_code >= 500):
-            raise Exception(f"BPL - {self.provider_slug} transaction endpoint returned {response.status_code}")
-
         request_url = api.base_url + endpoint
         atlas.queue_audit_message(
             atlas.make_audit_message(
@@ -83,6 +80,9 @@ class Bpl(SingularExportAgent):
                 retry_count=retry_count,
             )
         )
+
+        if (300 <= response.status_code <= 399) or (response.status_code >= 500):
+            raise Exception(f"BPL - {self.provider_slug} transaction endpoint returned {response.status_code}")
 
 
 class Trenette(Bpl):
