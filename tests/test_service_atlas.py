@@ -88,7 +88,7 @@ def test_queue_audit_message(mocked_queue):
                 "export_uid": "123",
                 "feed_type": "SETTLED",
                 "location_id": "",
-                "loyalty_id": 125,
+                "loyalty_id": "876543",
                 "loyalty_identifier": "customer-number",
                 "merchant_internal_id": "",
                 "mid": "1234567",
