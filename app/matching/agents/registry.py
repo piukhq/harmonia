@@ -14,3 +14,4 @@ matching_agents.add("bpl-asos", "app.matching.agents.generic_spotted.GenericSpot
 matching_agents.add("bpl-viator", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("bpl-trenette", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("bpl-cortado", "app.matching.agents.generic_spotted.GenericSpotted")
+matching_agents.add("costa", "app.matching.agents.costa.Costa")

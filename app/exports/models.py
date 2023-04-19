@@ -1,6 +1,7 @@
 from enum import Enum
 
 import sqlalchemy as s
+from sqlalchemy.dialects import postgresql as psql
 
 from app.db import Base, ModelMixin, auto_repr, auto_str
 from app.encryption import decrypt_credentials
@@ -55,6 +56,7 @@ class ExportTransaction(Base, ModelMixin):
     expiry_year = s.Column(s.Integer, nullable=True)
     payment_provider_slug = s.Column(s.String(50), nullable=True)  # payment card provider slug - visa, amex etc
     export_uid = s.Column(s.String(100), nullable=True)
+    extra_fields = s.Column(psql.JSON)
 
     pending_exports = s.orm.relationship("PendingExport", backref="export_transaction")
 

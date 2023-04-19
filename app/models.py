@@ -110,6 +110,7 @@ class Transaction(Base, ModelMixin):
     last_four = s.Column(s.Text, nullable=True)
     auth_code = s.Column(s.String(20), nullable=False, default="")
     approval_code = s.Column(s.String(20), nullable=False, default="")
+    extra_fields = s.Column(psql.JSON)  # any extra data used for exports
 
 
 @auto_repr

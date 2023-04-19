@@ -1,0 +1,40 @@
+# base fixture data
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "costa"
+
+[payment_provider]
+slug = "visa"
+
+[[agents]]
+slug = "costa"
+
+[[agents]]
+slug = "visa-auth"
+
+[[agents]]
+slug = "visa-settlement"
+
+[[agents]]
+slug = "visa-refund"
+
+# first user
+[[users]]
+loyalty_id = "costa-123"
+token = "visa-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "costa-123"
+merchant_identifier = "88899977"
+email = "test-123@testbink.com"
+
+[[users.transactions]]
+date = 2023-03-27T15:01:59Z
+amount = 7645
+auth_code = "333444"
+identifier = "test-mid-345"
+identifier_type = "PRIMARY"

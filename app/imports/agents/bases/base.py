@@ -28,6 +28,7 @@ class SchemeTransactionFields(t.NamedTuple):
     first_six: t.Optional[str] = None
     last_four: t.Optional[str] = None
     auth_code: str = ""
+    extra_fields: t.Optional[dict] = None
 
 
 class PaymentTransactionFields(t.NamedTuple):
@@ -44,6 +45,7 @@ class PaymentTransactionFields(t.NamedTuple):
     last_four: t.Optional[str] = None
     auth_code: str = ""
     approval_code: str = ""
+    extra_fields: t.Optional[dict] = None
 
 
 class IdentifyArgs(t.NamedTuple):

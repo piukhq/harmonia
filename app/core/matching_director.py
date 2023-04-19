@@ -73,7 +73,7 @@ class MatchingDirector:
                 status=models.TransactionStatus.PENDING,
                 auth_code=transaction.auth_code,
                 match_group=match_group,
-                extra_fields={},
+                extra_fields=transaction.extra_fields,
             )
             for transaction in transactions
         ]
@@ -100,7 +100,7 @@ class MatchingDirector:
                 auth_code=transaction.auth_code,
                 approval_code=transaction.approval_code,
                 match_group=match_group,
-                extra_fields={},
+                extra_fields=transaction.extra_fields,
             )
             for transaction in transactions
         ]

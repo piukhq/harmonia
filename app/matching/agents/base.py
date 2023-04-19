@@ -114,7 +114,8 @@ class BaseMatchingAgent:
             "primary_identifier": self.payment_transaction.primary_identifier,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
-            "extra_fields": {**self.payment_transaction.extra_fields, **scheme_transaction.extra_fields},
+            "extra_fields": {**(self.payment_transaction.extra_fields or {}),
+                             **(scheme_transaction.extra_fields or {})},
         }
 
     def match(self, *, session: db.Session) -> t.Optional[MatchResult]:

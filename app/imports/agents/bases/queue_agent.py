@@ -48,7 +48,7 @@ class Consumer(kombu.mixins.ConsumerMixin):
     def get_consumers(self, Consumer: t.Type[kombu.Consumer], _):
         return [Consumer([self.queue], callbacks=[self.on_message], accept=["json"])]
 
-    def on_message(self, body: dict, message: kombu.Message):
+    def on_message(self, body: str, message: kombu.Message):
         self.agent.log.info(f"Received transaction: {body}")
         self.agent._do_import(body)
         message.ack()
