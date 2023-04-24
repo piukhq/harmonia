@@ -110,8 +110,8 @@ class MastercardTGX2Settlement(FileAgent):
         else:
             return uuid4().hex
 
-    def get_primary_identifier(self, data: dict) -> str:
-        return data["mid"]
+    def get_primary_identifiers(self, data: dict) -> list[str]:
+        return [data["mid"]]
 
     def _get_secondary_identifier(self, data: dict) -> str:
         return data["location_id"]
@@ -124,7 +124,7 @@ class MastercardTGX2Settlement(FileAgent):
             filter(
                 lambda item: item[1] not in [None, ""],
                 [
-                    (IdentifierType.PRIMARY, self.get_primary_identifier(data)),
+                    *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)],
                     (IdentifierType.SECONDARY, self._get_secondary_identifier(data)),
                     (IdentifierType.PSIMI, self._get_psimi_identifier(data)),
                 ],
@@ -169,8 +169,8 @@ class MastercardAuth(QueueAgent):
             return data["third_party_id"] + "_" + data["time"][0:10].replace("-", "")
         return uuid4().hex
 
-    def get_primary_identifier(self, data: dict) -> str:
-        return data["mid"]
+    def get_primary_identifiers(self, data: dict) -> list[str]:
+        return [data["mid"]]
 
     def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
+        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)]
