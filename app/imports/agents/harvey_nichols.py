@@ -198,13 +198,13 @@ class HarveyNichols(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["id"]
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
+    def get_primary_mids(self, data: dict) -> list[str]:
         # This is purely here to satisfy the need for this function in an agent
         # Harvey Nichols is currently not operational - rethink if and when reinstated
         return [data["store_id"]]
 
     def get_mids(self, data: dict) -> list[tuple]:
-        mids = self.get_primary_identifiers(data)
+        mids = self.get_primary_mids(data)
         return [(IdentifierType.PRIMARY, STORE_ID_TO_MIDS.get(mid[:4], [mid])) for mid in mids]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:

@@ -88,11 +88,11 @@ class Iceland(FileAgent):
     def get_transaction_id(data: dict) -> str:
         return data["TransactionId"]
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
+    def get_primary_mids(self, data: dict) -> list[str]:
         return [data["TransactionStore_Id"]]
 
     def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)]
+        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         return data["TransactionTimestamp"]

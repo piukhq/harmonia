@@ -166,8 +166,14 @@ class BaseAgent:
             location_id_mid_map[location_id].append(mid)
         return location_id_mid_map
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
-        raise NotImplementedError("Override get_primary_identifiers in your agent.")
+    def get_primary_mids(self, data: dict) -> list[str]:
+        raise NotImplementedError("Override get_primary_mids in your agent.")
+
+    def get_secondary_mid(self, data: dict) -> str | None:
+        return None
+
+    def get_psimi(self, data: dict) -> str | None:
+        return None
 
     def get_mids(self, data: dict) -> list[tuple]:
         raise NotImplementedError("Override get_mids in your agent.")
@@ -320,7 +326,7 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        primary_id = self.get_primary_identifiers(tx_data)
+        primary_id = self.get_primary_mids(tx_data)
 
         merchant_identifier_ids = []
         identified = True

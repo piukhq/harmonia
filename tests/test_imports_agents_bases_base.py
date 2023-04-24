@@ -247,8 +247,8 @@ def test_location_id_mid_map(mid_primary: int, db_session: db.Session) -> None:
 
 def test_get_primary_identifier_not_implemented() -> None:
     with pytest.raises(NotImplementedError) as e:
-        MockBaseAgent().get_primary_identifiers(data={})
-    assert e.value.args[0] == "Override get_primary_identifiers in your agent."
+        MockBaseAgent().get_primary_mids(data={})
+    assert e.value.args[0] == "Override get_primary_mids in your agent."
 
 
 def test_get_mids_not_implemented() -> None:
@@ -259,13 +259,13 @@ def test_get_mids_not_implemented() -> None:
 
 @mock.patch.object(BaseAgent, "_build_inserts")
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
-@mock.patch.object(BaseAgent, "get_primary_identifiers", return_value=PRIMARY_IDENTIFIER)
+@mock.patch.object(BaseAgent, "get_primary_mids", return_value=PRIMARY_IDENTIFIER)
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=TRANSACTION_ID)
 def test_import_transactions(
     mock_get_transaction_id,
     mock_feed_type,
-    mock_get_primary_identifiers,
+    mock_get_primary_mids,
     mock_get_mids,
     mock_build_inserts,
     mid_primary: int,
@@ -297,11 +297,11 @@ def test_import_transactions(
 
 
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
-@mock.patch.object(BaseAgent, "get_primary_identifiers", return_value=PRIMARY_IDENTIFIER)
+@mock.patch.object(BaseAgent, "get_primary_mids", return_value=PRIMARY_IDENTIFIER)
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=TRANSACTION_ID)
 def test_import_transactions_lock_acquire_false(
-    mock_get_transaction_id, mock_feed_type, mock_get_primary_identifiers, mock_get_mids, db_session: db.Session, caplog
+    mock_get_transaction_id, mock_feed_type, mock_get_primary_mids, mock_get_mids, db_session: db.Session, caplog
 ) -> None:
     agent = MockBaseAgent()
     caplog.set_level(logging.DEBUG)
@@ -363,13 +363,13 @@ def test_persist_and_enqueue_merchant_feed(
 @mock.patch.object(BaseAgent, "to_transaction_fields", return_value=PAYMENT_TRANSACTION_FIELDS)
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
-@mock.patch.object(BaseAgent, "get_primary_identifiers", return_value=PRIMARY_IDENTIFIER)
+@mock.patch.object(BaseAgent, "get_primary_mids", return_value=PRIMARY_IDENTIFIER)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=TRANSACTION_ID)
 @mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=MERCHANT_SLUG)
 def test_build_inserts(
     mock_get_merchant_slug,
     mock_get_transaction_id,
-    mock_get_primary_identifiers,
+    mock_get_primary_mids,
     mock_feed_type,
     mock_get_mids,
     mid_primary: int,
@@ -389,13 +389,13 @@ def test_build_inserts(
 @mock.patch.object(BaseAgent, "to_transaction_fields", return_value=SCHEME_TRANSACTION_FIELDS)
 @mock.patch.object(BaseAgent, "get_mids", return_value=MIDS_DATA)
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
-@mock.patch.object(BaseAgent, "get_primary_identifiers", return_value=PRIMARY_IDENTIFIER)
+@mock.patch.object(BaseAgent, "get_primary_mids", return_value=PRIMARY_IDENTIFIER)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=TRANSACTION_ID)
 @mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=MERCHANT_SLUG)
 def test_build_inserts_import_error(
     mock_get_merchant_slug,
     mock_get_transaction_id,
-    mock_get_primary_identifiers,
+    mock_get_primary_mids,
     mock_feed_type,
     mock_get_mids,
     mid_primary: int,

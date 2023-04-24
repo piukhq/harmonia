@@ -75,21 +75,21 @@ class VisaAuth(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
+    def get_primary_mids(self, data: dict) -> list[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
-    def _get_secondary_identifier(self, data: dict) -> str:
+    def get_secondary_mid(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaStoreId")
 
-    def _get_psimi_identifier(self, data: dict) -> str:
+    def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
     def get_mids(self, data: dict) -> list[tuple]:
         return validate_mids(
             [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)],
-                (IdentifierType.SECONDARY, self._get_secondary_identifier(data)),
-                (IdentifierType.PSIMI, self._get_psimi_identifier(data)),
+                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
+                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
+                (IdentifierType.PSIMI, self.get_psimi(data)),
             ],
         )
 
@@ -134,21 +134,21 @@ class VisaSettlement(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "Transaction.VipTransactionId")
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
+    def get_primary_mids(self, data: dict) -> list[str]:
         return [get_key_value(data, "Transaction.MerchantCardAcceptorId")]
 
-    def _get_secondary_identifier(self, data: dict) -> str:
+    def get_secondary_mid(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaStoreId")
 
-    def _get_psimi_identifier(self, data: dict) -> str:
+    def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
     def get_mids(self, data: dict) -> list[tuple]:
         return validate_mids(
             [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)],
-                (IdentifierType.SECONDARY, self._get_secondary_identifier(data)),
-                (IdentifierType.PSIMI, self._get_psimi_identifier(data)),
+                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
+                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
+                (IdentifierType.PSIMI, self.get_psimi(data)),
             ],
         )
 
@@ -193,21 +193,21 @@ class VisaRefund(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VipTransactionId")
 
-    def get_primary_identifiers(self, data: dict) -> list[str]:
+    def get_primary_mids(self, data: dict) -> list[str]:
         return [get_key_value(data, "ReturnTransaction.CardAcceptorIdCode")]
 
-    def _get_secondary_identifier(self, data: dict) -> str:
+    def get_secondary_mid(self, data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VisaStoreId")
 
-    def _get_psimi_identifier(self, data: dict) -> str:
+    def get_psimi(self, data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VisaMerchantId")
 
     def get_mids(self, data: dict) -> list[tuple]:
         return validate_mids(
             [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_identifiers(data)],
-                (IdentifierType.SECONDARY, self._get_secondary_identifier(data)),
-                (IdentifierType.PSIMI, self._get_psimi_identifier(data)),
+                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
+                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
+                (IdentifierType.PSIMI, self.get_psimi(data)),
             ],
         )
 
