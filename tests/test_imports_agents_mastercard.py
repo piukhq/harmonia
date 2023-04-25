@@ -202,6 +202,7 @@ def test_tgx2_settlement_to_transaction_fields(db_session: db.Session) -> None:
         "last_four": None,
         "auth_code": "666666",
         "approval_code": "",
+        "extra_fields": None,
     }
 
 

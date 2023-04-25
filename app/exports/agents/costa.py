@@ -1,4 +1,4 @@
-from hashlib import sha256
+import json
 
 import pendulum
 
@@ -15,32 +15,34 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
 class Costa(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
-    config = Config(
-        ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/")
-    )
+    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"))
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
-        dt = pendulum.instance(export_transaction.transaction_date)
+        metadata = {}
+        if export_transaction.extra_fields:
+            extra_fields = json.loads(export_transaction.extra_fields)
+            if extra_fields and extra_fields["metadata"]:
+                metadata = extra_fields["metadata"]
 
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "loyalty_id": export_transaction.loyalty_id,
-                        "ExternalCustomerID": "????????????????"
+                        "payload": metadata,
+                        "ExternalCustomerID": export_transaction.loyalty_id,
                     },
                 )
             ],
             transactions=[export_transaction],
-            extra_data={},
+            extra_data=export_transaction.extra_fields,
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
 
-        api = costa.Costa(self.config.get("base_url", session))
+        api = costa.CostaAPI(self.config.get("base_url", session))
         endpoint = "/costa/transactions"
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.transactions(body, endpoint)

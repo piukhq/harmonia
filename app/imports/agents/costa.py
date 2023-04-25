@@ -5,7 +5,6 @@ from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 from app.models import IdentifierType
 
-
 PROVIDER_SLUG = "costa"
 
 

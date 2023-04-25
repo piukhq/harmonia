@@ -26,10 +26,10 @@ class Costa(BaseImportDataProvider):
                 "retailer_location_id": "store_1a",
                 "metadata": {},
                 "items_ordered": "{"
-                                 "\"products\":["
-                                 "{\"id\":\"2\",\"productUuid\":\"534084a0-a6a3-11ec-b020-211a45f43f11\"}"
-                                 "]"
-                                 "}"
+                '"products":['
+                '{"id":"2","productUuid":"534084a0-a6a3-11ec-b020-211a45f43f11"}'
+                "]"
+                "}",
             }
             for user in fixture["users"]
             for transaction in user["transactions"]

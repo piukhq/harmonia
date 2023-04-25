@@ -67,6 +67,7 @@ TRANSACTION_INSERT = {
     "last_four": None,
     "auth_code": Default.auth_code,
     "approval_code": "",
+    "extra_fields": None,
 }
 IDENTIFY = IdentifyArgs(
     transaction_id=TRANSACTION_ID,
@@ -335,6 +336,7 @@ def test_persist_and_enqueue_payment_feed(
         "transaction_id": TRANSACTION_ID,
         "merchant_identifier_ids": [1],
         "card_token": CARD_TOKEN,
+        "match_group": MATCH_GROUP,
     }
     assert mock_enqueue_import_queue.called is False
 

@@ -18,5 +18,5 @@ class CostaAPI:
         response.raise_for_status()
         return response
 
-    def post_matched_transaction(self, body: dict, endpoint: str) -> requests.models.Response:
+    def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
         return self.post(endpoint, body, name="post_matched_transaction")
