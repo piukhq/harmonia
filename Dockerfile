@@ -1,4 +1,4 @@
-FROM ghcr.io/binkhq/python:3.10 AS build
+FROM ghcr.io/binkhq/python:3.11 AS build
 
 WORKDIR /src
 
@@ -9,7 +9,7 @@ COPY . .
 
 RUN poetry build
 
-FROM ghcr.io/binkhq/python:3.10 AS base
+FROM ghcr.io/binkhq/python:3.11 AS base
 
 ARG wheel=harmonia-*-py3-none-any.whl
 
