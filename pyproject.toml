@@ -26,7 +26,7 @@ txexport = "app.exports.cli:cli"
 txcore = "app.core.cli:cli"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 alembic = "^1.8.1"
 SQLAlchemy = "^1.4.40"
 Flask = "^2.2.2"
