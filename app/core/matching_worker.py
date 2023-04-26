@@ -185,7 +185,7 @@ class MatchingWorker:
 
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
-        mids = {scheme_transaction.primary_identifier for scheme_transaction in scheme_transactions}
+        mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.primary_identifiers}
 
         since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(

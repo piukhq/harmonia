@@ -14,7 +14,7 @@ from tests.fixtures import Default, get_or_create_export_transaction
 
 TRANSACTION_ID = "582228491099278"
 TRANSACTION_DATE = pendulum.DateTime(2022, 10, 26, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))
-PRIMARY_IDENTIFIER = Default.primary_identifier
+PRIMARY_IDENTIFIER = Default.primary_mids[0]
 MERCHANT_SLUG = "bpl-trenette"
 LOYALTY_ID = Default.loyalty_id
 REQUEST_URL = "http://localhost/trenette/transaction"
@@ -36,7 +36,7 @@ def export_transaction() -> ExportTransaction:
         transaction_id=TRANSACTION_ID,
         provider_slug=MERCHANT_SLUG,
         transaction_date=TRANSACTION_DATE,
-        mid=Default.secondary_identifier,
+        mid=Default.secondary_mid,
         payment_card_account_id=1,
         feed_type=FeedType.AUTH,
         settlement_key=None,

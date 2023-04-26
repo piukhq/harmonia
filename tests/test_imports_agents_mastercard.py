@@ -10,14 +10,13 @@ from app import db
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.mastercard import MastercardAuth, MastercardTGX2Settlement, _make_settlement_key
-from app.models import IdentifierType
 from tests.fixtures import SampleTransactions, get_or_create_import_transaction, get_or_create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "mastercard"
 
 AUTH_TRANSACTION_1_ID = "NTI4QjdBN"
 AUTH_TRANSACTION_1_DATE = pendulum.DateTime(2022, 10, 14, 13, 52, 24)
-AUTH_TRANSACTION_1_MID = "test_primary_identifier_1"
+AUTH_TRANSACTION_1_MID = "test_primary_mid_1"
 AUTH_TRANSACTION_1_TOKEN = "test_card_token_1"
 AUTH_TRANSACTION_1 = SampleTransactions().mastercard_auth(
     amount=96,
@@ -28,7 +27,7 @@ AUTH_TRANSACTION_1 = SampleTransactions().mastercard_auth(
 )
 AUTH_TRANSACTION_2 = SampleTransactions().mastercard_auth(
     amount=41,
-    mid="test_primary_identifier_2",
+    mid="test_primary_mid_2",
     payment_card_token="test_token_2",
     time=pendulum.DateTime(2022, 10, 14, 13, 54, 59),
 )
@@ -66,7 +65,7 @@ def test_make_settlement_key() -> None:
         mid=AUTH_TRANSACTION_1_MID,
         token=AUTH_TRANSACTION_1_TOKEN,
     )
-    assert settlement_key == "47ded40e40e7569be529054ad17180b662f61966efc5fb49aaeea1c39eb1bcce"
+    assert settlement_key == "3464063f0ca6d51ca718d5634d5956985ff920d477bc69866535e9f53749e468"
 
 
 def test_find_new_transactions(db_session: db.Session) -> None:
@@ -103,7 +102,7 @@ def test_auth_to_transaction_fields(db_session: db.Session) -> None:
         spend_multiplier=100,
         spend_currency="GBP",
         card_token="test_card_token_1",
-        settlement_key="47ded40e40e7569be529054ad17180b662f61966efc5fb49aaeea1c39eb1bcce",
+        settlement_key="3464063f0ca6d51ca718d5634d5956985ff920d477bc69866535e9f53749e468",
         first_six=None,
         last_four=None,
         auth_code="",
@@ -120,11 +119,6 @@ def test_auth_get_transaction_id_if_third_party_id() -> None:
 def test_auth_get_transaction_id_no_third_party_id() -> None:
     transaction_id = MastercardAuth().get_transaction_id({"no_third_party_id": "None"})
     assert UUID(transaction_id)
-
-
-def test_auth_get_mids() -> None:
-    ids = MastercardAuth().get_mids(AUTH_TRANSACTION_1)
-    assert ids == [(IdentifierType.PRIMARY, "test_primary_identifier_1")]
 
 
 def test_tgx2_settlement_parse_line() -> None:
@@ -157,7 +151,7 @@ def test_tgx2_settlement_yield_transaction_data() -> None:
     yield_transactions_data = MastercardTGX2Settlement().yield_transactions_data(data)
     assert next(yield_transactions_data) == {
         "record_type": "D",
-        "mid": "test_primary_id",
+        "mid": "test_primary_mi",
         "location_id": "test-mid-123",
         "aggregate_merchant_id": "test-m",
         "amount": 5566,
@@ -214,23 +208,6 @@ def test_tgx2_settlement_get_transaction_id() -> None:
 def test_tgx2_settlement_get_transaction_id_no_id() -> None:
     transaction_id = MastercardAuth().get_transaction_id({"no_transaction_id": "None"})
     assert UUID(transaction_id)
-
-
-def test_tgx2_settlement_get_mids() -> None:
-    ids = MastercardTGX2Settlement().get_mids(SETTLEMENT_TRANSACTION)
-    assert ids == [
-        (IdentifierType.PRIMARY, "test-mid-123"),
-        (IdentifierType.SECONDARY, "411111083"),
-        (IdentifierType.PSIMI, "664567"),
-    ]
-
-
-def test_tgx2_settlement_get_mids_empty_psimi() -> None:
-    ids = MastercardTGX2Settlement().get_mids(SETTLEMENT_TRANSACTION_EMPTY_PSIMI)
-    assert ids == [
-        (IdentifierType.PRIMARY, "test-mid-123"),
-        (IdentifierType.SECONDARY, "411111083"),
-    ]
 
 
 def test_tgx2_settlement_get_transaction_date() -> None:

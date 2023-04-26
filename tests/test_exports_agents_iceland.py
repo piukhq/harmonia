@@ -19,7 +19,7 @@ MOCK_URL = "http://iceland.test"
 TOKEN_URL = "http://token.test"
 
 MERCHANT_SLUG = "iceland-bonus-card"
-PRIMARY_IDENTIFIER = Default.primary_identifier
+PRIMARY_IDENTIFIER = Default.primary_mids
 
 
 def add_mock_routes():

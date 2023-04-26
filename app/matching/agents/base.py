@@ -76,7 +76,7 @@ class BaseMatchingAgent:
         since = pendulum.now().date().add(days=-14)
         return db.run_query(
             lambda: session.query(models.SchemeTransaction).filter(
-                models.SchemeTransaction.primary_identifier == self.payment_transaction.primary_identifier,
+                models.SchemeTransaction.primary_identifiers.contains(self.payment_transaction.primary_identifier),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
                 models.SchemeTransaction.created_at >= since.isoformat(),
             ),

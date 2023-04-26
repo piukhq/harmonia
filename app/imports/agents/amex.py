@@ -7,7 +7,6 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 from app.matching.agents.registry import matching_agents
-from app.models import IdentifierType
 from app.streaming.agents.registry import streaming_agents
 
 PROVIDER_SLUG = "amex"
@@ -70,9 +69,6 @@ class AmexAuth(QueueAgent):
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["merchant_number"]]
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]
-
 
 class AmexSettlement(QueueAgent):
     provider_slug = PROVIDER_SLUG
@@ -110,6 +106,3 @@ class AmexSettlement(QueueAgent):
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["merchantNumber"]]
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]

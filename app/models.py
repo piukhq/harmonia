@@ -84,7 +84,7 @@ class Transaction(Base, ModelMixin):
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
 
     # primary merchant_identifier that is used for matching
-    primary_identifier = s.Column(s.String(50), nullable=False)
+    primary_identifiers = s.Column(psql.ARRAY(s.String(50)), nullable=False)
 
     # hermes scheme & paymentcard slugs.
     merchant_slug = s.Column(s.String(50), nullable=False)
@@ -119,7 +119,7 @@ class SchemeTransaction(Base, ModelMixin):
     __tablename__ = "scheme_transaction"
 
     merchant_identifier_ids = s.Column(psql.ARRAY(s.Integer))
-    primary_identifier = s.Column(s.String(50), nullable=False)
+    primary_identifiers = s.Column(psql.ARRAY(s.String(50)), nullable=False)
     provider_slug = s.Column(s.String(50), nullable=False)  # hermes scheme slug
     payment_provider_slug = s.Column(s.String(50), nullable=False)  # hermes payment card slug
     transaction_id = s.Column(s.String(100), nullable=False)  # unique identifier assigned by the merchant

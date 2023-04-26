@@ -10,7 +10,6 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
-from app.models import IdentifierType
 
 PROVIDER_SLUG = "mastercard"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
@@ -119,18 +118,6 @@ class MastercardTGX2Settlement(FileAgent):
     def get_psimi(self, data: dict) -> str | None:
         return data["aggregate_merchant_id"]
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        return list(
-            filter(
-                lambda item: item[1] not in [None, ""],
-                [
-                    *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
-                    (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
-                    (IdentifierType.PSIMI, self.get_psimi(data)),
-                ],
-            )
-        )
-
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"
         return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
@@ -171,6 +158,3 @@ class MastercardAuth(QueueAgent):
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["mid"]]
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]

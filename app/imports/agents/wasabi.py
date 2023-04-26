@@ -11,7 +11,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent, FileSourceBase, SftpFileSource
-from app.models import IdentifierType
 from app.service.hermes import PaymentProviderSlug
 from app.service.sftp import SFTPCredentials
 from app.soteria import SoteriaConfigMixin
@@ -113,9 +112,6 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["EFT Merchant No_"]]
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         transaction_date_time = f"{data['Date']} {data['Time']}"

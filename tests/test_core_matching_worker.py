@@ -59,7 +59,6 @@ COMMON_TX_FIELDS = dict(
     auth_code="123456",
     match_group="1234567890",
     extra_fields={},
-    primary_identifier="test-mid-primary",
 )
 
 
@@ -78,6 +77,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        primary_identifier="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -86,6 +86,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        primary_identifiers=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -120,7 +121,7 @@ def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db
         session=db_session,
         transaction_id="test-transaction-1",
         merchant_identifier_ids=[mid_primary, mid_secondary],
-        primary_identifier=primary_identifier,
+        primary_identifiers=[primary_identifier],
         merchant_slug=MERCHANT_SLUG,
         settlement_key="1234567890",
         approval_code="",
@@ -161,6 +162,7 @@ def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        primary_identifier="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -169,6 +171,7 @@ def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        primary_identifiers=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -212,6 +215,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        primary_identifier="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -220,6 +224,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        primary_identifiers=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -256,6 +261,7 @@ def test_get_agent_for_payment_transaction_multiple_mids(
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
         card_token="test-single-primary-mid-token-1",
+        primary_identifier="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
     worker = MatchingWorker()

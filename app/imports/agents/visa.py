@@ -7,7 +7,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
-from app.models import IdentifierType
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -84,15 +83,6 @@ class VisaAuth(QueueAgent):
     def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        return validate_mids(
-            [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
-                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
-                (IdentifierType.PSIMI, self.get_psimi(data)),
-            ],
-        )
-
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
@@ -143,15 +133,6 @@ class VisaSettlement(QueueAgent):
     def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        return validate_mids(
-            [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
-                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
-                (IdentifierType.PSIMI, self.get_psimi(data)),
-            ],
-        )
-
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
@@ -201,15 +182,6 @@ class VisaRefund(QueueAgent):
 
     def get_psimi(self, data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VisaMerchantId")
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return validate_mids(
-            [
-                *[(IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)],
-                (IdentifierType.SECONDARY, self.get_secondary_mid(data)),
-                (IdentifierType.PSIMI, self.get_psimi(data)),
-            ],
-        )
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]

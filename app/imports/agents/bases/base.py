@@ -58,28 +58,28 @@ TxType = t.Union[models.SchemeTransaction, models.PaymentTransaction]
 
 
 @lru_cache(maxsize=2048)
-def identify_mids(*mids: tuple, provider_slug: str, session: db.Session) -> dict:
-    def find_mids():
+def find_identifiers(
+    *identifiers: tuple[models.IdentifierType, str], provider_slug: str, session: db.Session
+) -> dict[models.IdentifierType, int]:
+    def lookup():
         return (
             session.query(models.MerchantIdentifier)
             .join(models.MerchantIdentifier.payment_provider)
             .filter(models.PaymentProvider.slug == provider_slug)
             .filter(
-                tuple_(models.MerchantIdentifier.identifier_type, models.MerchantIdentifier.identifier).in_(
-                    [(identifier_type, identifier) for identifier_type, identifier in mids]
-                )
+                tuple_(models.MerchantIdentifier.identifier_type, models.MerchantIdentifier.identifier).in_(identifiers)
             )
             .all()
         )
 
     merchant_identifiers = db.run_query(
-        find_mids,
+        lookup,
         session=session,
         read_only=True,
         description=f"find {provider_slug} identifier",
     )
 
-    return {mid.identifier_type.value: mid.id for mid in merchant_identifiers}
+    return {mid.identifier_type: mid.id for mid in merchant_identifiers}
 
 
 @lru_cache(maxsize=2048)
@@ -175,14 +175,22 @@ class BaseAgent:
     def get_psimi(self, data: dict) -> str | None:
         return None
 
-    def get_mids(self, data: dict) -> list[tuple]:
-        raise NotImplementedError("Override get_mids in your agent.")
+    def _all_identifiers(self, data: dict) -> list[tuple[models.IdentifierType, str]]:
+        identifiers = [(models.IdentifierType.PRIMARY, mid) for mid in self.get_primary_mids(data)]
+
+        if secondary_mid := self.get_secondary_mid(data):
+            identifiers.append((models.IdentifierType.SECONDARY, secondary_mid))
+
+        if psimi := self.get_psimi(data):
+            identifiers.append((models.IdentifierType.PSIMI, psimi))
+
+        return identifiers
 
     def get_merchant_slug(self, data: dict) -> str:
-        mids = self.get_mids(data)
+        identifiers = self._all_identifiers(data)
         # we can use self.provider_slug as the payment provider slug as there is no reason to ever call this function
         # in a loyalty import agent.
-        return get_merchant_slug(*mids, payment_provider_slug=self.provider_slug)
+        return get_merchant_slug(*identifiers, payment_provider_slug=self.provider_slug)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
@@ -233,15 +241,23 @@ class BaseAgent:
         return new
 
     # This is not currently utilised by merchant transactions
-    def _identify_mids(self, mids: list[tuple], session: db.Session) -> list[int]:
+    def _identify_mids(self, mids: list[tuple[models.IdentifierType, str]], session: db.Session) -> list[int]:
         # Queries the MerchantIdentifier table for all possible mid matches in dictionary form identifier_type: mid_id,
         # then sorts the dictionary per identifier_type (enum values) and returns the mid_id of the first element
-        ids = identify_mids(*mids, provider_slug=self.provider_slug, session=session)
+        ids = find_identifiers(*mids, provider_slug=self.provider_slug, session=session)
         if not ids:
             raise MissingMID
-        ids_sorted_by_id_type_enum_value = dict(sorted(ids.items()))
-        id = ids_sorted_by_id_type_enum_value[next(iter(ids_sorted_by_id_type_enum_value))]
-        return [id]
+
+        # accumulate into identifier_type: identifiers
+        identifiers_by_type: defaultdict[models.IdentifierType, list[int]] = defaultdict(list)
+        for identifier_type, identifier in ids.items():
+            identifiers_by_type[identifier_type].append(identifier)
+
+        # sort by identifier type
+        sorted_identifiers = sorted(identifiers_by_type.items(), key=lambda x: x[0].value)
+
+        # return identifiers of the best identifier type available
+        return sorted_identifiers[0][1]
 
     def _import_transactions(
         self, provider_transactions: t.List[dict], *, session: db.Session, source: str
@@ -326,7 +342,7 @@ class BaseAgent:
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
     ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
-        primary_id = self.get_primary_mids(tx_data)
+        primary_mids = self.get_primary_mids(tx_data)
 
         merchant_identifier_ids = []
         identified = True
@@ -334,8 +350,8 @@ class BaseAgent:
         # primary mids and therefore won't import
         if self.feed_type_is_payment:
             try:
-                mids = self.get_mids(tx_data)
-                merchant_identifier_ids.extend(self._identify_mids(mids, session=session))
+                identifiers = self._all_identifiers(tx_data)
+                merchant_identifier_ids.extend(self._identify_mids(identifiers, session=session))
             except MissingMID:
                 identified = False
 
@@ -358,7 +374,7 @@ class BaseAgent:
                     feed_type=self.feed_type,
                     status=models.TransactionStatus.IMPORTED,
                     merchant_identifier_ids=merchant_identifier_ids,
-                    primary_identifier=primary_id,
+                    primary_identifiers=primary_mids,
                     transaction_id=tid,
                     match_group=match_group,
                     **transaction_fields._asdict(),

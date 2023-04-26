@@ -17,7 +17,7 @@ settings.DEBUG = False
 
 
 MERCHANT_SLUG = "wasabi-club"
-PRIMARY_IDENTIFIER = Default.primary_identifier
+PRIMARY_IDENTIFIER = Default.primary_mids
 
 MOCK_URL = "http://wasabi.test"
 

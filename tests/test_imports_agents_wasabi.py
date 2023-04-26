@@ -10,7 +10,6 @@ from soteria.configuration import Configuration
 import settings
 from app import db
 from app.imports.agents.wasabi import Wasabi
-from app.models import IdentifierType
 from app.prometheus import BinkPrometheus
 from app.service.hermes import PaymentProviderSlug
 
@@ -168,11 +167,6 @@ def test_to_transaction_fields() -> None:
 def test_get_transaction_id() -> None:
     transaction_id = Wasabi().get_transaction_id(TRANSACTION_DATA)
     assert transaction_id == "0000A00982528005882"
-
-
-def test_get_mids() -> None:
-    mids = Wasabi().get_mids(TRANSACTION_DATA)
-    assert mids == [(IdentifierType.PRIMARY, "test-mid-123")]
 
 
 def test_get_transaction_date() -> None:
