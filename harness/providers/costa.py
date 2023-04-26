@@ -6,9 +6,6 @@ import pendulum
 from app.currency import to_pounds
 from harness.providers.base import BaseImportDataProvider
 
-# field with a fixed length
-WidthField = t.Tuple[t.Any, int]
-
 
 class Costa(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
