@@ -81,6 +81,7 @@ def test_to_transaction_fields() -> None:
         "first_six": "123456",
         "last_four": "7890",
         "auth_code": "666666",
+        "extra_fields": None,
     }
 
 

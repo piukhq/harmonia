@@ -81,6 +81,7 @@ class StreamingWorker:
                 payment_provider_slug=transaction.payment_provider_slug,
                 auth_code=transaction.auth_code,
                 approval_code=transaction.approval_code,
+                extra_fields=transaction.extra_fields,
             ),
             session=session,
         )

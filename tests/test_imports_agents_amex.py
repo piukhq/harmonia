@@ -74,6 +74,7 @@ def test_auth_to_transaction_fields_matching_agent(iceland_mid: models.MerchantI
         "last_four": None,
         "auth_code": "",
         "approval_code": "472624",
+        "extra_fields": None,
     }
 
 
@@ -107,6 +108,7 @@ def test_settlement_to_transaction_fields_with_dpan(iceland_mid: models.Merchant
         "last_four": "7890",
         "auth_code": "",
         "approval_code": "472624",
+        "extra_fields": None,
     }
 
 
@@ -130,6 +132,7 @@ def test_settlement_to_transaction_fields_without_dpan(iceland_mid: models.Merch
         "last_four": None,
         "auth_code": "",
         "approval_code": "472624",
+        "extra_fields": None,
     }
 
 

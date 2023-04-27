@@ -75,7 +75,9 @@ streaming_queue = LoggedQueue(name="streaming", connection=db.redis_raw)
 export_queue = LoggedQueue(name="export", connection=db.redis_raw)
 
 
-def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifier_ids: list, card_token: str) -> None:
+def identify_user(
+    *, transaction_id: str, feed_type: FeedType, merchant_identifier_ids: list, card_token: str, match_group: str
+) -> None:
     log.debug(f"Task started: identify user #{transaction_id}")
 
     with db.session_scope() as session:
@@ -96,14 +98,14 @@ def identify_user(*, transaction_id: str, feed_type: FeedType, merchant_identifi
             log.debug(f"User identification task failed: {repr(ex)}. Failed Hermes requests will be retried.")
             return
 
-    import_queue.enqueue(import_transaction, transaction_id, feed_type)
+    import_queue.enqueue(import_transaction, transaction_id, feed_type, match_group)
 
 
-def import_transaction(transaction_id: str, feed_type: FeedType) -> None:
+def import_transaction(transaction_id: str, feed_type: FeedType, match_group: str) -> None:
     log.debug(f"Task started: import {feed_type.name} transaction #{transaction_id}")
 
     with db.session_scope() as session:
-        import_director.handle_transaction(transaction_id, feed_type, session=session)
+        import_director.handle_transaction(transaction_id, feed_type, match_group, session=session)
 
 
 def import_transactions(match_group: str) -> None:
@@ -113,12 +115,12 @@ def import_transactions(match_group: str) -> None:
         import_director.handle_transactions(match_group, session=session)
 
 
-def match_transaction(transaction_id: str, feed_type: FeedType) -> None:
+def match_transaction(transaction_id: str, feed_type: FeedType, match_group: str) -> None:
     log.debug(f"Task started: match {feed_type.name} transaction #{transaction_id}")
     director = matching_director.MatchingDirector()
 
     with db.session_scope() as session:
-        director.handle_transaction(transaction_id, feed_type, session=session)
+        director.handle_transaction(transaction_id, feed_type, match_group, session=session)
 
 
 def match_transactions(match_group: str) -> None:

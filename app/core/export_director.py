@@ -39,6 +39,7 @@ class ExportFields:
     payment_provider_slug: Optional[str]
     auth_code: str
     approval_code: str
+    extra_fields: dict
 
 
 def create_export(fields: ExportFields, *, session: db.Session) -> None:

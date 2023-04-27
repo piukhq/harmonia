@@ -1,5 +1,4 @@
 import typing as t
-from uuid import uuid4
 
 from app import db, models, tasks
 from app.feeds import FeedType
@@ -12,21 +11,23 @@ class MatchingDirector:
     class ImportError(Exception):
         pass
 
-    def get_feed_type_handler(self, feed_type: FeedType) -> t.Callable[[list[models.Transaction]], None]:
+    def get_feed_type_handler(self, feed_type: FeedType) -> t.Callable[[list[models.Transaction], str], None]:
         return {
             FeedType.AUTH: self.handle_auth_transactions,
             FeedType.SETTLED: self.handle_settled_transactions,
             FeedType.MERCHANT: self.handle_merchant_transactions,
         }[feed_type]
 
-    def handle_transaction(self, transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
+    def handle_transaction(
+        self, transaction_id: str, feed_type: FeedType, match_group: str, *, session: db.Session
+    ) -> None:
         log.info(f"Matching director handling {feed_type.name} transaction #{transaction_id}")
 
         transaction = self._load_transaction(transaction_id, feed_type, session=session)
         log.debug(f"Loaded {feed_type.name} transaction: {transaction}")
 
         handler = self.get_feed_type_handler(feed_type)
-        handler([transaction])
+        handler([transaction], match_group)
 
     def handle_transactions(self, match_group: str, *, session: db.Session) -> None:
         log.info(f"Matching director handling transaction group #{match_group}")
@@ -44,18 +45,21 @@ class MatchingDirector:
         log.debug(f"Loaded {len(transactions)} {feed_type.name} transactions")
 
         handler = self.get_feed_type_handler(feed_type)
-        handler(transactions)
+        handler(transactions, match_group)
 
         log.debug(f"Successfully enqueued matching job for {len(transactions)} {feed_type.name} transactions.")
 
-    def handle_auth_transactions(self, transactions: list[models.Transaction]) -> None:
-        self._handle_payment_transactions(transactions, routing_task=tasks.persist_auth_payment_transactions)
+    def handle_auth_transactions(self, transactions: list[models.Transaction], match_group: str) -> None:
+        self._handle_payment_transactions(
+            transactions, match_group, routing_task=tasks.persist_auth_payment_transactions
+        )
 
-    def handle_settled_transactions(self, transactions: list[models.Transaction]) -> None:
-        self._handle_payment_transactions(transactions, routing_task=tasks.persist_settled_payment_transactions)
+    def handle_settled_transactions(self, transactions: list[models.Transaction], match_group: str) -> None:
+        self._handle_payment_transactions(
+            transactions, match_group, routing_task=tasks.persist_settled_payment_transactions
+        )
 
-    def handle_merchant_transactions(self, transactions: list[models.Transaction]) -> None:
-        match_group = uuid4().hex
+    def handle_merchant_transactions(self, transactions: list[models.Transaction], match_group: str) -> None:
         scheme_transactions = [
             models.SchemeTransaction(
                 merchant_identifier_ids=transaction.merchant_identifier_ids,
@@ -73,14 +77,15 @@ class MatchingDirector:
                 status=models.TransactionStatus.PENDING,
                 auth_code=transaction.auth_code,
                 match_group=match_group,
-                extra_fields={},
+                extra_fields=transaction.extra_fields,
             )
             for transaction in transactions
         ]
         tasks.matching_queue.enqueue(tasks.persist_scheme_transactions, scheme_transactions, match_group=match_group)
 
-    def _handle_payment_transactions(self, transactions: list[models.Transaction], *, routing_task: t.Callable) -> None:
-        match_group = uuid4().hex
+    def _handle_payment_transactions(
+        self, transactions: list[models.Transaction], match_group: str, *, routing_task: t.Callable
+    ) -> None:
         payment_transactions = [
             models.PaymentTransaction(
                 merchant_identifier_ids=transaction.merchant_identifier_ids,
@@ -100,7 +105,7 @@ class MatchingDirector:
                 auth_code=transaction.auth_code,
                 approval_code=transaction.approval_code,
                 match_group=match_group,
-                extra_fields={},
+                extra_fields=transaction.extra_fields,
             )
             for transaction in transactions
         ]

@@ -19,7 +19,7 @@ def wanted_by_streaming(merchant_slug: str, feed_type: FeedType) -> bool:
     return merchant_slug in streaming_agents and feed_type in STREAMING_FEEDS
 
 
-def handle_transaction(transaction_id: str, feed_type: FeedType, *, session: db.Session) -> None:
+def handle_transaction(transaction_id: str, feed_type: FeedType, match_group: str, *, session: db.Session) -> None:
     """
     Directs the given transaction to the matching engine and/or streaming engine.
     The chosen route depends on the merchant and feed type.
@@ -39,7 +39,7 @@ def handle_transaction(transaction_id: str, feed_type: FeedType, *, session: db.
 
     if wanted_by_matching(merchant_slug, feed_type):
         log.info(f"{feed_type.name} transaction #{transaction_id} is wanted by matching; enqueueing match job")
-        tasks.matching_queue.enqueue(tasks.match_transaction, transaction_id, feed_type)
+        tasks.matching_queue.enqueue(tasks.match_transaction, transaction_id, feed_type, match_group)
 
     if wanted_by_streaming(merchant_slug, feed_type):
         log.info(f"{feed_type.name} transaction #{transaction_id} is wanted by streaming; enqueueing stream job")

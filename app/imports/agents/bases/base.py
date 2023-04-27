@@ -28,6 +28,7 @@ class SchemeTransactionFields(t.NamedTuple):
     first_six: t.Optional[str] = None
     last_four: t.Optional[str] = None
     auth_code: str = ""
+    extra_fields: t.Optional[dict] = None
 
 
 class PaymentTransactionFields(t.NamedTuple):
@@ -44,6 +45,7 @@ class PaymentTransactionFields(t.NamedTuple):
     last_four: t.Optional[str] = None
     auth_code: str = ""
     approval_code: str = ""
+    extra_fields: t.Optional[dict] = None
 
 
 class IdentifyArgs(t.NamedTuple):
@@ -307,7 +309,9 @@ class BaseAgent:
         if self.feed_type_is_payment:
             # payment imports need to get identified before they can be matched
             for args in identify_args:
-                tasks.identify_user_queue.enqueue(tasks.identify_user, feed_type=self.feed_type, **args._asdict())
+                tasks.identify_user_queue.enqueue(
+                    tasks.identify_user, feed_type=self.feed_type, match_group=match_group, **args._asdict()
+                )
         elif self.feed_type == FeedType.MERCHANT:
             # merchant imports can go straight to matching/streaming
             tasks.import_queue.enqueue(tasks.import_transactions, match_group)
