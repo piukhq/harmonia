@@ -83,6 +83,37 @@ def find_identifiers(
 
 
 @lru_cache(maxsize=2048)
+def get_mids_by_location_id(location_id: str, *, scheme_slug: str, payment_slug: str) -> list[str]:
+    """
+    Find primary MIDs by location ID (store ID.)
+    """
+    with db.session_scope() as session:
+
+        def get_data():
+            return (
+                session.query(models.MerchantIdentifier.identifier)
+                .join(models.LoyaltyScheme)
+                .join(models.PaymentProvider)
+                .filter(
+                    models.LoyaltyScheme.slug == scheme_slug,
+                    models.PaymentProvider.slug == payment_slug,
+                    models.MerchantIdentifier.location_id == location_id,
+                    models.MerchantIdentifier.identifier_type == models.IdentifierType.PRIMARY,
+                )
+                .all()
+            )
+
+        results = db.run_query(
+            get_data,
+            session=session,
+            read_only=True,
+            description=f"find {scheme_slug} MIDs by location ID",
+        )
+
+        return [mid[0] for mid in results]
+
+
+@lru_cache(maxsize=2048)
 def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
     with db.session_scope() as session:
 
