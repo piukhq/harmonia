@@ -1,4 +1,6 @@
-"""convert primary_identifier scalar field to primary_identifiers array field on transaction and scheme_transaction tables
+"""
+convert primary_identifier scalar field to primary_identifiers array field on
+transaction and scheme_transaction tables.
 
 Revision ID: dccf9b0dbe0a
 Revises: 6e064125f2d7
