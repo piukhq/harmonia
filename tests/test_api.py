@@ -44,7 +44,7 @@ def test_expects_json():
 
     client = app.test_client()
     resp = client.get("/")
-    assert resp.status_code == 400, resp.json
+    assert resp.status_code == 415, resp.json
 
 
 @pytest.fixture
