@@ -18,7 +18,7 @@ packages = [
 
 [[tool.poetry.source]]
 name = "bink-pypi"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 
 [tool.poetry.scripts]
 tximport = "app.imports.cli:cli"
@@ -39,7 +39,7 @@ apispec = "^5.2.2"
 marshmallow = "^3.17.0"
 pendulum = "^2.1.2"
 apispec-webframeworks = "^0.5.2"
-rq = "^1.11.0"
+rq = "!=1.14.0"
 pycryptodome = "^3.15.0"
 azure-storage-blob = "^12.13.1"
 marshmallow-sqlalchemy = "^0.28.1"
