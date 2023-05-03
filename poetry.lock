@@ -22,7 +22,7 @@ tz = ["python-dateutil"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -42,7 +42,7 @@ vine = ">=5.0.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -71,7 +71,7 @@ yaml = ["PyYAML (>=3.10)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -96,7 +96,7 @@ tests = ["Flask (==1.1.1)", "bottle (==0.12.17)", "mock", "pytest", "tornado"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -113,7 +113,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -148,7 +148,7 @@ zookeeper = ["kazoo"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -171,7 +171,7 @@ test = ["astroid", "pytest"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -188,7 +188,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -205,7 +205,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -230,7 +230,7 @@ aio = ["aiohttp (>=3.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -254,7 +254,7 @@ six = ">=1.12.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -277,7 +277,7 @@ typing-extensions = ">=4.0.1"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -298,7 +298,7 @@ requests = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -324,7 +324,7 @@ aio = ["azure-core[aio] (>=1.26.0,<2.0.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -341,7 +341,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -381,7 +381,7 @@ typecheck = ["mypy"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -420,7 +420,7 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -437,7 +437,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -454,7 +454,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -536,7 +536,7 @@ pycparser = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -626,7 +626,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -646,7 +646,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -663,7 +663,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -683,7 +683,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -752,7 +752,7 @@ toml = ["tomli"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -799,7 +799,7 @@ tox = ["tox"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -816,7 +816,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -839,7 +839,7 @@ dev = ["PyTest", "PyTest (<5)", "PyTest-Cov", "PyTest-Cov (<2.6)", "bump2version
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -859,7 +859,7 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -883,7 +883,7 @@ doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -903,7 +903,7 @@ python-dateutil = ">=2.4"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -928,7 +928,7 @@ lua = ["lupa (>=1.14,<2.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -950,7 +950,7 @@ pyflakes = ">=2.5.0,<2.6.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -978,7 +978,7 @@ dotenv = ["python-dotenv"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -999,7 +999,7 @@ Six = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1015,7 +1015,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1094,7 +1094,7 @@ test = ["objgraph", "psutil"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1120,7 +1120,7 @@ tornado = ["tornado (>=0.2)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1137,7 +1137,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1157,7 +1157,7 @@ test = ["pytest (>=2.1.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1177,7 +1177,7 @@ tests = ["freezegun", "pytest", "pytest-cov"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1194,7 +1194,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1211,7 +1211,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1255,7 +1255,7 @@ test-extra = ["curio", "matplotlib (!=3.2.0)", "nbformat", "numpy (>=1.21)", "pa
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1275,7 +1275,7 @@ six = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1298,7 +1298,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1315,7 +1315,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1340,7 +1340,7 @@ testing = ["Django (<3.1)", "attrs", "colorama", "docopt", "pytest (<7.0.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1363,7 +1363,7 @@ i18n = ["Babel (>=2.7)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1383,7 +1383,7 @@ deprecated = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1420,7 +1420,7 @@ zookeeper = ["kazoo (>=1.3.1)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1445,7 +1445,7 @@ testing = ["pytest"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1468,7 +1468,7 @@ restructuredtext = ["rst2ansi"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1533,7 +1533,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1559,7 +1559,7 @@ tests = ["pytest", "pytz", "simplejson"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1587,7 +1587,7 @@ tests = ["pytest", "pytest-lazy-fixture (>=0.6.2)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1607,7 +1607,7 @@ traitlets = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1624,7 +1624,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1641,7 +1641,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1666,7 +1666,7 @@ broker = ["pymsalruntime (>=0.13.2,<0.14)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1690,7 +1690,7 @@ portalocker = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1737,7 +1737,7 @@ reports = ["lxml"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1754,7 +1754,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1771,7 +1771,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1800,7 +1800,7 @@ invoke = ["invoke (>=1.3)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1821,7 +1821,7 @@ testing = ["docopt", "pytest (<6.0.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1838,7 +1838,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1878,7 +1878,7 @@ pytzdata = ">=2020.1"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1898,7 +1898,7 @@ ptyprocess = ">=0.5"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1920,7 +1920,7 @@ six = ">=1.9.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1937,7 +1937,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1958,7 +1958,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -1979,7 +1979,7 @@ testing = ["pytest", "pytest-benchmark"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2004,7 +2004,7 @@ tests = ["pytest (>=5.4.1)", "pytest-cov (>=2.8.1)", "pytest-mypy (>=0.8.0)", "p
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2025,7 +2025,7 @@ Pygments = ">=2.2.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2045,7 +2045,7 @@ twisted = ["twisted"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2065,7 +2065,7 @@ wcwidth = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2142,7 +2142,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2159,7 +2159,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2179,7 +2179,7 @@ tests = ["pytest"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2196,7 +2196,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2213,7 +2213,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2230,7 +2230,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2278,7 +2278,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2295,7 +2295,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2315,7 +2315,7 @@ plugins = ["importlib-metadata"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2341,7 +2341,7 @@ tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2373,7 +2373,7 @@ tests = ["hypothesis (>=3.27.0)", "pytest (>=3.2.1,!=3.3.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2399,7 +2399,7 @@ testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "no
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2423,7 +2423,7 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2443,7 +2443,7 @@ six = ">=1.5"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2460,7 +2460,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2480,7 +2480,7 @@ tzdata = {version = "*", markers = "python_version >= \"3.6\""}
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2497,7 +2497,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2526,7 +2526,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2581,7 +2581,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2603,7 +2603,7 @@ mando = ">=0.6,<0.7"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2627,7 +2627,7 @@ ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2654,7 +2654,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2678,19 +2678,19 @@ tests = ["coverage (>=6.0.0)", "flake8", "mypy", "pytest (>=7.0.0)", "pytest-asy
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
 name = "rq"
-version = "1.14.0"
+version = "1.13.0"
 description = "RQ is a simple, lightweight, library for creating background jobs, and processing them."
 category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "rq-1.14.0-py2.py3-none-any.whl", hash = "sha256:dc2c54f4f56e637b056f0ff5859c0e4b4baec657a08c57cee86ebe84bbf984ce"},
-    {file = "rq-1.14.0.tar.gz", hash = "sha256:caadcbd117d898e4fe3e97cf761e2d9c598a387195ee4da3e3d81000918abac3"},
+    {file = "rq-1.13.0-py2.py3-none-any.whl", hash = "sha256:621966d7cbf96d5609557a4bd3fd77f749d6d10997d2e353a3e89a14e08eea16"},
+    {file = "rq-1.13.0.tar.gz", hash = "sha256:5bb0380a17597200520731686766bb72faf16ebffb602663560d91ea2c9e7103"},
 ]
 
 [package.dependencies]
@@ -2699,7 +2699,7 @@ redis = ">=3.5.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2748,7 +2748,7 @@ tornado = ["tornado (>=5)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2770,7 +2770,7 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2787,7 +2787,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2804,7 +2804,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2830,7 +2830,7 @@ tenacity = ">=7.0.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2910,7 +2910,7 @@ sqlcipher = ["sqlcipher3-binary"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2935,7 +2935,7 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -2955,7 +2955,7 @@ doc = ["reno", "sphinx", "tornado (>=4.5)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3026,7 +3026,7 @@ python-dateutil = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3043,7 +3043,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3064,7 +3064,7 @@ test = ["argcomplete (>=2.0)", "pre-commit", "pytest", "pytest-mock"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3081,7 +3081,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3098,7 +3098,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3122,7 +3122,7 @@ devenv = ["black", "check-manifest", "flake8", "pyroma", "pytest (>=4.3)", "pyte
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3144,7 +3144,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3165,7 +3165,7 @@ requests = "*"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3182,7 +3182,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3199,7 +3199,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3222,7 +3222,7 @@ watchdog = ["watchdog (>=2.3)"]
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3312,7 +3312,7 @@ files = [
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [[package]]
@@ -3334,10 +3334,10 @@ requests = ">=2.0,<3.0"
 
 [package.source]
 type = "legacy"
-url = "https://pypi.tools.uksouth.bink.sh/simple"
+url = "https://pypi.gb.bink.com/simple"
 reference = "bink-pypi"
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "741184b89ed9ef132b67c60157265a68650bb642cedd40e68abd769732f88281"
+content-hash = "2d21e6203eb4ae573a45d8610f65a047ad9185b4dea85338ca2a700d4d05b418"
