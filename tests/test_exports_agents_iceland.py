@@ -19,7 +19,7 @@ MOCK_URL = "http://iceland.test"
 TOKEN_URL = "http://token.test"
 
 MERCHANT_SLUG = "iceland-bonus-card"
-PRIMARY_IDENTIFIER = Default.primary_mids
+MID = Default.primary_mids
 
 
 def add_mock_routes():
@@ -79,8 +79,8 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
     return get_or_create_export_transaction(
         session=db_session,
         provider_slug=MERCHANT_SLUG,
-        mid=PRIMARY_IDENTIFIER,
-        primary_identifier=PRIMARY_IDENTIFIER,
+        mid=MID,
+        primary_identifier=MID,
     )
 
 

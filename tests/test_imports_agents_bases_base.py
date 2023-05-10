@@ -51,7 +51,7 @@ TRANSACTION_INSERT = {
     "match_group": MATCH_GROUP,
     "merchant_slug": Default.merchant_slug,
     "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
-    "primary_identifiers": Default.primary_mids,
+    "mids": Default.primary_mids,
     "transaction_date": TRANSACTION_DATE.replace(microsecond=0),
     "has_time": True,
     "spend_amount": int(Default.spend_amount * Default.spend_multiplier),
@@ -131,28 +131,28 @@ def mid_primary_duplicate(db_session: db.Session) -> int:
     return mid.id
 
 
-def test_identify_mids_primary_identifier_visa(mid_primary: int, db_session: db.Session) -> None:
+def test_identify_primary_mids_visa(mid_primary: int, db_session: db.Session) -> None:
     agent = VisaAuth()
     identifer = agent._identify_mids(MIDS_DATA, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_identify_mids_secondary_identifier_visa(mid_secondary: int, db_session: db.Session) -> None:
+def test_identify_secondary_mids_visa(mid_secondary: int, db_session: db.Session) -> None:
     agent = VisaAuth()
     identifer = agent._identify_mids(MIDS_DATA, db_session)
 
     assert identifer == [mid_secondary]
 
 
-def test_identify_mids_multiple_identifiers_visa(mid_secondary: int, mid_primary: int, db_session: db.Session) -> None:
+def test_identify_mixed_identifiers_visa(mid_secondary: int, mid_primary: int, db_session: db.Session) -> None:
     agent = VisaAuth()
     identifer = agent._identify_mids(MIDS_DATA, db_session)
 
     assert identifer == [mid_primary]
 
 
-def test_identify_mids_multiple_identifiers(mid_secondary: int, mid_primary: int, db_session: db.Session) -> None:
+def test_identify_mixed_identifiers(mid_secondary: int, mid_primary: int, db_session: db.Session) -> None:
     mids = MIDS_DATA
     provider_slug = PAYMENT_PROVIDER_SLUG
     identifer_dict = find_identifiers(*mids, provider_slug=provider_slug, session=db_session)
@@ -168,14 +168,14 @@ def test_identify_mids_no_matching_identifiers_visa(db_session: db.Session) -> N
     assert e.typename == "MissingMID"
 
 
-def test_get_merchant_slug_primary_identifier_visa(mid_primary: int, db_session: db.Session) -> None:
+def test_get_merchant_slug_primary_mid_visa(mid_primary: int, db_session: db.Session) -> None:
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
         slug = agent.get_merchant_slug(VISA_TRANSACTION)
         assert slug == Default.merchant_slug
 
 
-def test_get_merchant_slug_secondary_identifier_visa(mid_secondary: int, db_session: db.Session) -> None:
+def test_get_merchant_slug_secondary_mid_visa(mid_secondary: int, db_session: db.Session) -> None:
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
         slug = agent.get_merchant_slug(VISA_TRANSACTION)
@@ -241,7 +241,7 @@ def test_location_id_mid_map(mid_primary: int, db_session: db.Session) -> None:
     assert location_id_mid_map == defaultdict(list, {"12345678": ["test_primary_mid"]})
 
 
-def test_get_primary_identifier_not_implemented() -> None:
+def test_get_primary_mids_not_implemented() -> None:
     with pytest.raises(NotImplementedError) as e:
         MockBaseAgent().get_primary_mids(data={})
     assert e.value.args[0] == "Override get_primary_mids in your agent."

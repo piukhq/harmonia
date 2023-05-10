@@ -405,7 +405,7 @@ class BaseAgent:
                     feed_type=self.feed_type,
                     status=models.TransactionStatus.IMPORTED,
                     merchant_identifier_ids=merchant_identifier_ids,
-                    primary_identifiers=primary_mids,
+                    mids=primary_mids,
                     transaction_id=tid,
                     match_group=match_group,
                     **transaction_fields._asdict(),

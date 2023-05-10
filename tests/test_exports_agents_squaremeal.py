@@ -47,7 +47,7 @@ def transaction(db_session: db.Session) -> None:
         session=db_session,
         transaction_id=TRANSACTION_ID,
         merchant_identifier_ids=[1],
-        primary_identifiers=PRIMARY_MIDS,
+        mids=PRIMARY_MIDS,
         merchant_slug=MERCHANT_SLUG,
         settlement_key=SETTLEMENT_KEY,
         card_token="9876543",

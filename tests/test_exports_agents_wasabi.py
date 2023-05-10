@@ -17,7 +17,7 @@ settings.DEBUG = False
 
 
 MERCHANT_SLUG = "wasabi-club"
-PRIMARY_IDENTIFIER = Default.primary_mids
+MIDS = Default.primary_mids
 
 MOCK_URL = "http://wasabi.test"
 
@@ -36,8 +36,8 @@ def wasabi() -> Wasabi:
 def export_transaction() -> models.ExportTransaction:
     return get_or_create_export_transaction(
         provider_slug=MERCHANT_SLUG,
-        mid=PRIMARY_IDENTIFIER,
-        primary_identifier=PRIMARY_IDENTIFIER,
+        mid=MIDS,
+        primary_identifier=MIDS,
     )
 
 

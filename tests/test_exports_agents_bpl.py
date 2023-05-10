@@ -14,13 +14,13 @@ from tests.fixtures import Default, get_or_create_export_transaction
 
 TRANSACTION_ID = "582228491099278"
 TRANSACTION_DATE = pendulum.DateTime(2022, 10, 26, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))
-PRIMARY_IDENTIFIER = Default.primary_mids[0]
+MID = Default.primary_mids[0]
 MERCHANT_SLUG = "bpl-trenette"
 LOYALTY_ID = Default.loyalty_id
 REQUEST_URL = "http://localhost/trenette/transaction"
 
 REQUEST = {
-    "MID": PRIMARY_IDENTIFIER,
+    "MID": MID,
     "datetime": mock.ANY,
     "id": mock.ANY,
     "loyalty_id": LOYALTY_ID,
@@ -87,7 +87,7 @@ def test_make_export_data(export_transaction: ExportTransaction, db_session: db.
     assert "bpl-asos-" in export_data["id"]
     assert export_data["transaction_total"] == export_transaction.spend_amount
     assert export_data["datetime"] == export_transaction.transaction_date.int_timestamp
-    assert export_data["MID"] == PRIMARY_IDENTIFIER
+    assert export_data["MID"] == MID
     assert export_data["loyalty_id"] == LOYALTY_ID
     assert export_data["transaction_id"] == export_transaction.transaction_id
 

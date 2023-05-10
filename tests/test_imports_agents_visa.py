@@ -36,7 +36,7 @@ AUTH_TX1_PSIMI_INDEX = AUTH_TX1.get("MessageElementsCollection").index(
 AUTH_TX_2 = SampleTransactions().visa_auth(
     transaction_id="RDRGOEFEMkYtQkJFMC00MzhGLTk5MDktQjVCOEQ0M0VBM0ZD",
     transaction_date=pendulum.DateTime(2022, 10, 14, 12, 54, 59, tzinfo=pendulum.timezone("UCT")),
-    primary_identifier="test_primary_mid_2",
+    mid="test_primary_mid_2",
     secondary_identifier="",
     psimi_identifier="",
     user_token="test_token_2",

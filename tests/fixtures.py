@@ -167,7 +167,7 @@ def get_or_create_transaction(
     feed_type: FeedType = Default.feed_type,
     status: str = models.TransactionStatus.IMPORTED.name,
     merchant_identifier_ids: list[int] = [1],
-    primary_identifiers: list[str] = Default.primary_mids,
+    mids: list[str] = Default.primary_mids,
     merchant_slug: str = Default.merchant_slug,
     payment_provider_slug: str = Default.payment_provider_slug,
     match_group: str = Default.match_group,
@@ -185,7 +185,7 @@ def get_or_create_transaction(
             defaults=dict(
                 status=status,
                 merchant_identifier_ids=merchant_identifier_ids,
-                primary_identifiers=primary_identifiers,
+                mids=mids,
                 merchant_slug=merchant_slug,
                 payment_provider_slug=payment_provider_slug,
                 match_group=match_group,
@@ -203,7 +203,7 @@ def get_or_create_transaction(
             feed_type=feed_type,
             status=status,
             merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifiers=primary_identifiers,
+            mids=mids,
             merchant_slug=merchant_slug,
             payment_provider_slug=payment_provider_slug,
             match_group=match_group,
@@ -219,7 +219,7 @@ def get_or_create_transaction(
 def get_or_create_scheme_transaction(
     session: db.Session | None = None,
     merchant_identifier_ids: list[int] = [1],
-    primary_identifier: str = Default.primary_mids[0],
+    mid: str = Default.primary_mids[0],
     provider_slug: str = Default.merchant_slug,
     payment_provider_slug: str = Default.payment_provider_slug,
     transaction_id: str = Default.transaction_id,
@@ -235,7 +235,7 @@ def get_or_create_scheme_transaction(
             transaction_id=transaction_id,
             defaults=dict(
                 merchant_identifier_ids=merchant_identifier_ids,
-                primary_identifiers=[primary_identifier],
+                mids=[mid],
                 provider_slug=provider_slug,
                 payment_provider_slug=payment_provider_slug,
                 transaction_date=transaction_date,
@@ -249,7 +249,7 @@ def get_or_create_scheme_transaction(
     else:
         scheme_transaction = models.SchemeTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifiers=[primary_identifier],
+            mids=[mid],
             provider_slug=provider_slug,
             payment_provider_slug=payment_provider_slug,
             transaction_id=transaction_id,
@@ -265,7 +265,7 @@ def get_or_create_scheme_transaction(
 def get_or_create_payment_transaction(
     session: db.Session | None = None,
     merchant_identifier_ids: list[int] = [1],
-    primary_identifier: str = Default.primary_mids[0],
+    mid: str = Default.primary_mids[0],
     provider_slug: str = Default.payment_provider_slug,
     transaction_id: str = Default.transaction_id,
     transaction_date: pendulum.DateTime = Default.transaction_date,
@@ -281,7 +281,7 @@ def get_or_create_payment_transaction(
             transaction_id=transaction_id,
             defaults=dict(
                 merchant_identifier_ids=merchant_identifier_ids,
-                primary_identifier=primary_identifier,
+                mid=mid,
                 provider_slug=provider_slug,
                 transaction_date=transaction_date,
                 spend_amount=spend_amount,
@@ -295,7 +295,7 @@ def get_or_create_payment_transaction(
     else:
         payment_transaction = models.PaymentTransaction(
             merchant_identifier_ids=merchant_identifier_ids,
-            primary_identifier=primary_identifier,
+            mid=mid,
             provider_slug=provider_slug,
             transaction_id=transaction_id,
             transaction_date=transaction_date,
@@ -497,7 +497,7 @@ class SampleTransactions:
         self,
         transaction_id: str = Default.transaction_id,
         transaction_date: pendulum.DateTime = Default.transaction_date,
-        primary_identifier: str = Default.primary_mids[0],
+        mid: str = Default.primary_mids[0],
         secondary_identifier: str = Default.secondary_mid,
         psimi_identifier: str = Default.psimi,
         user_token: str = Default.user_token,
@@ -508,7 +508,7 @@ class SampleTransactions:
             "CardId": transaction_id[0:9],
             "ExternalUserId": user_token,
             "MessageElementsCollection": [
-                {"Key": "Transaction.MerchantCardAcceptorId", "Value": primary_identifier},
+                {"Key": "Transaction.MerchantCardAcceptorId", "Value": mid},
                 {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                 {"Key": "Transaction.TransactionAmount", "Value": str(spend_amount)},
                 {"Key": "Transaction.VipTransactionId", "Value": transaction_id},
@@ -544,7 +544,7 @@ class SampleTransactions:
         self,
         transaction_id: str = Default.transaction_id,
         transaction_date: pendulum.DateTime = Default.transaction_date,
-        primary_identifier: str = Default.primary_mids[0],
+        mid: str = Default.primary_mids[0],
         secondary_identifier: str = Default.secondary_mid,
         psimi_identifier: str = Default.psimi,
         user_token: str = Default.user_token,
@@ -555,7 +555,7 @@ class SampleTransactions:
             "CardId": transaction_id[0:9],
             "ExternalUserId": user_token,
             "MessageElementsCollection": [
-                {"Key": "Transaction.MerchantCardAcceptorId", "Value": primary_identifier},
+                {"Key": "Transaction.MerchantCardAcceptorId", "Value": mid},
                 {"Key": "Transaction.MerchantAcquirerBin", "Value": "3423432"},
                 {"Key": "Transaction.TransactionAmount", "Value": str(spend_amount)},
                 {"Key": "Transaction.VipTransactionId", "Value": transaction_id},
@@ -591,7 +591,7 @@ class SampleTransactions:
         self,
         transaction_id: str = Default.transaction_id,
         transaction_date: pendulum.DateTime = Default.transaction_date,
-        primary_identifier: str = Default.primary_mids[0],
+        mid: str = Default.primary_mids[0],
         secondary_identifier: str = Default.secondary_mid,
         psimi_identifier: str = Default.psimi,
         user_token: str = Default.user_token,
@@ -603,7 +603,7 @@ class SampleTransactions:
             "CardId": transaction_id[0:9],
             "ExternalUserId": user_token,
             "MessageElementsCollection": [
-                {"Key": "ReturnTransaction.CardAcceptorIdCode", "Value": primary_identifier},
+                {"Key": "ReturnTransaction.CardAcceptorIdCode", "Value": mid},
                 {"Key": "ReturnTransaction.AcquirerBIN", "Value": "3423432"},
                 {"Key": "ReturnTransaction.Amount", "Value": str(spend_amount)},
                 {"Key": "ReturnTransaction.VipTransactionId", "Value": transaction_id},
