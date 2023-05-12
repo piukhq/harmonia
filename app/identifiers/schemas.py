@@ -43,3 +43,9 @@ class IdentifierDeletionListSchema(Schema):
 @define_schema
 class IdentifierDeletionResultSchema(Schema):
     deleted = fields.Integer()
+
+
+@define_schema
+class IdentifierUpdateSchema(Schema):
+    location_id = fields.String(required=False, allow_none=True, validate=NotBlank)
+    merchant_internal_id = fields.String(required=False, allow_none=True, validate=NotBlank)
