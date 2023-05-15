@@ -114,9 +114,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
 @responses.activate
 def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db_session: db.Session) -> None:
-    mid = (
-        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
-    )
+    mid = db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
     get_or_create_transaction(
         session=db_session,
         transaction_id="test-transaction-1",
