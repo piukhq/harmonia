@@ -2,7 +2,7 @@ FROM ghcr.io/binkhq/python:3.11 AS build
 
 WORKDIR /src
 
-RUN pip install poetry==1.2.0b3
+RUN pip install poetry
 RUN poetry config virtualenvs.create false
 
 COPY . .
