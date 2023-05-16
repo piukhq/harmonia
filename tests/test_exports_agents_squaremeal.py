@@ -10,8 +10,8 @@ from app.feeds import FeedType
 from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_transaction
 
 TRANSACTION_ID = "1234567"
-PRIMARY_IDENTIFIER = Default.primary_identifier
-SECONDARY_IDENTIFIER = Default.secondary_identifier
+PRIMARY_MIDS = Default.primary_mids
+SECONDARY_MID = Default.secondary_mid
 TRANSACTION_DATE = pendulum.DateTime(2022, 11, 1, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))
 SETTLEMENT_KEY = "123456"
 LOYALTY_ID = "10"
@@ -22,7 +22,7 @@ REQUEST_BODY = {
     "loyalty_id": LOYALTY_ID,
     "auth": True,
     "cleared": False,
-    "mid": PRIMARY_IDENTIFIER,
+    "mid": PRIMARY_MIDS[0],
     "transaction_date": TRANSACTION_DATE.format("YYYY-MM-DDTHH:mm:ss"),
     "transaction_amount": Default.spend_amount,
     "transaction_currency": Default.spend_currency,
@@ -47,7 +47,7 @@ def transaction(db_session: db.Session) -> None:
         session=db_session,
         transaction_id=TRANSACTION_ID,
         merchant_identifier_ids=[1],
-        primary_identifier=PRIMARY_IDENTIFIER,
+        mids=PRIMARY_MIDS,
         merchant_slug=MERCHANT_SLUG,
         settlement_key=SETTLEMENT_KEY,
         card_token="9876543",
@@ -64,8 +64,8 @@ def export_transaction() -> models.ExportTransaction:
         provider_slug=MERCHANT_SLUG,
         transaction_date=TRANSACTION_DATE,
         loyalty_id=LOYALTY_ID,
-        mid=SECONDARY_IDENTIFIER,
-        primary_identifier=PRIMARY_IDENTIFIER,
+        mid=SECONDARY_MID,
+        primary_identifier=PRIMARY_MIDS[0],
         feed_type=FeedType.AUTH,
         settlement_key=SETTLEMENT_KEY,
         payment_card_account_id=1,

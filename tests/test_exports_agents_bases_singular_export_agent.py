@@ -15,7 +15,7 @@ from tests.fixtures import Default, get_or_create_export_transaction, get_or_cre
 
 TRANSACTION_ID = Default.transaction_id
 TRANSACTION_DATE = Default.transaction_date
-PRIMARY_IDENTIFIER = Default.primary_identifier
+MID = Default.primary_mids
 MERCHANT_SLUG = "mock-singular-export-agent"
 
 

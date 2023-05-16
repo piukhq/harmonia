@@ -15,7 +15,7 @@ from tests.fixtures import (
 )
 
 TRANSACTION_DATE = pendulum.now()
-PRIMARY_IDENTIFIER = Default.primary_identifier
+MID = Default.primary_mids[0]
 
 
 @pytest.fixture
@@ -47,7 +47,6 @@ COMMON_TX_FIELDS = dict(
 
 @mock.patch("app.core.identifier.get_user_identity", return_value=None)
 def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: int) -> None:
-
     ptx = get_or_create_payment_transaction(
         merchant_identifier_ids=[mid_primary],
         provider_slug="amex",
@@ -68,7 +67,7 @@ def test_make_matched_transaction_fields(mock_get_user_identity, mid_primary: in
     result = agent.make_matched_transaction_fields(stx)
     assert result == {
         "merchant_identifier_id": mid_primary,
-        "primary_identifier": PRIMARY_IDENTIFIER,
+        "mid": MID,
         "transaction_id": "test-make-matched-transaction-fields-transaction-2",
         "transaction_date": TRANSACTION_DATE,
         "spend_amount": 1699,
@@ -94,7 +93,7 @@ def test_make_spotted_transaction_fields(mock_get_user_identity, mid_primary: in
     result = agent.make_spotted_transaction_fields()
     assert result == {
         "merchant_identifier_id": mid_primary,
-        "primary_identifier": PRIMARY_IDENTIFIER,
+        "mid": MID,
         "transaction_id": "test-make-spotted-transaction-fields-transaction-1",
         "transaction_date": TRANSACTION_DATE,
         "spend_amount": 1699,

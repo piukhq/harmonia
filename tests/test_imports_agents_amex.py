@@ -5,7 +5,7 @@ import pytest
 
 from app import db, models
 from app.imports.agents.amex import AmexAuth, AmexSettlement
-from tests.fixtures import Default, SampleTransactions, get_or_create_merchant_identifier
+from tests.fixtures import SampleTransactions, get_or_create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "amex"
 
@@ -83,11 +83,6 @@ def test_auth_get_transaction_id():
     assert transaction_id == "Qzg0Q0FBQzctRTJDMS00RUFGLTkyQTEtRTRDQzZEMEI1MTk5"
 
 
-def test_auth_get_mids():
-    ids = AmexAuth().get_mids(SampleTransactions().amex_auth())
-    assert ids == [(models.IdentifierType.PRIMARY, Default.primary_identifier)]
-
-
 def test_settlement_to_transaction_fields_with_dpan(iceland_mid: models.MerchantIdentifier, db_session: db.Session):
     with mock.patch("app.imports.agents.bases.base.db.session_scope", return_value=db_session):
         transaction_fields = AmexSettlement().to_transaction_fields(
@@ -139,8 +134,3 @@ def test_settlement_to_transaction_fields_without_dpan(iceland_mid: models.Merch
 def test_settlement_get_transaction_id():
     transaction_id = AmexSettlement().get_transaction_id(SampleTransactions().amex_settlement())
     assert transaction_id == "NUE3QTUyNzktMDFEMi00ODQwLUI5NDItRTkzQjMwNUQ0QTBB"
-
-
-def test_settlement_get_mids():
-    ids = AmexSettlement().get_mids(SampleTransactions().amex_settlement())
-    assert ids == [(models.IdentifierType.PRIMARY, Default.primary_identifier)]

@@ -14,7 +14,7 @@ class MatchedTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         yield from session.query(models.MerchantIdentifier).limit(500).all()
 
     merchant_identifier = factory.iterator(merchant_identifier)
-    primary_identifier = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
+    mid = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=100))
     transaction_date = factory.LazyAttribute(lambda o: generic.transaction_date_provider.transaction_date(days=30))
     spend_amount = factory.LazyAttribute(lambda o: generic.numeric.integer_number(start=1))
@@ -74,7 +74,7 @@ class TransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
     feed_type = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in models.FeedType]))
     status = factory.LazyAttribute(lambda o: generic.choice(items=[x for x in models.TransactionStatus]))
     merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numeric.random.randints(amount=5, a=1, b=1000000))
-    primary_identifier = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    mids = factory.LazyAttribute(lambda o: [generic.text.random.randstr(length=50)])
     merchant_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     payment_provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
@@ -95,7 +95,7 @@ class SchemeTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numeric.random.randints(amount=5, a=1, b=1000000))
-    primary_identifier = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    mids = factory.LazyAttribute(lambda o: [generic.text.random.randstr(length=50)])
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     payment_provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=50))
@@ -117,7 +117,7 @@ class PaymentTransactionFactory(factory.alchemy.SQLAlchemyModelFactory):
         sqlalchemy_session_persistence = None
 
     merchant_identifier_ids = factory.LazyAttribute(lambda o: generic.numeric.random.randints(amount=5, a=1, b=1000000))
-    primary_identifier = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
+    mid = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     provider_slug = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=50))
     transaction_id = factory.LazyAttribute(lambda o: generic.text.random.randstr(unique=True, length=100))
     settlement_key = factory.LazyAttribute(lambda o: generic.text.random.randstr(length=100))

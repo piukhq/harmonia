@@ -8,7 +8,6 @@ import pytest
 from app import db
 from app.imports.agents.iceland import Iceland
 from app.imports.models import ImportFileLog
-from app.models import IdentifierType
 from app.service.hermes import PaymentProviderSlug
 
 TRANSACTION = (
@@ -88,11 +87,6 @@ def test_to_transaction_fields() -> None:
 def test_get_transaction_id() -> None:
     transaction_id = Iceland().get_transaction_id(TRANSACTION_DATA)
     assert transaction_id == "1a4ac684-f4cb-4a12-be40-c7d54824543e"
-
-
-def test_get_mids() -> None:
-    mids = Iceland().get_mids(TRANSACTION_DATA)
-    assert mids == [(IdentifierType.PRIMARY, "test-mid-123")]
 
 
 def test_get_transaction_date() -> None:

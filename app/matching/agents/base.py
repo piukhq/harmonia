@@ -76,7 +76,7 @@ class BaseMatchingAgent:
         since = pendulum.now().date().add(days=-14)
         return db.run_query(
             lambda: session.query(models.SchemeTransaction).filter(
-                models.SchemeTransaction.primary_identifier == self.payment_transaction.primary_identifier,
+                models.SchemeTransaction.mids.any(self.payment_transaction.mid),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
                 models.SchemeTransaction.created_at >= since.isoformat(),
             ),
@@ -88,7 +88,7 @@ class BaseMatchingAgent:
     def make_spotted_transaction_fields(self):
         return {
             "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
-            "primary_identifier": self.payment_transaction.primary_identifier,
+            "mid": self.payment_transaction.mid,
             "transaction_id": self.payment_transaction.transaction_id,
             "transaction_date": self.payment_transaction.transaction_date,
             "spend_amount": self.payment_transaction.spend_amount,
@@ -111,7 +111,7 @@ class BaseMatchingAgent:
         }
         return {
             "merchant_identifier_id": self.payment_transaction.merchant_identifier_ids[0],
-            "primary_identifier": self.payment_transaction.primary_identifier,
+            "mid": self.payment_transaction.mid,
             **st_fields,
             "card_token": self.payment_transaction.card_token,
             "extra_fields": {

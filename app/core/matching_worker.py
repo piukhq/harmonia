@@ -185,13 +185,13 @@ class MatchingWorker:
 
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
-        mids = {scheme_transaction.primary_identifier for scheme_transaction in scheme_transactions}
+        mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.mids}
 
         since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(
             lambda: session.query(models.PaymentTransaction)
             .filter(
-                models.PaymentTransaction.primary_identifier.in_(mids),
+                models.PaymentTransaction.mid.in_(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.created_at >= since.isoformat(),
             )
@@ -312,7 +312,7 @@ class MatchingWorker:
                 spend_currency=matched_transaction.spend_currency,
                 loyalty_id=user_identity.loyalty_id,
                 mid=matched_transaction.merchant_identifier.identifier,
-                primary_identifier=matched_transaction.primary_identifier,
+                primary_identifier=matched_transaction.mid,
                 location_id=matched_transaction.merchant_identifier.location_id,
                 merchant_internal_id=matched_transaction.merchant_identifier.merchant_internal_id,
                 user_id=user_identity.user_id,

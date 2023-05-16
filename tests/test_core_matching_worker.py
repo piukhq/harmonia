@@ -59,7 +59,6 @@ COMMON_TX_FIELDS = dict(
     auth_code="123456",
     match_group="1234567890",
     extra_fields={},
-    primary_identifier="test-mid-primary",
 )
 
 
@@ -78,6 +77,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        mid="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -86,6 +86,7 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        mids=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -113,14 +114,12 @@ def test_force_match_no_user_identity(mid_primary: int, db_session: db.Session) 
 
 @responses.activate
 def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db_session: db.Session) -> None:
-    primary_identifier = (
-        db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
-    )
+    mid = db_session.query(models.MerchantIdentifier).filter(models.MerchantIdentifier.id == mid_primary)[0].identifier
     get_or_create_transaction(
         session=db_session,
         transaction_id="test-transaction-1",
         merchant_identifier_ids=[mid_primary, mid_secondary],
-        primary_identifier=primary_identifier,
+        mids=[mid],
         merchant_slug=MERCHANT_SLUG,
         settlement_key="1234567890",
         approval_code="",
@@ -161,6 +160,7 @@ def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        mid="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -169,6 +169,7 @@ def test_force_match_late_user_identity(mid_primary: int, mid_secondary: int, db
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        mids=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -212,6 +213,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
         transaction_id="test-force-match-transaction-2",
         settlement_key="1234567890",
         card_token="test-force-match-token-1",
+        mid="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
 
@@ -220,6 +222,7 @@ def test_force_match_hermes_down(mid_primary: int, db_session: db.Session) -> No
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="test-force-match-transaction-1",
+        mids=["test-mid-primary"],
         **COMMON_TX_FIELDS,
     )
 
@@ -256,6 +259,7 @@ def test_get_agent_for_payment_transaction_multiple_mids(
         transaction_id="test-single-primary-mid-transaction-2",
         settlement_key="1234567890",
         card_token="test-single-primary-mid-token-1",
+        mid="test-mid-primary",
         **COMMON_TX_FIELDS,
     )
     worker = MatchingWorker()
@@ -279,7 +283,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
     get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_primary],
-        primary_identifier="test_mid_primary_1",
+        mid="test_mid_primary_1",
         provider_slug=PAYMENT_PROVIDER_SLUG,
         transaction_id="ptx1_id",
         spend_amount=2400,
@@ -291,7 +295,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
     get_or_create_payment_transaction(
         session=db_session,
         merchant_identifier_ids=[mid_secondary],
-        primary_identifier="test_mid_primary_2",
+        mid="test_mid_primary_2",
         provider_slug="visa",
         transaction_id="ptx2_id",
         spend_amount=1300,
@@ -303,7 +307,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
     get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
-        primary_identifier="test_mid_primary_1",
+        mid="test_mid_primary_1",
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug="visa",
         transaction_id="stx1_id",
@@ -315,7 +319,7 @@ def test_handle_scheme_transactions_multiple_payment_transaction_mids(
     get_or_create_scheme_transaction(
         session=db_session,
         merchant_identifier_ids=[],
-        primary_identifier="test_mid_primary_2",
+        mid="test_mid_primary_2",
         provider_slug=MERCHANT_SLUG,
         payment_provider_slug="visa",
         transaction_id="stx2_id",
