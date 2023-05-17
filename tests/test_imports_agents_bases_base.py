@@ -54,7 +54,7 @@ TRANSACTION_INSERT = {
     "mids": Default.primary_mids,
     "transaction_date": TRANSACTION_DATE.replace(microsecond=0),
     "has_time": True,
-    "spend_amount": int(Default.spend_amount * Default.spend_multiplier),
+    "spend_amount": Default.spend_amount,
     "spend_multiplier": Default.spend_multiplier,
     "spend_currency": "GBP",
     "card_token": Default.user_token,

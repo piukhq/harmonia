@@ -1,10 +1,11 @@
-import requests
 import uuid
+
+import requests
+from soteria.configuration import Configuration
 
 import settings
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
-from soteria.configuration import Configuration
 
 log = get_logger("the-works")
 
@@ -23,10 +24,10 @@ class TheWorksAPI:
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
         return self.post(endpoint, body, name="post_matched_transaction")
 
-    def transaction_rewarded(self, body: dict) -> bool:
+    def transaction_history(self, loyalty_id: str) -> dict:
         # build json rpc request to call transaction history endpoint
-        history_transactions = self._history_request(body["card_number"])
-        return True
+        history_transactions = self._history_request(loyalty_id)
+        return history_transactions
 
     def _history_request(self, card_number: str):
         transaction_code = str(uuid.uuid4())
@@ -50,12 +51,12 @@ class TheWorksAPI:
 
     def get_credentials(self) -> (str, str):
         config = Configuration(
-            self.scheme_slug,
+            "the_works",
             Configuration.TRANSACTION_MATCHING,
             settings.VAULT_URL,
             None,
             settings.EUROPA_URL,
-            settings.AAD_TENANT_ID
+            settings.AAD_TENANT_ID,
         )
         user_id = config.security_credentials["outbound"]["credentials"][0]["value"]["user_id"]
         password = config.security_credentials["outbound"]["credentials"][0]["value"]["password"]
