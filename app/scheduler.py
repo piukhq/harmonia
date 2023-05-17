@@ -59,7 +59,7 @@ class CronScheduler:
 
     def _get_trigger(self, schedule):
         try:
-            return CronTrigger.from_crontab(schedule)
+            return CronTrigger.from_crontab(schedule, timezone="UTC")
         except ValueError:
             self.log.error(
                 (
@@ -67,7 +67,7 @@ class CronScheduler:
                     f"Reverting to default of '{self.default_schedule}'."
                 )
             )
-            return CronTrigger.from_crontab(self.default_schedule)
+            return CronTrigger.from_crontab(self.default_schedule, timezone="UTC")
 
     def run(self):
         scheduler = BackgroundScheduler(timezone="UTC")
