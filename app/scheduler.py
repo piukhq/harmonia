@@ -70,7 +70,7 @@ class CronScheduler:
             return CronTrigger.from_crontab(self.default_schedule)
 
     def run(self):
-        scheduler = BackgroundScheduler()
+        scheduler = BackgroundScheduler(timezone="UTC")
         schedule = self.schedule_fn()
         if not schedule:
             self.log.warn((f"No schedule provided! Reverting to default of '{self.default_schedule}'."))
