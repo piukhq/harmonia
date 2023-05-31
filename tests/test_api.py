@@ -3,13 +3,14 @@ from flask import Flask
 
 import settings
 from app.api import utils
+from app.models import MerchantIdentifier
 
 identifiers_json = {
     "identifiers": [
         {
             "identifier": "1111111111",
             "identifier_type": "PRIMARY",
-            "location_id": " ",
+            "location_id": None,
             "merchant_internal_id": " ",
             "loyalty_plan": "test-plan",
             "payment_scheme": "visa",
@@ -65,7 +66,7 @@ def test_post_identifiers(test_client, db_session):
     auth_headers = {"Authorization": "Token " + settings.SERVICE_API_KEY}
 
     resp = test_client.post("/txm/identifiers/", json=identifiers_json, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["onboarded"] == 3
 
 
@@ -92,7 +93,7 @@ def test_post_identifiers_blank_identifier_type(test_client, db_session):
         ]
     }
     resp = test_client.post("/txm/identifiers/", json=missing_type_json, headers=auth_headers)
-    assert resp.status_code == 422
+    assert resp.status_code == 422, resp.json
     assert resp.json["title"] == "Validation error"
 
 
@@ -119,7 +120,7 @@ def test_post_identifiers_invalid_identifier_type(test_client, db_session):
         ]
     }
     resp = test_client.post("/txm/identifiers/", json=not_type_json, headers=auth_headers)
-    assert resp.status_code == 422
+    assert resp.status_code == 422, resp.json
     assert resp.json["title"] == "Validation error"
 
 
@@ -139,12 +140,12 @@ def test_post_identifiers_reject_duplicate_identifier(test_client, db_session):
     }
     # First import of identifier
     resp = test_client.post("/txm/identifiers/", json=identifiers_json_1, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["onboarded"] == 1
 
     # Attempt to import the same identifier
     resp = test_client.post("/txm/identifiers/", json=identifiers_json_1, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["onboarded"] == 0
 
 
@@ -152,7 +153,7 @@ def test_post_identifiers_none_json(test_client, db_session):
     auth_headers = {"Authorization": "Token " + settings.SERVICE_API_KEY}
 
     resp = test_client.post("/txm/identifiers/", data="This is not json", headers=auth_headers)
-    assert resp.status_code == 400
+    assert resp.status_code == 400, resp.json
     assert resp.json["title"] == "Bad request"
 
 
@@ -161,7 +162,7 @@ def test_delete_identifiers(test_client, db_session):
 
     # Add some identifiers so that we can offboard (delete) them
     resp = test_client.post("/txm/identifiers/", json=identifiers_json, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["onboarded"] == 3
 
     # Delete 2 of the onboarded identifiers
@@ -182,8 +183,10 @@ def test_delete_identifiers(test_client, db_session):
     }
 
     resp = test_client.post("/txm/identifiers/deletion", json=delete_json, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["deleted"] == 2
+
+    assert db_session.query(MerchantIdentifier).count() == 1
 
 
 def test_delete_blank_identifier_type(test_client, db_session):
@@ -191,7 +194,7 @@ def test_delete_blank_identifier_type(test_client, db_session):
 
     # Add some identifiers, one with blank type, so that we can try to offboard (delete) them
     resp = test_client.post("/txm/identifiers/", json=identifiers_json, headers=auth_headers)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.json
     assert resp.json["onboarded"] == 3
 
     # Delete 2 of the onboarded identifiers
@@ -212,7 +215,7 @@ def test_delete_blank_identifier_type(test_client, db_session):
     }
 
     resp = test_client.post("/txm/identifiers/deletion", json=delete_json, headers=auth_headers)
-    assert resp.status_code == 422
+    assert resp.status_code == 422, resp.json
     assert resp.json["title"] == "Validation error"
 
 
@@ -220,5 +223,5 @@ def test_delete_identifiers_none_json(test_client, db_session):
     auth_headers = {"Authorization": "Token " + settings.SERVICE_API_KEY}
 
     resp = test_client.post("/txm/identifiers/deletion", data="This is not json", headers=auth_headers)
-    assert resp.status_code == 400
+    assert resp.status_code == 400, resp.json
     assert resp.json["title"] == "Bad request"

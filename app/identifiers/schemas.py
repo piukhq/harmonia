@@ -12,8 +12,8 @@ class IdentifierCreationSchema(Schema):
     identifier_type = fields.String(required=True, validate=validate.OneOf(IdentifierType._member_map_.keys()))
     loyalty_plan = fields.String(required=True, validate=validate.Regexp("^[a-z0-9]+(?:-[a-z0-9]+)*$"))
     payment_scheme = fields.String(required=True, validate=validate.Regexp("^[a-z0-9]+(?:-[a-z0-9]+)*$"))
-    location_id = fields.String(required=False, validate=NotBlank)
-    merchant_internal_id = fields.String(required=False, validate=NotBlank)
+    location_id = fields.String(required=False, allow_none=True, validate=NotBlank)
+    merchant_internal_id = fields.String(required=False, allow_none=True, validate=NotBlank)
 
 
 @define_schema
