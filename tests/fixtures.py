@@ -47,7 +47,7 @@ class Default:
     settlement_key: str = "MjAwRUZGQTEtNkVGMC00MjEwLUIzN0ItMjkwNkE3NEI3RDEx"
     auth_code: str = "472624"
     match_group: str = "0fef514e-7b3c-4ea5-b8d0-22200a50536d"
-    spend_amount: int = 55.66
+    spend_amount: int = 5566
     spend_multiplier: int = 100
     spend_currency: str = "GBP"
     card_token: str = "123456"
@@ -392,7 +392,7 @@ class SampleTransactions:
             "cm_alias": "CqN58fD9MI1s7ePn0M5F1RxRu1P",
             "merchant_number": identifier,
             "offer_id": "0",
-            "transaction_amount": Default.spend_amount,
+            "transaction_amount": Default.spend_amount / 100,
             "transaction_currency": "UKL",
             "transaction_id": "Qzg0Q0FBQzctRTJDMS00RUFGLTkyQTEtRTRDQzZEMEI1MTk5",
             "transaction_time": "2022-11-04 08:55:50",
@@ -408,14 +408,14 @@ class SampleTransactions:
             "offerId": "0",
             "partnerId": "AADP0050",
             "recordId": "NUE3QTUyNzktMDFEMi00ODQwLUI5NDItRTkzQjMwNUQ0QTBBAADP00400",
-            "transactionAmount": Default.spend_amount,
+            "transactionAmount": Default.spend_amount / 100,
             "transactionDate": "2022-11-04 15:55:50",
             "transactionId": "NUE3QTUyNzktMDFEMi00ODQwLUI5NDItRTkzQjMwNUQ0QTBB",
         }
 
     def mastercard_auth(
         self,
-        amount: int = Default.spend_amount * 100,
+        amount: int = Default.spend_amount,
         currency_code: str = Default.spend_currency,
         mid: str = Default.primary_mids[0],
         payment_card_token: str = Default.card_token,
@@ -439,7 +439,7 @@ class SampleTransactions:
         mid: str = Default.primary_mids[0],
         location_id: str = "test-mid-123",
         aggregate_merchant_id: str = "test-m",
-        amount: int = Default.spend_amount * 100,
+        amount: int = Default.spend_amount,
         auth_code: str = Default.auth_code,
         transaction_id: str = Default.transaction_id,
     ) -> bytes:

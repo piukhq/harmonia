@@ -25,7 +25,7 @@ REQUEST = {
     "id": mock.ANY,
     "loyalty_id": LOYALTY_ID,
     "transaction_id": TRANSACTION_ID,
-    "transaction_total": 55.66,
+    "transaction_total": 5566,
 }
 RESPONSE = {"body": "Awarded", "status_code": 200, "timestamp": "2022-10-26 21:41:02"}
 
