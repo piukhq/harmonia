@@ -31,11 +31,11 @@ class TheWorks(SingularExportAgent):
             api = the_works.TheWorksAPI(self.config.get("base_url", session))
             # Get transactions history from GiveX The Works.
             historical_rewarded_transactions = api.transaction_history(matched_transaction.loyalty_id)
-            if exportable_transaction(matched_transaction, historical_rewarded_transactions):
-                return matched_transaction
-            else:
-                self.log.warning(f"Transaction has already been rewarded in The Works - GiveX system.")
+            if not exportable_transaction(matched_transaction, historical_rewarded_transactions):
+                self.log.warning("Transaction has already been rewarded in The Works - GiveX system.")
                 raise db.NoResultFound
+
+        return matched_transaction
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         api = the_works.TheWorksAPI(self.config.get("base_url", session))

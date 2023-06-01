@@ -22,7 +22,7 @@ class TheWorksAPI:
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
-        return self.post(endpoint, body, name="post_matched_transaction")
+        return self.post(body, name="post_matched_transaction")
 
     def transaction_history(self, loyalty_id: str) -> dict:
         # build json rpc request to call transaction history endpoint
@@ -49,7 +49,7 @@ class TheWorksAPI:
         }
         return self.post(body, name="retrieve_transaction_history")
 
-    def get_credentials(self) -> (str, str):
+    def get_credentials(self) -> tuple[str, str]:
         config = Configuration(
             "the_works",
             Configuration.TRANSACTION_MATCHING,
