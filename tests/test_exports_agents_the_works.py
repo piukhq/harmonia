@@ -16,8 +16,8 @@ from tests.fixtures import (
 )
 
 TRANSACTION_ID = "1234567"
-PRIMARY_IDENTIFIER = Default.primary_identifier
-SECONDARY_IDENTIFIER = Default.secondary_identifier
+PRIMARY_IDENTIFIER = Default.primary_mids[0]
+SECONDARY_IDENTIFIER = Default.secondary_mid
 TRANSACTION_DATE = pendulum.DateTime(2022, 11, 1, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))
 SETTLEMENT_KEY = "123456"
 LOYALTY_ID = "10"
