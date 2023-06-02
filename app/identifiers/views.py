@@ -315,3 +315,57 @@ def offboard_identifiers() -> tuple[dict, int]:
         )
 
     return {"deleted": count}, 200
+
+
+@api.route("/<payment_provider>/<identifier_type>/<identifier>", methods=["PATCH"])
+@requires_service_auth
+def update_identifiers(payment_provider: str, identifier_type: str, identifier: str) -> tuple[dict, int]:
+    """
+    Update identifier
+    ---
+    patch:
+        description: update a single Primary identifier, Secondary identifier, or PSIMI.
+        parameters:
+        - in: body
+          schema: IdentifierUpdateSchema
+        responses:
+            200:
+                description: "The identifier was updated successfully"
+                schema: IdentifierUpdateSchema
+            400:
+                description: "Bad request content type"
+            422:
+                description: "Invalid request schema"
+    """
+
+    if not request.is_json:
+        return {"title": "Bad request", "description": "Expected JSON content type"}, 400
+
+    request_schema = schemas.IdentifierUpdateSchema()
+
+    try:
+        data = request_schema.load(request.json)
+    except marshmallow.ValidationError as ex:
+        return {"title": "Validation error", "description": ex.messages}, 422
+
+    with db.session_scope() as session:
+        q = (
+            session.query(models.MerchantIdentifier)
+            .join(models.PaymentProvider)
+            .filter(
+                models.PaymentProvider.slug == payment_provider,
+                models.MerchantIdentifier.identifier == identifier,
+                models.MerchantIdentifier.identifier_type == identifier_type.upper(),
+            )
+            .one()
+        )
+
+        if location_id := data.get("location_id"):
+            q.location_id = location_id
+
+        if merchant_internal_id := data.get("merchant_id"):
+            q.merchant_internal_id = merchant_internal_id
+
+        session.commit()
+
+    return {}, 200
