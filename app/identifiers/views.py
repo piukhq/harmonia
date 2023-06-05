@@ -363,7 +363,7 @@ def update_identifiers(payment_provider: str, identifier_type: str, identifier: 
         if location_id := data.get("location_id"):
             q.location_id = location_id
 
-        if merchant_internal_id := data.get("merchant_id"):
+        if merchant_internal_id := data.get("merchant_internal_id"):
             q.merchant_internal_id = merchant_internal_id
 
         session.commit()
