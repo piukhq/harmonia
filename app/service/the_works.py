@@ -29,7 +29,7 @@ class TheWorksAPI:
         history_transactions = self._history_request(loyalty_id)
         return history_transactions
 
-    def _history_request(self, card_number: str):
+    def _history_request(self, card_number: str) -> dict:
         transaction_code = str(uuid.uuid4())
         user_id, password = self.get_credentials()
         body = {
@@ -47,7 +47,7 @@ class TheWorksAPI:
                 "POINTS",  # history type
             ],
         }
-        return self.post(body, name="retrieve_transaction_history")
+        return self.post(body, name="retrieve_transaction_history").json()
 
     def get_credentials(self) -> tuple[str, str]:
         config = Configuration(
