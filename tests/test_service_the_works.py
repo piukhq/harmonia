@@ -68,5 +68,4 @@ def test_transaction_history_request(mock_get_credentials, the_works: TheWorksAP
 
     resp = the_works._history_request(request_data)
 
-    assert resp.json() == response_transaction_history
-    assert resp.status_code == 200
+    assert resp == response_transaction_history
