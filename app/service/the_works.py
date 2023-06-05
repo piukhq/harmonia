@@ -51,7 +51,7 @@ class TheWorksAPI:
 
     def get_credentials(self) -> tuple[str, str]:
         config = Configuration(
-            "the_works",
+            "the-works",
             Configuration.TRANSACTION_MATCHING,
             settings.VAULT_URL,
             None,
