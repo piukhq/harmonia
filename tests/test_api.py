@@ -240,6 +240,7 @@ def test_update_identifiers(test_client, db_session):
     resp = test_client.patch("/txm/identifiers/visa/PRIMARY/1111111111", json=edit_json, headers=auth_headers)
     assert resp.status_code == 200, resp.json
 
+
 def test_update_identifiers_no_identifier(test_client, db_session):
     auth_headers = {"Authorization": "Token " + settings.SERVICE_API_KEY}
     resp = test_client.post("/txm/identifiers/", json=identifiers_json, headers=auth_headers)
