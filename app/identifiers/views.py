@@ -357,8 +357,11 @@ def update_identifiers(payment_provider: str, identifier_type: str, identifier: 
                 models.MerchantIdentifier.identifier == identifier,
                 models.MerchantIdentifier.identifier_type == identifier_type.upper(),
             )
-            .one()
+            .one_or_none()
         )
+
+        if q is None:
+            return {"title": "MID not in Harmonia", "description": "MID is not present within Harmonia"}, 404
 
         if location_id := data.get("location_id"):
             q.location_id = location_id
