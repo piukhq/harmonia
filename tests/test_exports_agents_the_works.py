@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest import mock
 from unittest.mock import ANY
 
