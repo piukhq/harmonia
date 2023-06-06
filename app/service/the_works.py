@@ -44,7 +44,7 @@ class TheWorksAPI:
                 card_number,  # givex number
                 "",  # Serial number
                 "",  # card iso
-                "POINTS",  # history type
+                "Points",  # history type
             ],
         }
         return self.post(body, name="retrieve_transaction_history").json()

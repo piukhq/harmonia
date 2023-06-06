@@ -94,6 +94,11 @@ class TheWorks(SingularExportAgent):
 def exportable_transaction(matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict):
     # Check if the current transactions has already been rewarded in the historical transactions
     can_be_exported = True
+
+    # Check for errors in the response
+    if historical_rewarded_transactions["result"] and int(historical_rewarded_transactions["result"][1]) > 0:
+        return False
+
     for transaction in historical_rewarded_transactions["result"][5]:
         current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * 5
         history_points = int(Decimal(transaction[3]))  # Should be the points
