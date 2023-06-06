@@ -145,6 +145,8 @@ HISTORY_TRANSACTIONS = {
     ],
 }
 
+FAILED_HISTORY = {"jsonrpc": "2.0", "id": 1, "result": ["123348509238469083", "2", "Cert not exist"]}
+
 
 @pytest.fixture
 def transaction(db_session: db.Session) -> None:
@@ -188,6 +190,19 @@ def test_find_export_transaction_already_rewarded(
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
     mock_history_request.return_value = HISTORY_TRANSACTIONS
+    export_transaction.settlement_key = None
+    the_works = TheWorks()
+    with pytest.raises(NoResultFound):
+        the_works.find_export_transaction(pending_export, session=db_session)
+
+
+@mock.patch("app.service.the_works.TheWorksAPI._history_request")
+@mock.patch("app.service.the_works.TheWorksAPI.get_credentials")
+def test_find_export_transaction_error_code(
+    mock_get_credentials, mock_history_request, pending_export: models.PendingExport, db_session: db.Session
+) -> None:
+    mock_get_credentials.return_value = ("username1", "password1")
+    mock_history_request.return_value = FAILED_HISTORY
     export_transaction.settlement_key = None
     the_works = TheWorks()
     with pytest.raises(NoResultFound):
