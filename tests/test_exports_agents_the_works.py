@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy.exc import NoResultFound
 
 from app import db, models
+from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.the_works import TheWorks
 from tests.fixtures import (
@@ -34,7 +35,7 @@ REQUEST_BODY_911 = {
         "username1",
         "password1",
         ANY,  # givex number
-        Decimal(Default.spend_amount) / 100,
+        to_pounds(Default.spend_amount),
     ],
 }
 
