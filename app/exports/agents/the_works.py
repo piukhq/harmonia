@@ -5,6 +5,7 @@ import pendulum
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
+from app.currency import to_pounds
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas, the_works
@@ -55,7 +56,7 @@ class TheWorks(SingularExportAgent):
                             user_id,
                             password,
                             export_transaction.loyalty_id,  # givex number
-                            export_transaction.spend_amount,
+                            to_pounds(export_transaction.spend_amount),
                         ],
                     },
                 )
