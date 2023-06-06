@@ -55,7 +55,7 @@ class TheWorks(SingularExportAgent):
                             user_id,
                             password,
                             export_transaction.loyalty_id,  # givex number
-                            export_transaction.spend_amount,
+                            Decimal(export_transaction.spend_amount) / 100,
                         ],
                     },
                 )

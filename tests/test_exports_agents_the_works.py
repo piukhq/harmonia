@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest import mock
 from unittest.mock import ANY
 
@@ -33,7 +34,7 @@ REQUEST_BODY_911 = {
         "username1",
         "password1",
         ANY,  # givex number
-        Default.spend_amount,
+        Decimal(Default.spend_amount) / 100,
     ],
 }
 
@@ -194,6 +195,20 @@ def test_find_export_transaction_already_rewarded(
     the_works = TheWorks()
     with pytest.raises(NoResultFound):
         the_works.find_export_transaction(pending_export, session=db_session)
+
+
+@mock.patch("app.service.the_works.TheWorksAPI._history_request")
+@mock.patch("app.service.the_works.TheWorksAPI.get_credentials")
+def test_find_export_transaction_to_be_rewarded(
+    mock_get_credentials, mock_history_request, pending_export: models.PendingExport, db_session: db.Session
+) -> None:
+    mock_get_credentials.return_value = ("username1", "password1")
+    mock_history_request.return_value = HISTORY_TRANSACTIONS
+    pending_export.export_transaction.spend_amount = 1735
+    the_works = TheWorks()
+
+    to_be_rewarded = the_works.find_export_transaction(pending_export, session=db_session)
+    assert to_be_rewarded == pending_export.export_transaction
 
 
 @mock.patch("app.service.the_works.TheWorksAPI._history_request")
