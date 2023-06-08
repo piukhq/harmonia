@@ -1,0 +1,34 @@
+# base fixture data
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "the-works"
+
+[payment_provider]
+slug = "visa"
+
+[[agents]]
+slug = "the-works"
+
+[[agents]]
+slug = "visa-refund"
+
+# first user
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+merchant_identifier = "88899966"
+email = "test-123@testbink.com"
+
+[[users.transactions]]
+date = 2020-10-27T15:01:59Z
+amount = -3355
+auth_code = "555555"
+identifier = "the-works-mid-123"
+identifier_type = "PRIMARY"
