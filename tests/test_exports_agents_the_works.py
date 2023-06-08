@@ -265,7 +265,7 @@ def test_export(
     # the first attempt should raise a delay exception
     with pytest.raises(DedupeDelayRetry):
         the_works.export(export_data, session=db_session)
-    
+
     # the second attempt should work
     the_works.export(export_data, retry_count=1, session=db_session)
 
