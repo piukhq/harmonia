@@ -6,6 +6,7 @@ import rq
 import sentry_sdk
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+import settings
 from app import config, db, models, reporting
 from app.core import export_director, identifier, import_director, matching_director, matching_worker, streaming_worker
 from app.feeds import FeedType
@@ -95,6 +96,8 @@ def identify_user(
             )
             return
         except Exception as ex:
+            if settings.DEBUG:
+                raise
             log.debug(f"User identification task failed: {repr(ex)}. Failed Hermes requests will be retried.")
             return
 
