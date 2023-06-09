@@ -18,6 +18,11 @@ psql_cmd() {
 }
 
 test_postgres() {
+    if ! which psql; then
+        warn "psql not found; can't set up database."
+        exit 1
+    fi
+
     psql_cmd 'select 1' >/dev/null 2>&1
 }
 
@@ -54,6 +59,11 @@ ensure_postgres() {
 }
 
 test_redis() {
+    if ! which redis-cli; then
+        warn "redis-cli not found; can't check if Redis is available"
+        info 'If you know Redis is running, you can safely ignore this warning.'
+        exit 1
+    fi
     redis-cli -c 'ping' >/dev/null 2>&1
 }
 

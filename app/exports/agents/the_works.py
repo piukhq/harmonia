@@ -15,9 +15,23 @@ PROVIDER_SLUG = "the-works"
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 
 
+class DedupeDelayRetry(Exception):
+    def __init__(self, delay_seconds: int = 5, *args: object) -> None:
+        self.delay_seconds = delay_seconds
+        super().__init__(*args)
+
+
 class TheWorks(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"))
+
+    def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
+        if isinstance(exception, DedupeDelayRetry):
+            return pendulum.now().add(seconds=exception.delay_seconds)
+
+        # we account for the original dedupe delay by decrementing the retry
+        # count to essentially act as if the second retry is actually the first.
+        return super().get_retry_datetime(retry_count - 1, exception=exception)
 
     def find_export_transaction(
         self, pending_export: models.PendingExport, *, session: db.Session
@@ -66,6 +80,11 @@ class TheWorks(SingularExportAgent):
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
+        if retry_count == 0:
+            created_at = pendulum.instance(export_data.transactions[0].created_at)
+            if pendulum.now().diff(created_at).total_seconds() < 5:
+                raise DedupeDelayRetry
+
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
 

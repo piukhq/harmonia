@@ -8,7 +8,7 @@ from sqlalchemy.exc import NoResultFound
 from app import db, models
 from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
-from app.exports.agents.the_works import TheWorks
+from app.exports.agents.the_works import DedupeDelayRetry, TheWorks
 from tests.fixtures import (
     Default,
     get_or_create_export_transaction,
@@ -262,7 +262,12 @@ def test_export(
     the_works = TheWorks()
     export_data = the_works.make_export_data(export_transaction, db_session)
 
-    the_works.export(export_data, session=db_session)
+    # the first attempt should raise a delay exception
+    with pytest.raises(DedupeDelayRetry):
+        the_works.export(export_data, session=db_session)
+
+    # the second attempt should work
+    the_works.export(export_data, retry_count=1, session=db_session)
 
     # Post to the_works
     mock_the_works_post.assert_called_once_with(REQUEST_BODY_911, "")
@@ -276,6 +281,6 @@ def test_export(
         "response": RESPONSE_BODY_911,
         "response_timestamp": mock.ANY,
         "request_url": "https://reflector.staging.gb.bink.com/mock/",
-        "retry_count": 0,
+        "retry_count": 1,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
