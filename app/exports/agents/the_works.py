@@ -120,6 +120,8 @@ def exportable_transaction(matched_transaction: models.ExportTransaction, histor
     if historical_rewarded_transactions["result"] and int(historical_rewarded_transactions["result"][1]) > 0:
         return False
 
+    is_refund = matched_transaction.spend_amount < 0
+
     for transaction in historical_rewarded_transactions["result"][5]:
         current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * 5
         history_points = int(Decimal(transaction[3]))  # Should be the points
@@ -128,8 +130,6 @@ def exportable_transaction(matched_transaction: models.ExportTransaction, histor
         current_tx_date = pendulum.instance(matched_transaction.transaction_date).to_date_string()
         history_tx_date = pendulum.parse(transaction[0]).to_date_string()  # Date part only, time is a separate value.
         dates_match = current_tx_date == history_tx_date
-
-        is_refund = matched_transaction.spend_amount < 0
 
         # there are two cases in which we can't export the transaction:
         # 1. the transaction is not a refund, and the points and dates both match
