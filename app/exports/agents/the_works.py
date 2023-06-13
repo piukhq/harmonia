@@ -56,13 +56,15 @@ class TheWorks(SingularExportAgent):
         api = the_works.TheWorksAPI(self.config.get("base_url", session))
         user_id, password = api.get_credentials()
         transaction_code = str(uuid.uuid4())
+        method = "dc_911" if export_transaction.spend_amount > 0 else "dc_945"
+        amount = abs(export_transaction.spend_amount)
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
                     "export.json",
                     {
                         "jsonrpc": "2.0",
-                        "method": "dc_911",  # request method
+                        "method": method,
                         "id": 1,
                         "params": [
                             "en",  # language code
@@ -70,7 +72,7 @@ class TheWorks(SingularExportAgent):
                             user_id,
                             password,
                             export_transaction.loyalty_id,  # givex number
-                            to_pounds(export_transaction.spend_amount),
+                            to_pounds(amount),
                         ],
                     },
                 )
