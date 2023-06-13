@@ -202,7 +202,7 @@ def import_identifiers(*, session: db.Session) -> tuple[dict, int]:
     return {"imported": imported, "failed": failed}, 200
 
 
-@api.route("/", methods=["POST"])
+@api.route("", methods=["POST"])
 @requires_service_auth
 def onboard_identifiers() -> tuple[dict, int]:
     """
