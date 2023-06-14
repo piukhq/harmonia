@@ -28,6 +28,8 @@ def sanitise_jsonrpc(data: dict, sensitive_keys):
 
 
 def sanitise_logs(data: dict, merchant_slug):
+    if not isinstance(data, dict):
+        return data
     if data.get("export.json"):
         data = data["export.json"]
     if data.get("jsonrpc"):

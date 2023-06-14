@@ -9,6 +9,7 @@ from app import db, models
 from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.the_works import TheWorks
+from app.reporting import sanitise_logs
 from tests.fixtures import (
     Default,
     get_or_create_export_transaction,
@@ -271,7 +272,7 @@ def test_export(
     assert mock_atlas.make_audit_transactions.call_args.args[0] == [export_transaction]
     assert mock_atlas.make_audit_message.call_args.args == (MERCHANT_SLUG, mock_atlas.make_audit_transactions())
     assert mock_atlas.make_audit_message.call_args.kwargs == {
-        "request": REQUEST_BODY_911,
+        "request": sanitise_logs(REQUEST_BODY_911, "the-works"),
         "request_timestamp": mock.ANY,
         "response": RESPONSE_BODY_911,
         "response_timestamp": mock.ANY,
