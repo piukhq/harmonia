@@ -9,7 +9,7 @@ import sentry_sdk
 import settings
 from app import models
 from app.exports.models import ExportTransactionStatus
-from app.reporting import get_logger
+from app.reporting import get_logger, sanitise_logs
 from app.service import exchange
 
 log = get_logger("atlas")
@@ -115,7 +115,7 @@ def make_audit_message(
             body = response.text
 
         audit_data["response"] = {
-            "body": body,
+            "body": sanitise_logs(body, provider_slug),
             "status_code": response.status_code,
             "timestamp": response_timestamp,
         }

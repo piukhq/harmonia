@@ -1,9 +1,38 @@
+import copy
 import io
 import logging
 
 import settings
 
 LOG_FORMAT = "%(levelname)8s | %(name)s | %(message)s"  # used if JSON logging is disabled.
+
+SENSITIVE_KEYS = {"the-works": {"request": [2, 3], "response": [6]}}
+
+
+def sanitise_jsonrpc(data: dict, sensitive_keys):
+    if data.get("params"):
+        sensitive_keys = sensitive_keys["request"]
+        log_type = "params"
+    else:
+        sensitive_keys = sensitive_keys["response"]
+        log_type = "result"
+
+    body = copy.deepcopy(data)
+
+    for index in sensitive_keys:
+        try:
+            body[log_type][index] = "*****"
+        except IndexError:
+            pass
+    return body
+
+
+def sanitise_logs(data: dict, merchant_slug):
+    if data.get("export.json"):
+        data = data["export.json"]
+    if data.get("jsonrpc"):
+        return sanitise_jsonrpc(data, sensitive_keys=SENSITIVE_KEYS[merchant_slug])
+    return data
 
 
 class JSONFormatter(logging.Formatter):

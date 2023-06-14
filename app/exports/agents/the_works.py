@@ -8,6 +8,7 @@ from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pounds
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.reporting import sanitise_logs
 from app.service import atlas, the_works
 
 PROVIDER_SLUG = "the-works"
@@ -82,7 +83,7 @@ class TheWorks(SingularExportAgent):
                 atlas.make_audit_transactions(
                     export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id
                 ),
-                request=body,
+                request=sanitise_logs(body, self.provider_slug),
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
