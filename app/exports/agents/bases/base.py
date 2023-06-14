@@ -87,7 +87,7 @@ class BaseAgent:
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
         self.log.debug(
             f"Data field comes from index #{self.saved_output_index} of"
-            f" {sanitise_logs(dict(export_data.outputs)['export.json'], self.provider_slug)}"
+            f" {sanitise_logs(dict(export_data.outputs)['export.json'], self.provider_slug)}"  # type: ignore
         )
 
         def update_export_status():
