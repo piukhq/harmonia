@@ -9,7 +9,7 @@ LOG_FORMAT = "%(levelname)8s | %(name)s | %(message)s"  # used if JSON logging i
 SENSITIVE_KEYS = {"the-works": {"request": [2, 3], "response": [6]}}
 
 
-def sanitise_jsonrpc(data: dict, sensitive_keys):
+def sanitise_jsonrpc(data, sensitive_keys):
     if data.get("params"):
         sensitive_keys = sensitive_keys["request"]
         log_type = "params"
@@ -27,9 +27,11 @@ def sanitise_jsonrpc(data: dict, sensitive_keys):
     return body
 
 
-def sanitise_logs(data: dict, merchant_slug):
-    if not isinstance(data, dict):
+def sanitise_logs(data, merchant_slug):
+    if data is None or not isinstance(data, dict):
         return data
+    if data.get("export.json"):
+        data = data["export.json"]
     if data.get("jsonrpc"):
         return sanitise_jsonrpc(data, sensitive_keys=SENSITIVE_KEYS[merchant_slug])
     return data
