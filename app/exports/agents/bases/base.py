@@ -8,7 +8,7 @@ import sentry_sdk
 
 from app import db, models
 from app.exports.models import ExportTransactionStatus
-from app.reporting import get_logger
+from app.reporting import get_logger, sanitise_logs
 from app.service.blob_storage import BlobStorageClient
 from app.utils import missing_property
 
@@ -85,7 +85,10 @@ class BaseAgent:
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
         self.log.info(f"Saving {len(export_data.transactions)} {self.provider_slug} export transactions to database.")
-        self.log.debug(f"Data field comes from index #{self.saved_output_index} of {export_data.outputs}")
+        self.log.debug(
+            f"Data field comes from index #{self.saved_output_index} of"
+            f" {sanitise_logs(dict(export_data.outputs), self.provider_slug)}"
+        )
 
         def update_export_status():
             for transaction in export_data.transactions:

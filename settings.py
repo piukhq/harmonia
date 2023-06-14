@@ -8,6 +8,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.rq import RqIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 
 class ConfigVarRequiredError(Exception):
@@ -115,6 +116,7 @@ if SENTRY_DSN is not None:
         environment=SENTRY_ENV,
         integrations=[FlaskIntegration(), RqIntegration(), RedisIntegration(), SqlalchemyIntegration()],
         traces_sample_rate=SENTRY_SAMPLE_RATE,
+        event_scrubber=EventScrubber(denylist=DEFAULT_DENYLIST + ["body"]),
     )
 
 # JSON encoding with custom extensions.
