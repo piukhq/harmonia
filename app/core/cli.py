@@ -6,12 +6,15 @@ from app import db, models, tasks
 from app.exports.retry_worker import ExportRetryWorker
 from app.prometheus import prometheus_thread
 from app.scheduler import is_leader
+from app.service.events import connect_signals
 
 
 @click.group()
 def cli() -> None:
     if settings.PUSH_PROMETHEUS_METRICS:
         prometheus_thread.start()
+    if settings.AUDIT_EXPORTS:
+        connect_signals()
 
 
 @cli.command()

@@ -22,6 +22,7 @@ from prettyprinter import cpprint
 
 from app.api import auth
 from app.prometheus import prometheus_thread
+from app.service.events import connect_signals
 
 
 @contextmanager
@@ -561,6 +562,9 @@ def do_file_dump(fixture: dict):
 )
 def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prometheus: bool, preload: int):
     fixture = load_fixture(fixture_file)
+
+    if settings.AUDIT_EXPORTS:
+        connect_signals()
 
     if dump_files:
         do_file_dump(fixture)

@@ -3340,4 +3340,4 @@ reference = "bink-pypi"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "2d21e6203eb4ae573a45d8610f65a047ad9185b4dea85338ca2a700d4d05b418"
+content-hash = "9477a74e75802b5ead6d635e7da57d08412e9c2cbedaa16365f652e4bd6589fe"

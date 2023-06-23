@@ -5,6 +5,7 @@ import click
 import settings
 from app.prometheus import prometheus_thread
 from app.registry import NoSuchAgent, Registry, RegistryConfigurationError
+from app.service.events import connect_signals
 
 
 def info(text):
@@ -27,6 +28,9 @@ def get_agent_cli(registry: Registry, *, registry_file: str) -> t.Callable:
     @click.option("-q", "--quiet", is_flag=True, help="skip printing agent information and warnings")
     @click.option("--no-prometheus", is_flag=True, help="Run without starting the Prometheus push thread.")
     def cli(agent: str, no_user_input: bool, dry_run: bool, quiet: bool, no_prometheus: bool) -> None:
+        if settings.AUDIT_EXPORTS:
+            connect_signals()
+
         try:
             agent_instance = registry.instantiate(agent)
         except NoSuchAgent as ex:
