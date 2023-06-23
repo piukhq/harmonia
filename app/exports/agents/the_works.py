@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 
 import pendulum
+from blinker import signal
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -47,7 +48,7 @@ class TheWorks(SingularExportAgent):
             api = the_works.TheWorksAPI(self.config.get("base_url", session))
             # Get transactions history from GiveX The Works.
             historical_rewarded_transactions = api.transaction_history(matched_transaction.loyalty_id)
-            if not exportable_transaction(matched_transaction, historical_rewarded_transactions):
+            if not self.exportable_transaction(matched_transaction, historical_rewarded_transactions):
                 self.log.warning("Transaction has already been rewarded in The Works - GiveX system.")
                 raise db.NoResultFound
 
@@ -113,31 +114,35 @@ class TheWorks(SingularExportAgent):
             )
         )
 
+    def exportable_transaction(
+        self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict
+    ):
+        """
+        Check if the current transactions has already been rewarded in the historical transactions.
+        """
 
-def exportable_transaction(matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict):
-    """
-    Check if the current transactions has already been rewarded in the historical transactions.
-    """
-
-    # Check for errors in the response
-    if historical_rewarded_transactions["result"] and int(historical_rewarded_transactions["result"][1]) > 0:
-        return False
-
-    is_refund = matched_transaction.spend_amount < 0
-
-    for transaction in historical_rewarded_transactions["result"][5]:
-        current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * 5
-        history_points = int(Decimal(transaction[3]))  # Should be the points
-        points_match = current_tx_points == history_points
-
-        current_tx_date = pendulum.instance(matched_transaction.transaction_date).to_date_string()
-        history_tx_date = pendulum.parse(transaction[0]).to_date_string()  # Date part only, time is a separate value.
-        dates_match = current_tx_date == history_tx_date
-
-        # there are two cases in which we can't export the transaction:
-        # 1. the transaction is not a refund, and the points and dates both match
-        # 2. the transaction is a refund, and the points match (dates are irrelevant)
-        if points_match and (is_refund or dates_match):
+        # Check for errors in the response
+        if historical_rewarded_transactions["result"] and int(historical_rewarded_transactions["result"][1]) > 0:
             return False
 
-    return True
+        is_refund = matched_transaction.spend_amount < 0
+
+        for transaction in historical_rewarded_transactions["result"][5]:
+            current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * 5
+            history_points = int(Decimal(transaction[3]))  # Should be the points
+            points_match = current_tx_points == history_points
+
+            current_tx_date = pendulum.instance(matched_transaction.transaction_date).to_date_string()
+            history_tx_date = pendulum.parse(
+                transaction[0]
+            ).to_date_string()  # Date part only, time is a separate value.
+            dates_match = current_tx_date == history_tx_date
+
+            # there are two cases in which we can't export the transaction:
+            # 1. the transaction is not a refund, and the points and dates both match
+            # 2. the transaction is a refund, and the points match (dates are irrelevant)
+            if points_match and (is_refund or dates_match):
+                signal("unexported-transaction").send(self, transactions=[matched_transaction])
+                return False
+
+        return True
