@@ -17,10 +17,6 @@ def test_queue_agent_queue_name(db_session: db.Session) -> None:
 
 @mock.patch.object(Consumer, "run")
 def test_queue_agent_run(mock_run, caplog) -> None:
-    settings.RABBITMQ_HOST = "dummy"
-    settings.RABBITMQ_PORT = 1234
-    settings.RABBITMQ_USER = "dummy"
-    settings.RABBITMQ_PASS = "dummy"
     settings.RABBITMQ_DSN = "amqp://dummy:dummy@dummy:1234//"
 
     agent = VisaAuth()
@@ -33,14 +29,11 @@ def test_queue_agent_run(mock_run, caplog) -> None:
 
 
 def test_queue_agent_run_missing_settings() -> None:
-    settings.RABBITMQ_HOST = None
+    settings.RABBITMQ_DSN = None
     with pytest.raises(settings.ConfigVarRequiredError) as e:
         VisaAuth().run()
 
-    assert (
-        e.value.args[0] == "VisaAuth requires that all of the following settings are set: "
-        "RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_USER, RABBITMQ_PASS"
-    )
+    assert e.value.args[0] == "VisaAuth requires that RABBITMQ_DSN is set"
 
 
 def test_queue_agent_do_import(db_session: db.Session) -> None:

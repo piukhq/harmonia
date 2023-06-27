@@ -96,11 +96,7 @@ REDIS_KEY_PREFIX = "txmatch"
 
 # Connection details for RabbitMQ.
 # These are only required for queue-based import agents.
-RABBITMQ_USER = getenv("TXM_RABBITMQ_USER", required=False)
-RABBITMQ_PASS = getenv("TXM_RABBITMQ_PASS", required=False)
-RABBITMQ_HOST = getenv("TXM_RABBITMQ_HOST", required=False)
-RABBITMQ_PORT = getenv("TXM_RABBITMQ_PORT", required=False, conv=int)
-RABBITMQ_DSN = getenv("TXM_AMQP_DSN", f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}//")
+RABBITMQ_DSN = getenv("TXM_AMQP_DSN", "amqp://guest:guest@localhost:5672//")
 
 # Sentry project data source name.
 # https://docs.sentry.io/quickstart/#about-the-dsn

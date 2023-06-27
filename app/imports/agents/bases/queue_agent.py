@@ -16,22 +16,13 @@ class QueueAgent(BaseAgent):
         return qn
 
     def run(self):
-        required_settings = [
-            "RABBITMQ_HOST",
-            "RABBITMQ_PORT",
-            "RABBITMQ_USER",
-            "RABBITMQ_PASS",
-        ]
-        if any(getattr(settings, s, None) is None for s in required_settings):
-            raise settings.ConfigVarRequiredError(
-                f"{type(self).__name__} requires that all of the following settings are set: "
-                f"{', '.join(required_settings)}"
-            )
-
-        with kombu.Connection(settings.RABBITMQ_DSN) as conn:
-            consumer = Consumer(conn, self.queue_name, self)
-            self.log.info(f"Connected to RabbitMQ, consuming {self.queue_name}")
-            consumer.run()
+        if settings.RABBITMQ_DSN:
+            with kombu.Connection(settings.RABBITMQ_DSN) as conn:
+                consumer = Consumer(conn, self.queue_name, self)
+                self.log.info(f"Connected to RabbitMQ, consuming {self.queue_name}")
+                consumer.run()
+        else:
+            raise settings.ConfigVarRequiredError(f"{type(self).__name__} requires that RABBITMQ_DSN is set")
 
     def _do_import(self, body: dict):
         # TODO: this is less than ideal - should we keep a session open?
