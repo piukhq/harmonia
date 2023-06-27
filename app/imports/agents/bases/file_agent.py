@@ -102,7 +102,7 @@ class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
             pass  # this is fine
 
         container = self._bbs.get_container_client(self.container_name)
-        for blob in container.list_blobs(name_starts_with=self.path):
+        for blob in container.list_blobs(name_starts_with=f"{self.path}/"):
             blob_client = self._bbs.get_blob_client(self.container_name, blob.name)
 
             try:
