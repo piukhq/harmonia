@@ -12,7 +12,8 @@ from app.imports.agents.bases.file_agent import FileAgent
 from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "mastercard"
-PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
+SETTLED_PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-settled.path"
+REFUND_PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-refund.path"
 QUEUE_NAME_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}-auth.queue_name"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 
@@ -37,14 +38,8 @@ def _make_settlement_key(*, third_party_id: t.Optional[str], transaction_date: p
     return sha256(f"mastercard.{'.'.join(hash_parts)}".encode()).hexdigest()
 
 
-class MastercardTGX2Settlement(FileAgent):
+class MastercardTGX2Base(FileAgent):
     provider_slug = PROVIDER_SLUG
-    feed_type = FeedType.SETTLED
-
-    config = Config(
-        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
-        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
-    )
 
     # the "start" of these fields must be one less than in the documentation, because the lines are 0-indexed.
     fields = [
@@ -121,6 +116,24 @@ class MastercardTGX2Settlement(FileAgent):
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
         date_string = f"{data['date']} {data['time']}"
         return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
+
+
+class MastercardTGX2Settlement(MastercardTGX2Base):
+    feed_type = FeedType.SETTLED
+
+    config = Config(
+        ConfigValue("path", key=SETTLED_PATH_KEY, default="mastercard/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
+
+
+class MastercardTGX2Refund(MastercardTGX2Base):
+    feed_type = FeedType.REFUND
+
+    config = Config(
+        ConfigValue("path", key=REFUND_PATH_KEY, default="mastercard-refund/"),
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+    )
 
 
 class MastercardAuth(QueueAgent):
