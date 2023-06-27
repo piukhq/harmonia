@@ -1,9 +1,9 @@
 import typing as t
 
 import settings
+from app.data_warehouse import queue
 from app.models import ExportTransaction
 from app.reporting import get_logger
-from app.service import queue
 
 log = get_logger(__name__)
 
@@ -69,4 +69,4 @@ def queue_message(message: dict) -> None:
         log.warning(f"Not queueing {provider_slug} data warehouse events because AUDIT_EXPORTS is disabled.")
         log.debug(f"Export data payload:\n{message}")
     else:
-        queue.add(message, provider=provider_slug, queue_name="tx_export_dw")
+        queue.add(message)

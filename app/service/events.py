@@ -2,7 +2,7 @@ import typing as t
 
 from blinker import signal
 
-from app.service.data_warehouse import send_unexported_transaction
+from app.data_warehouse.models import send_unexported_transaction
 
 
 def connect_signals() -> None:
