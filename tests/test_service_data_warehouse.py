@@ -2,9 +2,9 @@ from unittest import mock
 
 import pendulum
 
+from app.data_warehouse import models
 from app.exports.models import ExportTransactionStatus
 from app.feeds import FeedType
-from app.service import data_warehouse
 
 
 class MockFullExportTransaction:
@@ -53,20 +53,20 @@ class MockPartExportTransaction:
     approval_code = "123"
 
 
-@mock.patch("app.service.queue.add", autospec=True)
+@mock.patch("app.data_warehouse.queue.add", autospec=True)
 def test_queue_data_warehouse_full_message(mocked_queue):
     # full message  means all the fields have values and are not None or empty
-    data_warehouse.send_unexported_transaction([MockFullExportTransaction()])
+    models.send_unexported_transaction([MockFullExportTransaction()])
 
     mocked_queue.assert_called()
     assert mocked_queue.call_args[0][0]["transaction_id"] == 125
     assert mocked_queue.call_args[0][0]["merchant_internal_id"] == 10
 
 
-@mock.patch("app.service.queue.add", autospec=True)
+@mock.patch("app.data_warehouse.queue.add", autospec=True)
 def test_queue_data_warehouse_part_message(mocked_queue):
     # part message  means not all the fields have values some could be None or empty
-    data_warehouse.send_unexported_transaction([MockPartExportTransaction()])
+    models.send_unexported_transaction([MockPartExportTransaction()])
 
     mocked_queue.assert_called()
     assert mocked_queue.call_args[0][0]["transaction_id"] == 345
