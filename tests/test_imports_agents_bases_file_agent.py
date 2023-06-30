@@ -88,6 +88,7 @@ class TestFileAgent:
         mock_cron_scheduler_run.assert_called_once()
         assert caplog.messages == [
             "Watching files/imports/mock-provider-slug for files via LocalFileSource.",
+            "Using leader election name: mock-provider-slug-settled-import",
             "Beginning CronScheduler with schedule '* * * * *'.",
         ]
 
