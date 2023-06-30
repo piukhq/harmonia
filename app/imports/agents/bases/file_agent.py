@@ -323,8 +323,10 @@ class FileAgent(BaseAgent):
     def run(self) -> None:
         self.log.info(f"Watching {self.filesource.path} for files via {self.filesource.__class__.__name__}.")
 
+        name = f"{self.provider_slug}-{self.feed_type.name.lower()}-import"
+        self.log.info(f"Using leader election name: {name}")
         scheduler = CronScheduler(
-            name=f"{self.provider_slug}-import",
+            name=name,
             schedule_fn=lambda: self.fileagent_config.schedule,
             callback=self.callback,
             coalesce_jobs=True,
