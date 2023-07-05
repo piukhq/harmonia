@@ -13,3 +13,4 @@ import_data_providers.add("visa-settlement", "harness.providers.visa.VisaSettlem
 import_data_providers.add("visa-refund", "harness.providers.visa.VisaRefund")
 import_data_providers.add("wasabi-club", "harness.providers.wasabi.Wasabi")
 import_data_providers.add("costa", "harness.providers.costa.Costa")
+import_data_providers.add("itsu", "harness.providers.itsu.Itsu")

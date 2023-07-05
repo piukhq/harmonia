@@ -61,6 +61,10 @@ class Itsu(FileAgent, SoteriaConfigMixin):
             last_four=data["payment_card_last_four"],
         )
 
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
+        return data["transaction_id"]
+
     def get_primary_mids(self, data: dict) -> list[str]:
         # TODO: what if we find an unmapped location ID? is raising KeyError acceptable?
         return self.location_id_mid_map[data["retailer_location_id"]]
