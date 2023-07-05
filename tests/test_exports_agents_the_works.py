@@ -3,6 +3,7 @@ from unittest.mock import ANY
 
 import pendulum
 import pytest
+from requests.models import Response
 from sqlalchemy.exc import NoResultFound
 
 from app import db, models
@@ -39,11 +40,9 @@ REQUEST_BODY_911 = {
     ],
 }
 
-RESPONSE_BODY_911 = {
-    "body": "Bink Transaction details processed successfully!",
-    "status_code": 200,
-    "timestamp": "2023-05-16 16:36:45",
-}
+export_resp = Response()
+export_resp.status_code = 200
+export_resp.reason = "Bink Transaction details processed successfully!"
 
 HISTORY_TRANSACTIONS = {
     "jsonrpc": "2.0",
@@ -251,7 +250,7 @@ def test_make_export_data(
 
 @mock.patch("app.service.the_works.TheWorksAPI.get_credentials")
 @mock.patch("app.exports.agents.the_works.atlas")
-@mock.patch("app.service.the_works.TheWorksAPI.transactions", return_value=RESPONSE_BODY_911)
+@mock.patch("app.service.the_works.TheWorksAPI.transactions", return_value=export_resp)
 def test_export(
     mock_the_works_post,
     mock_atlas,
@@ -279,7 +278,7 @@ def test_export(
     assert mock_atlas.make_audit_message.call_args.kwargs == {
         "request": sanitise_logs(REQUEST_BODY_911, "the-works"),
         "request_timestamp": mock.ANY,
-        "response": RESPONSE_BODY_911,
+        "response": export_resp,
         "response_timestamp": mock.ANY,
         "request_url": "https://reflector.staging.gb.bink.com/mock/",
         "retry_count": 1,
