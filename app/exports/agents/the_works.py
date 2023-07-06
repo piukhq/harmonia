@@ -113,6 +113,7 @@ class TheWorks(SingularExportAgent):
                 retry_count=retry_count,
             )
         )
+        response.raise_for_status()
 
     def exportable_transaction(
         self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict

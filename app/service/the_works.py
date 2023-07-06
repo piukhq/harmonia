@@ -18,7 +18,6 @@ class TheWorksAPI:
     def post(self, body: dict = None, *, name: str) -> requests.models.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         response = self.session.post(self.base_url, json=body)
-        response.raise_for_status()
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
