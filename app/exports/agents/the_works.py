@@ -15,6 +15,7 @@ from app.service import atlas, the_works
 PROVIDER_SLUG = "the-works"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
+FAILOVER_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.failover_url"
 
 
 class DedupeDelayRetry(Exception):
@@ -25,7 +26,10 @@ class DedupeDelayRetry(Exception):
 
 class TheWorks(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
-    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"))
+    config = Config(
+        ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"),
+        ConfigValue("failover_url", key=FAILOVER_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"),
+    )
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
         if isinstance(exception, DedupeDelayRetry):
@@ -45,7 +49,7 @@ class TheWorks(SingularExportAgent):
             # The Works export transaction process requires a check against known rewarded transactions
             # This means we need to request a transaction history from The Works, the compare
             # the current transaction with the works transactions.
-            api = the_works.TheWorksAPI(self.config.get("base_url", session))
+            api = the_works.TheWorksAPI(self.config.get("base_url", session), self.config.get("failover_url", session))
             # Get transactions history from GiveX The Works.
             historical_rewarded_transactions = api.transaction_history(matched_transaction.loyalty_id)
             if not self.exportable_transaction(matched_transaction, historical_rewarded_transactions):
@@ -55,7 +59,7 @@ class TheWorks(SingularExportAgent):
         return matched_transaction
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
-        api = the_works.TheWorksAPI(self.config.get("base_url", session))
+        api = the_works.TheWorksAPI(self.config.get("base_url", session), self.config.get("failover_url", session))
         user_id, password = api.get_credentials()
         transaction_code = str(uuid.uuid4())
         method = "dc_911" if export_transaction.spend_amount > 0 else "dc_945"
@@ -92,7 +96,7 @@ class TheWorks(SingularExportAgent):
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
 
-        api = the_works.TheWorksAPI(self.config.get("base_url", session))
+        api = the_works.TheWorksAPI(self.config.get("base_url", session), self.config.get("failover_url", session))
 
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.transactions(body, "")

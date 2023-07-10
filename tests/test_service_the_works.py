@@ -6,6 +6,7 @@ import responses
 from app.service.the_works import TheWorksAPI
 
 TEST_WORKS_URL = "http://givex.test/mock"
+TEST_WORKS_FAILOVER_URL = "http://givex.test/mock/failover"
 
 json = ""
 
@@ -57,7 +58,7 @@ response_transaction_history = [
 
 @pytest.fixture
 def the_works() -> TheWorksAPI:
-    return TheWorksAPI(TEST_WORKS_URL)
+    return TheWorksAPI(TEST_WORKS_URL, TEST_WORKS_FAILOVER_URL)
 
 
 @responses.activate
