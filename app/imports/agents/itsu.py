@@ -14,9 +14,6 @@ from app.soteria import SoteriaConfigMixin
 PROVIDER_SLUG = "itsu"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
-DATE_FORMAT = "DD/MM/YYYY"
-TIME_FORMAT = "HH:mm:ss"
-TXN_DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
 class Itsu(FileAgent, SoteriaConfigMixin):
