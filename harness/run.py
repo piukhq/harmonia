@@ -182,6 +182,7 @@ class FixtureUserTransactionSchema(Schema):
     payment_provider_overrides = fields.Dict(required=False)
     identifier = fields.String(required=True, allow_none=False)
     identifier_type = fields.String(required=True, allow_none=False)
+    location_id = fields.String(required=False)
 
     @pre_load
     def convert_dates(self, data, **kwargs):
