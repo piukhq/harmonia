@@ -3,7 +3,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
-from app.models import IdentifierType
 
 PROVIDER_SLUG = "costa"
 
@@ -45,8 +44,5 @@ class Costa(QueueAgent):
     def get_transaction_id(data: dict) -> str:
         return data["transaction_id"]
 
-    def get_primary_identifier(self, data: dict) -> str:
-        return data["merchant_identifier"]
-
-    def get_mids(self, data: dict) -> list[tuple]:
-        return [(IdentifierType.PRIMARY, self.get_primary_identifier(data))]
+    def get_primary_mids(self, data: dict) -> list[str]:
+        return [data["merchant_identifier"]]
