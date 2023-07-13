@@ -11,13 +11,20 @@ log = get_logger("the-works")
 
 
 class TheWorksAPI:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, failover_url: str) -> None:
         self.base_url = base_url
+        self.failover_url = failover_url
         self.session = requests_retry_session()
 
     def post(self, body: dict = None, *, name: str) -> requests.models.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         response = self.session.post(self.base_url, json=body)
+        if not response.ok:
+            user_id, password = self.get_credentials(failover=True)
+            if body:
+                body["params"][2] = user_id
+                body["params"][3] = password
+            response = self.session.post(self.failover_url, json=body)
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
@@ -48,9 +55,9 @@ class TheWorksAPI:
         }
         return self.post(body, name="retrieve_transaction_history").json()
 
-    def get_credentials(self) -> tuple[str, str]:
+    def get_credentials(self, failover: bool = False) -> tuple[str, str]:
         config = Configuration(
-            "the-works",
+            "the-works-failover" if failover else "the-works",
             Configuration.TRANSACTION_MATCHING,
             settings.VAULT_URL,
             None,
