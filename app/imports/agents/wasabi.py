@@ -83,6 +83,8 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
         for raw_data in reader:
             if raw_data["Card Type Name"] not in self.payment_provider_map:
                 continue
+            if raw_data["Receipt No_"] == "\x00":
+                continue
 
             # raising an error for bad datetime format at this point allows the rest of the file to be imported.
             self.get_transaction_date(raw_data)
