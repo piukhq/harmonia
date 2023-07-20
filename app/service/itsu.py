@@ -48,8 +48,8 @@ class ItsuApi:
         url = urljoin(self.base_url, "token")
         payload = {"username": credentials["username"], "password": credentials["password"], "grant_type": "password"}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        payload = urlencode(payload)
-        response = self.session.post(url, data=payload, headers=headers)
+        url_encoded_payload = urlencode(payload)
+        response = self.session.post(url, data=url_encoded_payload, headers=headers)
         response.raise_for_status()
 
         return response.json()["access_token"]
