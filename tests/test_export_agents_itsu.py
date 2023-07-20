@@ -118,7 +118,7 @@ def test_export(
         "request_timestamp": mock.ANY,
         "response": RESPONSE_BODY,
         "response_timestamp": mock.ANY,
-        "request_url": "http://atreemouat.itsucomms.com/api/Transaction/PostOrder",
+        "request_url": "http://localhost/api/Transaction/PostOrder",
         "retry_count": 0,
     }
     assert mock_atlas.queue_audit_message.call_count == 1

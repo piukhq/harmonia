@@ -19,7 +19,7 @@ class Itsu(SingularExportAgent):
 
     provider_slug = PROVIDER_SLUG
 
-    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
+    config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost/"))
 
     def __init__(self):
         super().__init__()
