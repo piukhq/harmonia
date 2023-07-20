@@ -1,9 +1,10 @@
+import functools
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlencode, urljoin
 
-import arrow
 import requests
 from user_auth_token import UserTokenStore
 
@@ -14,7 +15,31 @@ from app.reporting import get_logger
 log = get_logger("itsu")
 
 ITSU_SECRET_KEY = "itsu-outbound-compound-key-join"
+TOKEN_CACHE_TTL = 259199
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def ttl_cache(func):
+    cache = {}
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        key = (args, frozenset(kwargs.items()))
+
+        if key in cache:
+            result, timestamp = cache[key]
+            current_time = datetime.now()
+
+            if current_time - timestamp < TOKEN_CACHE_TTL:
+                return result
+            else:
+                del cache[key]
+
+        result = func(*args, **kwargs)
+        cache[key] = (result, datetime.now())
+        return result
+
+    return wrapper
 
 
 class ItsuApi:
@@ -36,14 +61,8 @@ class ItsuApi:
             log.exception(e)
             raise
 
-    def _store_token(self, token: str, current_timestamp: int) -> None:
-        token_dict = {
-            f"{self.scheme_slug.replace('-', '_')}_access_token": token,
-            "timestamp": current_timestamp,
-        }
-        self.token_store.set(scheme_account_id=self.scheme_slug, token=json.dumps(token_dict))
-
-    def _refresh_token(self) -> str:
+    @ttl_cache
+    def _get_token(self) -> str:
         credentials = self._read_secret(ITSU_SECRET_KEY)
         url = urljoin(self.base_url, "token")
         payload = {
@@ -58,37 +77,8 @@ class ItsuApi:
 
         return response.json()["access_token"]
 
-    def _token_is_valid(self, token: dict, current_timestamp: int) -> bool:
-        if isinstance(token["timestamp"], list):
-            token_timestamp = token["timestamp"][0]
-        else:
-            token_timestamp = token["timestamp"]
-
-        return current_timestamp - token_timestamp < self.oauth_token_timeout
-
-    def get_token(self):
-        have_valid_token = False
-        current_timestamp = arrow.utcnow().int_timestamp
-        token = ""
-        try:
-            cached_token = json.loads(self.token_store.get(self.scheme_slug))
-            try:
-                if self._token_is_valid(cached_token, current_timestamp):
-                    have_valid_token = True
-                    token = cached_token[f"{self.scheme_slug.replace('-', '_')}_access_token"]
-            except (KeyError, TypeError) as e:
-                log.exception(e)
-        except (KeyError, self.token_store.NoSuchToken):
-            pass
-
-        if not have_valid_token:
-            token = self._refresh_token()
-            self._store_token(token, current_timestamp)
-
-        return f"Bearer {token}"
-
     def post(self, endpoint: str, body: dict = None, *, name: str) -> requests.models.Response:
-        auth_token = self.get_token()
+        auth_token = f"Bearer {self._get_token()}"
         headers = {"Authorization": auth_token}
         log.debug(f"Posting {name} request with parameters: {body}.")
         url = f"{self.base_url}{endpoint}"
