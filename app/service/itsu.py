@@ -46,7 +46,11 @@ class ItsuApi:
     def _refresh_token(self) -> str:
         credentials = self._read_secret(ITSU_SECRET_KEY)
         url = urljoin(self.base_url, "token")
-        payload = {"username": credentials["username"], "password": credentials["password"], "grant_type": "password"}
+        payload = {
+            "username": credentials["username"],
+            "password": credentials["password"],
+            "grant_type": "password",
+        }  # type:ignore
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         url_encoded_payload = urlencode(payload)
         response = self.session.post(url, data=url_encoded_payload, headers=headers)
