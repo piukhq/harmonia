@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 from urllib.parse import urlencode, urljoin
 
@@ -14,7 +13,6 @@ log = get_logger("itsu")
 
 ITSU_SECRET_KEY = "itsu-outbound-compound-key-join"
 TOKEN_CACHE_TTL = 259198
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 redis = Redis.from_url(
     settings.REDIS_URL,
@@ -33,8 +31,7 @@ class ItsuApi:
     @staticmethod
     def _read_secret(key: str) -> str:
         try:
-            root_path = Path(ROOT_DIR).parents[0]
-            path = Path(os.path.join(root_path, "mnt/secrets")) / key
+            path = Path(settings.SECRETS_PATH) / key
             with path.open() as f:
                 return json.loads(f.read())
         except FileNotFoundError as e:
