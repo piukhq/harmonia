@@ -16,3 +16,4 @@ matching_agents.add("bpl-trenette", "app.matching.agents.generic_spotted.Generic
 matching_agents.add("bpl-cortado", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("costa", "app.matching.agents.costa.Costa")
 matching_agents.add("the-works", "app.matching.agents.generic_spotted.GenericSpotted")
+matching_agents.add("itsu", "app.matching.agents.itsu.Itsu")
