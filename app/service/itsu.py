@@ -3,23 +3,16 @@ from pathlib import Path
 from urllib.parse import urlencode, urljoin
 
 import requests
-from redis.client import Redis
 
 import settings
 from app.core.requests_retry import requests_retry_session
+from app.db import redis
 from app.reporting import get_logger
 
 log = get_logger("itsu")
 
 ITSU_SECRET_KEY = "itsu-outbound-compound-key-join"
 TOKEN_CACHE_TTL = 259198
-
-redis = Redis.from_url(
-    settings.REDIS_URL,
-    socket_connect_timeout=3,
-    socket_keepalive=True,
-    retry_on_timeout=False,
-)
 
 
 class ItsuApi:
