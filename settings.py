@@ -175,4 +175,4 @@ API_AUTH_ENABLED = getenv("TXM_API_AUTH_ENABLED", default="true", conv=boolconv)
 # Azure AD application details
 AAD_TENANT_ID = getenv("TXM_AAD_TENANT_ID", required=API_AUTH_ENABLED)
 AAD_APPLICATION_URI = getenv("TXM_AAD_APPLICATION_URI", default="api://bink.com/harmonia")
-SECRETS_PATH = getenv("SECRETS_PATH", default="mnt/secrets")
+SECRETS_PATH = getenv("SECRETS_PATH", default="/mnt/secrets")
