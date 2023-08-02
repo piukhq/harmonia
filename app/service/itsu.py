@@ -32,7 +32,7 @@ class ItsuApi:
             raise
 
     def _get_token(self) -> str:
-        secret_key_name = f"{self.scheme_slug}_harmonia_oauth_key"
+        secret_key_name = f"{self.scheme_slug}-harmonia-oauth-key"
         if redis.exists(secret_key_name):
             return redis.get(secret_key_name).decode("utf-8")
         credentials = self._read_secret(ITSU_SECRET_KEY)
