@@ -1,4 +1,3 @@
-import hashlib
 import uuid
 
 import pendulum
@@ -33,7 +32,7 @@ class Itsu(SingularExportAgent):
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
-        return hashlib.sha1("Bink-Itsu-" f"{export_transaction.decrypted_credentials['email']}".encode()).hexdigest()
+        return export_transaction.decrypted_credentials["card_number"]
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         dt = pendulum.instance(export_transaction.transaction_date)

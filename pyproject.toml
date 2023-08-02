@@ -19,6 +19,12 @@ packages = [
 [[tool.poetry.source]]
 name = "bink-pypi"
 url = "https://pypi.gb.bink.com/simple"
+priority = "primary"
+
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
 
 [tool.poetry.scripts]
 tximport = "app.imports.cli:cli"
