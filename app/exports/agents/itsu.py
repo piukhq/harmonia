@@ -36,6 +36,7 @@ class Itsu(SingularExportAgent):
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         dt = pendulum.instance(export_transaction.transaction_date)
+        amount = export_transaction.spend_amount / 100
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
@@ -48,8 +49,8 @@ class Itsu(SingularExportAgent):
                                     "MemberNumber": export_transaction.decrypted_credentials["card_number"],
                                     "ExternalIdentifier": {"ExternalID": "", "ExternalSource": ""},
                                 },
-                                "TotalAmount": export_transaction.spend_amount,
-                                "PaidAmount": export_transaction.spend_amount,
+                                "TotalAmount": amount,
+                                "PaidAmount": amount,
                                 "OrderStatusID": 1,
                                 "OrderTypeID": 1,
                                 "OrderChannelID": 1,
@@ -57,7 +58,7 @@ class Itsu(SingularExportAgent):
                                     {
                                         "ItemID": "1",
                                         "ItemName": "Bink Transaction",
-                                        "ItemPrice": export_transaction.spend_amount,
+                                        "ItemPrice": amount,
                                     }
                                 ],
                             }
