@@ -33,8 +33,10 @@ class ItsuApi:
 
     def _get_token(self) -> str:
         secret_key_name = f"{self.scheme_slug}-harmonia-oauth-key"
-        if redis.exists(secret_key_name):
-            return redis.get(secret_key_name).decode("utf-8")
+
+        if token := redis.get(secret_key_name):
+            return token
+
         credentials = self._read_secret(ITSU_SECRET_KEY)
         url = urljoin(self.base_url, "token")
         payload = {
@@ -44,11 +46,14 @@ class ItsuApi:
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         url_encoded_payload = urlencode(payload)
+
         response = self.session.post(url, data=url_encoded_payload, headers=headers)
         response.raise_for_status()
         token = response.json()["access_token"]
+
         redis.set(secret_key_name, token)
         redis.expire(secret_key_name, TOKEN_CACHE_TTL)
+
         return token
 
     def post(self, endpoint: str, body: dict = None, *, name: str) -> requests.models.Response:
