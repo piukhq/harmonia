@@ -3,7 +3,6 @@ from uuid import uuid4
 
 import pendulum
 
-from app.currency import to_pounds
 from harness.providers.base import BaseImportDataProvider
 
 
@@ -15,7 +14,7 @@ class Costa(BaseImportDataProvider):
                 "payment_card_type": fixture["payment_provider"]["slug"],
                 "payment_card_first_six": user["first_six"],
                 "payment_card_last_four": user["last_four"],
-                "amount": to_pounds(transaction["amount"]),
+                "amount": transaction["amount"] / 100,
                 "currency_code": "GBP",
                 "auth_code": transaction["auth_code"],
                 "date": pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
