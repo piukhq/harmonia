@@ -93,6 +93,7 @@ def identify_user(
                 feed_type=feed_type,
                 merchant_identifier_ids=merchant_identifier_ids,
                 card_token=card_token,
+                match_group=match_group,
             )
             return
         except Exception as ex:

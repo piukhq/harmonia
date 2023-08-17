@@ -22,7 +22,7 @@ def _validate_key(key: str) -> None:
         raise ValueError(f"Config key must start with `{KEY_PREFIX}`")
 
 
-def get(key: str, *, default: str = "", session: Session) -> t.Optional[str]:
+def get(key: str, *, default: str = "", session: Session) -> str:
     _validate_key(key)
     try:
         val = t.cast(t.Optional[str], redis.get(key))
@@ -82,7 +82,7 @@ class Config:
     def __init__(self, *args: ConfigValue):
         self._name_val_map = {arg.name: arg for arg in args}
 
-    def get(self, name: str, session: Session):
+    def get(self, name: str, session: Session) -> str:
         config_value = self._name_val_map.get(name)
         if config_value is None:
             raise ConfigError(f"{Config.__name__} contains no {ConfigValue.__name__} with name {name}.")

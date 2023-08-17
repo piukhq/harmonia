@@ -93,3 +93,10 @@ no_site_packages = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.pyright]
+reportGeneralTypeIssues = false
+reportPrivateImportUsage = false
+
+[tool.ruff]
+line-length = 120
