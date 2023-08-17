@@ -10,7 +10,7 @@ def slim_chickens():
     return SlimChickens()
 
 
-MERCHANT_SLUG = "slim_chickens"
+MERCHANT_SLUG = "slim-chickens"
 
 
 TRANSACTION_DATA = [
@@ -30,7 +30,7 @@ TRANSACTION_DATA = [
 
 
 def test_slim_chickens_instance(slim_chickens):
-    assert slim_chickens.provider_slug == "slim_chickens"
+    assert slim_chickens.provider_slug == "slim-chickens"
     assert slim_chickens.feed_type == FeedType.MERCHANT
 
 

@@ -4,7 +4,7 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 
-PROVIDER_SLUG = "slim_chickens"
+PROVIDER_SLUG = "slim-chickens"
 
 SUPPORTED_PAYMENT_CARD_TYPES = ["VISA", "MASTER"]
 
