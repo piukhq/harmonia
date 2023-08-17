@@ -35,22 +35,25 @@ class SlimChickens(QueueAgent):
         }
 
     def _do_import(self, body: dict) -> None:
+        txid = self.get_transaction_id(body)
+
         is_supported_card_type = body["payment_card_type"] in SUPPORTED_PAYMENT_CARD_TYPES
 
         if not is_supported_card_type:
             self.log.warning(
-                f"Discarding transaction due to unsupported payment card type {body['payment_card_type']!r}, "
+                f"Discarding transaction {txid} due to unsupported payment card type {body['payment_card_type']!r}, "
                 f"expected one of {SUPPORTED_PAYMENT_CARD_TYPES!r}",
             )
             return
 
         with db.session_scope() as session:
             spend_threshold = int(self.config.get("spend_threshold", session=session))
-            is_eligible_amount = body["amount"] >= spend_threshold
+
+        is_eligible_amount = body["amount"] >= spend_threshold
 
         if not is_eligible_amount:
             self.log.warning(
-                f"Discarding transaction due to ineligible amount {body['amount']!r}, "
+                f"Discarding transaction {txid} due to ineligible amount {body['amount']!r}, "
                 f"expected >= {spend_threshold!r}",
             )
             return
