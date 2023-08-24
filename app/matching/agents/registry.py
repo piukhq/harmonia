@@ -17,3 +17,4 @@ matching_agents.add("bpl-cortado", "app.matching.agents.generic_spotted.GenericS
 matching_agents.add("costa", "app.matching.agents.costa.Costa")
 matching_agents.add("the-works", "app.matching.agents.generic_spotted.GenericSpotted")
 matching_agents.add("itsu", "app.matching.agents.itsu.Itsu")
+matching_agents.add("slim-chickens", "app.matching.agents.slim_chickens.SlimChickens")

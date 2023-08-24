@@ -22,8 +22,7 @@ class SlimChickens(BaseImportDataProvider):
                 "currency_code": "GBP",
                 "auth_code": transaction["auth_code"],
                 "date": pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
-                "merchant_identifier": transaction["identifier"],
-                "retailer_location_id": "store_1a",
+                "retailer_location_id": transaction["location_id"],
             }
             for user in fixture["users"]
             for transaction in user["transactions"]
