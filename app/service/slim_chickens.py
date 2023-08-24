@@ -1,5 +1,6 @@
 import hashlib
 import json
+from typing import Any, Dict
 
 import requests
 
@@ -19,7 +20,7 @@ class SlimChickensApi:
         self.auth_header = auth_header
 
     @staticmethod
-    def _generate_auth_hash(endpoint: str, payload: dict, secret: str):
+    def _generate_auth_hash(endpoint: str, payload: Dict[Any, Any], secret: str):
         input_string = endpoint + json.dumps(payload) + secret
         return hashlib.sha256(input_string.encode()).hexdigest()
 
