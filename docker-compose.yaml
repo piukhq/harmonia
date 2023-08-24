@@ -1,14 +1,211 @@
-version: '3'
+version: "3"
 services:
   postgres:
-    image: "postgres:latest"
-    ports:
-      - "5432:5432"
+    build: ./tests/integration/postgres
     environment:
-      POSTGRES_USER: "postgres"
       POSTGRES_HOST_AUTH_METHOD: "trust"
-      POSTGRES_DB: "harmonia"
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "SELECT 1"]
+      interval: "5s"
+      timeout: "10s"
+      retries: 3
+
+  rabbitmq:
+    image: "rabbitmq:management"
+
   redis:
     image: "redis:latest"
+
+  azure-blob-storage:
+    image: "mcr.microsoft.com/azure-storage/azurite:latest"
     ports:
-      - "6379:6379"
+      - "10000:10000"
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--blobPort", "10000"]
+
+  api-reflector:
+    image: "ghcr.io/binkhq/api-reflector:0.8.2"
+    depends_on:
+      postgres:
+        condition: "service_healthy"
+    ports:
+      - "6502"
+    environment:
+      secret_key: "YIrNJuU0HLnT62Kt4COy0B9KQKlJHtD6ugDTTfg2ySQ"
+      postgres_dsn: "postgresql://api_reflector@postgres/api_reflector"
+
+  harmonia-migrate:
+    image: "harmonia"
+    build: "."
+    entrypoint: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: "service_healthy"
+    environment:
+      TXM_API_AUTH_ENABLED: "false"
+      TXM_POSTGRES_URI: "postgresql://harmonia@postgres/harmonia"
+      TXM_REDIS_URL: "redis://redis/0"
+
+  harmonia-import-agent-amex-auth: &harmonia-container
+    image: "harmonia"
+    build: "."
+    entrypoint:
+      ["tximport", "--agent", "amex-auth", "--no-user-input", "--no-prometheus"]
+    depends_on:
+      harmonia-migrate:
+        condition: service_completed_successfully
+    environment: &env
+      TXM_API_AUTH_ENABLED: "false"
+      TXM_PUSH_PROMETHEUS_METRICS: "false"
+      TXM_POSTGRES_URI: "postgresql://harmonia@postgres/harmonia"
+      TXM_AMQP_DSN: "amqp://guest:guest@rabbitmq:5672//"
+      TXM_REDIS_URL: "redis://redis/0"
+      TXM_BLOB_STORAGE_DSN: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azure-blob-storage:10000/devstoreaccount1;"
+      TXM_VAULT_URL: "http://api-reflector:6502/mock/vault"
+      TXM_HERMES_URL: "http://api-reflector:6502/mock/hermes"
+      TXM_EUROPA_URL: "http://api-reflector:6502/mock/europa"
+      TXM_DEBUG: "false" # this should be false unless you need to debug a specific error
+
+  harmonia-import-agent-amex-settlement:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "amex-settlement",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-visa-auth:
+    <<: *harmonia-container
+    entrypoint:
+      ["tximport", "--agent", "visa-auth", "--no-user-input", "--no-prometheus"]
+
+  harmonia-import-agent-visa-settlement:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "visa-settlement",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-visa-refund:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "visa-refund",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-mastercard-auth:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "mastercard-auth",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-mastercard-settled:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "mastercard-settled",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-mastercard-refund:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "mastercard-refund",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-cooperative:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "cooperative",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-costa:
+    <<: *harmonia-container
+    entrypoint:
+      ["tximport", "--agent", "costa", "--no-user-input", "--no-prometheus"]
+
+  harmonia-import-agent-harvey-nichols:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "harvey-nichols",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-iceland-bonus-card:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "iceland-bonus-card",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-wasabi-club:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "wasabi-club",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-import-agent-itsu:
+    <<: *harmonia-container
+    entrypoint:
+      ["tximport", "--agent", "itsu", "--no-user-input", "--no-prometheus"]
+
+  harmonia-import-agent-slim-chickens:
+    <<: *harmonia-container
+    entrypoint:
+      [
+        "tximport",
+        "--agent",
+        "slim-chickens",
+        "--no-user-input",
+        "--no-prometheus",
+      ]
+
+  harmonia-api:
+    <<: *harmonia-container
+    entrypoint: ["flask", "run", "--host", "0.0.0.0"]
+    ports:
+      - "8100:5000"
+    environment:
+      <<: *env
+      FLASK_APP: "app.api.app:app"
