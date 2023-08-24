@@ -16,7 +16,7 @@ MERCHANT_SLUG = "slim-chickens"
 TRANSACTION_DATA = [
     {
         "transaction_id": "test_transaction_id_1",
-        "payment_card_type": "visa",
+        "payment_card_type": "VISA",
         "payment_card_first_six": "666666",
         "payment_card_last_four": "4444",
         "amount": 2399,
