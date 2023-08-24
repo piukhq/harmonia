@@ -44,7 +44,7 @@ class SlimChickens(SingularExportAgent):
 
     def __init__(self):
         super().__init__()
-        self.secrets = _read_secrets("slim-chickens-compound-key-join")
+        self.secrets = _read_secrets("slim-chickens-tx-export-secrets")
         self.session = requests_retry_session()
         self.bink_prometheus = bink_prometheus
 

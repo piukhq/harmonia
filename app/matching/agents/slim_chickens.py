@@ -16,9 +16,8 @@ class SlimChickens(BaseMatchingAgent):
         * Query: Scheme + MID + Date + Amount + Auth Code
         * Fallback: L4
         """
-        momo = scheme_transactions.all()
         scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.payment_provider_slug == "VISA",
+            models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
             models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
         )
 

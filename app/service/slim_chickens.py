@@ -8,8 +8,6 @@ from app.reporting import get_logger
 
 log = get_logger("slim-chickens")
 
-SLIM_CHICKENS_SECRET_KEY = "slim-chickens-compound-key-join"
-
 
 class SlimChickensApi:
     def __init__(self, base_url: str, client_secret: str, client_id: str, auth_header: str) -> None:
