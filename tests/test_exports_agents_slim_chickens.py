@@ -102,7 +102,7 @@ def test_get_auth_token(
     mock_read_secrets, export_transaction: models.ExportTransaction, db_session: db.Session
 ) -> None:
 
-    url = f"https://demoapi.podifi.com/search"
+    url = "https://demoapi.podifi.com/search"
     json = WALLET_DATA
     responses.add(responses.POST, url, json=json)
 
