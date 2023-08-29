@@ -38,8 +38,8 @@ def _read_secrets(key: str) -> str:
 class SlimChickens(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
     config = Config(
-        ConfigValue("base_url", key=BASE_URL_KEY, default="https://pos.sandbox.uk.eagleeye.com"),
-        ConfigValue("auth_url", key=AUTH_URL_KEY, default="https://demoapi.podifi.com"),
+        ConfigValue("base_url", key=BASE_URL_KEY, default="https://localhost"),
+        ConfigValue("auth_url", key=AUTH_URL_KEY, default="https://localhost-auth"),
     )
 
     def __init__(self):
