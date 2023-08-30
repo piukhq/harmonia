@@ -1,6 +1,7 @@
 import hashlib
 import json
 from typing import Any, Dict, Optional
+from urllib.parse import urljoin
 
 import requests
 
@@ -31,7 +32,7 @@ class SlimChickensApi:
             "X-EES-AUTH-HASH": auth_hash,
         }
         log.debug(f"Posting {name} request with parameters: {body}.")
-        url = f"{self.base_url}{endpoint}"
+        url = urljoin(self.base_url, endpoint)
         response = self.session.post(url, json=body, headers=headers)
         response.raise_for_status()
         return response

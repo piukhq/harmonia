@@ -1,6 +1,7 @@
 import base64
 import json
 from pathlib import Path
+from urllib.parse import urljoin
 
 import pendulum
 from requests import Session
@@ -15,7 +16,7 @@ from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.service import atlas, slim_chickens
 
-SLIM_CHICKENS_SECRET_KEY = "slim-chickens-tx-export-secret-keys"
+SLIM_CHICKENS_SECRET_KEY = "slim-chickens-tx-export-secrets"
 
 PROVIDER_SLUG = "slim-chickens"
 
@@ -44,7 +45,7 @@ class SlimChickens(SingularExportAgent):
 
     def __init__(self):
         super().__init__()
-        self.secrets = _read_secrets("slim-chickens-tx-export-secrets")
+        self.secrets = _read_secrets(SLIM_CHICKENS_SECRET_KEY)
         self.session = requests_retry_session()
         self.bink_prometheus = bink_prometheus
 
@@ -57,7 +58,7 @@ class SlimChickens(SingularExportAgent):
         headers = {"Authorization": f"Basic {self.auth_header}"}
 
         auth_url = self.config.get("auth_url", session)
-        url = f"{auth_url}/search"
+        url = urljoin(auth_url, "search")
 
         body = {"channelKeys": [self.secrets["channel_key"]], "types": ["wallet"]}
         resp = self.session.post(url, json=body, headers=headers)
@@ -95,12 +96,12 @@ class SlimChickens(SingularExportAgent):
             self.secrets["client_id"],
             self.auth_header,
         )
-        endpoint = "/connect/account/redeem"
+        endpoint = "connect/account/redeem"
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        request_url = api.base_url + endpoint
+        request_url = urljoin(api.base_url, endpoint)
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
