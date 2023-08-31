@@ -98,21 +98,21 @@ def export_transaction() -> models.ExportTransaction:
 
 @responses.activate
 @mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)
-def test_get_auth_token(
+def test_get_transaction_token(
     mock_read_secrets, export_transaction: models.ExportTransaction, db_session: db.Session
 ) -> None:
 
-    url = "https://demoapi.podifi.com/search"
+    url = "https://localhost-auth/search"
     json = WALLET_DATA
     responses.add(responses.POST, url, json=json)
 
     slim_chickens = SlimChickens()
-    auth_token = slim_chickens.get_auth_token(export_transaction, session=db_session)
+    auth_token = slim_chickens.get_transaction_token(export_transaction, session=db_session)
     assert slim_chickens.auth_header == "ZW1haWxAdGVzdC5jb20tdGVzdDpwYXNzcGFzcw=="
     assert auth_token == "inprogress_voucher"
 
 
-@mock.patch("app.exports.agents.slim_chickens.SlimChickens.get_auth_token", return_value="token-123")
+@mock.patch("app.exports.agents.slim_chickens.SlimChickens.get_transaction_token", return_value="token-123")
 @mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)
 def test_make_export_data(
     mock_read_secrets, mock_auth_token, export_transaction: models.ExportTransaction, db_session: db.Session
@@ -134,7 +134,7 @@ def test_make_export_data(
     assert result == expected_result
 
 
-@mock.patch("app.exports.agents.slim_chickens.SlimChickens.get_auth_token", return_value="token-123")
+@mock.patch("app.exports.agents.slim_chickens.SlimChickens.get_transaction_token", return_value="token-123")
 @mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)
 @mock.patch("app.exports.agents.slim_chickens.atlas")
 @mock.patch("app.service.slim_chickens.SlimChickensApi.post_matched_transaction", return_value=RESPONSE_BODY)
@@ -154,7 +154,7 @@ def test_export(
     slim_chickens.export(export_data, session=db_session)
 
     # Post to SlimChickens
-    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "/connect/account/redeem")
+    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "connect/account/redeem")
     mock_get_token.assert_called_once_with(export_transaction, db_session)
 
     # Post to Atlas
