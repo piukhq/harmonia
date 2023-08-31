@@ -165,7 +165,7 @@ def test_export(
         "request_timestamp": mock.ANY,
         "response": RESPONSE_BODY,
         "response_timestamp": mock.ANY,
-        "request_url": "https://pos.sandbox.uk.eagleeye.com/connect/account/redeem",
+        "request_url": "https://localhost/connect/account/redeem",
         "retry_count": 0,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
