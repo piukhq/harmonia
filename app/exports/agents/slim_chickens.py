@@ -49,7 +49,7 @@ class SlimChickens(SingularExportAgent):
         self.session = requests_retry_session()
         self.bink_prometheus = bink_prometheus
 
-    def get_auth_token(self, transaction: models.ExportTransaction, session: Session) -> str:
+    def get_transaction_token(self, transaction: models.ExportTransaction, session: Session) -> str:
         username = transaction.decrypted_credentials["email"]
         password = transaction.decrypted_credentials["password"]
         auth_credentials = f"{username}-{self.secrets['channel_key']}:{password}"
@@ -75,7 +75,7 @@ class SlimChickens(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "token": self.get_auth_token(export_transaction, session),
+                        "token": self.get_transaction_token(export_transaction, session),
                         "location": {
                             "incomingIdentifier": export_transaction.location_id,
                             "parentIncomingIdentifier": "slimchickens",
