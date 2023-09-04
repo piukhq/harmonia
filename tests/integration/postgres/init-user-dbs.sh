@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 IFS=$'\n\t'
+
+# create users and databases
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
 	CREATE USER harmonia;
 	CREATE DATABASE harmonia;
@@ -11,5 +13,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     ALTER DATABASE api_reflector OWNER TO api_reflector;
 EOSQL
 
-# GRANT ALL PRIVILEGES ON DATABASE harmonia TO harmonia;
-# GRANT ALL PRIVILEGES ON DATABASE api_reflector TO api_reflector;
+# create tables and load fixtures
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "api_reflector" < /usr/local/fixtures/api_reflector.sql

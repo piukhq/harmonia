@@ -28,7 +28,7 @@ services:
       postgres:
         condition: "service_healthy"
     ports:
-      - "6502"
+      - "6502:6502"
     environment:
       secret_key: "YIrNJuU0HLnT62Kt4COy0B9KQKlJHtD6ugDTTfg2ySQ"
       postgres_dsn: "postgresql://api_reflector@postgres/api_reflector"
