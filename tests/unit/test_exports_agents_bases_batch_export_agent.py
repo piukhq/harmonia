@@ -6,7 +6,7 @@ import pytest
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, BatchExportAgent
-from tests.fixtures import get_or_create_export_transaction, get_or_create_pending_export
+from tests.unit.fixtures import get_or_create_export_transaction, get_or_create_pending_export
 
 MERCHANT_SLUG = "mock-batch-export-agent"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{MERCHANT_SLUG}.schedule"

@@ -11,7 +11,7 @@ from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.the_works import DedupeDelayRetry, TheWorks
 from app.reporting import sanitise_logs
-from tests.fixtures import (
+from tests.unit.fixtures import (
     Default,
     get_or_create_export_transaction,
     get_or_create_pending_export,

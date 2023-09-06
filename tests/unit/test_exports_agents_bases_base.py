@@ -3,7 +3,7 @@ import pytest
 from app import db, models
 from app.exports.agents import AgentExportData, BaseAgent
 from app.exports.models import ExportTransactionStatus
-from tests.fixtures import get_or_create_export_transaction, get_or_create_pending_export
+from tests.unit.fixtures import get_or_create_export_transaction, get_or_create_pending_export
 
 MERCHANT_SLUG = "mock-base-agent"
 

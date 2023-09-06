@@ -10,7 +10,7 @@ from app import db
 from app.exports.agents.bpl import Asos, Bpl, Trenette
 from app.exports.models import ExportTransaction
 from app.feeds import FeedType
-from tests.fixtures import Default, get_or_create_export_transaction
+from tests.unit.fixtures import Default, get_or_create_export_transaction
 
 TRANSACTION_ID = "582228491099278"
 TRANSACTION_DATE = pendulum.DateTime(2022, 10, 26, 17, 14, 8, 838138, tzinfo=pendulum.timezone("Europe/London"))

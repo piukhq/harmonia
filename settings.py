@@ -159,9 +159,8 @@ SERVICE_API_KEY = "F616CE5C88744DD52DB628FAD8B3D"
 # Base URL for Merchant API configuration service.
 EUROPA_URL = getenv("TXM_EUROPA_URL", required=False)
 
-# Vault connection details
-VAULT_URL = getenv("TXM_VAULT_URL", required=False)
-VAULT_KEY_PREFIX = getenv("TXM_VAULT_KEY_PREFIX", default="secret/harmonia")
+# Mount point for KeyVault secrets. For local dev you will want to change this.
+SECRETS_DIR = getenv("TXM_SECRETS_DIR", default="/mnt/secrets")
 
 # Prometheus settings
 PROMETHEUS_PUSH_GATEWAY = getenv("TXM_PROMETHEUS_PUSH_GATEWAY", default="http://localhost:9100")

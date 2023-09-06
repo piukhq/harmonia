@@ -9,14 +9,13 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
-from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "itsu"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 
-class Itsu(FileAgent, SoteriaConfigMixin):
+class Itsu(FileAgent):
     feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
 

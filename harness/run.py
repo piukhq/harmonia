@@ -12,8 +12,6 @@ from uuid import uuid4
 import click
 import pendulum
 import rq
-import soteria.configuration
-import soteria.security
 import toml
 from azure.keyvault.secrets import SecretClient
 from marshmallow import ValidationError, fields, pre_load, validate
@@ -281,7 +279,7 @@ def load_fixture(fixture_file: t.IO[str]) -> dict:
     content = toml.load(fixture_file)
 
     try:
-        fixture = FixtureSchema().load(content)
+        fixture: dict = FixtureSchema().load(content)
     except ValidationError as ex:
         click.secho("Failed to load fixture", fg="red", bold=True)
         cpprint(ex.messages)
@@ -374,54 +372,6 @@ def patch_secret_client():
             return mock
 
     return MockSecretClient("http://vault", "{}")
-
-
-def patch_soteria_service():
-    class MockSoteriaConfiguration(soteria.configuration.Configuration):
-        TRANSACTION_MATCHING = "mock-handler"
-
-        data = {
-            "security_credentials": {
-                "outbound": {
-                    "credentials": [
-                        {
-                            "credential_type": "compound_key",
-                            "value": {
-                                "token": "testing token",
-                                "user_id": "testing id",
-                                "password": "testing password",
-                            },
-                        },
-                        {"credential_type": "merchant_public_key", "value": PGP_PUBLIC_KEY},
-                        {"credential_type": "bink_private_key", "value": PGP_PRIVATE_KEY},
-                    ],
-                    "service": soteria.configuration.Configuration.RSA_SECURITY,
-                }
-            }
-        }
-        merchant_url = ""
-
-        def __init__(self, *args, **kwargs):
-            click.echo(f"{type(self).__name__} was instantiated!")
-            click.echo(f"args: {args}")
-            click.echo(f"kwargs: {kwargs}")
-
-        @property
-        def security_credentials(self):
-            return self.data["security_credentials"]
-
-        def get_security_credentials(self, key_items):
-            return self.security_credentials
-
-    def mock_get_security_agent(*args, **kwargs):
-        class MockSoteriaAgent:
-            def encode(self, body: str) -> dict:
-                return {"body": body}
-
-        return MockSoteriaAgent()
-
-    soteria.configuration.Configuration = MockSoteriaConfiguration
-    soteria.security.get_security_agent = mock_get_security_agent
 
 
 ImportDataType = t.Union[bytes, t.List[dict]]
@@ -572,7 +522,6 @@ def main(fixture_file: t.IO[str], dump_files: bool, import_only: bool, with_prom
         return
 
     patch_hermes_service(fixture)
-    patch_soteria_service()
 
     with db.session_scope() as session:
         create_merchant_identifier(fixture, session)

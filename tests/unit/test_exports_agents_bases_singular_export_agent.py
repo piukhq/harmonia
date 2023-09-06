@@ -11,7 +11,7 @@ from app import db, models
 from app.exports.agents import AgentExportData, SingularExportAgent
 from app.exports.exceptions import MissingExportData
 from app.exports.models import ExportTransactionStatus
-from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_pending_export
+from tests.unit.fixtures import Default, get_or_create_export_transaction, get_or_create_pending_export
 
 TRANSACTION_ID = Default.transaction_id
 TRANSACTION_DATE = Default.transaction_date

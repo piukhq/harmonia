@@ -9,7 +9,7 @@ from app import db
 from app.feeds import FeedType
 from app.imports.agents.visa import VisaAuth, VisaRefund, VisaSettlement, get_key_value, validate_mids
 from app.models import IdentifierType
-from tests.fixtures import Default, SampleTransactions, get_or_create_import_transaction
+from tests.unit.fixtures import Default, SampleTransactions, get_or_create_import_transaction
 
 PRIMARY_ID = Default.primary_mids[0]
 SECONDARY_ID = Default.secondary_mid

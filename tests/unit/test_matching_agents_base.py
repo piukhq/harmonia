@@ -7,7 +7,7 @@ from app import db, models
 from app.matching.agents.generic_loyalty import GenericLoyalty
 from app.matching.agents.generic_spotted import GenericSpotted
 from app.models import IdentifierType
-from tests.fixtures import (
+from tests.unit.fixtures import (
     Default,
     get_or_create_merchant_identifier,
     get_or_create_payment_transaction,

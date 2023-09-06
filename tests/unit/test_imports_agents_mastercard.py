@@ -10,7 +10,7 @@ from app import db
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.mastercard import MastercardAuth, MastercardTGX2Settlement, _make_settlement_key
-from tests.fixtures import SampleTransactions, get_or_create_import_transaction, get_or_create_merchant_identifier
+from tests.unit.fixtures import SampleTransactions, get_or_create_import_transaction, get_or_create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "mastercard"
 

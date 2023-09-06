@@ -18,7 +18,7 @@ from app.imports.agents.bases.base import (
 from app.imports.agents.visa import VisaAuth
 from app.imports.exceptions import MissingMID
 from app.models import IdentifierType, TransactionStatus
-from tests.fixtures import Default, SampleTransactions, get_or_create_merchant_identifier
+from tests.unit.fixtures import Default, SampleTransactions, get_or_create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "visa"
 MATCH_GROUP = "da34aa2a4abf4cc190c3519f7c6e2f88"

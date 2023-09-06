@@ -1,9 +1,8 @@
 import uuid
 
 import requests
-from soteria.configuration import Configuration
 
-import settings
+from app import secrets
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
 
@@ -56,14 +55,7 @@ class TheWorksAPI:
         return self.post(body, name="retrieve_transaction_history").json()
 
     def get_credentials(self, failover: bool = False) -> tuple[str, str]:
-        config = Configuration(
-            "the-works-failover" if failover else "the-works",
-            Configuration.TRANSACTION_MATCHING,
-            settings.VAULT_URL,
-            None,
-            settings.EUROPA_URL,
-            settings.AAD_TENANT_ID,
-        )
-        user_id = config.security_credentials["outbound"]["credentials"][0]["value"]["user_id"]
-        password = config.security_credentials["outbound"]["credentials"][0]["value"]["password"]
+        security_credentials = secrets.get_json("the-works-failover" if failover else "the-works")
+        user_id = security_credentials["value"]["user_id"]
+        password = security_credentials["value"]["password"]
         return user_id, password

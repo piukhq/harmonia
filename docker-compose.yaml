@@ -1,4 +1,12 @@
 version: "3"
+
+volumes:
+  secrets:
+     driver_opts:
+         type: none
+         device: ${PWD}/files/secrets
+         o: bind
+
 services:
   postgres:
     build: ./tests/integration/postgres
@@ -53,6 +61,8 @@ services:
     depends_on:
       harmonia-migrate:
         condition: service_completed_successfully
+    volumes:
+      - secrets:/mnt/secrets
     environment: &env
       TXM_API_AUTH_ENABLED: "false"
       TXM_PUSH_PROMETHEUS_METRICS: "false"
@@ -60,7 +70,6 @@ services:
       TXM_AMQP_DSN: "amqp://guest:guest@rabbitmq:5672//"
       TXM_REDIS_URL: "redis://redis/0"
       TXM_BLOB_STORAGE_DSN: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azure-blob-storage:10000/devstoreaccount1;"
-      TXM_VAULT_URL: "http://api-reflector:6502/mock/vault"
       TXM_HERMES_URL: "http://api-reflector:6502/mock/hermes"
       TXM_EUROPA_URL: "http://api-reflector:6502/mock/europa"
       TXM_DEBUG: "false" # this should be false unless you need to debug a specific error
@@ -136,54 +145,10 @@ services:
         "--no-prometheus",
       ]
 
-  harmonia-import-agent-cooperative:
-    <<: *harmonia-container
-    entrypoint:
-      [
-        "tximport",
-        "--agent",
-        "cooperative",
-        "--no-user-input",
-        "--no-prometheus",
-      ]
-
   harmonia-import-agent-costa:
     <<: *harmonia-container
     entrypoint:
       ["tximport", "--agent", "costa", "--no-user-input", "--no-prometheus"]
-
-  harmonia-import-agent-harvey-nichols:
-    <<: *harmonia-container
-    entrypoint:
-      [
-        "tximport",
-        "--agent",
-        "harvey-nichols",
-        "--no-user-input",
-        "--no-prometheus",
-      ]
-
-  harmonia-import-agent-iceland-bonus-card:
-    <<: *harmonia-container
-    entrypoint:
-      [
-        "tximport",
-        "--agent",
-        "iceland-bonus-card",
-        "--no-user-input",
-        "--no-prometheus",
-      ]
-
-  harmonia-import-agent-wasabi-club:
-    <<: *harmonia-container
-    entrypoint:
-      [
-        "tximport",
-        "--agent",
-        "wasabi-club",
-        "--no-user-input",
-        "--no-prometheus",
-      ]
 
   harmonia-import-agent-itsu:
     <<: *harmonia-container

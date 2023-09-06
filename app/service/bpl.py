@@ -1,7 +1,6 @@
 import requests
-from soteria.configuration import Configuration
 
-import settings
+from app import secrets
 from app.core.requests_retry import requests_retry_session
 from app.reporting import get_logger
 
@@ -27,8 +26,5 @@ class BplAPI:
         return self.post(endpoint, body, name="post_matched_transaction")
 
     def get_security_token(self):
-        handler = Configuration.TRANSACTION_MATCHING
-        conf = Configuration(
-            self.scheme_slug, handler, settings.VAULT_URL, None, settings.EUROPA_URL, settings.AAD_TENANT_ID
-        )
-        return conf.security_credentials["outbound"]["credentials"][0]["value"]["token"]
+        security_credentials = secrets.get_json(self.scheme_slug)
+        return security_credentials["value"]["token"]

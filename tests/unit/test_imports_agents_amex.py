@@ -5,7 +5,7 @@ import pytest
 
 from app import db, models
 from app.imports.agents.amex import AmexAuth, AmexSettlement
-from tests.fixtures import SampleTransactions, get_or_create_merchant_identifier
+from tests.unit.fixtures import SampleTransactions, get_or_create_merchant_identifier
 
 PAYMENT_PROVIDER_SLUG = "amex"
 

@@ -7,7 +7,7 @@ import settings
 from app import db, models
 from app.imports.agents.bases.queue_agent import Consumer
 from app.imports.agents.visa import VisaAuth
-from tests.fixtures import SampleTransactions
+from tests.unit.fixtures import SampleTransactions
 
 
 def test_queue_agent_queue_name(db_session: db.Session) -> None:

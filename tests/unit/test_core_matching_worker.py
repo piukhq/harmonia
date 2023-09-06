@@ -10,7 +10,7 @@ from app import db, models
 from app.core import identifier
 from app.core.matching_worker import MatchingWorker
 from app.models import IdentifierType
-from tests.fixtures import (
+from tests.unit.fixtures import (
     get_or_create_merchant_identifier,
     get_or_create_payment_transaction,
     get_or_create_scheme_transaction,

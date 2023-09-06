@@ -7,7 +7,7 @@ from app import db, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.itsu import Itsu
 from app.feeds import FeedType
-from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_transaction
+from tests.unit.fixtures import Default, get_or_create_export_transaction, get_or_create_transaction
 
 TRANSACTION_ID = "1234567"
 PRIMARY_MIDS = Default.primary_mids

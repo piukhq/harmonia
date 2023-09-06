@@ -17,7 +17,6 @@ def get_aes_key(secret_name):
 
 def connect_to_vault():
     kv_credential = DefaultAzureCredential(
-        exclude_environment_credential=True,
         exclude_shared_token_cache_credential=True,
         exclude_visual_studio_code_credential=True,
         exclude_interactive_browser_credential=True,
