@@ -1,5 +1,3 @@
-import pendulum
-
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
@@ -31,7 +29,7 @@ class Costa(QueueAgent):
         return SchemeTransactionFields(
             merchant_slug=self.provider_slug,
             payment_provider_slug=data["payment_card_type"],
-            transaction_date=pendulum.parse(data["date"]),
+            transaction_date=self.pendulum_parse(data["date"]),
             has_time=True,
             spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
