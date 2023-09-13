@@ -1,8 +1,6 @@
 import typing as t
 from uuid import uuid4
 
-import pendulum
-
 from harness.providers.base import BaseImportDataProvider
 
 
