@@ -1,3 +1,5 @@
+import pendulum
+
 from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import FeedType
@@ -68,7 +70,7 @@ class SlimChickens(QueueAgent):
         return SchemeTransactionFields(
             merchant_slug=self.provider_slug,
             payment_provider_slug=PAYMENT_CARD_TYPES[data["payment_card_type"]],
-            transaction_date=self.pendulum_parse(data["date"], tz="Europe/London"),
+            transaction_date=pendulum.instance(data["date"]),
             has_time=True,
             spend_amount=data["amount"],
             spend_multiplier=100,

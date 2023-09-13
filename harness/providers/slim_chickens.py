@@ -1,8 +1,6 @@
 import typing as t
 from uuid import uuid4
 
-import pendulum
-
 from harness.providers.base import BaseImportDataProvider
 
 PAYMENT_CARD_TYPES = {
@@ -21,7 +19,7 @@ class SlimChickens(BaseImportDataProvider):
                 "amount": transaction["amount"],
                 "currency_code": "GBP",
                 "auth_code": transaction["auth_code"],
-                "date": pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
+                "date": transaction["date"],
                 "retailer_location_id": transaction["location_id"],
             }
             for user in fixture["users"]

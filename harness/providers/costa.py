@@ -1,8 +1,6 @@
 import typing as t
 from uuid import uuid4
 
-import pendulum
-
 from harness.providers.base import BaseImportDataProvider
 
 
@@ -17,7 +15,7 @@ class Costa(BaseImportDataProvider):
                 "amount": transaction["amount"] / 100,
                 "currency_code": "GBP",
                 "auth_code": transaction["auth_code"],
-                "date": pendulum.instance(transaction["date"]).in_tz("Europe/London").format("YYYY-MM-DDTHH:mm:ss"),
+                "date": transaction["date"],
                 "merchant_identifier": transaction["identifier"],
                 "retailer_location_id": "store_1a",
                 "metadata": {},
