@@ -8,18 +8,14 @@ import pendulum
 def _default(val):
     if isinstance(val, pendulum.DateTime):
         return {"__type__": "pendulum.DateTime", "epoch": val.int_timestamp}
+    elif isinstance(val, datetime.datetime):
+        return {"__type__": "pendulum.DateTime", "epoch": int(val.timestamp())}
     elif isinstance(val, decimal.Decimal):
         return {"__type__": "decimal.Decimal", "repr": str(val)}
 
-    if isinstance(val, datetime.datetime):
-        raise TypeError(
-            f"Custom serializer received a {type(val).__name__} object ({val})! "
-            "Please ensure all dates are Pendulum DateTime objects."
-        )
-    else:
-        raise TypeError(
-            f"Custom serializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
-        )
+    raise TypeError(
+        f"Custom serializer can't handle {type(val).__name__} ({val}) yet! You can add support in {__file__}."
+    )
 
 
 def _object_hook(val):

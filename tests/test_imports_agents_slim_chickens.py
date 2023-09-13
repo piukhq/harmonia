@@ -1,4 +1,5 @@
 import datetime
+
 import pendulum
 import pytest
 
@@ -23,8 +24,7 @@ TRANSACTION_DATA = [
         "amount": 2399,
         "currency_code": "GBP",
         "auth_code": "188328",
-        "date": datetime.datetime(
-            2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
+        "date": datetime.datetime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
         "merchant_identifier": "10209723",
         "retailer_location_id": "store_1a",
     }
