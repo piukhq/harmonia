@@ -22,13 +22,13 @@ slug = "visa-refund"
 
 # first user
 [[users]]
-loyalty_id = "6338848557497430930233"
+loyalty_id = "6338849346110000002989"
 token = "token-123"
 first_six = "123456"
 last_four = "7890"
 
 [users.credentials]
-card_number = "6338848557497430930233"
+card_number = "6338849346110000002989"
 merchant_identifier = "88899966"
 email = "test-123@testbink.com"
 
