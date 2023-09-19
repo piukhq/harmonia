@@ -1,3 +1,4 @@
+import logging
 from unittest import mock
 from unittest.mock import ANY
 
@@ -19,6 +20,7 @@ from tests.fixtures import (
     get_or_create_transaction,
 )
 
+KEY_PREFIX = "txmatch:config:exports.agents.the-works"
 TRANSACTION_ID = "1234567"
 PRIMARY_IDENTIFIER = Default.primary_mids[0]
 SECONDARY_IDENTIFIER = Default.secondary_mid
@@ -301,52 +303,54 @@ def test_export(
 
 def test_point_conversion_rate_default(db_session: db.Session) -> None:
     the_works = TheWorks()
+
     point_rate = the_works.point_conversion_rate(session=db_session)
     assert point_rate == 5
 
 
-def test_point_conversion_rate_promotion(db_session: db.Session) -> None:
+def test_point_conversion_rate_promotion(db_session: db.Session, caplog) -> None:
     the_works = TheWorks()
-    key_prefix = "txmatch:config:exports.agents.the-works"
+    caplog.set_level(logging.DEBUG)
+    the_works.log.propagate = True
 
     yesterday = pendulum.yesterday("Europe/London").to_date_string()
     tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_start", value=yesterday)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=yesterday)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_start", value=yesterday, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=yesterday, session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_end", value=tomorrow)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_end", value=tomorrow, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow, session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promo_point_conversion_rate", value="10")
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="10")
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promo_point_conversion_rate", value="10", session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="10", session=db_session)
 
     start = the_works.config.get("promotion_start", session=db_session)
     end = the_works.config.get("promotion_end", session=db_session)
     rate = the_works.config.get("promo_point_conversion_rate", session=db_session)
 
-    assert start == "2023-09-18"
-    assert end == "2023-09-20"
+    assert start == yesterday
+    assert end == tomorrow
     assert rate == "10"
 
     point_rate = the_works.point_conversion_rate(session=db_session)
     assert point_rate == 10
+    assert not caplog.messages[0].find("The Works promotion: starting") == -1
 
 
 def test_point_conversion_rate_invalid_dates(db_session: db.Session) -> None:
     the_works = TheWorks()
-    key_prefix = "txmatch:config:exports.agents.the-works"
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_start", value="invalid")
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value="invalid")
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_start", value="invalid", session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value="invalid", session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_end", value="invalid")
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value="invalid")
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_end", value="invalid", session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value="invalid", session=db_session)
 
     start = the_works.config.get("promotion_start", session=db_session)
     end = the_works.config.get("promotion_end", session=db_session)
@@ -354,24 +358,23 @@ def test_point_conversion_rate_invalid_dates(db_session: db.Session) -> None:
     assert start == "invalid"
     assert end == "invalid"
 
-    with pytest.raises(pendulum.parsing.exceptions.ParserError):
-        the_works.point_conversion_rate(session=db_session)
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 5
 
 
 def test_point_conversion_rate_reversed_dates(db_session: db.Session) -> None:
     the_works = TheWorks()
-    key_prefix = "txmatch:config:exports.agents.the-works"
 
     yesterday = pendulum.yesterday("Europe/London").to_date_string()
     tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_start", value=tomorrow)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=tomorrow)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_start", value=tomorrow, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=tomorrow, session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_end", value=yesterday)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=yesterday)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_end", value=yesterday, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=yesterday, session=db_session)
 
     start = the_works.config.get("promotion_start", session=db_session)
     end = the_works.config.get("promotion_end", session=db_session)
@@ -380,29 +383,52 @@ def test_point_conversion_rate_reversed_dates(db_session: db.Session) -> None:
     assert start == tomorrow
     assert end == yesterday
 
-    with pytest.raises(Exception) as excinfo:
-        the_works.point_conversion_rate(session=db_session)
-    assert str(excinfo.value).__contains__("promotion period may have ended")
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 5
 
 
 def test_point_conversion_rate_invalid_rate(db_session: db.Session) -> None:
     the_works = TheWorks()
-    key_prefix = "txmatch:config:exports.agents.the-works"
 
     yesterday = pendulum.yesterday("Europe/London").to_date_string()
     tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_start", value=yesterday)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=yesterday)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_start", value=yesterday, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=yesterday, session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promotion_end", value=tomorrow)
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow)
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promotion_end", value=tomorrow, session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow, session=db_session)
 
-    config_item = config.models.ConfigItem(key=f"{key_prefix}.promo_point_conversion_rate", value="twenty")
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="twenty")
     db_session.add(config_item)
-    config.update(key=f"{key_prefix}.promo_point_conversion_rate", value="twenty", session=db_session)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="twenty", session=db_session)
 
-    with pytest.raises(ValueError):
-        the_works.point_conversion_rate(session=db_session)
+    point_rate = the_works.point_conversion_rate(session=db_session)
+
+    assert point_rate == 5
+
+
+def test_point_conversion_rate_outside_promotion_period(db_session: db.Session, caplog) -> None:
+    the_works = TheWorks()
+    caplog.set_level(logging.DEBUG)
+    the_works.log.propagate = True
+
+    last_week = pendulum.now("Europe/London").subtract(days=7).to_date_string()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=last_week)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=last_week, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=last_week)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=last_week, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="17")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="17", session=db_session)
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert not caplog.messages[0].find("The works promotion period may have ended") == -1
+    assert point_rate == 5

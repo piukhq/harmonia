@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 
 import pendulum
+import sentry_sdk
 from blinker import signal
 
 from app import db, models
@@ -182,13 +183,11 @@ class TheWorks(SingularExportAgent):
                         f"The Works promotion: starting: {start_promo}; ending: {end_promo}; rate: {points_rate}"
                     )
                 else:
-                    raise Exception(
+                    self.log.info(
                         f"The works promotion period may have ended or configured dates are not valid"
                         f"starting: {start_promo}; ending: {end_promo}; rate: {points_rate}"
                     )
-            except pendulum.parsing.exceptions.ParserError:
-                raise pendulum.parsing.exceptions.ParserError("Please check configured dates for The Works promotion")
-            except ValueError:
-                raise ValueError("Please check configured promo_point_conversion_rate for The Works promotion")
+            except (pendulum.parsing.exceptions.ParserError, ValueError) as ex:
+                sentry_sdk.capture_exception(ex)
 
         return points_rate
