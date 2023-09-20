@@ -1,3 +1,4 @@
+import logging
 from unittest import mock
 from unittest.mock import ANY
 
@@ -7,6 +8,7 @@ from requests.models import Response
 from sqlalchemy.exc import NoResultFound
 
 from app import db, models
+from app.config import config
 from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.the_works import DedupeDelayRetry, TheWorks
@@ -18,6 +20,7 @@ from tests.fixtures import (
     get_or_create_transaction,
 )
 
+KEY_PREFIX = "txmatch:config:exports.agents.the-works"
 TRANSACTION_ID = "1234567"
 PRIMARY_IDENTIFIER = Default.primary_mids[0]
 SECONDARY_IDENTIFIER = Default.secondary_mid
@@ -184,26 +187,38 @@ def pending_export(export_transaction: models.ExportTransaction, db_session: db.
     )
 
 
+@mock.patch("app.exports.agents.the_works.TheWorks.point_conversion_rate")
 @mock.patch("app.service.the_works.TheWorksAPI._history_request")
 @mock.patch("app.service.the_works.TheWorksAPI.get_credentials")
 def test_find_export_transaction_already_rewarded(
-    mock_get_credentials, mock_history_request, pending_export: models.PendingExport, db_session: db.Session
+    mock_get_credentials,
+    mock_history_request,
+    mock_point_conversion_rate,
+    pending_export: models.PendingExport,
+    db_session: db.Session,
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
     mock_history_request.return_value = HISTORY_TRANSACTIONS
+    mock_point_conversion_rate.return_value = 5
     export_transaction.settlement_key = None
     the_works = TheWorks()
     with pytest.raises(NoResultFound):
         the_works.find_export_transaction(pending_export, session=db_session)
 
 
+@mock.patch("app.exports.agents.the_works.TheWorks.point_conversion_rate")
 @mock.patch("app.service.the_works.TheWorksAPI._history_request")
 @mock.patch("app.service.the_works.TheWorksAPI.get_credentials")
 def test_find_export_transaction_to_be_rewarded(
-    mock_get_credentials, mock_history_request, pending_export: models.PendingExport, db_session: db.Session
+    mock_get_credentials,
+    mock_history_request,
+    mock_point_conversion_rate,
+    pending_export: models.PendingExport,
+    db_session: db.Session,
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
     mock_history_request.return_value = HISTORY_TRANSACTIONS
+    mock_point_conversion_rate.return_value = 5
     pending_export.export_transaction.spend_amount = 1735
     the_works = TheWorks()
 
@@ -284,3 +299,136 @@ def test_export(
         "retry_count": 1,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
+
+
+def test_point_conversion_rate_default(db_session: db.Session) -> None:
+    the_works = TheWorks()
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 5
+
+
+def test_point_conversion_rate_promotion(db_session: db.Session, caplog) -> None:
+    the_works = TheWorks()
+    caplog.set_level(logging.DEBUG)
+    the_works.log.propagate = True
+
+    yesterday = pendulum.yesterday("Europe/London").to_date_string()
+    tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=yesterday)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=yesterday, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="10")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="10", session=db_session)
+
+    start = the_works.config.get("promotion_start", session=db_session)
+    end = the_works.config.get("promotion_end", session=db_session)
+    rate = the_works.config.get("promo_point_conversion_rate", session=db_session)
+
+    assert start == yesterday
+    assert end == tomorrow
+    assert rate == "10"
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 10
+    assert not caplog.messages[0].find("The Works promotion: starting") == -1
+
+
+def test_point_conversion_rate_invalid_dates(db_session: db.Session) -> None:
+    the_works = TheWorks()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value="invalid")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value="invalid", session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value="invalid")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value="invalid", session=db_session)
+
+    start = the_works.config.get("promotion_start", session=db_session)
+    end = the_works.config.get("promotion_end", session=db_session)
+
+    assert start == "invalid"
+    assert end == "invalid"
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 5
+
+
+def test_point_conversion_rate_reversed_dates(db_session: db.Session) -> None:
+    the_works = TheWorks()
+
+    yesterday = pendulum.yesterday("Europe/London").to_date_string()
+    tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=tomorrow)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=tomorrow, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=yesterday)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=yesterday, session=db_session)
+
+    start = the_works.config.get("promotion_start", session=db_session)
+    end = the_works.config.get("promotion_end", session=db_session)
+
+    # Note: dates reversed for this test
+    assert start == tomorrow
+    assert end == yesterday
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert point_rate == 5
+
+
+def test_point_conversion_rate_invalid_rate(db_session: db.Session) -> None:
+    the_works = TheWorks()
+
+    yesterday = pendulum.yesterday("Europe/London").to_date_string()
+    tomorrow = pendulum.tomorrow("Europe/London").to_date_string()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=yesterday)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=yesterday, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=tomorrow, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="twenty")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="twenty", session=db_session)
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+
+    assert point_rate == 5
+
+
+def test_point_conversion_rate_outside_promotion_period(db_session: db.Session, caplog) -> None:
+    the_works = TheWorks()
+    caplog.set_level(logging.DEBUG)
+    the_works.log.propagate = True
+
+    last_week = pendulum.now("Europe/London").subtract(days=7).to_date_string()
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_start", value=last_week)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_start", value=last_week, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promotion_end", value=last_week)
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promotion_end", value=last_week, session=db_session)
+
+    config_item = config.models.ConfigItem(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="17")
+    db_session.add(config_item)
+    config.update(key=f"{KEY_PREFIX}.promo_point_conversion_rate", value="17", session=db_session)
+
+    point_rate = the_works.point_conversion_rate(session=db_session)
+    assert not caplog.messages[0].find("The works promotion period may have ended") == -1
+    assert point_rate == 5

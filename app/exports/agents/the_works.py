@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 
 import pendulum
+import sentry_sdk
 from blinker import signal
 
 from app import db, models
@@ -16,6 +17,10 @@ PROVIDER_SLUG = "the-works"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 FAILOVER_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.failover_url"
+PROMO_POINT_CONVERSION_RATE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.promo_point_conversion_rate"
+DEFAULT_POINT_CONVERSION_RATE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.default_point_conversion_rate"
+PROMOTION_START_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.promotion_start"
+PROMOTION_END_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.promotion_end"
 
 
 class DedupeDelayRetry(Exception):
@@ -29,6 +34,10 @@ class TheWorks(SingularExportAgent):
     config = Config(
         ConfigValue("base_url", key=BASE_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"),
         ConfigValue("failover_url", key=FAILOVER_URL_KEY, default="https://reflector.staging.gb.bink.com/mock/"),
+        ConfigValue("default_point_conversion_rate", key=DEFAULT_POINT_CONVERSION_RATE_KEY, default="5"),
+        ConfigValue("promo_point_conversion_rate", key=PROMO_POINT_CONVERSION_RATE_KEY, default="5"),
+        ConfigValue("promotion_start", key=PROMOTION_START_KEY, default=""),
+        ConfigValue("promotion_end", key=PROMOTION_END_KEY, default=""),
     )
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
@@ -52,7 +61,7 @@ class TheWorks(SingularExportAgent):
             api = the_works.TheWorksAPI(self.config.get("base_url", session), self.config.get("failover_url", session))
             # Get transactions history from GiveX The Works.
             historical_rewarded_transactions = api.transaction_history(matched_transaction.loyalty_id)
-            if not self.exportable_transaction(matched_transaction, historical_rewarded_transactions):
+            if not self.exportable_transaction(matched_transaction, historical_rewarded_transactions, session):
                 self.log.warning("Transaction has already been rewarded in The Works - GiveX system.")
                 raise db.NoResultFound
 
@@ -120,7 +129,7 @@ class TheWorks(SingularExportAgent):
         response.raise_for_status()
 
     def exportable_transaction(
-        self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict
+        self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict, session: db.Session
     ):
         """
         Check if the current transactions has already been rewarded in the historical transactions.
@@ -132,15 +141,15 @@ class TheWorks(SingularExportAgent):
 
         is_refund = matched_transaction.spend_amount < 0
 
+        points_rate = self.point_conversion_rate(session)
+
         for transaction in historical_rewarded_transactions["result"][5]:
-            current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * 5
+            current_tx_points = int(Decimal(matched_transaction.spend_amount) / 100) * points_rate
             history_points = int(Decimal(transaction[3]))  # Should be the points
             points_match = current_tx_points == history_points
 
             current_tx_date = pendulum.instance(matched_transaction.transaction_date).to_date_string()
-            history_tx_date = pendulum.parse(
-                transaction[0]
-            ).to_date_string()  # Date part only, time is a separate value.
+            history_tx_date = pendulum.parse(transaction[0]).to_date_string()  # Date part only.
             dates_match = current_tx_date == history_tx_date
 
             # there are two cases in which we can't export the transaction:
@@ -151,3 +160,34 @@ class TheWorks(SingularExportAgent):
                 return False
 
         return True
+
+    def point_conversion_rate(self, session: db.Session) -> int:
+        """
+        The Works want to award more points during a promotion period.
+        Using harmonia's configuration service to set default and promotional point rates
+        alongside promotion start and end dates.
+        point conversion rates default = 5 outside of promotional periods
+        Jira ticket RET-2508
+        """
+        promotion_start = self.config.get("promotion_start", session=session)
+        promotion_end = self.config.get("promotion_end", session=session)
+        points_rate = int(self.config.get("default_point_conversion_rate", session=session))
+        if promotion_start and promotion_end:
+            try:
+                start_promo = pendulum.parse(promotion_start, tz="Europe/London").start_of("day")
+                end_promo = pendulum.parse(promotion_end, tz="Europe/London").end_of("day")
+                date_now = pendulum.now(tz="Europe/London")
+                if start_promo <= date_now <= end_promo:
+                    points_rate = int(self.config.get("promo_point_conversion_rate", session=session))
+                    self.log.info(
+                        f"The Works promotion: starting: {start_promo}; ending: {end_promo}; rate: {points_rate}"
+                    )
+                else:
+                    self.log.info(
+                        f"The works promotion period may have ended or configured dates are not valid"
+                        f"starting: {start_promo}; ending: {end_promo}; rate: {points_rate}"
+                    )
+            except (pendulum.parsing.exceptions.ParserError, ValueError) as ex:
+                sentry_sdk.capture_exception(ex)
+
+        return points_rate
