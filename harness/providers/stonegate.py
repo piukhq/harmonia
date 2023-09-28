@@ -3,14 +3,10 @@ from uuid import uuid4
 
 from harness.providers.base import BaseImportDataProvider
 
-PAYMENT_CARD_TYPES = {
-    "visa": "VS",
-    "mastercard": "MC",
-    "amex": "AX"
-}
+PAYMENT_CARD_TYPES = {"visa": "VS", "mastercard": "MC", "amex": "AX"}
 
 
-class SlimChickens(BaseImportDataProvider):
+class Stonegate(BaseImportDataProvider):
     def provide(self, fixture: dict) -> t.List[dict]:
         return [
             {
@@ -24,7 +20,7 @@ class SlimChickens(BaseImportDataProvider):
                 "retailer_location_id": transaction["location_id"],
                 "metadata": {
                     "account_id": str(uuid4()),
-                }
+                },
             }
             for user in fixture["users"]
             for transaction in user["transactions"]

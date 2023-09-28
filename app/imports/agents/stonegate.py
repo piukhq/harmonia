@@ -1,6 +1,5 @@
 import pendulum
 
-from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
@@ -8,11 +7,7 @@ from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "stonegate"
 
-PAYMENT_CARD_TYPES = {
-    "VS": "visa",
-    "MC": "mastercard",
-    "AX": "amex"
-}
+PAYMENT_CARD_TYPES = {"VS": "visa", "MC": "mastercard", "AX": "amex"}
 
 
 class Stonegate(QueueAgent):
@@ -60,9 +55,7 @@ class Stonegate(QueueAgent):
             spend_currency=data["currency_code"],
             auth_code=data["auth_code"],
             last_four=data["payment_card_last_four"],
-            extra_fields={
-                "account_id": data["metadata"]["account_id"]
-            }
+            extra_fields={"account_id": data["metadata"]["account_id"]},
         )
 
     @staticmethod
