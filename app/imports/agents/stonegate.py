@@ -9,8 +9,9 @@ from app.imports.agents.bases.queue_agent import QueueAgent
 PROVIDER_SLUG = "stonegate"
 
 PAYMENT_CARD_TYPES = {
-    "VISA": "visa",
-    "MASTER": "mastercard",
+    "VS": "visa",
+    "MC": "mastercard",
+    "AX": "amex"
 }
 
 
@@ -23,11 +24,6 @@ class Stonegate(QueueAgent):
             "queue_name",
             key=f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.queue_name",
             default="tx-stonegate-harmonia",
-        ),
-        ConfigValue(
-            "spend_threshold",
-            key=f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.spend_threshold",
-            default="750",
         ),
     )
 
@@ -51,19 +47,6 @@ class Stonegate(QueueAgent):
                 f"expected one of: {supported_types}",
             )
             return
-
-        with db.session_scope() as session:
-            spend_threshold = int(self.config.get("spend_threshold", session=session))
-
-        is_eligible_amount = body["amount"] >= spend_threshold
-
-        if not is_eligible_amount:
-            self.log.warning(
-                f"Discarding transaction {txid} due to ineligible amount {body['amount']!r}, "
-                f"expected >= {spend_threshold!r}",
-            )
-            return
-
         super()._do_import(body)
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
@@ -77,6 +60,9 @@ class Stonegate(QueueAgent):
             spend_currency=data["currency_code"],
             auth_code=data["auth_code"],
             last_four=data["payment_card_last_four"],
+            extra_fields={
+                "account_id": data["metadata"]["account_id"]
+            }
         )
 
     @staticmethod
