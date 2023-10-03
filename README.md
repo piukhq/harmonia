@@ -12,13 +12,15 @@ Transaction matching system. Goddess of harmony and accord. Daughter of Aphrodit
 - [Dependencies](#dependencies)
 - [Project Setup](#project-setup)
   - [MacOS Dependencies](#macos-dependencies)
-  - [Virtual Environment](#virtual-environment)
-  - [Database Schema Migration](#database-schema-migration)
+  - [Configuration](#configuration)
+  - [Bootstrap](#bootstrap)
   - [Development API Server](#development-api-server)
   - [Unit Tests](#unit-tests)
   - [End-to-End Matching Test](#end-to-end-matching-test)
     - [Testing with Flexible Transactions](#testing-with-flexible-transactions)
     - [Inspecting PostgreSQL](#inspecting-postgresql)
+  - [Linting](#linting)
+  - [CI Build](#ci-build)
 - [Migrations](#migrations)
 - [Deployment](#deployment)
 - [Additional Documentation](#additional-documentation)
@@ -62,6 +64,12 @@ export LDFLAGS="-L/usr/local/opt/openssl/lib"
 ```
 
 ### Configuration
+
+To create a virtualenv and install required software packages:
+
+```bash
+pipenv install --dev
+```
 
 Project configuration is done through environment variables. A convenient way
 to set these is in a `.env` file in the project root. See `settings.py` for
