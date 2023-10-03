@@ -65,12 +65,6 @@ export LDFLAGS="-L/usr/local/opt/openssl/lib"
 
 ### Configuration
 
-To create a virtualenv and install required software packages:
-
-```bash
-pipenv install --dev
-```
-
 Project configuration is done through environment variables. A convenient way
 to set these is in a `.env` file in the project root. See `settings.py` for
 configuration options that can be set in this file.
