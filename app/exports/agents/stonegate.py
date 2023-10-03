@@ -1,10 +1,3 @@
-"""
-QUESTIONS:
- - does "MemberNumber" mean "card_number"?
- - does transaction ID go into "ReceiptNo"?
- - where does account ID fit in, what's the field name?
- - do we need the "receipt number not found" hack from wasabi?
-"""
 import typing as t
 
 import pendulum
@@ -79,8 +72,9 @@ class Stonegate(SingularExportAgent):
                 AgentExportDataOutput(
                     "export.json",
                     {
-                        "origin_id": self.get_loyalty_identifier(export_transaction),
-                        "ReceiptNo": export_transaction.transaction_id,
+                        "MemberNumber": self.get_loyalty_identifier(export_transaction),
+                        "ReceiptNo": export_transaction.extra_fields["account_id"],
+                        "TransactionID": export_transaction.transaction_id,
                     },
                 )
             ],
