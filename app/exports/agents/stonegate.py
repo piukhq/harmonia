@@ -73,7 +73,7 @@ class Stonegate(SingularExportAgent):
                     "export.json",
                     {
                         "MemberNumber": self.get_loyalty_identifier(export_transaction),
-                        "ReceiptNo": export_transaction.extra_fields["account_id"],
+                        "AccountID": export_transaction.extra_fields["account_id"],
                         "TransactionID": export_transaction.transaction_id,
                     },
                 )
