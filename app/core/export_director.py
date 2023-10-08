@@ -71,6 +71,7 @@ def create_export(fields: ExportFields, *, session: db.Session) -> None:
             payment_provider_slug=fields.payment_provider_slug,
             auth_code=fields.auth_code,
             approval_code=fields.approval_code,
+            extra_fields=fields.extra_fields,
             export_uid=uuid.uuid4(),
         )
         session.add(export_transaction)
