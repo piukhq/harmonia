@@ -35,7 +35,7 @@ class SlimChickens(BaseMatchingAgent):
         match, multiple_returned = self._check_for_match(scheme_transactions)
 
         if multiple_returned:
-            match = self._filter(scheme_transactions.all(), self._filter_by_card_number)
+            match = self._filter(scheme_transactions.all(), [self._filter_by_card_number])
 
         return match
 
