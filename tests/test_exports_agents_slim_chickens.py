@@ -5,6 +5,7 @@ import pytest
 import responses
 
 from app import db, encryption, models
+from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.slim_chickens import SlimChickens
 from app.feeds import FeedType
@@ -118,7 +119,8 @@ def test_make_export_data(
     mock_read_secrets, mock_auth_token, export_transaction: models.ExportTransaction, db_session: db.Session
 ) -> None:
     slim_chickens = SlimChickens()
-    slim_chickens.config = {"spend_threshold": "7500"}
+    config_key = f"{KEY_PREFIX}exports.agents.slim_chickens.spend_threshold"
+    slim_chickens.config = Config(ConfigValue("spend_threshold", key=config_key, default="0"))
     expected_result = AgentExportData(
         outputs=[
             AgentExportDataOutput(
@@ -147,7 +149,8 @@ def test_export(
     db_session: db.Session,
 ) -> None:
     slim_chickens = SlimChickens()
-    slim_chickens.config = {"spend_threshold": "7500"}
+    config_key = f"{KEY_PREFIX}exports.agents.slim_chickens.spend_threshold"
+    slim_chickens.config = Config(ConfigValue("spend_threshold", key=config_key, default="0"))
     slim_chickens.secrets = SECRETS
     slim_chickens.auth_header = {"Authorization": "Basic 123"}
     export_data = slim_chickens.make_export_data(export_transaction, db_session)
