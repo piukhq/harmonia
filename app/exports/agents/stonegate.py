@@ -21,6 +21,12 @@ retryable_messages = [RECEIPT_NO_NOT_FOUND]
 MAX_RETRY_COUNT = 6
 
 
+class InitialExportDelayRetry(Exception):
+    def __init__(self, delay_seconds: int = 5, *args: object) -> None:
+        self.delay_seconds = delay_seconds
+        super().__init__(*args)
+
+
 class Stonegate(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
 
@@ -39,6 +45,12 @@ class Stonegate(SingularExportAgent):
     def get_retry_datetime(
         self, retry_count: int, *, exception: t.Optional[Exception] = None
     ) -> t.Optional[pendulum.DateTime]:
+        if isinstance(exception, InitialExportDelayRetry):
+            return pendulum.now().add(seconds=exception.delay_seconds)
+
+        # account for initial delay, act as if the second retry is actually the first
+        retry_count = max(0, retry_count - 1)
+
         # TEMPORARY: remove when implementing signals
         if (
             isinstance(exception, RequestException)
@@ -83,6 +95,12 @@ class Stonegate(SingularExportAgent):
         )
 
     def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
+        if retry_count == 0:
+            now = pendulum.now()
+            import_after = now.replace(hour=10, minute=30, second=0, microsecond=0)
+            if now < import_after:
+                raise InitialExportDelayRetry
+
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
