@@ -118,9 +118,7 @@ def test_make_export_data(
     mock_read_secrets, mock_auth_token, export_transaction: models.ExportTransaction, db_session: db.Session
 ) -> None:
     slim_chickens = SlimChickens()
-    slim_chickens.config = {
-        "spend_threshold": "7500"
-    }
+    slim_chickens.config = {"spend_threshold": "7500"}
     expected_result = AgentExportData(
         outputs=[
             AgentExportDataOutput(
@@ -149,9 +147,7 @@ def test_export(
     db_session: db.Session,
 ) -> None:
     slim_chickens = SlimChickens()
-    slim_chickens.config = {
-        "spend_threshold": "7500"
-    }
+    slim_chickens.config = {"spend_threshold": "7500"}
     slim_chickens.secrets = SECRETS
     slim_chickens.auth_header = {"Authorization": "Basic 123"}
     export_data = slim_chickens.make_export_data(export_transaction, db_session)
