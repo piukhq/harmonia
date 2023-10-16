@@ -12,6 +12,7 @@ from app.config import KEY_PREFIX, Config, ConfigValue
 from app.core.requests_retry import requests_retry_session
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.exports.exceptions import MissingExportData
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.service import atlas, slim_chickens
@@ -69,6 +70,15 @@ class SlimChickens(SingularExportAgent):
         return ""
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
+        with db.session_scope() as session:
+            spend_threshold = int(self.config.get("spend_threshold", session=session))
+        if export_transaction.spend_amount < spend_threshold:
+            self.log.warning(
+                f"Discarding transaction {export_transaction.transaction_id} due to "
+                f"ineligible amount {export_transaction.spend_amount!r},"
+                f"expected >= {spend_threshold!r}",
+            )
+            raise MissingExportData
 
         return AgentExportData(
             outputs=[
