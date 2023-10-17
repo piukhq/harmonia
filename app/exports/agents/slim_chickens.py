@@ -48,7 +48,7 @@ class SlimChickens(SingularExportAgent):
         self.secrets = _read_secrets(SLIM_CHICKENS_SECRET_KEY)
         self.session = requests_retry_session()
         self.bink_prometheus = bink_prometheus
-        self.spend_threshold = 7500
+        self.spend_threshold = 750
 
     def get_transaction_token(self, transaction: models.ExportTransaction, session: Session) -> str:
         username = transaction.decrypted_credentials["email"]

@@ -104,6 +104,7 @@ def export_transaction() -> models.ExportTransaction:
 @pytest.fixture
 def pending_export(export_transaction: models.ExportTransaction, db_session: db.Session) -> models.PendingExport:
     export_transaction.id = TRANSACTION_ID
+    export_transaction.spend_amount = 50
     return get_or_create_pending_export(
         session=db_session, export_transaction=export_transaction, provider_slug=MERCHANT_SLUG
     )
