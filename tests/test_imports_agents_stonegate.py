@@ -15,21 +15,21 @@ def stonegate():
 MERCHANT_SLUG = "stonegate"
 
 TRANSACTION_DATA = [
-  {
-    "transaction_id": "QTZENTY0DdGOEJCQkU3",
-    "payment_card_type": "VS",
-    "payment_card_first_six": "454546",
-    "payment_card_last_four": "6309",
-    "amount": 23.99,
-    "currency_code": "GBP",
-    "auth_code": "188328",
-    "date": datetime.datetime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
-    "merchant_identifier": "10209723",
-    "retailer_location_id": "store_1a",
-    "metadata": {
-      "account_id": "value1",
-    },
-  }
+    {
+        "transaction_id": "QTZENTY0DdGOEJCQkU3",
+        "payment_card_type": "VS",
+        "payment_card_first_six": "454546",
+        "payment_card_last_four": "6309",
+        "amount": 23.99,
+        "currency_code": "GBP",
+        "auth_code": "188328",
+        "date": datetime.datetime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
+        "merchant_identifier": "10209723",
+        "retailer_location_id": "store_1a",
+        "metadata": {
+            "account_id": "value1",
+        },
+    }
 ]
 
 

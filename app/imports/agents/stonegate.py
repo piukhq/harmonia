@@ -1,8 +1,8 @@
 import pendulum
 
 from app.config import KEY_PREFIX, Config, ConfigValue
-from app.feeds import FeedType
 from app.currency import to_pennies
+from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 
