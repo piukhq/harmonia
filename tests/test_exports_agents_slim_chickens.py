@@ -186,7 +186,9 @@ def test_export(
     assert mock_atlas.queue_audit_message.call_count == 1
 
 
+@mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)
 def test_find_export_transaction_below_threshold(
+    mock_read_secrets,
     pending_export,
     db_session: db.Session,
 ) -> None:
