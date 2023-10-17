@@ -186,7 +186,7 @@ def test_export(
     assert mock_atlas.queue_audit_message.call_count == 1
 
 
-def test_export(
+def test_find_export_transaction_below_threshold(
     pending_export,
     db_session: db.Session,
 ) -> None:
