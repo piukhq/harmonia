@@ -46,7 +46,7 @@ class Stonegate(SingularExportAgent):
         self, retry_count: int, *, exception: t.Optional[Exception] = None
     ) -> t.Optional[pendulum.DateTime]:
         if isinstance(exception, InitialExportDelayRetry):
-            return pendulum.now().add(seconds=exception.delay_seconds)
+            return pendulum.now().replace(hour=10, minute=30)
 
         # account for initial delay, act as if the second retry is actually the first
         retry_count = max(0, retry_count - 1)
