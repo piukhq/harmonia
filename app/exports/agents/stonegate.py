@@ -1,4 +1,5 @@
 import typing as t
+from typing import Optional
 
 import pendulum
 from requests import RequestException, Response
@@ -15,9 +16,7 @@ from harness.exporters.acteol_mock import ActeolMockAPI
 PROVIDER_SLUG = "stonegate"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
-RECEIPT_NO_NOT_FOUND = "receipt no not found"
 ORIGIN_ID_NOT_FOUND = "origin id not found"
-retryable_messages = [RECEIPT_NO_NOT_FOUND]
 MAX_RETRY_COUNT = 6
 
 
@@ -25,6 +24,15 @@ class InitialExportDelayRetry(Exception):
     def __init__(self, delay_seconds: int = 5, *args: object) -> None:
         self.delay_seconds = delay_seconds
         super().__init__(*args)
+
+
+def is_retryable(message: Optional[str]) -> bool:
+    # ensure always lower case even though get_response_result returns lower
+    if message:
+        msg = message.lower()
+        if "transaction with" in msg and "was not found" in msg:
+            return True
+    return False
 
 
 class Stonegate(SingularExportAgent):
@@ -52,10 +60,7 @@ class Stonegate(SingularExportAgent):
         retry_count = max(0, retry_count - 1)
 
         # TEMPORARY: remove when implementing signals
-        if (
-            isinstance(exception, RequestException)
-            and self.get_response_result(exception.response) not in retryable_messages
-        ):
+        if isinstance(exception, RequestException) and not is_retryable(self.get_response_result(exception.response)):
             return None
         if retry_count == 0:
             # first retry in 20 minutes.
@@ -125,9 +130,8 @@ class Stonegate(SingularExportAgent):
             )
         )
 
-        # raise exception for first 7 retries
         if msg := self.get_response_result(response):
-            if msg == RECEIPT_NO_NOT_FOUND and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
+            if is_retryable(msg) and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
                 # fail the export for it to be retried later
                 raise RequestException(response=response)
             self.log.warn(f"Acteol API response contained message: {msg}")
