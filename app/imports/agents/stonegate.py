@@ -2,6 +2,7 @@ import pendulum
 
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import FeedType
+from app.currency import to_pennies
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 
@@ -50,12 +51,12 @@ class Stonegate(QueueAgent):
             payment_provider_slug=PAYMENT_CARD_TYPES[data["payment_card_type"]],
             transaction_date=pendulum.instance(data["date"]),
             has_time=True,
-            spend_amount=data["amount"],
+            spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             auth_code=data["auth_code"],
             last_four=data["payment_card_last_four"],
-            extra_fields={"account_id": data["metadata"]["account_id"]},
+            extra_fields={"account_id": data["metadata"]["AccountID"]},
         )
 
     @staticmethod
