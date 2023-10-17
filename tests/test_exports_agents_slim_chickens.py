@@ -8,7 +8,12 @@ from app import db, encryption, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
 from app.exports.agents.slim_chickens import SlimChickens
 from app.feeds import FeedType
-from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_transaction
+from tests.fixtures import (
+    Default,
+    get_or_create_export_transaction,
+    get_or_create_pending_export,
+    get_or_create_transaction,
+)
 
 TRANSACTION_ID = "1234567"
 PRIMARY_MIDS = Default.primary_mids
@@ -96,6 +101,14 @@ def export_transaction() -> models.ExportTransaction:
     )
 
 
+@pytest.fixture
+def pending_export(export_transaction: models.ExportTransaction, db_session: db.Session) -> models.PendingExport:
+    export_transaction.id = TRANSACTION_ID
+    return get_or_create_pending_export(
+        session=db_session, export_transaction=export_transaction, provider_slug=MERCHANT_SLUG
+    )
+
+
 @responses.activate
 @mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)
 def test_get_transaction_token(
@@ -170,3 +183,12 @@ def test_export(
         "retry_count": 0,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
+
+
+def test_export(
+    pending_export,
+    db_session: db.Session,
+) -> None:
+    slim_chickens = SlimChickens()
+    with pytest.raises(db.NoResultFound):
+        slim_chickens.find_export_transaction(pending_export=pending_export, session=db_session)
