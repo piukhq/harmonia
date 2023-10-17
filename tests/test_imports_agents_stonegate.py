@@ -27,7 +27,7 @@ TRANSACTION_DATA = [
         "merchant_identifier": "10209723",
         "retailer_location_id": "store_1a",
         "metadata": {
-            "account_id": "value1",
+            "AccountID": "value1",
         },
     }
 ]
@@ -45,7 +45,7 @@ def test_to_transaction_fields() -> None:
         "payment_provider_slug": "visa",
         "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
         "has_time": True,
-        "spend_amount": 23.99,
+        "spend_amount": 2399,
         "spend_multiplier": 100,
         "spend_currency": "GBP",
         "first_six": None,
