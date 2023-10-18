@@ -48,6 +48,7 @@ class SlimChickens(SingularExportAgent):
         self.secrets = _read_secrets(SLIM_CHICKENS_SECRET_KEY)
         self.session = requests_retry_session()
         self.bink_prometheus = bink_prometheus
+        self.spend_threshold = 750
 
     def get_transaction_token(self, transaction: models.ExportTransaction, session: Session) -> str:
         username = transaction.decrypted_credentials["email"]
@@ -68,8 +69,18 @@ class SlimChickens(SingularExportAgent):
             return in_progress_voucher["voucherCode"]
         return ""
 
-    def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
+    def find_export_transaction(
+        self, pending_export: models.PendingExport, *, session: db.Session
+    ) -> models.ExportTransaction:
+        # Get the saved transaction for export and compare to the works historical transactions
+        matched_transaction = super().find_export_transaction(pending_export, session=session)
 
+        if matched_transaction and matched_transaction.spend_amount < self.spend_threshold:
+            raise db.NoResultFound
+
+        return matched_transaction
+
+    def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(

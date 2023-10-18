@@ -16,5 +16,5 @@ import_agents.add("harvey-nichols", "app.imports.agents.harvey_nichols.HarveyNic
 import_agents.add("iceland-bonus-card", "app.imports.agents.iceland.Iceland")
 import_agents.add("wasabi-club", "app.imports.agents.wasabi.Wasabi")
 import_agents.add("itsu", "app.imports.agents.itsu.Itsu")
-import_agents.add("slim-chickens", "app.imports.agents.slim_chickens.SlimChickens")
+# import_agents.add("slim-chickens", "app.imports.agents.slim_chickens.SlimChickens") holding until import is available
 import_agents.add("stonegate", "app.imports.agents.stonegate.Stonegate")
