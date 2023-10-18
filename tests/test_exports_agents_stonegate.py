@@ -10,7 +10,7 @@ from requests import RequestException
 
 import settings
 from app import db, models
-from app.exports.agents.stonegate import Stonegate
+from app.exports.agents.stonegate import InitialExportDelayRetry, Stonegate
 from tests.fixtures import Default, get_or_create_export_transaction
 
 settings.DEBUG = False
@@ -121,6 +121,7 @@ def test_make_export_data(
 
 
 @responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
 @mock.patch("app.exports.agents.stonegate.atlas")
 def test_export(
     mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
@@ -150,6 +151,24 @@ def test_export(
 
 
 @responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "Europe/London"))
+@mock.patch("app.exports.agents.stonegate.atlas")
+def test_export_before_10_30(
+    mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
+) -> None:
+    responses.add(
+        responses.POST,
+        url="http://localhost/PostMatchedTransaction",
+        json=RESPONSE_SUCCESS,
+        status=204,
+    )
+    export_data = stonegate.make_export_data(export_transaction, session=db_session)
+    with pytest.raises(InitialExportDelayRetry):
+        stonegate.export(export_data, session=db_session)
+
+
+@responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
 @mock.patch("app.exports.agents.stonegate.atlas")
 def test_export_origin_id_not_found(
     mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
@@ -168,6 +187,7 @@ def test_export_origin_id_not_found(
 
 
 @responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
 @mock.patch("app.exports.agents.stonegate.atlas")
 def test_export_receipt_no_not_found(
     mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
