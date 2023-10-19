@@ -169,7 +169,7 @@ def test_export(
     slim_chickens.export(export_data, session=db_session)
 
     # Post to SlimChickens
-    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "/connect/account/redeem")
+    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "connect/account/redeem")
     mock_get_token.assert_called_once_with(export_transaction, db_session)
 
     # Post to Atlas

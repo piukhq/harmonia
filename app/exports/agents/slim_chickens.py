@@ -107,7 +107,7 @@ class SlimChickens(SingularExportAgent):
             self.secrets["client_id"],
             self.auth_header,
         )
-        endpoint = "/connect/account/redeem"
+        endpoint = "connect/account/redeem"
         request_timestamp = pendulum.now().to_datetime_string()
         response = api.post_matched_transaction(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
