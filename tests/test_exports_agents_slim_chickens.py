@@ -169,7 +169,7 @@ def test_export(
     slim_chickens.export(export_data, session=db_session)
 
     # Post to SlimChickens
-    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "connect/account/redeem")
+    mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "/2.0/connect/account/redeem")
     mock_get_token.assert_called_once_with(export_transaction, db_session)
 
     # Post to Atlas
@@ -180,7 +180,7 @@ def test_export(
         "request_timestamp": mock.ANY,
         "response": RESPONSE_BODY,
         "response_timestamp": mock.ANY,
-        "request_url": "https://localhost/connect/account/redeem",
+        "request_url": "https://localhost/2.0/connect/account/redeem",
         "retry_count": 0,
     }
     assert mock_atlas.queue_audit_message.call_count == 1
