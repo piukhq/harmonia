@@ -50,9 +50,10 @@ def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
     mock_base_do_import.assert_called_once()
 
 
-def test_do_import_with_null_first_six(stonegate, caplog) -> None:
+@pytest.mark.parametrize("test_input", ["", "      ", None])
+def test_do_import_with_null_first_six(test_input, stonegate, caplog) -> None:
     transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = None
+    transaction_data["payment_card_first_six"] = test_input
 
     stonegate.log.propagate = True
     caplog.set_level(logging.DEBUG)
@@ -64,25 +65,25 @@ def test_do_import_with_null_first_six(stonegate, caplog) -> None:
     assert len(caplog.messages) == 1
 
 
-@pytest.mark.parametrize("test_input", [(""), ("123")])
-def test_do_import_with_empty_string_first_six(test_input: str, stonegate, caplog) -> None:
+def test_do_import_with_empty_string_first_six(stonegate, caplog) -> None:
     transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = test_input
+    transaction_data["payment_card_first_six"] = "123"
 
     stonegate.log.propagate = True
     caplog.set_level(logging.DEBUG)
     stonegate._do_import(transaction_data)
 
     assert (
-        caplog.messages[0]
-        == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six field does not contain 6 digits"
+        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six "
+        "field does not contain 6 characters"
     )
     assert len(caplog.messages) == 1
 
 
-def test_do_import_with_unrecognised_first_six(stonegate, caplog) -> None:
+@pytest.mark.parametrize("test_input", ["154546", "lskjdh"])
+def test_do_import_with_unrecognised_first_six(test_input: str, stonegate, caplog) -> None:
     transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = "154546"
+    transaction_data["payment_card_first_six"] = test_input
 
     stonegate.log.propagate = True
     caplog.set_level(logging.DEBUG)

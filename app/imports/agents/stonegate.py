@@ -32,14 +32,9 @@ class Stonegate(QueueAgent):
         }
 
     def first_six_valid(self, txid: str, first_six: str):
-        if first_six is None:
+        if len(first_six) != 6:
             self.log.warning(
-                f"Discarding transaction {txid} as the payment_card_first_six field is empty",
-            )
-            return False
-        elif len(first_six) != 6:
-            self.log.warning(
-                f"Discarding transaction {txid} as the payment_card_first_six field does not contain 6 digits",
+                f"Discarding transaction {txid} as the payment_card_first_six field does not contain 6 characters",
             )
             return False
         elif first_six[0] in ("2", "3", "4", "5"):
@@ -51,7 +46,14 @@ class Stonegate(QueueAgent):
             return False
 
     def _do_import(self, body: dict) -> None:
-        if not self.first_six_valid(self.get_transaction_id(body), body["payment_card_first_six"]):
+        txid = self.get_transaction_id(body)
+        first_six = body["payment_card_first_six"]
+        if not bool(first_six and first_six.strip()):
+            self.log.warning(
+                f"Discarding transaction {txid} as the payment_card_first_six field is empty",
+            )
+            return
+        if not self.first_six_valid(txid, first_six):
             return
 
         super()._do_import(body)
