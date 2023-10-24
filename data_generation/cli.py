@@ -39,12 +39,6 @@ PAYMENT_AGENT_TO_PROVIDER_SLUG = {
     "amex-settlement": "amex",
 }
 
-# merchants_with_location_ids contains merchants that require a location id to locate MID's
-# Added this because some Iceland data in merchant identifier table had location id's but these are not used.
-merchants_with_location_ids = [
-    "harvey-nichols",
-]
-
 logger = get_logger("data-generator")
 
 
@@ -161,26 +155,6 @@ def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_si
         produce_file(batch_fixture)
 
     return dataset
-
-
-def mids_data(merchant_slug: str, payment_slug: str) -> dict:
-    # Load mid and location id from csv files for a single merchant
-    # Only harvey nichols uses location id's to locate MID's so special check in this code.
-    filename = f"{merchant_slug}-mids.csv"
-    file_path = Path.cwd() / "data_generation/files" / filename
-    location_payment_mids = defaultdict(list)
-
-    with file_path.open() as f:
-        data = csv.reader(f, delimiter=",")
-        for row in data:
-            if not payment_slug == row[0]:
-                continue
-
-            location_id = row[3] if merchant_slug in merchants_with_location_ids else None
-            location_payment_mids[location_id].append(row[1])
-
-    return location_payment_mids
-
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())

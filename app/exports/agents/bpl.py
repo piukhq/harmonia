@@ -90,11 +90,6 @@ class Trenette(Bpl):
     merchant_name = "trenette"
 
 
-class Asos(Bpl):
-    provider_slug = "bpl-asos"
-    merchant_name = "asos"
-
-
 class Viator(Bpl):
     provider_slug = "bpl-viator"
     merchant_name = "viator"
