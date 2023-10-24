@@ -13,6 +13,7 @@ class Stonegate(BaseImportDataProvider):
             {
                 "transaction_id": str(uuid4()),
                 "payment_card_type": PAYMENT_CARD_TYPES[fixture["payment_provider"]["slug"]],
+                "payment_card_first_six": user["first_six"],
                 "payment_card_last_four": user["last_four"],
                 "amount": to_pounds(transaction["amount"]),
                 "currency_code": "GBP",
