@@ -1,12 +1,9 @@
-import csv
 import random
 import typing as t
 import uuid
-from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from io import BytesIO
-from pathlib import Path
 
 import click
 import pendulum
@@ -155,6 +152,7 @@ def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_si
         produce_file(batch_fixture)
 
     return dataset
+
 
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())

@@ -4,7 +4,6 @@ from uuid import UUID
 
 import pendulum
 import pytest
-import time_machine
 
 from app import db
 from app.feeds import FeedType
@@ -120,6 +119,7 @@ def test_auth_get_transaction_id_no_third_party_id() -> None:
     transaction_id = MastercardAuth().get_transaction_id({"no_third_party_id": "None"})
     assert UUID(transaction_id)
 
+
 def test_tgx2_settlement_yield_transaction_data() -> None:
     data = SampleTransactions().MastercardTGX2Settlement(date=pendulum.DateTime(2020, 4, 9, 16, 46, 59))
     yield_transactions_data = MastercardTGX2Settlement().yield_transactions_data(data)
@@ -143,6 +143,7 @@ def test_tgx2_settlement_yield_transaction_data_incorrect_record_type() -> None:
     )
     with pytest.raises(StopIteration):
         next(MastercardTGX2Settlement().yield_transactions_data(data))
+
 
 def test_tgx2_settlement_get_transaction_id() -> None:
     transaction_id = MastercardTGX2Settlement().get_transaction_id(SETTLEMENT_TRANSACTION)

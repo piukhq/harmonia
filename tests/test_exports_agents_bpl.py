@@ -1,5 +1,4 @@
 import json
-from hashlib import sha1
 from unittest import mock
 
 import pendulum
@@ -49,6 +48,7 @@ def test_merchant_name_not_implemented(mock_provider_slug) -> None:
     with pytest.raises(NotImplementedError) as e:
         agent.merchant_name
     assert e.value.args[0] == "Bpl is missing a required property: merchant_name"
+
 
 @responses.activate
 @mock.patch("app.exports.agents.bpl.atlas")
