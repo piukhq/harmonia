@@ -80,24 +80,24 @@ class Itsu(SingularExportAgent):
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
         endpoint = "api/Transaction/PostOrder"
-        response = api.post_matched_transaction(body, endpoint)
+        try:
+            response = api.post_matched_transaction(body, endpoint)
+        except (pendulum.parsing.exceptions.ParserError, ValueError) as ex:
+            sentry_sdk.capture_exception(ex)
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url + endpoint
-        try:
-            atlas.queue_audit_message(
-                atlas.make_audit_message(
-                    self.provider_slug,
-                    atlas.make_audit_transactions(
-                        export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-                    ),
-                    request=body,
-                    request_timestamp=request_timestamp,
-                    response=response,
-                    response_timestamp=response_timestamp,
-                    request_url=request_url,
-                    retry_count=retry_count,
-                )
+        atlas.queue_audit_message(
+            atlas.make_audit_message(
+                self.provider_slug,
+                atlas.make_audit_transactions(
+                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+                ),
+                request=body,
+                request_timestamp=request_timestamp,
+                response=response,
+                response_timestamp=response_timestamp,
+                request_url=request_url,
+                retry_count=retry_count,
             )
-        except (pendulum.parsing.exceptions.ParserError, ValueError) as ex:
-            sentry_sdk.capture_exception(ex)
+        )
