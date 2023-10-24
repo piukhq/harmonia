@@ -51,6 +51,8 @@ class Itsu(SingularExportAgent):
                                 },
                                 "TotalAmount": amount,
                                 "PaidAmount": amount,
+                                "OrderStatusID": 1,
+                                "OrderTypeID": 1,
                                 "OrderChannelID": 1,
                                 "OrderItems": [
                                     {
