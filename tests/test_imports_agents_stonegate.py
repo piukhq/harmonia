@@ -1,4 +1,6 @@
 import datetime
+import logging
+from unittest import mock
 
 import pendulum
 import pytest
@@ -38,17 +40,79 @@ def test_stonegate_instance(stonegate) -> None:
     assert stonegate.feed_type == FeedType.MERCHANT
 
 
-def test_to_transaction_fields() -> None:
-    scheme_transaction_fields = Stonegate().to_transaction_fields(TRANSACTION_DATA[0])
+@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
+def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
+    transaction_data = TRANSACTION_DATA[0]
+    transaction_data["payment_card_first_six"] = "412345"
+
+    stonegate._do_import(transaction_data)
+
+    mock_base_do_import.assert_called_once()
+
+
+def test_do_import_with_null_first_six(stonegate, caplog) -> None:
+    transaction_data = TRANSACTION_DATA[0]
+    transaction_data["payment_card_first_six"] = None
+
+    stonegate.log.propagate = True
+    caplog.set_level(logging.DEBUG)
+    stonegate._do_import(transaction_data)
+
+    assert (
+        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six field is empty"
+    )
+    assert len(caplog.messages) == 1
+
+
+@pytest.mark.parametrize("test_input", [(""), ("123")])
+def test_do_import_with_empty_string_first_six(test_input: str, stonegate, caplog) -> None:
+    transaction_data = TRANSACTION_DATA[0]
+    transaction_data["payment_card_first_six"] = test_input
+
+    stonegate.log.propagate = True
+    caplog.set_level(logging.DEBUG)
+    stonegate._do_import(transaction_data)
+
+    assert (
+        caplog.messages[0]
+        == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six field does not contain 6 digits"
+    )
+    assert len(caplog.messages) == 1
+
+
+def test_do_import_with_unrecognised_first_six(stonegate, caplog) -> None:
+    transaction_data = TRANSACTION_DATA[0]
+    transaction_data["payment_card_first_six"] = "154546"
+
+    stonegate.log.propagate = True
+    caplog.set_level(logging.DEBUG)
+    stonegate._do_import(transaction_data)
+
+    assert (
+        caplog.messages[0]
+        == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six is not recognised"
+    )
+    assert len(caplog.messages) == 1
+
+
+@pytest.mark.parametrize(
+    "test_input,expected", [("412345", "visa"), ("212345", "mastercard"), ("512345", "mastercard"), ("312345", "amex")]
+)
+def test_to_transaction_fields(test_input: str, expected: str) -> None:
+    transaction_data = TRANSACTION_DATA[0]
+    transaction_data["payment_card_first_six"] = test_input
+
+    scheme_transaction_fields = Stonegate().to_transaction_fields(transaction_data)
+
     assert scheme_transaction_fields._asdict() == {
         "merchant_slug": MERCHANT_SLUG,
-        "payment_provider_slug": "visa",
+        "payment_provider_slug": expected,
         "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
         "has_time": True,
         "spend_amount": 2399,
         "spend_multiplier": 100,
         "spend_currency": "GBP",
-        "first_six": None,
+        "first_six": test_input,
         "last_four": "6309",
         "auth_code": "188328",
         "extra_fields": {"account_id": "value1"},

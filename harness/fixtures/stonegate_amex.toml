@@ -21,7 +21,7 @@ slug = "amex-settlement"
 [[users]]
 loyalty_id = "stonegate-123"
 token = "visa-123"
-first_six = "123456"
+first_six = "323456"
 last_four = "7890"
 
 [users.credentials]
