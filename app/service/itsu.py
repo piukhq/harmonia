@@ -15,6 +15,11 @@ ITSU_SECRET_KEY = "itsu-outbound-compound-key-join"
 TOKEN_CACHE_TTL = 259198
 
 
+class InternalError(requests.RequestException):
+    def __init__(self):
+        super().__init__("atreemo raised an internal error")
+
+
 class ItsuApi:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
@@ -63,6 +68,9 @@ class ItsuApi:
         url = f"{self.base_url}{endpoint}"
         response = self.session.post(url, json=body, headers=headers)
         response.raise_for_status()
+        json = response.json()
+        if json["ResponseStatus"] is False and json["Errors"][0]["ErrorDescription"] == "Internal Error":
+            raise InternalError
         return response
 
     def post_matched_transaction(self, body: dict, endpoint: str) -> requests.models.Response:

@@ -80,6 +80,7 @@ class Itsu(SingularExportAgent):
         request_timestamp = pendulum.now().to_datetime_string()
         endpoint = "api/Transaction/PostOrder"
         response = api.post_matched_transaction(body, endpoint)
+
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url + endpoint
