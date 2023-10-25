@@ -80,10 +80,8 @@ class Itsu(SingularExportAgent):
         api = self.api_class(self.config.get("base_url", session=session))
         request_timestamp = pendulum.now().to_datetime_string()
         endpoint = "api/Transaction/PostOrder"
-        try:
-            response = api.post_matched_transaction(body, endpoint)
-        except (pendulum.parsing.exceptions.ParserError, ValueError) as ex:
-            sentry_sdk.capture_exception(ex)
+        response = api.post_matched_transaction(body, endpoint)
+
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url + endpoint
