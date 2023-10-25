@@ -7,7 +7,7 @@ import pytest
 import responses
 
 from app import db
-from app.exports.agents.bpl import Asos, Bpl, Trenette
+from app.exports.agents.bpl import Bpl, Trenette
 from app.exports.models import ExportTransaction
 from app.feeds import FeedType
 from tests.fixtures import Default, get_or_create_export_transaction
@@ -53,12 +53,12 @@ def test_merchant_name_not_implemented(mock_provider_slug) -> None:
 
 def test_export_transaction_id(export_transaction: ExportTransaction) -> None:
     transaction_datetime = export_transaction.transaction_date.int_timestamp
-    asos = Asos()
-    result = asos.export_transaction_id(export_transaction, transaction_datetime)
+    trenette = Trenette()
+    result = trenette.export_transaction_id(export_transaction, transaction_datetime)
 
     assert (
         result
-        == asos.provider_slug
+        == trenette.provider_slug
         + "-"
         + sha1((export_transaction.transaction_id + str(transaction_datetime)).encode()).hexdigest()
     )
@@ -68,23 +68,23 @@ def test_export_transaction_id_refund_amount(export_transaction: ExportTransacti
     export_transaction.feed_type = FeedType.REFUND
     export_transaction.spend_amount = -5566
     transaction_datetime = export_transaction.transaction_date.int_timestamp
-    asos = Asos()
-    result = asos.export_transaction_id(export_transaction, transaction_datetime)
+    trenette = Trenette()
+    result = trenette.export_transaction_id(export_transaction, transaction_datetime)
 
     assert (
         result
-        == asos.provider_slug
+        == trenette.provider_slug
         + "-"
         + sha1((f"{export_transaction.transaction_id}-refund" + str(transaction_datetime)).encode()).hexdigest()
     )
 
 
 def test_make_export_data(export_transaction: ExportTransaction, db_session: db.Session) -> None:
-    asos = Asos()
-    result = asos.make_export_data(export_transaction, db_session)
+    trenette = Trenette()
+    result = trenette.make_export_data(export_transaction, db_session)
     export_data = result.outputs[0].data
 
-    assert "bpl-asos-" in export_data["id"]
+    assert "bpl-trenette-" in export_data["id"]
     assert export_data["transaction_total"] == export_transaction.spend_amount
     assert export_data["datetime"] == export_transaction.transaction_date.int_timestamp
     assert export_data["MID"] == MID
