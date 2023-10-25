@@ -1,7 +1,6 @@
 import uuid
 
 import pendulum
-import sentry_sdk
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
