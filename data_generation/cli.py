@@ -1,3 +1,5 @@
+import csv
+from pathlib import Path
 import random
 import typing as t
 import uuid
@@ -154,6 +156,24 @@ def batch_provide(data_provider: BaseImportDataProvider, fixture: dict, batch_si
     return dataset
 
 
+def mids_data(merchant_slug: str, payment_slug: str) -> list:
+    # Load mid and location id from csv files for a single merchant
+    # Only harvey nichols uses location id's to locate MID's so special check in this code.
+    filename = f"{merchant_slug}-mids.csv"
+    file_path = Path.cwd() / "data_generation/files" / filename
+    mids = []
+
+    with file_path.open() as f:
+        data = csv.reader(f, delimiter=",")
+        for row in data:
+            if not payment_slug == row[0]:
+                continue
+
+            mids.append(row[1])
+
+    return mids
+
+
 def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
     token_users = list(token_user_info_map[merchant_slug].items())
     payment_provider_slug = PAYMENT_AGENT_TO_PROVIDER_SLUG[payment_provider_agent]
@@ -181,15 +201,11 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
             "transactions": [],
         }
 
-        location_payment_mids = mids_data(merchant_slug, payment_provider_slug)
+        mids = mids_data(merchant_slug, payment_provider_slug)
         tx_per_user, remainder = divmod(num_tx, len(token_users))
         if i == 0:
             tx_per_user += remainder
         for _ in range(tx_per_user):
-            location_id = random.choice(  # will allow us to add more HN (+ perhaps WHSmith) location IDs if required
-                list(location_payment_mids.keys())
-            )
-            mid_map = location_payment_mids[location_id]
             user_data["transactions"].append(
                 {
                     "amount": round(random.randint(100, 30000)),
@@ -204,9 +220,9 @@ def make_fixture(merchant_slug: str, payment_provider_agent: str, num_tx: int):
                         }
                     ),
                     "settlement_key": str(uuid.uuid4()),
-                    "identifier": random.choice(mid_map),
+                    "identifier": random.choice(mids),
                     "identifier_type": IdentifierType.PRIMARY,
-                    "location_id": location_id,
+                    "location_id": None,
                 }
             )
         fixture["users"].append(user_data)
