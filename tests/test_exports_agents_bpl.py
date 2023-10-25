@@ -1,5 +1,5 @@
-from hashlib import sha1
 import json
+from hashlib import sha1
 from unittest import mock
 
 import pendulum

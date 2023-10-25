@@ -1,11 +1,11 @@
 import csv
-from pathlib import Path
 import random
 import typing as t
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from io import BytesIO
+from pathlib import Path
 
 import click
 import pendulum

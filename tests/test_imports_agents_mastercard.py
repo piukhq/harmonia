@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pendulum
 import pytest
+import time_machine
 
 from app import db
 from app.feeds import FeedType
@@ -120,6 +121,31 @@ def test_auth_get_transaction_id_no_third_party_id() -> None:
     assert UUID(transaction_id)
 
 
+def test_tgx2_settlement_parse_line() -> None:
+    line = (
+        "D                    token-bpl-123                                                                    "
+        "20200409                                                                                              "
+        "                                                                                                      "
+        "                                                                                                      "
+        "                                           test-mid-123                                     "
+        "test-mid-123test-m000000011199                                 1646666666                             "
+        "                                                                                                      "
+        "                                                         295d3aaa-"
+    )
+    assert MastercardTGX2Settlement().parse_line(line) == {
+        "record_type": "D",
+        "mid": "test-mid-123",
+        "location_id": "test-mid-123",
+        "aggregate_merchant_id": "test-m",
+        "amount": "000000011199",
+        "date": "20200409",
+        "time": "1646",
+        "token": "token-bpl-123",
+        "transaction_id": "295d3aaa-",
+        "auth_code": "666666",
+    }
+
+
 def test_tgx2_settlement_yield_transaction_data() -> None:
     data = SampleTransactions().MastercardTGX2Settlement(date=pendulum.DateTime(2020, 4, 9, 16, 46, 59))
     yield_transactions_data = MastercardTGX2Settlement().yield_transactions_data(data)
@@ -143,6 +169,35 @@ def test_tgx2_settlement_yield_transaction_data_incorrect_record_type() -> None:
     )
     with pytest.raises(StopIteration):
         next(MastercardTGX2Settlement().yield_transactions_data(data))
+
+
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 9, 0, 0, 0, "Europe/London"))
+def test_tgx2_settlement_to_transaction_fields(db_session: db.Session) -> None:
+    get_or_create_merchant_identifier(
+        session=db_session,
+        identifier="test-mid-123",
+        merchant_slug="bpl-trenette",
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
+    )
+    with mock.patch("app.imports.agents.bases.base.db.session_scope", return_value=db_session):
+        payment_transaction_fields = MastercardTGX2Settlement().to_transaction_fields(SETTLEMENT_TRANSACTION)
+
+    assert payment_transaction_fields._asdict() == {
+        "merchant_slug": "bpl-trenette",
+        "payment_provider_slug": "mastercard",
+        "transaction_date": pendulum.DateTime(2020, 10, 27, 15, 1, 0, tzinfo=pendulum.timezone("Europe/London")),
+        "has_time": True,
+        "spend_amount": 1222,
+        "spend_multiplier": 100,
+        "spend_currency": "GBP",
+        "card_token": "token-123",
+        "settlement_key": "fa912d5e0751841ff24f028100de1234046f9c71377759eb8f4ea95cc845eae0",
+        "first_six": None,
+        "last_four": None,
+        "auth_code": "666666",
+        "approval_code": "",
+        "extra_fields": None,
+    }
 
 
 def test_tgx2_settlement_get_transaction_id() -> None:
