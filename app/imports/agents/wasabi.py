@@ -91,19 +91,21 @@ class Wasabi(FileAgent, SoteriaConfigMixin):
 
             yield raw_data
 
-    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        return SchemeTransactionFields(
-            merchant_slug=self.provider_slug,
-            payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
-            transaction_date=self.get_transaction_date(data),
-            has_time=True,
-            spend_amount=to_pennies(data["Amount"]),
-            spend_multiplier=100,
-            spend_currency="GBP",
-            auth_code=data["Auth_code"],
-            first_six=data["Card Number"][:6],
-            last_four=data["Card Number"][-4:],
-        )
+    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
+        return [
+            SchemeTransactionFields(
+                merchant_slug=self.provider_slug,
+                payment_provider_slug=Wasabi.payment_provider_map[data["Card Type Name"]],
+                transaction_date=self.get_transaction_date(data),
+                has_time=True,
+                spend_amount=to_pennies(data["Amount"]),
+                spend_multiplier=100,
+                spend_currency="GBP",
+                auth_code=data["Auth_code"],
+                first_six=data["Card Number"][:6],
+                last_four=data["Card Number"][-4:],
+            )
+        ]
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

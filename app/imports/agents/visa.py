@@ -83,21 +83,24 @@ class VisaAuth(QueueAgent):
     def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> list[PaymentTransactionFields]:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
-        return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
-            payment_provider_slug=self.provider_slug,
-            transaction_date=transaction_date,
-            has_time=True,
-            spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
-            spend_multiplier=100,
-            spend_currency="GBP",
-            card_token=ext_user_id,
-            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "Transaction"),
-        )
+        return [
+            PaymentTransactionFields(
+                merchant_slug=merchant_slug,
+                payment_provider_slug=self.provider_slug,
+                transaction_date=transaction_date,
+                has_time=True,
+                spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
+                spend_multiplier=100,
+                spend_currency="GBP",
+                card_token=ext_user_id,
+                settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
+                auth_code=_get_auth_code(data, "Transaction"),
+            )
+            for merchant_slug in self.get_merchant_slugs(data)
+        ]
 
 
 class VisaSettlement(QueueAgent):
@@ -133,21 +136,24 @@ class VisaSettlement(QueueAgent):
     def get_psimi(self, data: dict) -> str | None:
         return get_key_value(data, "Transaction.VisaMerchantId")
 
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> list[PaymentTransactionFields]:
         ext_user_id = data["ExternalUserId"]
         transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.MerchantDateTimeGMT"), tz="GMT")
-        return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
-            payment_provider_slug=self.provider_slug,
-            transaction_date=transaction_date,
-            has_time=True,
-            spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
-            spend_multiplier=100,
-            spend_currency="GBP",
-            card_token=ext_user_id,
-            settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "Transaction"),
-        )
+        return [
+            PaymentTransactionFields(
+                merchant_slug=merchant_slug,
+                payment_provider_slug=self.provider_slug,
+                transaction_date=transaction_date,
+                has_time=True,
+                spend_amount=to_pennies(get_key_value(data, "Transaction.SettlementAmount")),
+                spend_multiplier=100,
+                spend_currency="GBP",
+                card_token=ext_user_id,
+                settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
+                auth_code=_get_auth_code(data, "Transaction"),
+            )
+            for merchant_slug in self.get_merchant_slugs(data)
+        ]
 
 
 class VisaRefund(QueueAgent):
@@ -183,20 +189,23 @@ class VisaRefund(QueueAgent):
     def get_psimi(self, data: dict) -> str:
         return get_key_value(data, "ReturnTransaction.VisaMerchantId")
 
-    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
+    def to_transaction_fields(self, data: dict) -> list[PaymentTransactionFields]:
         ext_user_id = data["ExternalUserId"]
         transaction_date = pendulum.from_format(
             get_key_value(data, "ReturnTransaction.DateTime"), "M/D/YYYY h:m:s A", tz="GMT"
         )
-        return PaymentTransactionFields(
-            merchant_slug=self.get_merchant_slug(data),
-            payment_provider_slug=self.provider_slug,
-            transaction_date=transaction_date,
-            has_time=True,
-            spend_amount=-abs(to_pennies(get_key_value(data, "ReturnTransaction.Amount"))),
-            spend_multiplier=100,
-            spend_currency="GBP",
-            card_token=ext_user_id,
-            settlement_key=_make_settlement_key(get_key_value(data, "ReturnTransaction.VipTransactionId")),
-            auth_code=_get_auth_code(data, "ReturnTransaction"),
-        )
+        return [
+            PaymentTransactionFields(
+                merchant_slug=merchant_slug,
+                payment_provider_slug=self.provider_slug,
+                transaction_date=transaction_date,
+                has_time=True,
+                spend_amount=-abs(to_pennies(get_key_value(data, "ReturnTransaction.Amount"))),
+                spend_multiplier=100,
+                spend_currency="GBP",
+                card_token=ext_user_id,
+                settlement_key=_make_settlement_key(get_key_value(data, "ReturnTransaction.VipTransactionId")),
+                auth_code=_get_auth_code(data, "ReturnTransaction"),
+            )
+            for merchant_slug in self.get_merchant_slugs(data)
+        ]

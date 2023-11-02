@@ -70,30 +70,34 @@ IDENTIFY = IdentifyArgs(
     merchant_identifier_ids=[1],
     card_token=Default.user_token,
 )
-PAYMENT_TRANSACTION_FIELDS = PaymentTransactionFields(
-    merchant_slug=Default.merchant_slug,
-    payment_provider_slug=PAYMENT_PROVIDER_SLUG,
-    transaction_date=TRANSACTION_DATE,
-    has_time=True,
-    spend_amount=5566,
-    spend_multiplier=100,
-    spend_currency="GBP",
-    card_token=CARD_TOKEN,
-    settlement_key="33ffec57b443bec64d34d84f20590a6c88f4d0f4fad548bb2a5fb545d817128e",
-    first_six=None,
-    last_four=None,
-    auth_code="472624",
-    approval_code="",
-)
-SCHEME_TRANSACTION_FIELDS = SchemeTransactionFields(
-    merchant_slug=Default.merchant_slug,
-    payment_provider_slug=PAYMENT_PROVIDER_SLUG,
-    transaction_date=TRANSACTION_DATE,
-    has_time=True,
-    spend_amount=6000,
-    spend_multiplier=100,
-    spend_currency="GBP",
-)
+PAYMENT_TRANSACTION_FIELDS = [
+    PaymentTransactionFields(
+        merchant_slug=Default.merchant_slug,
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
+        transaction_date=TRANSACTION_DATE,
+        has_time=True,
+        spend_amount=5566,
+        spend_multiplier=100,
+        spend_currency="GBP",
+        card_token=CARD_TOKEN,
+        settlement_key="33ffec57b443bec64d34d84f20590a6c88f4d0f4fad548bb2a5fb545d817128e",
+        first_six=None,
+        last_four=None,
+        auth_code="472624",
+        approval_code="",
+    )
+]
+SCHEME_TRANSACTION_FIELDS = [
+    SchemeTransactionFields(
+        merchant_slug=Default.merchant_slug,
+        payment_provider_slug=PAYMENT_PROVIDER_SLUG,
+        transaction_date=TRANSACTION_DATE,
+        has_time=True,
+        spend_amount=6000,
+        spend_multiplier=100,
+        spend_currency="GBP",
+    )
+]
 
 
 class MockBaseAgent(BaseAgent):
@@ -171,15 +175,15 @@ def test_identify_mids_no_matching_identifiers_visa(db_session: db.Session) -> N
 def test_get_merchant_slug_primary_mid_visa(mid_primary: int, db_session: db.Session) -> None:
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
-        slug = agent.get_merchant_slug(VISA_TRANSACTION)
-        assert slug == Default.merchant_slug
+        slugs = agent.get_merchant_slugs(VISA_TRANSACTION)
+        assert slugs == [Default.merchant_slug]
 
 
 def test_get_merchant_slug_secondary_mid_visa(mid_secondary: int, db_session: db.Session) -> None:
     with mock.patch("app.db.session_scope", return_value=db_session):
         agent = VisaAuth()
-        slug = agent.get_merchant_slug(VISA_TRANSACTION)
-        assert slug == Default.merchant_slug
+        slugs = agent.get_merchant_slugs(VISA_TRANSACTION)
+        assert slugs == [Default.merchant_slug]
 
 
 def test_provider_slug_not_implemented() -> None:
@@ -264,7 +268,7 @@ def test_import_transactions(
     agent = MockBaseAgent()
     caplog.set_level(logging.DEBUG)
     agent.log.propagate = True
-    mock_build_inserts.return_value = IMPORT_TRANSACTION_INSERT, TRANSACTION_INSERT, IDENTIFY
+    mock_build_inserts.return_value = (IMPORT_TRANSACTION_INSERT, [TRANSACTION_INSERT], [IDENTIFY])
 
     # Check that there are no existing import transactions
     assert db_session.query(models.ImportTransaction).count() == 0
@@ -353,9 +357,9 @@ def test_persist_and_enqueue_merchant_feed(
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
 @mock.patch.object(BaseAgent, "get_primary_mids", return_value=Default.primary_mids)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=Default.transaction_id)
-@mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=Default.merchant_slug)
+@mock.patch("app.imports.agents.bases.base.get_merchant_slugs", return_value=[Default.merchant_slug])
 def test_build_inserts(
-    mock_get_merchant_slug,
+    mock_get_merchant_slugs,
     mock_get_transaction_id,
     mock_get_primary_mids,
     mock_feed_type,
@@ -366,13 +370,13 @@ def test_build_inserts(
     db_session: db.Session,
 ) -> None:
     agent = MockBaseAgent()
-    import_transaction_insert, transaction_insert, identify = agent._build_inserts(
+    import_transaction_insert, transaction_inserts, identifies = agent._build_inserts(
         tx_data=VISA_TRANSACTION, match_group=MATCH_GROUP, source=SOURCE, session=db_session
     )
 
     assert import_transaction_insert == IMPORT_TRANSACTION_INSERT
-    assert transaction_insert == TRANSACTION_INSERT
-    assert identify == IDENTIFY
+    assert transaction_inserts == [TRANSACTION_INSERT]
+    assert identifies == [IDENTIFY]
 
 
 @mock.patch.object(BaseAgent, "to_transaction_fields", return_value=SCHEME_TRANSACTION_FIELDS)
@@ -380,9 +384,9 @@ def test_build_inserts(
 @mock.patch.object(BaseAgent, "feed_type", new_callable=mock.PropertyMock, return_value=FeedType.AUTH)
 @mock.patch.object(BaseAgent, "get_primary_mids", return_value=Default.primary_mids)
 @mock.patch.object(BaseAgent, "get_transaction_id", return_value=Default.transaction_id)
-@mock.patch("app.imports.agents.bases.base.get_merchant_slug", return_value=Default.merchant_slug)
+@mock.patch("app.imports.agents.bases.base.get_merchant_slugs", return_value=[Default.merchant_slug])
 def test_build_inserts_import_error(
-    mock_get_merchant_slug,
+    mock_get_merchant_slugs,
     mock_get_transaction_id,
     mock_get_primary_mids,
     mock_feed_type,

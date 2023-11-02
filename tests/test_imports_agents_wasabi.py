@@ -149,7 +149,8 @@ def test_yield_transactions_data_auth_code_is_decline() -> None:
 
 def test_to_transaction_fields() -> None:
     scheme_transaction_fields = Wasabi().to_transaction_fields(TRANSACTION_DATA)
-    assert scheme_transaction_fields._asdict() == {
+    assert len(scheme_transaction_fields) == 1
+    assert scheme_transaction_fields[0]._asdict() == {
         "merchant_slug": MERCHANT_SLUG,
         "payment_provider_slug": PaymentProviderSlug.AMEX,
         "transaction_date": pendulum.DateTime(2020, 10, 27, 15, 1, 59, tzinfo=pendulum.timezone("Europe/London")),

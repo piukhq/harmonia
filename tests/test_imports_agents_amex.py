@@ -35,14 +35,14 @@ def squaremeal_mid(db_session: db.Session) -> models.MerchantIdentifier:
     )
 
 
-def test_auth_do_not_import_streaming_agent():
-    should_import = AmexAuth().do_not_import(SQUAREMEAL_SLUG)
-    assert should_import is True
-
-
-def test_auth_do_not_import_matching_agent():
-    should_import = AmexAuth().do_not_import("wasabi")
+def test_auth_should_import_streaming_agent():
+    should_import = AmexAuth().should_import(SQUAREMEAL_SLUG)
     assert should_import is False
+
+
+def test_auth_should_import_matching_agent():
+    should_import = AmexAuth().should_import("wasabi")
+    assert should_import is True
 
 
 def test_auth_to_transaction_fields_streaming_agent(squaremeal_mid: models.MerchantIdentifier, db_session: db.Session):
@@ -51,7 +51,7 @@ def test_auth_to_transaction_fields_streaming_agent(squaremeal_mid: models.Merch
             SampleTransactions().amex_auth(identifier=SQUAREMEAL_IDENTIFIER)
         )
 
-    assert transaction_fields is None
+    assert transaction_fields == []
 
 
 def test_auth_to_transaction_fields_matching_agent(iceland_mid: models.MerchantIdentifier, db_session: db.Session):
@@ -60,7 +60,8 @@ def test_auth_to_transaction_fields_matching_agent(iceland_mid: models.MerchantI
             SampleTransactions().amex_auth(identifier=ICELAND_IDENTIFIER)
         )
 
-    assert transaction_fields._asdict() == {
+    assert len(transaction_fields) == 1
+    assert transaction_fields[0]._asdict() == {
         "merchant_slug": ICELAND_SLUG,
         "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
         "transaction_date": pendulum.DateTime(2022, 11, 4, 8, 55, 50, tzinfo=pendulum.timezone("MST")),
@@ -89,7 +90,8 @@ def test_settlement_to_transaction_fields_with_dpan(iceland_mid: models.Merchant
             SampleTransactions().amex_settlement(identifier=ICELAND_IDENTIFIER)
         )
 
-    assert transaction_fields._asdict() == {
+    assert len(transaction_fields) == 1
+    assert transaction_fields[0]._asdict() == {
         "merchant_slug": ICELAND_SLUG,
         "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
         "transaction_date": pendulum.DateTime(2022, 11, 4, 15, 55, 50, tzinfo=pendulum.timezone("Europe/London")),
@@ -113,7 +115,8 @@ def test_settlement_to_transaction_fields_without_dpan(iceland_mid: models.Merch
     with mock.patch("app.imports.agents.bases.base.db.session_scope", return_value=db_session):
         transaction_fields = AmexSettlement().to_transaction_fields(transaction)
 
-    assert transaction_fields._asdict() == {
+    assert len(transaction_fields) == 1
+    assert transaction_fields[0]._asdict() == {
         "merchant_slug": ICELAND_SLUG,
         "payment_provider_slug": PAYMENT_PROVIDER_SLUG,
         "transaction_date": pendulum.DateTime(2022, 11, 4, 15, 55, 50, tzinfo=pendulum.timezone("Europe/London")),

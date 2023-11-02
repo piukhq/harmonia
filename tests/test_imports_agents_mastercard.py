@@ -93,7 +93,8 @@ def test_auth_to_transaction_fields(db_session: db.Session) -> None:
     with mock.patch("app.imports.agents.bases.base.db.session_scope", return_value=db_session):
         transaction_fields = MastercardAuth().to_transaction_fields(AUTH_TRANSACTION_1)
 
-    assert transaction_fields == PaymentTransactionFields(
+    assert len(transaction_fields) == 1
+    assert transaction_fields[0] == PaymentTransactionFields(
         merchant_slug="bpl-Trenette",
         payment_provider_slug="mastercard",
         transaction_date=mock.ANY,
@@ -182,7 +183,8 @@ def test_tgx2_settlement_to_transaction_fields(db_session: db.Session) -> None:
     with mock.patch("app.imports.agents.bases.base.db.session_scope", return_value=db_session):
         payment_transaction_fields = MastercardTGX2Settlement().to_transaction_fields(SETTLEMENT_TRANSACTION)
 
-    assert payment_transaction_fields._asdict() == {
+    assert len(payment_transaction_fields) == 1
+    assert payment_transaction_fields[0]._asdict() == {
         "merchant_slug": "bpl-trenette",
         "payment_provider_slug": "mastercard",
         "transaction_date": pendulum.DateTime(2020, 10, 27, 15, 1, 0, tzinfo=pendulum.timezone("Europe/London")),
