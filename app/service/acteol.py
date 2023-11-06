@@ -5,6 +5,9 @@ from app.reporting import get_logger
 
 log = get_logger("acteol")
 
+class InternalError(requests.RequestException):
+    def __init__(self):
+        super().__init__("acteol raised an internal error")
 
 class ActeolAPI:
     def __init__(self, base_url: str) -> None:
@@ -16,6 +19,9 @@ class ActeolAPI:
         url = f"{self.base_url}{endpoint}"
         response = self.session.post(url, json=body)
         response.raise_for_status()
+        json = response.json()
+        if json["ResponseStatus"] is False and json["Errors"][0]["ErrorDescription"] == "Internal Error":
+            raise InternalError
         return response
 
     def post_matched_transaction(self, body: dict, endpoint: str) -> requests.models.Response:
