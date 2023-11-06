@@ -8,6 +8,13 @@ from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "stonegate"
 
+FIRST_SIX_MAPPING = {("2", "5"): "mastercard", "3": "amex", "4": "visa"}
+PAYMENT_CARD_TYPE_MAPPING = {
+    ("visa", "vs"): "visa",
+    ("mastercard", "mcard", "mc", "master card", "master", "maestro"): "mastercard",
+    ("american express", "amex", "americanexpress", "am ex"): "amex"
+}
+
 
 class Stonegate(QueueAgent):
     provider_slug = PROVIDER_SLUG
@@ -30,44 +37,24 @@ class Stonegate(QueueAgent):
             "counters": ["transactions"],
         }
 
-    @staticmethod
-    def match_first_six_to_payment_type(first_six: str) -> str:
-        if first_six[0] == "4":
-            return "visa"
-        if first_six[0] in ("2", "5"):
-            return "mastercard"
-        if first_six[0] == "3":
-            return "amex"
-
-    def first_six_valid(self, first_six: str):
-        if not bool(first_six and first_six.strip()):
-            return False
-        if len(first_six) != 6:
-            return False
-        elif first_six[0] in ("2", "3", "4", "5"):
-            self.payment_card_type = self.match_first_six_to_payment_type(first_six)
-            return True
-        else:
-            return False
-
-    def get_payment_card_from_payment_card_type(self, payment_card_type):
-        if any(payment_card in payment_card_type.lower() for payment_card in ("visa", "vs")):
-            self.payment_card_type = "visa"
-        if any(payment_card in payment_card_type.lower() for payment_card in ("mastercard", "mcard", "mc", "master card", "master", "maestro")):
-            self.payment_card_type = "mastercard"
-        if any(payment_card in payment_card_type.lower() for payment_card in ("american express", "amex", "americanexpress", "am ex")):
-            self.payment_card_type = "amex"
+    def _set_payment_card_type(self, first_six: str, payment_card_type: str):
+        if len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
+            self.payment_card_type = FIRST_SIX_MAPPING[first_six[0]]
+            return
+        for payment_card_option in PAYMENT_CARD_TYPE_MAPPING:
+            for payment_card in payment_card_option:
+                if payment_card in payment_card_type.lower():
+                    self.payment_card_type = PAYMENT_CARD_TYPE_MAPPING[payment_card_option]
+                    return
 
     def _do_import(self, body: dict) -> None:
-        first_six = body["payment_card_first_six"]
-        if not self.first_six_valid(first_six):
-            self.get_payment_card_from_payment_card_type(body["payment_card_type"])
-            if not self.payment_card_type:
-                self.log.warning(
-                    f"Discarding transaction {self.get_transaction_id(body)} - unable to get payment card type "
-                    f"from payment_card_first_six or payment_card_type fields",
-                )
-                return
+        self._set_payment_card_type(body["payment_card_first_six"], body["payment_card_type"])
+        if not self.payment_card_type:
+            self.log.warning(
+                f"Discarding transaction {self.get_transaction_id(body)} - unable to get payment card type "
+                f"from payment_card_first_six or payment_card_type fields",
+            )
+            return
 
         super()._do_import(body)
 
