@@ -19,7 +19,7 @@ PAYMENT_CARD_TYPE_MAPPING = {
 class Stonegate(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
-    payment_card_type = None
+    payment_card_type = ""
 
     config = Config(
         ConfigValue(
@@ -37,8 +37,12 @@ class Stonegate(QueueAgent):
             "counters": ["transactions"],
         }
 
-    def _set_payment_card_type(self, first_six: str, payment_card_type: str):
-        if first_six and len(first_six) == 6 and any(first_six[0] in payment_type for payment_type in FIRST_SIX_MAPPING):
+    def _set_payment_card_type(self, first_six: str | None, payment_card_type: str):
+        if (
+            first_six
+            and len(first_six) == 6
+            and any(first_six[0] in payment_type for payment_type in FIRST_SIX_MAPPING)
+        ):
             self.payment_card_type = FIRST_SIX_MAPPING[first_six[0]]
             return
         for payment_card_option in PAYMENT_CARD_TYPE_MAPPING:

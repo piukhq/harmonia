@@ -1,5 +1,6 @@
 import datetime
 import logging
+from copy import copy
 from unittest import mock
 
 import pendulum
@@ -19,8 +20,8 @@ MERCHANT_SLUG = "stonegate"
 TRANSACTION_DATA = [
     {
         "transaction_id": "QTZENTY0DdGOEJCQkU3",
-        "payment_card_type": "VS",
-        "payment_card_first_six": "454546",
+        "payment_card_type": "MS",
+        "payment_card_first_six": None,
         "payment_card_last_four": "6309",
         "amount": 23.99,
         "currency_code": "GBP",
@@ -49,7 +50,7 @@ def test_stonegate_instance(stonegate) -> None:
         ("", "VISACREDIT", "visa"),
         ("      ", "EDC/Maestro", "mastercard"),
         (None, "americanexpress", "amex"),
-        ("123", "american experience", None),
+        ("123", "american experience", ""),
     ],
 )
 def test_set_payment_card_type(first_six, payment_card_type, expected_result, stonegate) -> None:
@@ -59,79 +60,84 @@ def test_set_payment_card_type(first_six, payment_card_type, expected_result, st
 
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
 def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
-    transaction_data = TRANSACTION_DATA[0]
+    transaction_data = copy(TRANSACTION_DATA[0])
     transaction_data["payment_card_first_six"] = "412345"
+    transaction_data["payment_card_type"] = "Nothing to see here"
 
     stonegate._do_import(transaction_data)
 
+    assert stonegate.payment_card_type == "visa"
     mock_base_do_import.assert_called_once()
 
 
-@pytest.mark.parametrize("test_input", ["", "      ", None])
-def test_do_import_with_null_first_six(test_input, stonegate, caplog) -> None:
-    transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = test_input
+@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
+def test_do_import_with_valid_payment_card_type(mock_base_do_import, stonegate) -> None:
+    transaction_data = copy(TRANSACTION_DATA[0])
+    transaction_data["payment_card_type"] = "VISADEBIT"
+
+    stonegate._do_import(transaction_data)
+
+    assert stonegate.payment_card_type == "visa"
+    mock_base_do_import.assert_called_once()
+
+
+def test_do_import_with_invalid_first_six_and_payment_card_type(stonegate, caplog) -> None:
+    transaction_data = copy(TRANSACTION_DATA[0])
+    transaction_data["payment_card_first_six"] = None
+    transaction_data["payment_card_type"] = "Nothing to see here"
 
     stonegate.log.propagate = True
     caplog.set_level(logging.DEBUG)
     stonegate._do_import(transaction_data)
 
     assert (
-        caplog.messages[0]
-        == "Discarding transaction QTZENTY0DdGOEJCQkU3 - unable to get payment card type from payment_card_first_six or payment_card_type fields"
+        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 - unable to get payment card type from "
+        "payment_card_first_six or payment_card_type fields"
     )
     assert len(caplog.messages) == 1
 
 
-def test_do_import_with_empty_string_first_six(stonegate, caplog) -> None:
-    transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = "123"
+@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
+def test_to_transaction_fields_from_valid_first_six(mock_base_do_import, stonegate) -> None:
+    transaction_data = copy(TRANSACTION_DATA[0])
+    transaction_data["payment_card_first_six"] = "432154"
+    transaction_data["payment_card_type"] = "Nothing to see here"
 
-    stonegate.log.propagate = True
-    caplog.set_level(logging.DEBUG)
     stonegate._do_import(transaction_data)
-
-    assert (
-        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six "
-        "field does not contain 6 characters"
-    )
-    assert len(caplog.messages) == 1
-
-
-@pytest.mark.parametrize("test_input", ["154546", "lskjdh"])
-def test_do_import_with_unrecognised_first_six(test_input: str, stonegate, caplog) -> None:
-    transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = test_input
-
-    stonegate.log.propagate = True
-    caplog.set_level(logging.DEBUG)
-    stonegate._do_import(transaction_data)
-
-    assert (
-        caplog.messages[0]
-        == "Discarding transaction QTZENTY0DdGOEJCQkU3 as the payment_card_first_six is not recognised"
-    )
-    assert len(caplog.messages) == 1
-
-
-@pytest.mark.parametrize(
-    "test_input,expected", [("412345", "visa"), ("212345", "mastercard"), ("512345", "mastercard"), ("312345", "amex")]
-)
-def test_to_transaction_fields(test_input: str, expected: str) -> None:
-    transaction_data = TRANSACTION_DATA[0]
-    transaction_data["payment_card_first_six"] = test_input
-
-    scheme_transaction_fields = Stonegate().to_transaction_fields(transaction_data)
+    scheme_transaction_fields = stonegate.to_transaction_fields(transaction_data)
 
     assert scheme_transaction_fields._asdict() == {
         "merchant_slug": MERCHANT_SLUG,
-        "payment_provider_slug": expected,
+        "payment_provider_slug": "visa",
         "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
         "has_time": True,
         "spend_amount": 2399,
         "spend_multiplier": 100,
         "spend_currency": "GBP",
-        "first_six": test_input,
+        "first_six": "432154",
+        "last_four": "6309",
+        "auth_code": "188328",
+        "extra_fields": {"account_id": "value1"},
+    }
+
+
+@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
+def test_to_transaction_fields_from_valid_payment_card_type(mock_base_do_import, stonegate) -> None:
+    transaction_data = copy(TRANSACTION_DATA[0])
+    transaction_data["payment_card_type"] = "VISADEBIT"
+
+    stonegate._do_import(transaction_data)
+    scheme_transaction_fields = stonegate.to_transaction_fields(transaction_data)
+
+    assert scheme_transaction_fields._asdict() == {
+        "merchant_slug": MERCHANT_SLUG,
+        "payment_provider_slug": "visa",
+        "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
+        "has_time": True,
+        "spend_amount": 2399,
+        "spend_multiplier": 100,
+        "spend_currency": "GBP",
+        "first_six": None,
         "last_four": "6309",
         "auth_code": "188328",
         "extra_fields": {"account_id": "value1"},
