@@ -44,7 +44,7 @@ class MerchantIdentifier(Base, ModelMixin):
     __tablename__ = "merchant_identifier"
     __table_args__ = (
         s.UniqueConstraint(
-            "identifier", "identifier_type", "payment_provider_id", name="_identifier_type_provider_mi_uc"
+            "identifier", "identifier_type", "payment_provider_id", "loyalty_scheme_id", name="_identifier_type_provider_mi_uc"
         ),
     )
 
