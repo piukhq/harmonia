@@ -51,11 +51,11 @@ class Stonegate(QueueAgent):
             return False
 
     def get_payment_card_from_payment_card_type(self, payment_card_type):
-        if ("visa", "vs") in payment_card_type.lower():
+        if any(payment_card in payment_card_type.lower() for payment_card in ("visa", "vs")):
             self.payment_card_type = "visa"
-        if ("mastercard", "mcard", "mc", "master card", "master", "maestro") in payment_card_type.lower():
+        if any(payment_card in payment_card_type.lower() for payment_card in ("mastercard", "mcard", "mc", "master card", "master", "maestro")):
             self.payment_card_type = "mastercard"
-        if ("american express", "amex", "americanexpress", "am ex") in payment_card_type.lower():
+        if any(payment_card in payment_card_type.lower() for payment_card in ("american express", "amex", "americanexpress", "am ex")):
             self.payment_card_type = "amex"
 
     def _do_import(self, body: dict) -> None:

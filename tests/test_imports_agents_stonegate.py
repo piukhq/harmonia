@@ -49,6 +49,15 @@ def test_first_six_valid(test_input, expected_bool, expected_value, stonegate) -
     assert stonegate.payment_card_type == expected_value
 
 
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [("VISACREDIT", "visa"), ("VISACREDIT", "visa")],
+)
+def test_get_payment_card_from_payment_card_type(test_input, expected, stonegate):
+    stonegate.get_payment_card_from_payment_card_type(test_input)
+    assert stonegate.payment_card_type == expected
+
+
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
 def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
     transaction_data = TRANSACTION_DATA[0]
