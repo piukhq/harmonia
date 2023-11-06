@@ -40,6 +40,15 @@ def test_stonegate_instance(stonegate) -> None:
     assert stonegate.feed_type == FeedType.MERCHANT
 
 
+@pytest.mark.parametrize(
+    "test_input,expected_bool,expected_value",
+    [("", False, None), (" ", False, None), (None, False, None), ("123", False, None), ("412345", True, "visa")],
+)
+def test_first_six_valid(test_input, expected_bool, expected_value, stonegate) -> None:
+    assert stonegate.first_six_valid(test_input) == expected_bool
+    assert stonegate.payment_card_type == expected_value
+
+
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
 def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
     transaction_data = TRANSACTION_DATA[0]
