@@ -5,9 +5,11 @@ from app.reporting import get_logger
 
 log = get_logger("acteol")
 
+
 class InternalError(requests.RequestException):
     def __init__(self):
         super().__init__("acteol raised an internal error")
+
 
 class ActeolAPI:
     def __init__(self, base_url: str) -> None:
