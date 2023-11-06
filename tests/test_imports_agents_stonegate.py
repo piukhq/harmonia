@@ -41,26 +41,20 @@ def test_stonegate_instance(stonegate) -> None:
 
 
 @pytest.mark.parametrize(
-    "test_input,expected_bool,expected_value",
-    [("", False, None), ("      ", False, None), (None, False, None), ("123", False, None), ("412345", True, "visa")],
+    "first_six,payment_card_type,expected_result",
+    [
+        ("412345", "Nothing", "visa"),
+        ("212345", "Nothing", "mastercard"),
+        ("312345", "Nothing", "amex"),
+        ("", "VISACREDIT", "visa"),
+        ("      ", "EDC/Maestro", "mastercard"),
+        (None, "americanexpress", "amex"),
+        ("123", "american experience", None),
+    ],
 )
-def test_first_six_valid(test_input, expected_bool, expected_value, stonegate) -> None:
-    assert stonegate.first_six_valid(test_input) == expected_bool
-    assert stonegate.payment_card_type == expected_value
-
-
-@pytest.mark.parametrize(
-    "test_input,expected",
-    [("VISACREDIT", "visa"), ("EDC/Maestro", "mastercard"), ("american experience", None)],
-)
-def test_get_payment_card_from_payment_card_type(test_input, expected, stonegate):
-    stonegate.get_payment_card_from_payment_card_type(test_input)
-    assert stonegate.payment_card_type == expected
-
-
-def test_set_payment_card_from_payment_card_type(stonegate):
-    stonegate._set_payment_card_type("712345", "VISACREDIT")
-    assert stonegate.payment_card_type == None
+def test_set_payment_card_type(first_six, payment_card_type, expected_result, stonegate) -> None:
+    stonegate._set_payment_card_type(first_six, payment_card_type)
+    assert stonegate.payment_card_type == expected_result
 
 
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
@@ -83,7 +77,8 @@ def test_do_import_with_null_first_six(test_input, stonegate, caplog) -> None:
     stonegate._do_import(transaction_data)
 
     assert (
-        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 - unable to get payment card type from payment_card_first_six or payment_card_type fields"
+        caplog.messages[0]
+        == "Discarding transaction QTZENTY0DdGOEJCQkU3 - unable to get payment card type from payment_card_first_six or payment_card_type fields"
     )
     assert len(caplog.messages) == 1
 

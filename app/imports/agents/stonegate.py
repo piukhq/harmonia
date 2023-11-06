@@ -8,11 +8,11 @@ from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "stonegate"
 
-FIRST_SIX_MAPPING = {("2", "5"): "mastercard", "3": "amex", "4": "visa"}
+FIRST_SIX_MAPPING = {"2": "mastercard", "5": "mastercard", "3": "amex", "4": "visa"}
 PAYMENT_CARD_TYPE_MAPPING = {
     ("visa", "vs"): "visa",
     ("mastercard", "mcard", "mc", "master card", "master", "maestro"): "mastercard",
-    ("american express", "amex", "americanexpress", "am ex"): "amex"
+    ("american express", "amex", "americanexpress", "am ex"): "amex",
 }
 
 
@@ -38,7 +38,7 @@ class Stonegate(QueueAgent):
         }
 
     def _set_payment_card_type(self, first_six: str, payment_card_type: str):
-        if len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
+        if first_six and len(first_six) == 6 and any(first_six[0] in payment_type for payment_type in FIRST_SIX_MAPPING):
             self.payment_card_type = FIRST_SIX_MAPPING[first_six[0]]
             return
         for payment_card_option in PAYMENT_CARD_TYPE_MAPPING:
