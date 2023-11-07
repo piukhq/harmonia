@@ -8,7 +8,12 @@ from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "stonegate"
 
-PAYMENT_CARD_TYPES = {"VS": "visa", "MC": "mastercard", "AX": "amex"}
+FIRST_SIX_MAPPING = {"2": "mastercard", "5": "mastercard", "3": "amex", "4": "visa"}
+PAYMENT_CARD_TYPE_MAPPING = {
+    ("visa", "vs"): "visa",
+    ("mastercard", "mcard", "mc", "master card", "master", "maestro"): "mastercard",
+    ("american express", "amex", "americanexpress", "am ex"): "amex",
+}
 
 
 class Stonegate(QueueAgent):
@@ -31,46 +36,32 @@ class Stonegate(QueueAgent):
             "counters": ["transactions"],
         }
 
-    def first_six_valid(self, txid: str, first_six: str):
-        if len(first_six) != 6:
-            self.log.warning(
-                f"Discarding transaction {txid} as the payment_card_first_six field does not contain 6 characters",
-            )
-            return False
-        elif first_six[0] in ("2", "3", "4", "5"):
-            return True
-        else:
-            self.log.warning(
-                f"Discarding transaction {txid} as the payment_card_first_six is not recognised",
-            )
-            return False
+    def _get_payment_card_type(self, first_six: str | None, payment_card_type: str) -> str | None:
+        if first_six and len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
+            return FIRST_SIX_MAPPING[first_six[0]]
+        for values, payment_card in PAYMENT_CARD_TYPE_MAPPING.items():
+            for value in values:
+                if value in payment_card_type.casefold():
+                    return payment_card
+        return None
 
     def _do_import(self, body: dict) -> None:
-        txid = self.get_transaction_id(body)
-        first_six = body["payment_card_first_six"]
-        if not bool(first_six and first_six.strip()):
+        payment_card_type = self._get_payment_card_type(body["payment_card_first_six"], body["payment_card_type"])
+        if not payment_card_type:
             self.log.warning(
-                f"Discarding transaction {txid} as the payment_card_first_six field is empty",
+                f"Discarding transaction {self.get_transaction_id(body)} - unable to get payment card type "
+                f"from payment_card_first_six or payment_card_type fields",
             )
             return
-        if not self.first_six_valid(txid, first_six):
-            return
+
+        body["payment_card_type"] = payment_card_type
 
         super()._do_import(body)
-
-    @staticmethod
-    def match_first_six_to_payment_type(first_six: str) -> str:
-        if first_six[0] == "4":
-            return "visa"
-        elif first_six[0] in ("2", "5"):
-            return "mastercard"
-        else:
-            return "amex"
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return SchemeTransactionFields(
             merchant_slug=self.provider_slug,
-            payment_provider_slug=self.match_first_six_to_payment_type(data["payment_card_first_six"]),
+            payment_provider_slug=data["payment_card_type"],
             transaction_date=pendulum.instance(data["date"]),
             has_time=True,
             spend_amount=to_pennies(data["amount"]),
