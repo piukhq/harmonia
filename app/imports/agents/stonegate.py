@@ -49,7 +49,6 @@ class Stonegate(QueueAgent):
             for payment_card in payment_card_option:
                 if payment_card in payment_card_type.lower():
                     self.payment_card_type = PAYMENT_CARD_TYPE_MAPPING[payment_card_option]
-                    return
 
     def _do_import(self, body: dict) -> None:
         self._set_payment_card_type(body["payment_card_first_six"], body["payment_card_type"])
