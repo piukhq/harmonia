@@ -43,6 +43,7 @@ class Stonegate(QueueAgent):
             for value in values:
                 if value in payment_card_type.casefold():
                     return payment_card
+        return None
 
     def _do_import(self, body: dict) -> None:
         payment_card_type = self._get_payment_card_type(body["payment_card_first_six"], body["payment_card_type"])
