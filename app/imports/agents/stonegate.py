@@ -36,7 +36,7 @@ class Stonegate(QueueAgent):
             "counters": ["transactions"],
         }
 
-    def _get_payment_card_type(self, first_six: str | None, payment_card_type: str):
+    def _get_payment_card_type(self, first_six: str | None, payment_card_type: str) -> str | None:
         if first_six and len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
             return FIRST_SIX_MAPPING[first_six[0]]
         for values, payment_card in PAYMENT_CARD_TYPE_MAPPING.items():
