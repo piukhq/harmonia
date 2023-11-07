@@ -8,7 +8,7 @@ log = get_logger("acteol")
 
 class InternalError(requests.RequestException):
     def __init__(self):
-        super().__init__("acteol raised an internal error")
+        super().__init__("atreemo raised an internal error")
 
 
 class ActeolAPI:
