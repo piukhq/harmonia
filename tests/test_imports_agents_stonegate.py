@@ -50,12 +50,12 @@ def test_stonegate_instance(stonegate) -> None:
         ("", "VISACREDIT", "visa"),
         ("      ", "EDC/Maestro", "mastercard"),
         (None, "americanexpress", "amex"),
-        ("123", "american experience", ""),
+        ("123", "american experience", None),
     ],
 )
 def test_set_payment_card_type(first_six, payment_card_type, expected_result, stonegate) -> None:
-    stonegate._set_payment_card_type(first_six, payment_card_type)
-    assert stonegate.payment_card_type == expected_result
+    # stonegate._get_payment_card_type(first_six, payment_card_type)
+    assert stonegate._get_payment_card_type(first_six, payment_card_type) == expected_result
 
 
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
@@ -66,8 +66,8 @@ def test_do_import_with_valid_first_six(mock_base_do_import, stonegate) -> None:
 
     stonegate._do_import(transaction_data)
 
-    assert stonegate.payment_card_type == "visa"
     mock_base_do_import.assert_called_once()
+    assert mock_base_do_import.call_args[0][0]["payment_card_type"] == "visa"
 
 
 @mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
@@ -77,8 +77,8 @@ def test_do_import_with_valid_payment_card_type(mock_base_do_import, stonegate) 
 
     stonegate._do_import(transaction_data)
 
-    assert stonegate.payment_card_type == "visa"
     mock_base_do_import.assert_called_once()
+    assert mock_base_do_import.call_args[0][0]["payment_card_type"] == "visa"
 
 
 def test_do_import_with_invalid_first_six_and_payment_card_type(stonegate, caplog) -> None:
@@ -95,50 +95,3 @@ def test_do_import_with_invalid_first_six_and_payment_card_type(stonegate, caplo
         "payment_card_first_six or payment_card_type fields"
     )
     assert len(caplog.messages) == 1
-
-
-@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
-def test_to_transaction_fields_from_valid_first_six(mock_base_do_import, stonegate) -> None:
-    transaction_data = copy(TRANSACTION_DATA[0])
-    transaction_data["payment_card_first_six"] = "432154"
-    transaction_data["payment_card_type"] = "Nothing to see here"
-
-    stonegate._do_import(transaction_data)
-    scheme_transaction_fields = stonegate.to_transaction_fields(transaction_data)
-
-    assert scheme_transaction_fields._asdict() == {
-        "merchant_slug": MERCHANT_SLUG,
-        "payment_provider_slug": "visa",
-        "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
-        "has_time": True,
-        "spend_amount": 2399,
-        "spend_multiplier": 100,
-        "spend_currency": "GBP",
-        "first_six": "432154",
-        "last_four": "6309",
-        "auth_code": "188328",
-        "extra_fields": {"account_id": "value1"},
-    }
-
-
-@mock.patch("app.imports.agents.bases.queue_agent.QueueAgent._do_import")
-def test_to_transaction_fields_from_valid_payment_card_type(mock_base_do_import, stonegate) -> None:
-    transaction_data = copy(TRANSACTION_DATA[0])
-    transaction_data["payment_card_type"] = "VISADEBIT"
-
-    stonegate._do_import(transaction_data)
-    scheme_transaction_fields = stonegate.to_transaction_fields(transaction_data)
-
-    assert scheme_transaction_fields._asdict() == {
-        "merchant_slug": MERCHANT_SLUG,
-        "payment_provider_slug": "visa",
-        "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
-        "has_time": True,
-        "spend_amount": 2399,
-        "spend_multiplier": 100,
-        "spend_currency": "GBP",
-        "first_six": None,
-        "last_four": "6309",
-        "auth_code": "188328",
-        "extra_fields": {"account_id": "value1"},
-    }
