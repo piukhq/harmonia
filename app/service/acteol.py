@@ -22,7 +22,7 @@ class ActeolAPI:
         response = self.session.post(url, json=body)
         response.raise_for_status()
         json = response.json()
-        if json.get("ResponseStatus") is False and json["Errors"][0]["ErrorDescription"] == "Internal Error":
+        if json.get("Error")== "Internal Error":
             raise InternalError
         return response
 
