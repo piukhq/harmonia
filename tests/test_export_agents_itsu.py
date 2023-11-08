@@ -27,8 +27,6 @@ REQUEST_BODY = {
             },
             "TotalAmount": 55.66,
             "PaidAmount": 55.66,
-            "OrderStatusID": 1,
-            "OrderTypeID": 1,
             "OrderChannelID": 1,
             "OrderItems": [{"ItemID": "1", "ItemName": "Bink Transaction", "ItemPrice": 55.66}],
         }
