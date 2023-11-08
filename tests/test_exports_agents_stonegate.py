@@ -11,6 +11,7 @@ from requests import RequestException
 import settings
 from app import db, models
 from app.exports.agents.stonegate import InitialExportDelayRetry, Stonegate
+from app.service.acteol import InternalError
 from tests.fixtures import Default, get_or_create_export_transaction
 
 settings.DEBUG = False
@@ -29,7 +30,6 @@ REQUEST = {
 }
 RESPONSE_SUCCESS = {"body": "", "status_code": 204, "timestamp": "2022-04-26 18:00:00"}
 RESPONSE_ERROR = {"Error": None, "Message": "Origin ID not found"}
-INTERNAL_ERROR = {"Error": "Internal Error", "Message": None}
 
 
 @pytest.fixture
@@ -212,6 +212,7 @@ def test_get_response_result(stonegate: Stonegate, response: requests.Response) 
 
     assert result == "origin id not found"
 
+
 @responses.activate
 @time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
 @mock.patch("app.exports.agents.stonegate.atlas")
@@ -226,7 +227,5 @@ def test_export_internal_error(
         status=204,
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
+    with pytest.raises(InternalError):
         stonegate.export(export_data, session=db_session)
-
-    assert e.value.response.json() == INTERNAL_ERROR
