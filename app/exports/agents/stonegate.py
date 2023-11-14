@@ -17,7 +17,7 @@ PROVIDER_SLUG = "stonegate"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 ORIGIN_ID_NOT_FOUND = "origin id not found"
-MAX_RETRY_COUNT = 6
+MAX_RETRY_COUNT = 31
 
 
 class InitialExportDelayRetry(Exception):

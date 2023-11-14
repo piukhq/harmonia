@@ -78,8 +78,10 @@ def test_get_retry_datetime_with_retry_count_one(stonegate: Stonegate) -> None:
     assert result == pendulum.datetime(2022, 11, 24, 11, 20, 0, 0, "Europe/London")
 
 
-def test_get_retry_datetime_with_retry_count_eight(stonegate: Stonegate, response: requests.Response) -> None:
-    result = stonegate.get_retry_datetime(retry_count=8)
+def test_get_retry_datetime_with_retry_count_greater_than_max(
+    stonegate: Stonegate, response: requests.Response
+) -> None:
+    result = stonegate.get_retry_datetime(retry_count=40)
     assert result is None
 
 
