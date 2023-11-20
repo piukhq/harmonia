@@ -79,6 +79,7 @@ class BaseMatchingAgent:
                 models.SchemeTransaction.mids.any(self.payment_transaction.mid),
                 models.SchemeTransaction.status == models.TransactionStatus.PENDING,
                 models.SchemeTransaction.created_at >= since.isoformat(),
+                models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             ),
             read_only=True,
             session=session,

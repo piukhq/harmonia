@@ -186,6 +186,7 @@ class MatchingWorker:
         self.log.debug(f"Received {len(scheme_transactions)} scheme transactions. Looking for potential matches now.")
 
         mids = {mid for scheme_transaction in scheme_transactions for mid in scheme_transaction.mids}
+        amounts = {scheme_transaction.spend_amount for scheme_transaction in scheme_transactions}
 
         since = pendulum.now().date().add(days=-14)
         payment_transactions = db.run_query(
@@ -194,6 +195,7 @@ class MatchingWorker:
                 models.PaymentTransaction.mid.in_(mids),
                 models.PaymentTransaction.status == models.TransactionStatus.PENDING,
                 models.PaymentTransaction.created_at >= since.isoformat(),
+                models.PaymentTransaction.spend_amount.in_(amounts),
             )
             .all(),
             session=session,

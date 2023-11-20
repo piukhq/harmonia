@@ -11,7 +11,6 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 class Iceland(BaseMatchingAgent):
     def _filter_scheme_transactions_with_auth_code(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
 
@@ -33,7 +32,6 @@ class Iceland(BaseMatchingAgent):
 
     def _filter_scheme_transactions_amex(self, scheme_transactions: Query) -> Query:
         scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
         )
 
