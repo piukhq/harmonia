@@ -10,7 +10,7 @@ from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas
-from app.service.acteol import ActeolAPI
+from app.service.acteol import ActeolAPI, InternalError
 from harness.exporters.acteol_mock import ActeolMockAPI
 
 PROVIDER_SLUG = "stonegate"
@@ -60,7 +60,11 @@ class Stonegate(SingularExportAgent):
         retry_count = max(0, retry_count - 1)
 
         # TEMPORARY: remove when implementing signals
-        if isinstance(exception, RequestException) and not is_retryable(self.get_response_result(exception.response)):
+        if (
+            isinstance(exception, RequestException)
+            and not isinstance(exception, InternalError)
+            and not is_retryable(self.get_response_result(exception.response))
+        ):
             return None
         if retry_count == 0:
             # first retry in 20 minutes.
@@ -69,7 +73,7 @@ class Stonegate(SingularExportAgent):
             # second retry at 10 AM the next day.
             return self.next_available_retry_time(10)
         else:
-            # after the previous seven tries, give up.
+            # after the MAX_RETRY_COUNT has been exhausted, give up.
             return None
 
     def next_available_retry_time(self, run_time, timezone="Europe/London") -> t.Optional[pendulum.DateTime]:
