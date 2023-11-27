@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -12,7 +13,7 @@ import settings
 from app import db, models
 from app.exports.agents.stonegate import InitialExportDelayRetry, Stonegate
 from app.service.acteol import InternalError
-from tests.fixtures import Default, get_or_create_export_transaction
+from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_pending_export
 
 settings.DEBUG = False
 
@@ -38,8 +39,9 @@ def stonegate() -> Stonegate:
 
 
 @pytest.fixture
-def export_transaction() -> models.ExportTransaction:
+def export_transaction(db_session: db.Session) -> models.ExportTransaction:
     exp = get_or_create_export_transaction(
+        session=db_session,
         provider_slug=MERCHANT_SLUG,
         mid=MIDS,
         primary_identifier=MIDS,
@@ -231,3 +233,24 @@ def test_export_internal_error(
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
     with pytest.raises(InternalError):
         stonegate.export(export_data, session=db_session)
+
+
+@responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
+@mock.patch("app.exports.agents.stonegate.atlas")
+def test_stonegate_internal_errors_are_retried(
+    mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
+) -> None:
+    response_body = {"Error": "Internal Error", "Message": None}
+    responses.add(
+        responses.POST,
+        url="http://localhost/PostMatchedTransaction",
+        json=response_body,
+        status=204,
+    )
+    pending_export_transaction = get_or_create_pending_export(
+        session=db_session, export_transaction=export_transaction, provider_slug=MERCHANT_SLUG
+    )
+    stonegate.handle_pending_export(pending_export_transaction, session=db_session)
+    assert pending_export_transaction.retry_count == 0
+    assert isinstance(pending_export_transaction.retry_at, datetime.datetime)
