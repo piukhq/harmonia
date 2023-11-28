@@ -60,7 +60,7 @@ class TheWorks(SingularExportAgent):
             # the current transaction with the works transactions.
             api = the_works.TheWorksAPI(self.config.get("base_url", session), self.config.get("failover_url", session))
             # Get transactions history from GiveX The Works.
-            historical_rewarded_transactions = api.transaction_history(matched_transaction.loyalty_id)
+            historical_rewarded_transactions = api.transaction_history(matched_transaction, PROVIDER_SLUG)
             if not self.exportable_transaction(matched_transaction, historical_rewarded_transactions, session):
                 self.log.warning("Transaction has already been rewarded in The Works - GiveX system.")
                 raise db.NoResultFound

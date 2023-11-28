@@ -1,11 +1,14 @@
 import uuid
 
+import pendulum
 import requests
 from soteria.configuration import Configuration
 
 import settings
+from app import models
 from app.core.requests_retry import requests_retry_session
-from app.reporting import get_logger
+from app.reporting import get_logger, sanitise_logs
+from app.service import atlas
 
 log = get_logger("the-works")
 
@@ -15,30 +18,48 @@ class TheWorksAPI:
         self.base_url = base_url
         self.failover_url = failover_url
         self.session = requests_retry_session()
+        self.url_used = self.base_url
 
     def post(self, body: dict = None, *, name: str) -> requests.models.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         response = self.session.post(self.base_url, json=body)
+        self.url_used = self.base_url
         if not response.ok:
             user_id, password = self.get_credentials(failover=True)
             if body:
                 body["params"][2] = user_id
                 body["params"][3] = password
             response = self.session.post(self.failover_url, json=body)
+            self.url_used = self.failover_url
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
         return self.post(body, name="post_matched_transaction")
 
-    def transaction_history(self, loyalty_id: str) -> dict:
+    def transaction_history(self, transaction: models.ExportTransaction, provider_slug: str) -> dict:
         # build json rpc request to call transaction history endpoint
-        history_transactions = self._history_request(loyalty_id)
-        return history_transactions
+        # send request and responses to atlas for audit
+        request_timestamp = pendulum.now().to_datetime_string()
+        request_body, response = self._history_request(transaction.loyalty_id)
+        response_timestamp = pendulum.now().to_datetime_string()
+        message = atlas.make_audit_message(
+            provider_slug,
+            atlas.make_audit_transactions([transaction], tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
+            request=sanitise_logs(request_body, provider_slug),
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
+            request_url=self.url_used,
+            retry_count=0,
+        )
+        # message["audit_data"]["history"] = {}
+        atlas.queue_audit_message(message)
+        return response.json()
 
-    def _history_request(self, card_number: str) -> dict:
+    def _history_request(self, card_number: str) -> tuple:
         transaction_code = str(uuid.uuid4())
         user_id, password = self.get_credentials()
-        body = {
+        request_body = {
             "jsonrpc": "2.0",
             "method": "dc_995",  # request method
             "id": 1,
@@ -53,7 +74,8 @@ class TheWorksAPI:
                 "Points",  # history type
             ],
         }
-        return self.post(body, name="retrieve_transaction_history").json()
+        response = self.post(request_body, name="retrieve_transaction_history").json()
+        return request_body, response
 
     def get_credentials(self, failover: bool = False) -> tuple[str, str]:
         config = Configuration(

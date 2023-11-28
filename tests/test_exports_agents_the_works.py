@@ -43,6 +43,22 @@ REQUEST_BODY_911 = {
     ],
 }
 
+REQUEST_BODY_995 = {
+    "jsonrpc": "2.0",
+    "method": "dc_995",  # request method
+    "id": 1,
+    "params": [
+        "en",  # language code
+        ANY,
+        "username1",
+        "password1",
+        ANY,  # givex number
+        "",  # Serial number
+        "",  # card iso
+        "Points",  # history type
+    ],
+}
+
 export_resp = Response()
 export_resp.status_code = 200
 export_resp.reason = "Bink Transaction details processed successfully!"
@@ -149,7 +165,14 @@ HISTORY_TRANSACTIONS = {
     ],
 }
 
+history_response = mock.Mock(spec=Response)
+history_response.json.return_value = HISTORY_TRANSACTIONS
+history_response.status_code = 200
+
 FAILED_HISTORY = {"jsonrpc": "2.0", "id": 1, "result": ["123348509238469083", "2", "Cert not exist"]}
+failed_history_response = mock.Mock(spec=Response)
+failed_history_response.json.return_value = FAILED_HISTORY
+failed_history_response.status_code = 200
 
 
 @pytest.fixture
@@ -198,7 +221,8 @@ def test_find_export_transaction_already_rewarded(
     db_session: db.Session,
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
-    mock_history_request.return_value = HISTORY_TRANSACTIONS
+
+    mock_history_request.return_value = (REQUEST_BODY_995, history_response)
     mock_point_conversion_rate.return_value = 5
     export_transaction.settlement_key = None
     the_works = TheWorks()
@@ -217,7 +241,7 @@ def test_find_export_transaction_to_be_rewarded(
     db_session: db.Session,
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
-    mock_history_request.return_value = HISTORY_TRANSACTIONS
+    mock_history_request.return_value = (REQUEST_BODY_995, history_response)
     mock_point_conversion_rate.return_value = 5
     pending_export.export_transaction.spend_amount = 1735
     the_works = TheWorks()
@@ -232,7 +256,7 @@ def test_find_export_transaction_error_code(
     mock_get_credentials, mock_history_request, pending_export: models.PendingExport, db_session: db.Session
 ) -> None:
     mock_get_credentials.return_value = ("username1", "password1")
-    mock_history_request.return_value = FAILED_HISTORY
+    mock_history_request.return_value = (REQUEST_BODY_995, failed_history_response)
     export_transaction.settlement_key = None
     the_works = TheWorks()
     with pytest.raises(NoResultFound):
