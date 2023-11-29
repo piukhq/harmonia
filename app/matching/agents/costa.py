@@ -18,7 +18,6 @@ class Costa(BaseMatchingAgent):
         """
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
         )
 
         if self.payment_transaction.auth_code:
@@ -48,7 +47,6 @@ class Costa(BaseMatchingAgent):
         """
         scheme_transactions = scheme_transactions.filter(
             models.SchemeTransaction.payment_provider_slug == self.payment_transaction.provider_slug,
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount,
         )
         scheme_transactions = self._time_filter(scheme_transactions, tolerance=self.time_tolerance)
 
