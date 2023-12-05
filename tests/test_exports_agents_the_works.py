@@ -168,11 +168,13 @@ HISTORY_TRANSACTIONS = {
 history_response = mock.Mock(spec=Response)
 history_response.json.return_value = HISTORY_TRANSACTIONS
 history_response.status_code = 200
+history_response.url = "http://testing.theworks.com"
 
 FAILED_HISTORY = {"jsonrpc": "2.0", "id": 1, "result": ["123348509238469083", "2", "Cert not exist"]}
 failed_history_response = mock.Mock(spec=Response)
 failed_history_response.json.return_value = FAILED_HISTORY
 failed_history_response.status_code = 200
+failed_history_response.url = "http://testing.theworks.com"
 
 
 @pytest.fixture

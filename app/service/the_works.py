@@ -18,19 +18,18 @@ class TheWorksAPI:
         self.base_url = base_url
         self.failover_url = failover_url
         self.session = requests_retry_session()
-        self.url_used = self.base_url
 
     def post(self, body: dict = None, *, name: str) -> requests.models.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         response = self.session.post(self.base_url, json=body)
-        self.url_used = self.base_url
+        response.url = self.base_url
         if not response.ok:
             user_id, password = self.get_credentials(failover=True)
             if body:
                 body["params"][2] = user_id
                 body["params"][3] = password
             response = self.session.post(self.failover_url, json=body)
-            self.url_used = self.failover_url
+            response.url = self.failover_url
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
@@ -49,7 +48,7 @@ class TheWorksAPI:
             request_timestamp=request_timestamp,
             response=response,
             response_timestamp=response_timestamp,
-            request_url=self.url_used,
+            request_url=response.url,
             retry_count=0,
         )
         # message["audit_data"]["history"] = {}
