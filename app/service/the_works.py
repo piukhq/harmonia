@@ -51,7 +51,7 @@ class TheWorksAPI:
             request_url=response.url,
             retry_count=0,
         )
-        # message["audit_data"]["history"] = {}
+
         atlas.queue_audit_message(message)
         return response.json()
 
