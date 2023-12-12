@@ -30,7 +30,14 @@ def is_retryable(message: Optional[str]) -> bool:
     # ensure always lower case even though get_response_result returns lower
     if message:
         msg = message.lower()
-        if "transaction with" in msg and "was not found" in msg:
+        # Atreemo sends error messages in the form of:
+        # {
+        #     "Error": null,
+        #     "Message": "Member Number: LEM251 was not found"
+        # }
+        if "transaction with" in msg or "member number:" in msg and "was not found" in msg:
+            return True
+        elif "points are not added successfully" in msg:
             return True
     return False
 

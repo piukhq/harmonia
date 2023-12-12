@@ -211,6 +211,46 @@ def test_export_receipt_no_not_found(
     assert e.value.response.json() == response_body
 
 
+@responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
+@mock.patch("app.exports.agents.stonegate.atlas")
+def test_export_member_number_not_found(
+    mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
+) -> None:
+    response_body = {"Error": None, "Message": "Member Number: xxxxxx was not found"}
+    responses.add(
+        responses.POST,
+        url="http://localhost/PostMatchedTransaction",
+        json=response_body,
+        status=204,
+    )
+    export_data = stonegate.make_export_data(export_transaction, session=db_session)
+    with pytest.raises(RequestException) as e:
+        stonegate.export(export_data, session=db_session)
+
+    assert e.value.response.json() == response_body
+
+
+@responses.activate
+@time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
+@mock.patch("app.exports.agents.stonegate.atlas")
+def test_export_points_not_awarded(
+    mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
+) -> None:
+    response_body = {"Error": None, "Message": "Points are not added successfully"}
+    responses.add(
+        responses.POST,
+        url="http://localhost/PostMatchedTransaction",
+        json=response_body,
+        status=204,
+    )
+    export_data = stonegate.make_export_data(export_transaction, session=db_session)
+    with pytest.raises(RequestException) as e:
+        stonegate.export(export_data, session=db_session)
+
+    assert e.value.response.json() == response_body
+
+
 def test_get_response_result(stonegate: Stonegate, response: requests.Response) -> None:
     result = stonegate.get_response_result(response)
 
