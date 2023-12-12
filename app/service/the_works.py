@@ -22,14 +22,12 @@ class TheWorksAPI:
     def post(self, body: dict = None, *, name: str) -> requests.models.Response:
         log.debug(f"Posting {name} request with parameters: {body}.")
         response = self.session.post(self.base_url, json=body)
-        response.url = self.base_url
         if not response.ok:
             user_id, password = self.get_credentials(failover=True)
             if body:
                 body["params"][2] = user_id
                 body["params"][3] = password
             response = self.session.post(self.failover_url, json=body)
-            response.url = self.failover_url
         return response
 
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
