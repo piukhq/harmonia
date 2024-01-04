@@ -60,7 +60,7 @@ def make_audit_transactions(
 ) -> t.List[AuditTransaction]:
     return [
         AuditTransaction(
-            event_date_time=tx.created_at.isoformat(),
+            event_date_time=pendulum.now().to_datetime_string(),
             user_id=tx.user_id,
             transaction_id=tx.transaction_id,
             transaction_date=pendulum.instance(tx.transaction_date).to_datetime_string(),
