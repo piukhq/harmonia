@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime
 from unittest import mock
-from freezegun import freeze_time
 
 import pendulum
+from freezegun import freeze_time
 from requests.models import Response
 
 from app.feeds import FeedType
