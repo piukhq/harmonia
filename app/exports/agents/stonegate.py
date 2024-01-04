@@ -10,14 +10,14 @@ from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.service import atlas
-from app.service.acteol import ActeolAPI
+from app.service.acteol import ActeolAPI, InternalError
 from harness.exporters.acteol_mock import ActeolMockAPI
 
 PROVIDER_SLUG = "stonegate"
 
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 ORIGIN_ID_NOT_FOUND = "origin id not found"
-MAX_RETRY_COUNT = 6
+MAX_RETRY_COUNT = 31
 
 
 class InitialExportDelayRetry(Exception):
@@ -30,7 +30,14 @@ def is_retryable(message: Optional[str]) -> bool:
     # ensure always lower case even though get_response_result returns lower
     if message:
         msg = message.lower()
-        if "transaction with" in msg and "was not found" in msg:
+        # Atreemo sends error messages in the form of:
+        # {
+        #     "Error": null,
+        #     "Message": "Member Number: LEM251 was not found"
+        # }
+        if "transaction with" in msg or "member number:" in msg and "was not found" in msg:
+            return True
+        elif "points are not added successfully" in msg:
             return True
     return False
 
@@ -60,7 +67,11 @@ class Stonegate(SingularExportAgent):
         retry_count = max(0, retry_count - 1)
 
         # TEMPORARY: remove when implementing signals
-        if isinstance(exception, RequestException) and not is_retryable(self.get_response_result(exception.response)):
+        if (
+            isinstance(exception, RequestException)
+            and not isinstance(exception, InternalError)
+            and not is_retryable(self.get_response_result(exception.response))
+        ):
             return None
         if retry_count == 0:
             # first retry in 20 minutes.
@@ -69,7 +80,7 @@ class Stonegate(SingularExportAgent):
             # second retry at 10 AM the next day.
             return self.next_available_retry_time(10)
         else:
-            # after the previous seven tries, give up.
+            # after the MAX_RETRY_COUNT has been exhausted, give up.
             return None
 
     def next_available_retry_time(self, run_time, timezone="Europe/London") -> t.Optional[pendulum.DateTime]:

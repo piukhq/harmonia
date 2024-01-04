@@ -6,9 +6,6 @@ from app.matching.agents.base import BaseMatchingAgent, MatchResult
 
 class GenericLoyalty(BaseMatchingAgent):
     def do_match(self, scheme_transactions) -> t.Optional[MatchResult]:
-        scheme_transactions = scheme_transactions.filter(
-            models.SchemeTransaction.spend_amount == self.payment_transaction.spend_amount
-        )
         match, multiple_returned = self._check_for_match(scheme_transactions)
         if not match or multiple_returned:
             return None
