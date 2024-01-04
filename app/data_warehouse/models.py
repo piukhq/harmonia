@@ -40,7 +40,7 @@ def send_unexported_transaction(transactions: t.List[ExportTransaction]):
         provider_slug = transaction.provider_slug
         dw_transaction = DWTransaction(
             event_type="transaction.duplicate",
-            event_date_time=pendulum.now().to_datetime_string(),
+            event_date_time=pendulum.now().isoformat(),
             internal_user_ref=transaction.user_id,
             transaction_id=transaction.transaction_id,
             provider_slug=provider_slug,
