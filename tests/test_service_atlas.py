@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from unittest import mock
+from freezegun import freeze_time
 
 import pendulum
 from requests.models import Response
@@ -29,7 +30,7 @@ class MockExportTransaction:
     user_id = 10
     scheme_account_id = 2
     loyalty_id = "876543"
-    created_at = datetime(year=1999, month=9, day=26)
+    created_at = pendulum.now().isoformat()
     spend_currency = "CNY"
     feed_type = FeedType.SETTLED
     location_id = ""
@@ -55,6 +56,7 @@ request_body = (
 )
 
 
+@freeze_time("1999-09-26T00:00:00")
 @mock.patch("app.service.exchange.publish", autospec=True)
 def test_queue_audit_message(mocked_queue):
     dt = pendulum.now()
@@ -84,7 +86,7 @@ def test_queue_audit_message(mocked_queue):
                 "approval_code": "123",
                 "authorisation_code": "123",
                 "encrypted_credentials": {"card_number": "loyalty-123", "merchant_identifier": "876543"},
-                "event_date_time": "1999-09-26T00:00:00",
+                "event_date_time": pendulum.now().isoformat(),
                 "export_uid": "123",
                 "feed_type": "SETTLED",
                 "location_id": "",
