@@ -67,6 +67,6 @@ def test_transaction_history_request(mock_get_credentials, the_works: TheWorksAP
     mock_get_credentials.return_value = ("user_id", "password")
     responses.add(responses.POST, url=TEST_WORKS_URL, json=response_transaction_history, status=200)
 
-    resp = the_works._history_request(request_data)
+    _, resp = the_works._history_request(request_data["json"]["loyalty_id"])
 
     assert resp == response_transaction_history
