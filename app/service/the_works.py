@@ -71,7 +71,7 @@ class TheWorksAPI:
                 "Points",  # history type
             ],
         }
-        response = self.post(request_body, name="retrieve_transaction_history").json()
+        response = self.post(request_body, name="retrieve_transaction_history")
         return request_body, response
 
     def get_credentials(self, failover: bool = False) -> tuple[str, str]:
