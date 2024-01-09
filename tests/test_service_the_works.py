@@ -69,4 +69,4 @@ def test_transaction_history_request(mock_get_credentials, the_works: TheWorksAP
 
     _, resp = the_works._history_request(request_data["json"]["loyalty_id"])
 
-    assert resp == response_transaction_history
+    assert resp.json() == response_transaction_history
