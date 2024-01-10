@@ -94,8 +94,8 @@ def get_or_create_merchant_identifier(
     identifier_type: IdentifierType = Default.identifier_type,
     merchant_slug: str = Default.merchant_slug,
     payment_provider_slug: str = Default.payment_provider_slug,
-    loyalty_scheme: models.LoyaltyScheme = None,
-    payment_provider: models.PaymentProvider = None,
+    loyalty_scheme: models.LoyaltyScheme | None = None,
+    payment_provider: models.PaymentProvider | None = None,
     **kwargs,
 ) -> models.MerchantIdentifier:
     payment_provider = payment_provider or get_or_create_payment_provider(session=session, slug=payment_provider_slug)
@@ -362,7 +362,7 @@ def get_or_create_export_transaction(
 
 def get_or_create_pending_export(
     session: db.Session | None = None,
-    export_transaction: models.ExportTransaction = None,
+    export_transaction: models.ExportTransaction | None = None,
     provider_slug: str = Default.merchant_slug,
     **kwargs,
 ) -> models.PendingExport:

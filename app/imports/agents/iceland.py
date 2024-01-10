@@ -69,19 +69,21 @@ class Iceland(FileAgent):
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
-    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        return SchemeTransactionFields(
-            merchant_slug=self.provider_slug,
-            payment_provider_slug=self.payment_provider_map[data["TransactionCardScheme"]],
-            transaction_date=self.get_transaction_date(data),
-            has_time=True,
-            spend_amount=data["TransactionAmountValue"],
-            spend_multiplier=100,
-            spend_currency=data["TransactionAmountUnit"],
-            auth_code=data["TransactionAuthCode"],
-            first_six=data["TransactionCardFirst6"],
-            last_four=data["TransactionCardLast4"],
-        )
+    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
+        return [
+            SchemeTransactionFields(
+                merchant_slug=self.provider_slug,
+                payment_provider_slug=self.payment_provider_map[data["TransactionCardScheme"]],
+                transaction_date=self.get_transaction_date(data),
+                has_time=True,
+                spend_amount=data["TransactionAmountValue"],
+                spend_multiplier=100,
+                spend_currency=data["TransactionAmountUnit"],
+                auth_code=data["TransactionAuthCode"],
+                first_six=data["TransactionCardFirst6"],
+                last_four=data["TransactionCardLast4"],
+            )
+        ]
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

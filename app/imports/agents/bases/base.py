@@ -114,10 +114,10 @@ def get_mids_by_location_id(location_id: str, *, scheme_slug: str, payment_slug:
 
 
 @lru_cache(maxsize=2048)
-def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
+def get_merchant_slugs(*mids: str, payment_provider_slug: str) -> list[str]:
     with db.session_scope() as session:
 
-        def find_slug():
+        def find_slugs():
             return (
                 session.query(models.LoyaltyScheme.slug)
                 .distinct()
@@ -127,12 +127,18 @@ def get_merchant_slug(*mids: str, payment_provider_slug: str) -> str:
                     models.MerchantIdentifier.identifier.in_([identifier for _, identifier in mids]),
                     models.PaymentProvider.slug == payment_provider_slug,
                 )
-                .scalar()
+                .all()
             )
 
-        return db.run_query(
-            find_slug, session=session, read_only=True, description=f"find merchant slug for identifiers {mids}"
+        results = db.run_query(
+            find_slugs, session=session, read_only=True, description=f"find merchant slugs for identifiers {mids}"
         )
+
+        return [result[0] for result in results]
+
+
+class FeedTypeError(Exception):
+    ...
 
 
 class BaseAgent:
@@ -160,9 +166,7 @@ class BaseAgent:
             "Override the run method in your agent to act as the main entry point into the import process."
         )
 
-    def to_transaction_fields(
-        self, data: dict
-    ) -> t.Union[t.Optional[SchemeTransactionFields], t.Optional[PaymentTransactionFields]]:
+    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields] | list[PaymentTransactionFields]:
         raise NotImplementedError("Override to_transaction_fields in your agent.")
 
     @staticmethod
@@ -217,11 +221,12 @@ class BaseAgent:
 
         return identifiers
 
-    def get_merchant_slug(self, data: dict) -> str:
+    def get_merchant_slugs(self, data: dict) -> list[str]:
+        if self.feed_type == FeedType.MERCHANT:
+            raise FeedTypeError("get_merchant_slugs should only be called from payment agents")
+
         identifiers = self._all_identifiers(data)
-        # we can use self.provider_slug as the payment provider slug as there is no reason to ever call this function
-        # in a loyalty import agent.
-        return get_merchant_slug(*identifiers, payment_provider_slug=self.provider_slug)
+        return get_merchant_slugs(*identifiers, payment_provider_slug=self.provider_slug)
 
     @staticmethod
     def pendulum_parse(date_time: str, *, tz: str = "GMT") -> pendulum.DateTime:
@@ -304,8 +309,8 @@ class BaseAgent:
             return 0
 
         # NOTE: it may be worth limiting the batch size if files get any larger than 10k transactions.
-        import_transaction_inserts = []
-        transaction_inserts = []
+        import_transaction_inserts: list[dict] = []
+        transaction_inserts: list[dict] = []
 
         # user ID requests to enqueue after import
         identify_args: list[IdentifyArgs] = []
@@ -324,16 +329,13 @@ class BaseAgent:
                 continue
 
             try:
-                import_transaction_insert, transaction_insert, identify = self._build_inserts(
+                import_transaction_insert, new_transaction_inserts, identifies = self._build_inserts(
                     tx_data, match_group, source, session=session
                 )
                 import_transaction_inserts.append(import_transaction_insert)
 
-                if transaction_insert:
-                    transaction_inserts.append(transaction_insert)
-
-                if identify:
-                    identify_args.append(identify)
+                transaction_inserts.extend(new_transaction_inserts)
+                identify_args.extend(identifies)
             finally:
                 lock.release()
 
@@ -371,7 +373,7 @@ class BaseAgent:
 
     def _build_inserts(
         self, tx_data: dict, match_group: str, source: str, *, session: db.Session
-    ) -> tuple[dict, t.Optional[dict], t.Optional[IdentifyArgs]]:
+    ) -> tuple[dict, list[dict], list[IdentifyArgs]]:
         tid = self.get_transaction_id(tx_data)
         primary_mids = self.get_primary_mids(tx_data)
 
@@ -395,36 +397,40 @@ class BaseAgent:
             data=tx_data,
             source=source,
         )
-        transaction_insert = None
-        identify = None
+        transaction_inserts = []
+        identifies = []
 
         if identified:
             transaction_fields = self.to_transaction_fields(tx_data)
-            if transaction_fields:
-                transaction_insert = dict(
-                    feed_type=self.feed_type,
-                    status=models.TransactionStatus.IMPORTED,
-                    merchant_identifier_ids=merchant_identifier_ids,
-                    mids=primary_mids,
-                    transaction_id=tid,
-                    match_group=match_group,
-                    **transaction_fields._asdict(),
+            for fields in transaction_fields:
+                transaction_inserts.append(
+                    dict(
+                        feed_type=self.feed_type,
+                        status=models.TransactionStatus.IMPORTED,
+                        merchant_identifier_ids=merchant_identifier_ids,
+                        mids=primary_mids,
+                        transaction_id=tid,
+                        match_group=match_group,
+                        **fields._asdict(),
+                    )
                 )
 
                 if self.feed_type_is_payment:
-                    if not isinstance(transaction_fields, PaymentTransactionFields):
+                    if not isinstance(fields, PaymentTransactionFields):
                         raise self.ImportError(
                             f"{self.provider_slug} agent is configured with a feed type of {self.feed_type}, "
-                            f" but provided {type(transaction_fields).__name__} instead of PaymentTransactionFields"
+                            f" but provided {type(fields).__name__} instead of PaymentTransactionFields"
                         )
 
-                    identify = IdentifyArgs(
-                        transaction_id=tid,
-                        merchant_identifier_ids=merchant_identifier_ids,
-                        card_token=transaction_fields.card_token,
+                    identifies.append(
+                        IdentifyArgs(
+                            transaction_id=tid,
+                            merchant_identifier_ids=merchant_identifier_ids,
+                            card_token=fields.card_token,
+                        )
                     )
 
-        return import_transaction_insert, transaction_insert, identify
+        return import_transaction_insert, transaction_inserts, identifies
 
     def _update_metrics(self, n_insertions: int) -> None:
         """
