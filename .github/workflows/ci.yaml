@@ -62,7 +62,10 @@ jobs:
           password: ${{ secrets.ACR_BINKCORE_PASSWORD }}
       - uses: docker/build-push-action@v5
         with:
+          context: .
           push: true
+          build-args: |
+            PIP_INDEX_URL=${{ secrets.AZURE_DEVOPS_PAT_URL }}
           tags: |
             binkcore.azurecr.io/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
             binkcore.azurecr.io/${{ github.event.repository.name }}:staging-${{ github.event.release.tag_name }}
