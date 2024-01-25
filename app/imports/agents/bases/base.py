@@ -406,7 +406,8 @@ class BaseAgent:
             for fields in transaction_fields:
                 # if an agent yields more than one set of fields, we have to make the transaction ID unique for each set.
                 # note that ImportTransaction always uses the original transaction ID rather than this adjusted one.
-                if len(transaction_fields) > 1:
+                # we also only do this for payment agents.
+                if len(transaction_fields) > 1 and self.feed_type_is_payment:
                     adjusted_tid = f"{fields.merchant_slug}:{tid}"
                 else:
                     adjusted_tid = tid
