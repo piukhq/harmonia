@@ -76,11 +76,7 @@ class TransactionStatus(Enum):
 @auto_str("id", "transaction_id")
 class Transaction(Base, ModelMixin):
     __tablename__ = "transaction"
-    __table_args__ = (
-        s.UniqueConstraint(
-            "payment_provider_slug", "merchant_slug", "transaction_id", "feed_type", name="transaction_slug_id_feed_uc"
-        ),
-    )
+    __table_args__ = (s.UniqueConstraint("transaction_id", "feed_type", name="_transaction_id_feed_type_t_uc"),)
 
     # the type of transaction this is. unique together with the transaction ID.
     feed_type = s.Column(s.Enum(FeedType), nullable=False)
