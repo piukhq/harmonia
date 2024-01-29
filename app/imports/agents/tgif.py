@@ -9,7 +9,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import SchemeTransactionFields
 from app.imports.agents.bases.file_agent import FileAgent
-from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "tgi-fridays"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
