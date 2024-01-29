@@ -52,8 +52,7 @@ class TGIFridays(FileAgent):
                 auth_code=data["auth_code"],
                 last_four=data["payment_card_last_four"],
                 extra_fields={"amount": data["amount"]},
-                ),
-            )
+            ),
         ]
 
     @staticmethod
