@@ -46,12 +46,13 @@ class TGIFridays(FileAgent):
                 payment_provider_slug=data["payment_card_type"],
                 transaction_date=pendulum.instance(data["date"]),
                 has_time=True,
-                spend_amount=to_pennies(data["amount"] + to_pennies(data["gratuity_amount"]),
+                spend_amount=to_pennies(data["amount"]) + to_pennies(data["gratuity_amount"]),
                 spend_multiplier=100,
                 spend_currency=data["currency_code"],
                 auth_code=data["auth_code"],
                 last_four=data["payment_card_last_four"],
                 extra_fields={"amount": data["amount"]},
+                ),
             )
         ]
 
