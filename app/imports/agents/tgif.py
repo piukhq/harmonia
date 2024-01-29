@@ -15,14 +15,6 @@ SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
 
-FIRST_SIX_MAPPING = {"2": "mastercard", "5": "mastercard", "3": "amex", "4": "visa"}
-PAYMENT_CARD_TYPE_MAPPING = {
-    ("visa", "vs"): "visa",
-    ("mastercard", "mcard", "mc", "master card", "master", "maestro"): "mastercard",
-    ("american express", "amex", "americanexpress", "am ex"): "amex",
-}
-
-
 class TGIFridays(FileAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
@@ -54,7 +46,7 @@ class TGIFridays(FileAgent):
                 payment_provider_slug=data["payment_card_type"],
                 transaction_date=pendulum.instance(data["date"]),
                 has_time=True,
-                spend_amount=to_pennies(data["amount"] + data["gratuity_amount"]),
+                spend_amount=to_pennies(data["amount"] + to_pennies(data["gratuity_amount"]),
                 spend_multiplier=100,
                 spend_currency=data["currency_code"],
                 auth_code=data["auth_code"],
