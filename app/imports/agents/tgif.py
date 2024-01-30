@@ -1,4 +1,5 @@
 import csv
+from hashlib import sha256
 import io
 import typing as t
 
@@ -13,6 +14,18 @@ from app.imports.agents.bases.file_agent import FileAgent
 PROVIDER_SLUG = "tgi-fridays"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
+
+DATE_FORMAT = "YYYYMMDD"
+TIME_FORMAT = "HHmm"
+DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
+
+def make_transaction_id(*,  transaction_date: pendulum.DateTime, mid: str, amount: str):
+    hash_parts = [
+        transaction_date.date().isoformat(),
+        mid,
+        amount,
+    ]
+    return sha256(f".{'.'.join(hash_parts)}".encode()).hexdigest()
 
 
 class TGIFridays(FileAgent):
@@ -40,6 +53,7 @@ class TGIFridays(FileAgent):
                 yield raw_data
 
     def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
+        transaction_date = self.pendulum_parse(data["date"], tz="Europe/London")
         return [
             SchemeTransactionFields(
                 merchant_slug=self.provider_slug,
@@ -51,6 +65,11 @@ class TGIFridays(FileAgent):
                 spend_currency=data["currency_code"],
                 auth_code=data["auth_code"],
                 last_four=data["payment_card_last_four"],
+                unique_transaction_id=make_transaction_id(
+                    transaction_date=transaction_date,
+                    mid=data["mid"],
+                    amount=data["amount"],
+                ),
                 extra_fields={"amount": data["amount"]},
             ),
         ]
@@ -61,3 +80,8 @@ class TGIFridays(FileAgent):
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["merchant_identifier"]]
+    
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        date_string = f"{data['date']} {data['time']}"
+        return pendulum.from_format(date_string, DATETIME_FORMAT, tz="Europe/London")
+

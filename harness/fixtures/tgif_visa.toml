@@ -1,0 +1,36 @@
+location = "Ascot"
+postcode = "SL5 9FE"
+
+[loyalty_scheme]
+slug = "tgi-fridays"
+
+[payment_provider]
+slug = "visa"
+
+[[agents]]
+slug = "visa-auth"
+
+[[agents]]
+slug = "visa-settlement"
+
+[[agents]]
+slug = "tgi-fridays"
+
+[[users]]
+loyalty_id = "loyalty-123"
+token = "token-tgi-123"
+first_six = "123456"
+last_four = "7890"
+
+[users.credentials]
+card_number = "loyalty-123"
+merchant_identifier = "88899966"
+email = "test-123@testbink.com"
+
+[[users.transactions]]
+date = 2023-07-05T14:52:12
+amount = 1234
+auth_code = "666666"
+identifier = "test-mid-123"
+identifier_type = "PRIMARY"
+location_id = "55"
