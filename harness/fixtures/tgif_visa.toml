@@ -17,7 +17,7 @@ slug = "visa-settlement"
 slug = "tgi-fridays"
 
 [[users]]
-loyalty_id = "loyalty-123"
+loyalty_id = "tgi-fridays-123"
 token = "token-tgi-123"
 first_six = "123456"
 last_four = "7890"
