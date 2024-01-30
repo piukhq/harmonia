@@ -1,5 +1,6 @@
 import humanize
 import pendulum
+from sqlalchemy import and_, or_, orm
 
 from app import db, models, tasks
 from app.reporting import get_logger
@@ -20,11 +21,25 @@ class ExportRetryWorker:
         with db.session_scope() as session:
 
             def find_pending_exports():
+                now = pendulum.now("UTC")
+                yesterday = now.subtract(hours=24)
                 return (
                     session.query(models.PendingExport)
                     .filter(
-                        models.PendingExport.retry_at.isnot(None),
-                        models.PendingExport.retry_at <= pendulum.now("UTC").isoformat(),
+                        or_(
+                            and_(
+                                models.PendingExport.retry_at.isnot(None),
+                                models.PendingExport.retry_at <= now,
+                            ),
+                            and_(
+                                models.PendingExport.retry_at.is_(None),
+                                models.PendingExport.created_at <= yesterday,
+                                or_(
+                                    models.PendingExport.updated_at.is_(None),
+                                    models.PendingExport.updated_at <= yesterday,
+                                ),
+                            ),
+                        )
                     )
                     .all()
                 )
@@ -43,12 +58,21 @@ class ExportRetryWorker:
             self.log.info(f"Found {pending_exports_count} pending exports for retry.")
 
             def requeue_pending_exports():
-                # nullifying the retry_at means the scheduler won't retry the transaction
-                # until a new retry date is set on it.
-                # this helps to prevent race conditions without needing locks.
                 for pending_export in pending_exports:
-                    pending_export.retry_count += 1
-                    pending_export.retry_at = None
+                    # if retry_at is already null we assume this is a "missed" export that just needs requeueing.
+                    if pending_export.retry_at is None:
+                        # we still commit a change to [re]set the updated_at field.
+                        pending_export.retry_at = None
+                        orm.attributes.flag_modified(pending_export, "retry_at")
+                        self.log.info(f"{pending_export} was missed and will be requeued.")
+                    # otherwise we increment the retry count & nullify retry_at.
+                    else:
+                        # nullifying the retry_at means the scheduler won't retry the transaction
+                        # until a new retry date is set on it.
+                        # this helps to prevent race conditions without needing locks.
+                        pending_export.retry_count += 1
+                        pending_export.retry_at = None
+                        self.log.info(f"{pending_export} is ready for retry.")
 
                 session.commit()
 
