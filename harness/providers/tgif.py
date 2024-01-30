@@ -1,9 +1,12 @@
 import csv
+from decimal import Decimal
 import io
 from random import randint
 
 from app.currency import to_pounds
 from harness.providers.base import BaseImportDataProvider
+
+TWO_PLACES = Decimal(10) ** -2
 
 
 class TGIFridays(BaseImportDataProvider):
@@ -18,13 +21,14 @@ class TGIFridays(BaseImportDataProvider):
             (
                 txid(transaction),
                 fixture["payment_provider"]["slug"],
-                "",  # first six
+                user["first_six"],  # first six
                 user["last_four"],
                 to_pounds(transaction["amount"]),
+                Decimal((transaction["amount"]/100) * 0.1).quantize(TWO_PLACES),
                 "GBP",
                 transaction["auth_code"],
                 transaction["date"].isoformat(),
-                "",  # merchant identifier
+                transaction["identifier"],  # merchant identifier
                 transaction["location_id"],
                 "",  # transaction data
                 "",  # customer id
