@@ -1,6 +1,6 @@
 import csv
-from decimal import Decimal
 import io
+from decimal import Decimal
 from random import randint
 
 from app.currency import to_pounds
@@ -24,7 +24,7 @@ class TGIFridays(BaseImportDataProvider):
                 user["first_six"],  # first six
                 user["last_four"],
                 to_pounds(transaction["amount"]),
-                Decimal((transaction["amount"]/100) * 0.1).quantize(TWO_PLACES),
+                Decimal((transaction["amount"] / 100) * 0.1).quantize(TWO_PLACES),
                 "GBP",
                 transaction["auth_code"],
                 transaction["date"].isoformat(),

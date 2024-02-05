@@ -1,7 +1,7 @@
 import csv
-from hashlib import sha256
 import io
 import typing as t
+from hashlib import sha256
 
 import pendulum
 
@@ -20,9 +20,9 @@ TIME_FORMAT = "HHmm"
 DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
-def make_transaction_id(*,  transaction_date: pendulum.DateTime, identifier: str, amount: str):
+def make_transaction_id(*, transaction_date: pendulum.DateTime, identifier: str, amount: str):
     hash_parts = [
-        transaction_date.date().isoformat(),
+        transaction_date,
         identifier,
         amount,
     ]
@@ -54,7 +54,6 @@ class TGIFridays(FileAgent):
                 yield raw_data
 
     def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
-        transaction_date = self.get_transaction_date(data)
         return [
             SchemeTransactionFields(
                 merchant_slug=self.provider_slug,
@@ -71,12 +70,13 @@ class TGIFridays(FileAgent):
             ),
         ]
 
-    def get_transaction_id(self, data: dict) -> str:
+    @staticmethod
+    def get_transaction_id(data: dict) -> str:
         return make_transaction_id(
-                    transaction_date=self.get_transaction_date(data),
-                    identifier=data["merchant_identifier"],
-                    amount=data["amount"]
-                )
+            transaction_date=data["date"],
+            identifier=data["merchant_identifier"],
+            amount=data["amount"],
+        )
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["merchant_identifier"]]
