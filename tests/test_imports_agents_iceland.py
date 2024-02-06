@@ -69,8 +69,7 @@ def test_yield_transactions_data_no_card_scheme() -> None:
 
 def test_to_transaction_fields() -> None:
     scheme_transaction_fields = Iceland().to_transaction_fields(TRANSACTION_DATA)
-    assert len(scheme_transaction_fields) == 1
-    assert scheme_transaction_fields[0]._asdict() == {
+    assert scheme_transaction_fields._asdict() == {
         "merchant_slug": "iceland-bonus-card",
         "payment_provider_slug": PaymentProviderSlug.AMEX,
         "transaction_date": pendulum.DateTime(2020, 10, 27, 15, 1, 59, tzinfo=pendulum.timezone("Europe/London")),

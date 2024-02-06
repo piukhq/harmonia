@@ -75,29 +75,26 @@ class MastercardTGX2Base(FileAgent):
 
             yield {k: self.field_transforms.get(k, str)(v) for k, v in raw_data.items()}
 
-    def to_transaction_fields(self, data: dict) -> list[PaymentTransactionFields]:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.get_transaction_date(data)
         card_token = data["token"]
-        return [
-            PaymentTransactionFields(
-                merchant_slug=merchant_slug,
-                payment_provider_slug=self.provider_slug,
-                settlement_key=_make_settlement_key(
-                    third_party_id=data["transaction_id"],
-                    transaction_date=transaction_date,
-                    mid=data["mid"],
-                    token=card_token,
-                ),
+        return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
+            settlement_key=_make_settlement_key(
+                third_party_id=data["transaction_id"],
                 transaction_date=transaction_date,
-                has_time=True,
-                spend_amount=data["amount"],
-                spend_multiplier=100,
-                spend_currency="GBP",
-                card_token=card_token,
-                auth_code=data["auth_code"],
-            )
-            for merchant_slug in self.get_merchant_slugs(data)
-        ]
+                mid=data["mid"],
+                token=card_token,
+            ),
+            transaction_date=transaction_date,
+            has_time=True,
+            spend_amount=data["amount"],
+            spend_multiplier=100,
+            spend_currency="GBP",
+            card_token=card_token,
+            auth_code=data["auth_code"],
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
@@ -145,29 +142,25 @@ class MastercardAuth(QueueAgent):
 
     config = Config(ConfigValue("queue_name", key=QUEUE_NAME_KEY, default="mastercard-auth"))
 
-    def to_transaction_fields(self, data: dict) -> list[PaymentTransactionFields]:
+    def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         transaction_date = self.pendulum_parse(data["time"], tz="Europe/London")
         card_token = data["payment_card_token"]
-
-        return [
-            PaymentTransactionFields(
-                merchant_slug=merchant_slug,
-                payment_provider_slug=self.provider_slug,
-                settlement_key=_make_settlement_key(
-                    third_party_id=data["third_party_id"],
-                    transaction_date=transaction_date,
-                    mid=data["mid"],
-                    token=card_token,
-                ),
+        return PaymentTransactionFields(
+            merchant_slug=self.get_merchant_slug(data),
+            payment_provider_slug=self.provider_slug,
+            settlement_key=_make_settlement_key(
+                third_party_id=data["third_party_id"],
                 transaction_date=transaction_date,
-                has_time=True,
-                spend_amount=to_pennies(data["amount"]),
-                spend_multiplier=100,
-                spend_currency=data["currency_code"],
-                card_token=card_token,
-            )
-            for merchant_slug in self.get_merchant_slugs(data)
-        ]
+                mid=data["mid"],
+                token=card_token,
+            ),
+            transaction_date=transaction_date,
+            has_time=True,
+            spend_amount=to_pennies(data["amount"]),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            card_token=card_token,
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

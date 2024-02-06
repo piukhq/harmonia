@@ -58,22 +58,20 @@ class Stonegate(QueueAgent):
 
         super()._do_import(body)
 
-    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
-        return [
-            SchemeTransactionFields(
-                merchant_slug=self.provider_slug,
-                payment_provider_slug=data["payment_card_type"],
-                transaction_date=pendulum.instance(data["date"]),
-                has_time=True,
-                spend_amount=to_pennies(data["amount"]),
-                spend_multiplier=100,
-                spend_currency=data["currency_code"],
-                auth_code=data["auth_code"],
-                first_six=data["payment_card_first_six"],
-                last_four=data["payment_card_last_four"],
-                extra_fields={"account_id": data["metadata"]["AccountID"]},
-            )
-        ]
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug=data["payment_card_type"],
+            transaction_date=pendulum.instance(data["date"]),
+            has_time=True,
+            spend_amount=to_pennies(data["amount"]),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            auth_code=data["auth_code"],
+            first_six=data["payment_card_first_six"],
+            last_four=data["payment_card_last_four"],
+            extra_fields={"account_id": data["metadata"]["AccountID"]},
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

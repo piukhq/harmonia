@@ -166,43 +166,43 @@ def test_refund_get_transaction_id() -> None:
     assert transaction_id == "d5e121cf-f34a-47ac-be19-908fc09db1ad"
 
 
-@patch("app.imports.agents.visa.VisaAuth.get_merchant_slugs", return_value="merchant")
-def test_auth_auth_code_field_is_missing(mock_get_merchant_slugs) -> None:
+@patch("app.imports.agents.visa.VisaAuth.get_merchant_slug", return_value="merchant")
+def test_auth_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(AUTH_TX1)
     agent = VisaAuth()
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == AUTH_TX1_AUTH_CODE
     data["MessageElementsCollection"][AUTH_TX1_AUTH_CODE_INDEX] = {"Key": "Transaction.AuthCode", "Value": ""}
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
     data["MessageElementsCollection"].pop(AUTH_TX1_AUTH_CODE_INDEX)
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
 
 
-@patch("app.imports.agents.visa.VisaRefund.get_merchant_slugs", return_value="merchant")
-def test_refund_auth_code_field_is_missing(mock_get_merchant_slugs) -> None:
+@patch("app.imports.agents.visa.VisaRefund.get_merchant_slug", return_value="merchant")
+def test_refund_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(REFUND_TRANSACTION)
     agent = VisaRefund()
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == REFUND_TX_AUTH_CODE
     data["MessageElementsCollection"][REFUND_AUTH_CODE_INDEX] = {"Key": "ReturnTransaction.AuthCode", "Value": ""}
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
     data["MessageElementsCollection"].pop(REFUND_AUTH_CODE_INDEX)
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
 
 
-@patch("app.imports.agents.visa.VisaSettlement.get_merchant_slugs", return_value="merchant")
-def test_settlement_auth_code_field_is_missing(mock_get_merchant_slugs) -> None:
+@patch("app.imports.agents.visa.VisaSettlement.get_merchant_slug", return_value="merchant")
+def test_settlement_auth_code_field_is_missing(mock_get_merchant_slug) -> None:
     data = copy.deepcopy(SETTLEMENT_TRANSACTION)
     agent = VisaSettlement()
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == SETTLEMENT_TX_AUTH_CODE
     data["MessageElementsCollection"][SETTLEMENT_AUTH_CODE_INDEX] = {"Key": "Transaction.AuthCode", "Value": ""}
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""
     data["MessageElementsCollection"].pop(SETTLEMENT_AUTH_CODE_INDEX)
-    fields = agent.to_transaction_fields(data)[0]
+    fields = agent.to_transaction_fields(data)
     assert fields.auth_code == ""

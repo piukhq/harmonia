@@ -68,20 +68,18 @@ class SlimChickens(QueueAgent):
 
         super()._do_import(body)
 
-    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
-        return [
-            SchemeTransactionFields(
-                merchant_slug=self.provider_slug,
-                payment_provider_slug=PAYMENT_CARD_TYPES[data["payment_card_type"].casefold()],
-                transaction_date=pendulum.instance(data["date"]),
-                has_time=True,
-                spend_amount=data["amount"],
-                spend_multiplier=100,
-                spend_currency=data["currency_code"],
-                auth_code=data["auth_code"],
-                last_four=data["payment_card_last_four"],
-            )
-        ]
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug=PAYMENT_CARD_TYPES[data["payment_card_type"].casefold()],
+            transaction_date=pendulum.instance(data["date"]),
+            has_time=True,
+            spend_amount=data["amount"],
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            auth_code=data["auth_code"],
+            last_four=data["payment_card_last_four"],
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
