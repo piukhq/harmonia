@@ -44,21 +44,19 @@ class Itsu(FileAgent, SoteriaConfigMixin):
             if payment_scheme_is_valid and amount_is_eligible:
                 yield raw_data
 
-    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
-        return [
-            SchemeTransactionFields(
-                merchant_slug=self.provider_slug,
-                payment_provider_slug=data["payment_card_type"],
-                transaction_date=self.get_transaction_date(data),
-                has_time=True,
-                spend_amount=to_pennies(data["amount"]),
-                spend_multiplier=100,
-                spend_currency=data["currency_code"],
-                auth_code=data["auth_code"],
-                first_six=data["payment_card_first_six"],
-                last_four=data["payment_card_last_four"],
-            )
-        ]
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
+        return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug=data["payment_card_type"],
+            transaction_date=self.get_transaction_date(data),
+            has_time=True,
+            spend_amount=to_pennies(data["amount"]),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            auth_code=data["auth_code"],
+            first_six=data["payment_card_first_six"],
+            last_four=data["payment_card_last_four"],
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:

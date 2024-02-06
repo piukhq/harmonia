@@ -40,8 +40,7 @@ def test_costa_instance(costa):
 
 def test_to_transaction_fields() -> None:
     scheme_transaction_fields = Costa().to_transaction_fields(TRANSACTION_DATA[0])
-    assert len(scheme_transaction_fields) == 1
-    assert scheme_transaction_fields[0]._asdict() == {
+    assert scheme_transaction_fields._asdict() == {
         "merchant_slug": MERCHANT_SLUG,
         "payment_provider_slug": "visa",
         "transaction_date": pendulum.DateTime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
