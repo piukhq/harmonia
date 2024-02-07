@@ -50,7 +50,7 @@ class TheWorksAPI:
             retry_count=0,
         )
 
-        atlas.queue_audit_message(message)
+        atlas.queue_audit_message(message, destination="atlas")
         return response.json()
 
     def _history_request(self, card_number: str) -> tuple:
