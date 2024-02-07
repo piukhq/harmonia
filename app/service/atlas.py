@@ -127,14 +127,14 @@ def make_audit_message(
     )
 
 
-def queue_audit_message(message: MessagePayload) -> None:
+def queue_audit_message(message: MessagePayload, destination="all") -> None:
     provider_slug = message["provider_slug"]
     if not settings.AUDIT_EXPORTS:
         log.warning(f"Not queueing {provider_slug} audit because AUDIT_EXPORTS is disabled.")
         log.debug(f"Audit payload:\n{message}")
     else:
         try:
-            exchange.publish(t.cast(dict, message), provider=provider_slug)
+            exchange.publish(t.cast(dict, message), provider=provider_slug, destination=destination)
         except Exception as ex:
             # Using a broad exception clause since we do not want any atlas fails or otherwise,
             # to affect other Harmonia processes. Logging will tell us about an issues.
