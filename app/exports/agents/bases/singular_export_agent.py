@@ -4,7 +4,7 @@ from contextlib import ExitStack, contextmanager
 import humanize
 import pendulum
 import sentry_sdk
-from requests import RequestException, Response
+from requests import Response
 
 from app import db, models
 from app.exports import models as exp_model
@@ -161,21 +161,6 @@ class SingularExportAgent(BaseAgent):
         """
         return None
 
-    def _try_get_result_from_exception(self, ex: Exception) -> str:
-        """
-        If the given exception is a request exception and we can get a response result from it, return the result.
-        Otherwise, if anything is missing or any exception is raised, return a blank string.
-        This is used for the response_result label in the failed_requests metric for Prometheus.
-        """
-        try:
-            if isinstance(ex, RequestException) and ex.response is not None:
-                response_result = self.get_response_result(ex.response)
-                if response_result is not None:
-                    return response_result
-        except Exception:
-            pass
-        return ""
-
     @contextmanager
     def _update_metrics(self, export_data: AgentExportData, session: db.Session) -> t.Iterator[None]:
         """
@@ -200,14 +185,13 @@ class SingularExportAgent(BaseAgent):
             )
             try:
                 yield
-            except Exception as ex:
+            except Exception:
                 self.bink_prometheus.increment_counter(
                     agent=self,
                     counter_name="failed_requests",
                     increment_by=1,
                     process_type="export",
                     slug=self.provider_slug,
-                    response_result=self._try_get_result_from_exception(ex),
                 )
                 raise
             else:

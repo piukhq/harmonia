@@ -4,7 +4,6 @@ import pendulum
 import pytest
 import responses
 import time_machine
-from requests import RequestException
 from sqlalchemy.exc import NoResultFound
 
 from app import db, models
@@ -233,28 +232,6 @@ def test_retry_pending_export(
     mock_singular_export_agent._retry_pending_export(pending_export, pendulum.now().add(minutes=20), session=db_session)
 
     assert db_session.query(models.PendingExport).one().retry_at == pendulum.datetime(2022, 11, 24, 9, 20).naive()
-
-
-def test_try_get_result_from_exception_request_exception(mock_singular_export_agent: MockSingularExportAgent):
-    response_result = mock_singular_export_agent._try_get_result_from_exception(RequestException(response={}))
-
-    assert response_result == ""
-
-
-@mock.patch.object(SingularExportAgent, "get_response_result", side_effect=Exception)
-def test_try_get_result_from_exception_when_exception_raised(
-    mock_get_response_result, mock_singular_export_agent: MockSingularExportAgent
-) -> None:
-    response_result = mock_singular_export_agent._try_get_result_from_exception(RequestException(response={}))
-
-    assert response_result == ""
-
-
-@mock.patch.object(SingularExportAgent, "get_response_result", return_value="response")
-def test_try_get_result_from_exception(mock_get_response_result, mock_singular_export_agent: MockSingularExportAgent):
-    response_result = mock_singular_export_agent._try_get_result_from_exception(RequestException(response={}))
-
-    assert response_result == "response"
 
 
 def test_delete_pending_export(

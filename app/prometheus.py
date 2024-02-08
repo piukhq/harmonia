@@ -55,7 +55,7 @@ class BinkPrometheus:
                 "failed_requests": Counter(
                     name="failed_requests",
                     documentation="Number of failed requests",
-                    labelnames=("transaction_type", "process_type", "slug", "response_result"),
+                    labelnames=("transaction_type", "process_type", "slug"),
                 ),
                 "files_received": Counter(
                     name="files_received",
