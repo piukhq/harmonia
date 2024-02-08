@@ -57,7 +57,7 @@ class TGIFridays(FileAgent):
             if payment_scheme_is_valid:
                 yield raw_data
 
-    def to_transaction_fields(self, data: dict) -> list[SchemeTransactionFields]:
+    def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
         return [
             SchemeTransactionFields(
                 merchant_slug=self.provider_slug,

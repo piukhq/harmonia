@@ -11,16 +11,11 @@ TWO_PLACES = Decimal(10) ** -2
 
 
 class TGIFridays(BaseImportDataProvider):
-    def provide(self, fixture: dict) -> bytes:
-        def txid(transaction: dict) -> str:
-            location_id = transaction["location_id"].zfill(3)
-            digit = location_id[-1].zfill(3)
-            sequence_number = randint(10000, 99999)
-            return f"{location_id}/{digit}/{sequence_number}"
+    def provide(self, fixture: dict, transaction_id: str) -> bytes:
 
         transactions = [
             (
-                txid[str(uuid4())],
+                transaction_id(str(uuid4())),
                 fixture["payment_provider"]["slug"],
                 user["first_six"],  # first six
                 user["last_four"],
