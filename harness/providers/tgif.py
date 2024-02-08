@@ -2,6 +2,7 @@ import csv
 import io
 from decimal import Decimal
 from random import randint
+from uuid import uuid4
 
 from app.currency import to_pounds
 from harness.providers.base import BaseImportDataProvider
@@ -19,7 +20,7 @@ class TGIFridays(BaseImportDataProvider):
 
         transactions = [
             (
-                txid(transaction),
+                txid[str(uuid4())],
                 fixture["payment_provider"]["slug"],
                 user["first_six"],  # first six
                 user["last_four"],
@@ -29,9 +30,6 @@ class TGIFridays(BaseImportDataProvider):
                 transaction["auth_code"],
                 transaction["date"].isoformat(),
                 transaction["identifier"],  # merchant identifier
-                transaction["location_id"],
-                "",  # transaction data
-                "",  # customer id
             )
             for user in fixture["users"]
             for transaction in user["transactions"]

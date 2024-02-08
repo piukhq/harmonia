@@ -20,13 +20,17 @@ TIME_FORMAT = "HHmm"
 DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
 
 
-def make_transaction_id(*, transaction_date: pendulum.DateTime, identifier: str, amount: str):
+def make_transaction_id(
+    *, transaction_date: pendulum.DateTime, identifier: str, amount: str, transaction_id: str, gratuity_amount: str
+):
     hash_parts = [
         transaction_date,
         identifier,
         amount,
+        transaction_id,
+        gratuity_amount,
     ]
-    return sha256(f".{'.'.join(hash_parts)}".encode()).hexdigest()
+    return sha256(".".join(hash_parts).encode()).hexdigest()
 
 
 class TGIFridays(FileAgent):
@@ -76,6 +80,8 @@ class TGIFridays(FileAgent):
             transaction_date=data["date"],
             identifier=data["merchant_identifier"],
             amount=data["amount"],
+            transaction_id=data["transaction_id"],
+            gratuity_amount=data["gratuity_amount"],
         )
 
     def get_primary_mids(self, data: dict) -> list[str]:
