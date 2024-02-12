@@ -1,7 +1,6 @@
 import csv
 import io
 from decimal import Decimal
-from random import randint
 from uuid import uuid4
 
 from app.currency import to_pounds

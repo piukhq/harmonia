@@ -8,16 +8,22 @@ import pendulum
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
-from app.imports.agents.bases.base import SchemeTransactionFields
+from app.imports.agents.bases.base import (
+    SchemeTransactionFields,
+    get_mapped_payment_provider,
+    get_payment_provider_from_first_six,
+)
 from app.imports.agents.bases.file_agent import FileAgent
 
 PROVIDER_SLUG = "tgi-fridays"
 SCHEDULE_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.schedule"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 
-DATE_FORMAT = "YYYYMMDD"
-TIME_FORMAT = "HHmm"
-DATETIME_FORMAT = f"{DATE_FORMAT} {TIME_FORMAT}"
+PAYMENT_CARD_TYPE_MAPPING = {
+    "visa": ["visa", "vs"],
+    "mastercard": ["mastercard", "mcard", "mc", "master card", "master", "maestro"],
+    "amex": ["american express", "amex", "americanexpress", "am ex"],
+}
 
 
 def make_transaction_id(
@@ -48,31 +54,37 @@ class TGIFridays(FileAgent):
         # Set up Prometheus metric types
         self.prometheus_metrics = {"counters": ["files_received", "transactions"], "gauges": ["last_file_timestamp"]}
 
+    @staticmethod
+    def _get_payment_card_type(first_six: str, payment_card_type: str) -> str | None:
+        if payment_provider := get_payment_provider_from_first_six(first_six):
+            return payment_provider
+        else:
+            return get_mapped_payment_provider(payment_card_type, PAYMENT_CARD_TYPE_MAPPING)
+
     def yield_transactions_data(self, data: bytes) -> t.Iterable[dict]:
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:
-            payment_scheme_is_valid = raw_data["payment_card_type"] in ["visa", "amex", "mastercard"]
+            payment_card_type = self._get_payment_card_type(raw_data["first_six"], raw_data["payment_card_type"])
+            raw_data["payment_card_type"] = payment_card_type
 
-            if payment_scheme_is_valid:
+            if payment_card_type:
                 yield raw_data
 
     def to_transaction_fields(self, data: dict) -> SchemeTransactionFields:
-        return [
-            SchemeTransactionFields(
-                merchant_slug=self.provider_slug,
-                payment_provider_slug=data["payment_card_type"],
-                has_time=True,
-                spend_amount=to_pennies(data["amount"]) + to_pennies(data["gratuity_amount"]),
-                spend_multiplier=100,
-                spend_currency=data["currency_code"],
-                auth_code=data["auth_code"],
-                transaction_date=self.get_transaction_date(data),
-                first_six=data["payment_card_first_six"],
-                last_four=data["payment_card_last_four"],
-                extra_fields={"amount": data["amount"]},
-            ),
-        ]
+        return SchemeTransactionFields(
+            merchant_slug=self.provider_slug,
+            payment_provider_slug=data["payment_card_type"],
+            has_time=True,
+            spend_amount=to_pennies(data["amount"]) + to_pennies(data["gratuity_amount"]),
+            spend_multiplier=100,
+            spend_currency=data["currency_code"],
+            auth_code=data["auth_code"],
+            transaction_date=self.get_transaction_date(data),
+            first_six=data["payment_card_first_six"],
+            last_four=data["payment_card_last_four"],
+            extra_fields={"amount": data["amount"]},
+        )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
