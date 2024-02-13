@@ -8,7 +8,7 @@ from blinker import signal
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pounds
-from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput, ExportDelayRetry
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.reporting import sanitise_logs
 from app.service import atlas, the_works
@@ -23,12 +23,6 @@ PROMOTION_START_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.promotion_sta
 PROMOTION_END_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.promotion_end"
 
 
-class DedupeDelayRetry(Exception):
-    def __init__(self, delay_seconds: int = 5, *args: object) -> None:
-        self.delay_seconds = delay_seconds
-        super().__init__(*args)
-
-
 class TheWorks(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
     config = Config(
@@ -41,7 +35,7 @@ class TheWorks(SingularExportAgent):
     )
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
-        if isinstance(exception, DedupeDelayRetry):
+        if isinstance(exception, ExportDelayRetry):
             return pendulum.now().add(seconds=exception.delay_seconds)
 
         # we account for the original dedupe delay by decrementing the retry
@@ -100,7 +94,7 @@ class TheWorks(SingularExportAgent):
         if retry_count == 0:
             created_at = pendulum.instance(export_data.transactions[0].created_at)
             if pendulum.now().diff(created_at).total_seconds() < 5:
-                raise DedupeDelayRetry
+                raise ExportDelayRetry
 
         body: dict
         _, body = export_data.outputs[0]  # type: ignore

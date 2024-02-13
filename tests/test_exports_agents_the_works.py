@@ -11,7 +11,7 @@ from app import db, models
 from app.config import config
 from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
-from app.exports.agents.the_works import DedupeDelayRetry, TheWorks
+from app.exports.agents.the_works import ExportDelayRetry, TheWorks
 from app.reporting import sanitise_logs
 from tests.fixtures import (
     Default,
@@ -304,7 +304,7 @@ def test_export(
     export_data = the_works.make_export_data(export_transaction, db_session)
 
     # the first attempt should raise a delay exception
-    with pytest.raises(DedupeDelayRetry):
+    with pytest.raises(ExportDelayRetry):
         the_works.export(export_data, session=db_session)
 
     # the second attempt should work
