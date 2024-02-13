@@ -439,3 +439,20 @@ class BaseAgent:
             process_type="import",
             slug=self.provider_slug,
         )
+
+
+FIRST_SIX_MAPPING = {"2": "mastercard", "5": "mastercard", "3": "amex", "4": "visa"}
+
+
+def get_payment_provider_from_first_six(first_six: str | None) -> str | None:
+    if first_six and len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
+        return FIRST_SIX_MAPPING[first_six[0]]
+    return None
+
+
+def get_mapped_payment_provider(name: str, mapping: dict[str, list[str]]) -> str | None:
+    for payment_provider, patterns in mapping.items():
+        for pattern in patterns:
+            if pattern.casefold() in name.casefold():
+                return payment_provider
+    return None

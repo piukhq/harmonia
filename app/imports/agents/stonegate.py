@@ -3,16 +3,19 @@ import pendulum
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pennies
 from app.feeds import FeedType
-from app.imports.agents.bases.base import SchemeTransactionFields
+from app.imports.agents.bases.base import (
+    SchemeTransactionFields,
+    get_mapped_payment_provider,
+    get_payment_provider_from_first_six,
+)
 from app.imports.agents.bases.queue_agent import QueueAgent
 
 PROVIDER_SLUG = "stonegate"
 
-FIRST_SIX_MAPPING = {"2": "mastercard", "5": "mastercard", "3": "amex", "4": "visa"}
 PAYMENT_CARD_TYPE_MAPPING = {
-    ("visa", "vs"): "visa",
-    ("mastercard", "mcard", "mc", "master card", "master", "maestro"): "mastercard",
-    ("american express", "amex", "americanexpress", "am ex"): "amex",
+    "visa": ["visa", "vs"],
+    "mastercard": ["mastercard", "mcard", "mc", "master card", "master", "maestro"],
+    "amex": ["american express", "amex", "americanexpress", "am ex"],
 }
 
 
@@ -36,14 +39,12 @@ class Stonegate(QueueAgent):
             "counters": ["transactions"],
         }
 
-    def _get_payment_card_type(self, first_six: str | None, payment_card_type: str) -> str | None:
-        if first_six and len(first_six) == 6 and first_six[0] in FIRST_SIX_MAPPING:
-            return FIRST_SIX_MAPPING[first_six[0]]
-        for values, payment_card in PAYMENT_CARD_TYPE_MAPPING.items():
-            for value in values:
-                if value in payment_card_type.casefold():
-                    return payment_card
-        return None
+    @staticmethod
+    def _get_payment_card_type(first_six: str, payment_card_type: str) -> str | None:
+        if payment_provider := get_payment_provider_from_first_six(first_six):
+            return payment_provider
+        else:
+            return get_mapped_payment_provider(payment_card_type, PAYMENT_CARD_TYPE_MAPPING)
 
     def _do_import(self, body: dict) -> None:
         payment_card_type = self._get_payment_card_type(body["payment_card_first_six"], body["payment_card_type"])

@@ -16,3 +16,4 @@ import_agents.add("wasabi-club", "app.imports.agents.wasabi.Wasabi")
 import_agents.add("itsu", "app.imports.agents.itsu.Itsu")
 # import_agents.add("slim-chickens", "app.imports.agents.slim_chickens.SlimChickens") holding until import is available
 import_agents.add("stonegate", "app.imports.agents.stonegate.Stonegate")
+import_agents.add("tgi-fridays", "app.imports.agents.tgi_fridays.TGIFridays")
