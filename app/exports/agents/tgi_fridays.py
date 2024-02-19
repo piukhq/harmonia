@@ -53,12 +53,13 @@ class TGIFridays(SingularExportAgent):
         if export_transaction:
             if retry_count == 0:
                 delay_seconds = int(self.config.get("delay_seconds", session=session))
-                created_at = pendulum.instance(export_transaction.transactions[0].created_at)
+                created_at = pendulum.instance(export_transaction.created_at)
                 if pendulum.now().diff(created_at).in_hours() < delay_seconds:
                     raise ExportDelayRetry(delay_seconds=delay_seconds)
 
         # Perform dedupe process after 24 hours delay
-        historical_rewarded_transactions = self.api_class.transaction_history(export_transaction, PROVIDER_SLUG)
+        api = self.api_class(self.config.get("base_url", session=session))
+        historical_rewarded_transactions = api.transaction_history(export_transaction)
         return self.exportable_transaction(export_transaction, historical_rewarded_transactions)
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
@@ -93,7 +94,6 @@ class TGIFridays(SingularExportAgent):
         response = api.transactions(body, endpoint)
         response_timestamp = pendulum.now().to_datetime_string()
 
-        request_url = self.api_class.base_url
         atlas.queue_audit_message(
             atlas.make_audit_message(
                 self.provider_slug,
@@ -104,7 +104,7 @@ class TGIFridays(SingularExportAgent):
                 request_timestamp=request_timestamp,
                 response=response,
                 response_timestamp=response_timestamp,
-                request_url=request_url,
+                request_url=response.url,
                 retry_count=retry_count,
             )
         )
@@ -117,16 +117,18 @@ class TGIFridays(SingularExportAgent):
         Check if the current transaction has already been rewarded in the historical transactions.
         """
         # Check for errors in the response
-        if historical_rewarded_transactions["result"] and int(historical_rewarded_transactions["result"][1]) > 0:
+        if not historical_rewarded_transactions:
             return False
 
         for transaction in historical_rewarded_transactions:
+            if not transaction["receipt_amount"] or not transaction["receipt_date"]:
+                continue
             spend_amount = export_transaction.spend_amount
             history_spend_amount = int(Decimal(transaction["receipt_amount"]))
             amount_match = spend_amount == history_spend_amount
 
             time_tolerance = 60 * 3
-            current_tx_date = pendulum.instance(export_transaction.transaction_date).to_date_string()
+            current_tx_date = pendulum.instance(export_transaction.transaction_date)
             history_tx_date = pendulum.parse(transaction["receipt_date"])
             history_tx_date_max = history_tx_date.add(time_tolerance)
             history_tx_date_min = history_tx_date.subtract(time_tolerance)

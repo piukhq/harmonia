@@ -1,7 +1,6 @@
-import json
 from pathlib import Path
-from urllib.parse import urljoin
 
+import pendulum
 import requests
 
 import settings
@@ -9,6 +8,8 @@ from app import models
 from app.core.requests_retry import requests_retry_session
 from app.db import redis
 from app.reporting import get_logger
+from app.service import atlas
+from app.utils import urljoin
 
 log = get_logger("tgi-fridays")
 
@@ -26,7 +27,7 @@ class TGIFridaysAPI:
         try:
             path = Path(settings.SECRETS_PATH) / key
             with path.open() as f:
-                return json.loads(f.read())
+                return f.read()
         except FileNotFoundError as e:
             log.exception(e)
             raise
@@ -55,26 +56,27 @@ class TGIFridaysAPI:
     def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
         return self.post(endpoint, body, name="post_matched_transaction")
 
-    def transaction_history(self, transaction: models.ExportTransaction, provider_slug: str) -> dict:
+    def transaction_history(self, transaction: models.ExportTransaction) -> dict:
         # build request to call transaction history endpoint
         # send request and responses to atlas for audit
-        # request_timestamp = pendulum.now().to_datetime_string()
+        request_timestamp = pendulum.now().to_datetime_string()
         endpoint = f"/api2/dashboard/users/extensive_timeline?user_id={transaction.loyalty_id}"
         client_id = "some_client_id"
-        headers = {f"Authorization: Bearer {client_id}"}
-        resp = self.session.get(urljoin(self.base_url, endpoint), headers=headers)
+        headers = {"Authorization": f"Bearer {client_id}"}
+        url = urljoin(self.base_url, endpoint)
+        resp = self.session.get(url, headers=headers)
 
-        # response_timestamp = pendulum.now().to_datetime_string()
-        # message = atlas.make_audit_message(
-        #     provider_slug,
-        #     atlas.make_audit_transactions([transaction], tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
-        #     request=sanitise_logs(request_body, provider_slug),
-        #     request_timestamp=request_timestamp,
-        #     response=response,
-        #     response_timestamp=response_timestamp,
-        #     request_url=response.url,
-        #     retry_count=0,
-        # )
-        #
-        # atlas.queue_audit_message(message, destination="atlas")
+        response_timestamp = pendulum.now().to_datetime_string()
+        message = atlas.make_audit_message(
+            transaction.provider_slug,
+            atlas.make_audit_transactions([transaction], tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
+            request=None,
+            request_timestamp=request_timestamp,
+            response=resp,
+            response_timestamp=response_timestamp,
+            request_url=resp.url,
+            retry_count=0,
+        )
+
+        atlas.queue_audit_message(message, destination="atlas")
         return resp.json()["checkins"]

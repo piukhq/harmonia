@@ -10,11 +10,14 @@ TWO_PLACES = Decimal(10) ** -2
 
 
 class TGIFridays(BaseImportDataProvider):
-    def provide(self, fixture: dict, transaction_id: str) -> bytes:
+    def provide(
+        self,
+        fixture: dict,
+    ) -> bytes:
 
         transactions = [
             (
-                transaction_id(str(uuid4())),
+                str(uuid4()),
                 fixture["payment_provider"]["slug"],
                 user["first_six"],  # first six
                 user["last_four"],
