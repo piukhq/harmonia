@@ -5,6 +5,7 @@ from blinker import signal
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
+from app.currency import to_pennies
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput, ExportDelayRetry
 from app.exports.agents.bases.singular_export_agent import SingularExportAgent
 from app.reporting import sanitise_logs
@@ -54,7 +55,7 @@ class TGIFridays(SingularExportAgent):
             if retry_count == 0:
                 delay_seconds = int(self.config.get("delay_seconds", session=session))
                 created_at = pendulum.instance(export_transaction.created_at)
-                if pendulum.now().diff(created_at).in_hours() < delay_seconds:
+                if pendulum.now().diff(created_at).in_seconds() <= delay_seconds:
                     raise ExportDelayRetry(delay_seconds=delay_seconds)
 
         # Perform dedupe process after 24 hours delay
@@ -89,9 +90,8 @@ class TGIFridays(SingularExportAgent):
         _, body = export_data.outputs[0]  # type: ignore
 
         api = self.api_class(self.config.get("base_url", session=session))
-        endpoint = "/api2/dashboard/users/support"
         request_timestamp = pendulum.now().to_datetime_string()
-        response = api.transactions(body, endpoint)
+        response = api.transactions(body)
         response_timestamp = pendulum.now().to_datetime_string()
 
         atlas.queue_audit_message(
@@ -123,20 +123,18 @@ class TGIFridays(SingularExportAgent):
         for transaction in historical_rewarded_transactions:
             if not transaction["receipt_amount"] or not transaction["receipt_date"]:
                 continue
-            spend_amount = export_transaction.spend_amount
-            history_spend_amount = int(Decimal(transaction["receipt_amount"]))
+            spend_amount = export_transaction.extra_fields["amount"]
+            history_spend_amount = to_pennies(transaction["receipt_amount"])
             amount_match = spend_amount == history_spend_amount
 
             time_tolerance = 60 * 3
             current_tx_date = pendulum.instance(export_transaction.transaction_date)
             history_tx_date = pendulum.parse(transaction["receipt_date"])
-            history_tx_date_max = history_tx_date.add(time_tolerance)
-            history_tx_date_min = history_tx_date.subtract(time_tolerance)
-            dates_match = history_tx_date_min >= current_tx_date <= history_tx_date_max
+            history_tx_date_max = history_tx_date.add(seconds=time_tolerance)
+            history_tx_date_min = history_tx_date.subtract(seconds=time_tolerance)
+            dates_match = history_tx_date_min <= current_tx_date <= history_tx_date_max
 
-            # there are two cases in which we can't export the transaction:
-            # 1. the transaction is not a refund, and the points and dates both match
-            # 2. the transaction is a refund, and the points match (dates are irrelevant)
+            # we don't export the transactionm if the points and dates match
             if amount_match and dates_match:
                 signal("unexported-transaction").send(self, transactions=[export_transaction])
                 return False

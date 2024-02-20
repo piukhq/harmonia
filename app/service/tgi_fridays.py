@@ -53,8 +53,8 @@ class TGIFridaysAPI:
         response.raise_for_status()
         return response
 
-    def transactions(self, body: dict, endpoint: str) -> requests.models.Response:
-        return self.post(endpoint, body, name="post_matched_transaction")
+    def transactions(self, body: dict) -> requests.models.Response:
+        return self.post("/api2/dashboard/users/support", body, name="post_matched_transaction")
 
     def transaction_history(self, transaction: models.ExportTransaction) -> dict:
         # build request to call transaction history endpoint
