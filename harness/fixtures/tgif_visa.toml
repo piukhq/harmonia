@@ -29,7 +29,7 @@ email = "test-123@testbink.com"
 
 [[users.transactions]]
 date = 2024-01-05T14:52:12
-amount = 1234
+amount = 2000
 auth_code = "666666"
 identifier = "test-mid-123"
 identifier_type = "PRIMARY"

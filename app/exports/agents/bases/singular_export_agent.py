@@ -80,6 +80,18 @@ class SingularExportAgent(BaseAgent):
 
         return matched_transaction
 
+    def should_send_export(
+        self, export_transaction: models.MatchedTransaction, retry_count: int, session: db.Session
+    ) -> bool:
+        """
+        If a pre-export condition needs to be checked before the transaction is exported, overwrite this method
+        in the agent class.
+        Example of a pre-export condition might be to delay a transaction export to allow a pre-check if the
+        transaction should be exported. The delay allows the retailer system to be updated with recent loyalty data.
+        Defaulted to True since most agents currently always export the transaction ASAP.
+        """
+        return True
+
     def handle_pending_export(self, pending_export: models.PendingExport, *, session: db.Session):
         self.log.info(f"Handling {pending_export}.")
 
@@ -106,7 +118,8 @@ class SingularExportAgent(BaseAgent):
             return
 
         try:
-            self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
+            if self.should_send_export(export_transaction, pending_export.retry_count, session):
+                self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
         except Exception as ex:
             event_id = sentry_sdk.capture_exception()
 

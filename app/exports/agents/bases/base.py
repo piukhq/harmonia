@@ -13,6 +13,12 @@ from app.service.blob_storage import BlobStorageClient
 from app.utils import missing_property
 
 
+class ExportDelayRetry(Exception):
+    def __init__(self, delay_seconds: int = 5, *args: object) -> None:
+        self.delay_seconds = delay_seconds
+        super().__init__(*args)
+
+
 class AgentExportDataOutput(t.NamedTuple):
     key: str
     data: t.Union[str, t.Dict, t.List]

@@ -65,7 +65,9 @@ class TGIFridays(FileAgent):
         fd = io.StringIO(data.decode())
         reader = csv.DictReader(fd)
         for raw_data in reader:
-            payment_card_type = self._get_payment_card_type(raw_data["first_six"], raw_data["payment_card_type"])
+            payment_card_type = self._get_payment_card_type(
+                raw_data["payment_card_first_six"], raw_data["payment_card_type"]
+            )
             raw_data["payment_card_type"] = payment_card_type
 
             if payment_card_type:
