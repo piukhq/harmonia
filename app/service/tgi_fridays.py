@@ -13,7 +13,7 @@ from app.utils import urljoin
 
 log = get_logger("tgi-fridays")
 
-TGIF_SECRET_KEY = "tgi-fridays-outbound-key"
+TGIF_SECRET_KEY = "tgi-fridays-client-id"
 TOKEN_CACHE_TTL = 259198
 
 
