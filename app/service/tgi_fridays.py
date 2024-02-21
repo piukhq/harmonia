@@ -13,7 +13,7 @@ from app.utils import urljoin
 
 log = get_logger("tgi-fridays")
 
-TGIF_SECRET_KEY = "tgi-fridays-client-id"
+TGIF_SECRET_KEY = "tgi-fridays-admin-key"
 TOKEN_CACHE_TTL = 259198
 
 
@@ -33,14 +33,12 @@ class TGIFridaysAPI:
             raise
 
     def _get_token(self) -> str:
-        secret_key_name = "tgi-fridays-harmonia-oauth-key"
-
-        if token := redis.get(secret_key_name):
+        if token := redis.get(TGIF_SECRET_KEY):
             return token
 
         token = self._read_secret(TGIF_SECRET_KEY)
-        redis.set(secret_key_name, token)
-        redis.expire(secret_key_name, TOKEN_CACHE_TTL)
+        redis.set(TGIF_SECRET_KEY, token)
+        redis.expire(TGIF_SECRET_KEY, TOKEN_CACHE_TTL)
 
         return token
 
