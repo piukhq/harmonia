@@ -109,7 +109,7 @@ class TGIFridays(SingularExportAgent):
         response.raise_for_status()
 
     def exportable_transaction(
-        self, export_transaction: models.ExportTransaction, historical_rewarded_transactions: dict
+        self, export_transaction: models.ExportTransaction, historical_rewarded_transactions: list[dict]
     ) -> bool:
         """
         Check if the current transaction has already been rewarded in the historical transactions.
