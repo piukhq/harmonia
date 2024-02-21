@@ -56,13 +56,13 @@ class TGIFridaysAPI:
     def transactions(self, body: dict) -> requests.models.Response:
         return self.post("/api2/dashboard/users/support", body, name="post_matched_transaction")
 
-    def transaction_history(self, transaction: models.ExportTransaction) -> dict:
+    def transaction_history(self, transaction: models.ExportTransaction) -> list[dict]:
         # build request to call transaction history endpoint
         # send request and responses to atlas for audit
         request_timestamp = pendulum.now().to_datetime_string()
         endpoint = f"/api2/dashboard/users/extensive_timeline?user_id={transaction.loyalty_id}"
-        client_id = "some_client_id"
-        headers = {"Authorization": f"Bearer {client_id}"}
+        auth_token = f"Bearer {self._get_token()}"
+        headers = {"Authorization": auth_token}
         url = urljoin(self.base_url, endpoint)
         resp = self.session.get(url, headers=headers)
 
@@ -70,7 +70,7 @@ class TGIFridaysAPI:
         message = atlas.make_audit_message(
             transaction.provider_slug,
             atlas.make_audit_transactions([transaction], tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
-            request=None,
+            request={"url": resp.url},
             request_timestamp=request_timestamp,
             response=resp,
             response_timestamp=response_timestamp,

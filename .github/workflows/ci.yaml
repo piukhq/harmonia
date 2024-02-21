@@ -13,9 +13,8 @@ jobs:
     name: tests
     runs-on: ubuntu-latest
     env:
-      TXM_POSTGRES_USER: postgres
-      TXM_POSTGRES_HOST: 127.0.0.1
-      TXM_POSTGRES_DB: harmonia
+      TXM_POSTGRES_URI: postgresql://postgres@localhost/harmonia_test
+      TXM_POSTGRES_TEST_URI: postgresql://postgres@localhost/harmonia_test
       TXM_REDIS_URL: redis://127.0.0.1:6379/0
       TXM_HERMES_URL: "http://localhost"
       TXM_AAD_TENANT_ID: ""
@@ -26,7 +25,7 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: harmonia
+          POSTGRES_DB: harmonia_test
       redis:
         image: redis:latest
         ports:
@@ -39,7 +38,6 @@ jobs:
       - run: pip install poetry
       - run: poetry config http-basic.azure jeff ${{ secrets.AZURE_DEVOPS_PAT }}
       - run: poetry install
-      - run: poetry run alembic upgrade head
       - run: poetry run scripts/cibuild
 
   release_staging:
