@@ -2,6 +2,7 @@
 . scripts/_common
 
 info 'Running tests...'
+export TXM_POSTGRES_URI=$TXM_POSTGRES_TEST_URI
 pytest --cov app --cov-report term-missing "$@"
 hr
 

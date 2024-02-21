@@ -26,9 +26,7 @@ MERCHANT_SLUG = "tgi-fridays"
 
 REQUEST = {
     "user_id": "test_loyalty_id",
-    "subject": "Gifts from us",
     "message": "You’ve been awarded stripes",
-    "gift_reason": "reason",
     "gift_count": 5566,
     "location_id": "test_primary_mid",
 }
