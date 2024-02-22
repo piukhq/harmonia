@@ -27,7 +27,7 @@ MERCHANT_SLUG = "tgi-fridays"
 REQUEST = {
     "user_id": "test_loyalty_id",
     "message": "You’ve been awarded stripes",
-    "gift_count": 5566,
+    "gift_count": 51,
     "location_id": "test_primary_mid",
 }
 
@@ -54,7 +54,7 @@ HISTORY_TRANSACTIONS = [
     {
         "checkin_type": "PosCheckin",
         "channel": "POS",
-        "receipt_amount": 5.99,
+        "receipt_amount": 50.60,
         "receipt_number": "8204",
         "receipt_date": "2024-02-20T11:06:23Z",
         "ip_address": "IP_ADDRESS_GOES_HERE",
@@ -101,7 +101,7 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
         mid=PRIMARY_IDENTIFIER,
         primary_identifier=PRIMARY_IDENTIFIER,
         transaction_date="2024-02-20T11:06:23",
-        extra_fields={"amount": 599},
+        extra_fields={"amount": 50.60},
     )
 
 
@@ -119,7 +119,6 @@ def test_should_send_export_first_attempt_delay(
     db_session: db.Session,
 ) -> None:
     mock_transaction_history.return_value = HISTORY_TRANSACTIONS
-    export_transaction.spend_amount = 599
     tgi_fridays = TGIFridays()
     # the first attempt should raise a delay exception
     with pytest.raises(ExportDelayRetry):
@@ -133,7 +132,6 @@ def test_should_send_export_false_already_rewarded(
     db_session: db.Session,
 ) -> None:
     mock_transaction_history.return_value = HISTORY_TRANSACTIONS
-    export_transaction.spend_amount = 599
     tgi_fridays = TGIFridays()
     should_export = tgi_fridays.should_send_export(export_transaction, 1, session=db_session)
     assert not should_export
@@ -146,7 +144,7 @@ def test_should_send_export_true_to_be_rewarded(
     db_session: db.Session,
 ) -> None:
     mock_transaction_history.return_value = HISTORY_TRANSACTIONS
-    export_transaction.extra_fields["amount"] = 1735
+    export_transaction.extra_fields["amount"] = 17.35
     tgi_fridays = TGIFridays()
 
     to_be_rewarded = tgi_fridays.should_send_export(export_transaction, 1, session=db_session)

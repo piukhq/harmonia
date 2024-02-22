@@ -65,8 +65,8 @@ class TGIFridays(SingularExportAgent):
 
     def make_export_data(self, export_transaction: models.ExportTransaction, session: db.Session) -> AgentExportData:
         points_rate = int(self.config.get("default_point_conversion_rate", session=session))
-        spend_amount = export_transaction.spend_amount
-        points = int(Decimal(spend_amount).to_integral_value(rounding=ROUND_HALF_UP)) * points_rate
+        amount = export_transaction.extra_fields["amount"]
+        points = int(Decimal(amount).to_integral_value(rounding=ROUND_HALF_UP)) * points_rate
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
@@ -121,9 +121,9 @@ class TGIFridays(SingularExportAgent):
         for transaction in historical_rewarded_transactions:
             if not transaction["receipt_amount"] or not transaction["receipt_date"]:
                 continue
-            spend_amount = export_transaction.extra_fields["amount"]
+            amount = to_pennies(export_transaction.extra_fields["amount"])
             history_spend_amount = to_pennies(transaction["receipt_amount"])
-            amount_match = spend_amount == history_spend_amount
+            amount_match = amount == history_spend_amount
 
             time_tolerance = 60 * 3
             current_tx_date = pendulum.instance(export_transaction.transaction_date)
