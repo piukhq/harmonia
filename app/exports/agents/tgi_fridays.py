@@ -75,7 +75,7 @@ class TGIFridays(SingularExportAgent):
                         "user_id": self.get_loyalty_identifier(export_transaction),
                         "message": "You’ve been awarded stripes",
                         "gift_count": points,
-                        "location_id": export_transaction.mid,
+                        "location_id": export_transaction.location_id,
                     },
                 )
             ],
