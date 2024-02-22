@@ -28,7 +28,7 @@ REQUEST = {
     "user_id": "test_loyalty_id",
     "message": "You’ve been awarded stripes",
     "gift_count": 51,
-    "location_id": "test_primary_mid",
+    "location_id": "test_location_id",
 }
 
 export_resp = mock.Mock(spec=Response)
@@ -101,6 +101,7 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
         mid=PRIMARY_IDENTIFIER,
         primary_identifier=PRIMARY_IDENTIFIER,
         transaction_date="2024-02-20T11:06:23",
+        location_id="test_location_id",
         extra_fields={"amount": 50.60},
     )
 
