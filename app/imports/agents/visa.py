@@ -7,8 +7,6 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
-from app.imports.agents.registry import import_agents
-from app.registry import RegistryError
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -58,6 +56,15 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.AUTH
 
+    timezones = {
+        "stonegate": "Europe/London",
+        "itsu": "Europe/London",
+        "tgi-fridays": "Europe/London",
+        "the-works": "Europe/London",
+        "viator": "GMT",
+        "slim-chickens": "GMT",
+    }
+
     def __init__(self):
         super().__init__()
 
@@ -101,20 +108,8 @@ class VisaAuth(QueueAgent):
         )
 
     def get_transaction_date(self, data: dict) -> pendulum.DateTime:
-        # visa auth transactions use a retailer-specific timezone
-        # if there's an import agent, use its timezone
         slug = self.get_merchant_slug(data)
-        try:
-            agent = import_agents.instantiate(slug)
-            tz = agent.timezone
-        # if there's no import agent, use a known mapping defaulting to GMT
-        # we can only find these out by looking at real auth data from Visa.
-        except RegistryError:
-            tz = pendulum.timezone(
-                {
-                    "the-works": "Europe/London",
-                }.get(slug, "GMT")
-            )
+        tz = self.timezones.get(slug, "GMT")
         return self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz=tz)
 
 

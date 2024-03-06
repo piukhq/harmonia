@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pendulum
 import redis.lock
-from pendulum.tz.timezone import Timezone
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import tuple_
 
@@ -155,10 +154,6 @@ class BaseAgent:
     @property
     def feed_type_is_payment(self) -> bool:
         return self.feed_type in [FeedType.AUTH, FeedType.SETTLED, FeedType.REFUND]
-
-    @property
-    def timezone(self) -> Timezone:
-        return missing_property(type(self), "timezone")
 
     def run(self):
         raise NotImplementedError(

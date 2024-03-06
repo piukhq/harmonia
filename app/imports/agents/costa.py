@@ -12,7 +12,6 @@ PROVIDER_SLUG = "costa"
 class Costa(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
-    timezone = pendulum.timezone("GMT")
 
     def __init__(self):
         super().__init__()

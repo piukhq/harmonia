@@ -22,7 +22,6 @@ PAYMENT_CARD_TYPE_MAPPING = {
 class Stonegate(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
-    timezone = pendulum.timezone("Europe/London")
 
     config = Config(
         ConfigValue(
@@ -64,7 +63,7 @@ class Stonegate(QueueAgent):
         return SchemeTransactionFields(
             merchant_slug=self.provider_slug,
             payment_provider_slug=data["payment_card_type"],
-            transaction_date=pendulum.instance(data["date"], tz=self.timezone),
+            transaction_date=pendulum.instance(data["date"], tz="Europe/London"),
             has_time=True,
             spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,
