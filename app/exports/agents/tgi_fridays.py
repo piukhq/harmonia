@@ -54,8 +54,8 @@ class TGIFridays(SingularExportAgent):
         if export_transaction:
             if retry_count == 0:
                 delay_seconds = int(self.config.get("delay_seconds", session=session))
-                created_at = pendulum.instance(export_transaction.created_at)
-                if pendulum.now().diff(created_at).in_seconds() <= delay_seconds:
+                transaction_date = pendulum.instance(export_transaction.transaction_date)
+                if pendulum.now().diff(transaction_date).in_seconds() <= delay_seconds:
                     raise ExportDelayRetry(delay_seconds=delay_seconds)
 
         # Perform dedupe process after 24 hours delay
