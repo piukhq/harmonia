@@ -8,7 +8,7 @@ from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
 from app.imports.agents.registry import import_agents
-from app.registry import InstantiationError, RegistryConfigurationError
+from app.registry import RegistryError
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -109,7 +109,7 @@ class VisaAuth(QueueAgent):
             tz = agent.timezone
         # if there's no import agent, use a known mapping defaulting to GMT
         # we can only find these out by looking at real auth data from Visa.
-        except (RegistryConfigurationError, InstantiationError):
+        except RegistryError:
             tz = pendulum.timezone(
                 {
                     "the-works": "Europe/London",

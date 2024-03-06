@@ -2,15 +2,19 @@ import importlib
 import typing as t
 
 
-class NoSuchAgent(Exception):
+class RegistryError(Exception):
     pass
 
 
-class RegistryConfigurationError(Exception):
+class NoSuchAgent(RegistryError):
     pass
 
 
-class InstantiationError(Exception):
+class RegistryConfigurationError(RegistryError):
+    pass
+
+
+class InstantiationError(RegistryError):
     pass
 
 
@@ -39,7 +43,6 @@ class Registry(t.Generic[T]):
             raise RegistryConfigurationError(f"Invalid import path: {self._entries[key]}") from ex
 
     def instantiate(self, key: str, *args, **kwargs) -> T:
-
         mod_path, class_name = self.registered_entries(key)
 
         try:
