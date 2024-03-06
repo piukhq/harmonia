@@ -42,6 +42,7 @@ def make_transaction_id(
 class TGIFridays(FileAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
+    timezone = pendulum.timezone("GMT")
 
     config = Config(
         ConfigValue("path", key=PATH_KEY, default="/"),

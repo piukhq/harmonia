@@ -19,6 +19,7 @@ PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
 class Itsu(FileAgent, SoteriaConfigMixin):
     feed_type = FeedType.MERCHANT
     provider_slug = PROVIDER_SLUG
+    timezone = pendulum.timezone("Europe/London")
 
     config = Config(
         ConfigValue("path", key=PATH_KEY, default="/"),

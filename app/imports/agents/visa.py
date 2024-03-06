@@ -7,6 +7,8 @@ from app.currency import to_pennies
 from app.feeds import FeedType
 from app.imports.agents.bases.base import PaymentTransactionFields
 from app.imports.agents.bases.queue_agent import QueueAgent
+from app.imports.agents.registry import import_agents
+from app.registry import InstantiationError, RegistryConfigurationError
 
 PROVIDER_SLUG = "visa"
 PATH_KEY = f"{KEY_PREFIX}imports.agents.{PROVIDER_SLUG}.path"
@@ -85,11 +87,10 @@ class VisaAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
             merchant_slug=self.get_merchant_slug(data),
             payment_provider_slug=self.provider_slug,
-            transaction_date=transaction_date,
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
@@ -98,6 +99,23 @@ class VisaAuth(QueueAgent):
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=_get_auth_code(data, "Transaction"),
         )
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        # visa auth transactions use a retailer-specific timezone
+        # if there's an import agent, use its timezone
+        slug = self.get_merchant_slug(data)
+        try:
+            agent = import_agents.instantiate(slug)
+            tz = agent.timezone
+        # if there's no import agent, use a known mapping defaulting to GMT
+        # we can only find these out by looking at real auth data from Visa.
+        except (RegistryConfigurationError, InstantiationError):
+            tz = pendulum.timezone(
+                {
+                    "the-works": "Europe/London",
+                }.get(slug, "GMT")
+            )
+        return self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz=tz)
 
 
 class VisaSettlement(QueueAgent):

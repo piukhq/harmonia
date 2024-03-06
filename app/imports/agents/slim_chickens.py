@@ -19,6 +19,7 @@ PAYMENT_CARD_TYPES = {
 class SlimChickens(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
+    timezone = pendulum.timezone("GMT")
 
     config = Config(
         ConfigValue(

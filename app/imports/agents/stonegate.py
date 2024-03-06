@@ -22,6 +22,7 @@ PAYMENT_CARD_TYPE_MAPPING = {
 class Stonegate(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.MERCHANT
+    timezone = pendulum.timezone("Europe/London")
 
     config = Config(
         ConfigValue(
