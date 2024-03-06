@@ -37,7 +37,7 @@ export_resp.url = "https://test.tgi.com/path/transaction"
 export_resp.json.return_value = {}
 
 RESPONSE_ERROR = {"Error": None, "Message": "Origin ID not found"}
-
+test_date_now = pendulum.now()
 # This is not the whole response from Punchh, only the "checkins" section of the response.
 HISTORY_TRANSACTIONS = [
     {
@@ -48,7 +48,7 @@ HISTORY_TRANSACTIONS = [
         "receipt_date": None,
         "ip_address": None,
         "bar_code": None,
-        "created_at": "2019-12-06T14:01:15Z",
+        "created_at": test_date_now.to_iso8601_string(),
         "location_name": "ADDRESS_GOES_HERE",
     },
     {
@@ -56,10 +56,10 @@ HISTORY_TRANSACTIONS = [
         "channel": "POS",
         "receipt_amount": 50.60,
         "receipt_number": "8204",
-        "receipt_date": "2024-02-20T11:06:23Z",
+        "receipt_date": test_date_now.to_iso8601_string(),
         "ip_address": "IP_ADDRESS_GOES_HERE",
         "bar_code": "BARCODE_GOES_HERE",
-        "created_at": "2024-02-20T11:06:23Z",
+        "created_at": test_date_now.to_iso8601_string(),
         "location_name": "ADDRESS_GOES_HERE",
     },
 ]
@@ -100,7 +100,7 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
         provider_slug=MERCHANT_SLUG,
         mid=PRIMARY_IDENTIFIER,
         primary_identifier=PRIMARY_IDENTIFIER,
-        transaction_date="2024-02-20T11:06:23",
+        transaction_date=test_date_now.to_iso8601_string(),
         location_id="test_location_id",
         extra_fields={"amount": 50.60},
     )
@@ -139,13 +139,27 @@ def test_should_send_export_false_already_rewarded(
 
 
 @mock.patch("app.service.tgi_fridays.TGIFridaysAPI.transaction_history")
-def test_should_send_export_true_to_be_rewarded(
+def test_should_send_export_true_amount_different(
     mock_transaction_history,
     export_transaction: models.ExportTransaction,
     db_session: db.Session,
 ) -> None:
     mock_transaction_history.return_value = HISTORY_TRANSACTIONS
     export_transaction.extra_fields["amount"] = 17.35
+    tgi_fridays = TGIFridays()
+
+    to_be_rewarded = tgi_fridays.should_send_export(export_transaction, 1, session=db_session)
+    assert to_be_rewarded
+
+
+@mock.patch("app.service.tgi_fridays.TGIFridaysAPI.transaction_history")
+def test_should_send_export_true_dates_different(
+    mock_transaction_history,
+    export_transaction: models.ExportTransaction,
+    db_session: db.Session,
+) -> None:
+    mock_transaction_history.return_value = HISTORY_TRANSACTIONS
+    export_transaction.transaction_date = test_date_now.subtract(hours=4)
     tgi_fridays = TGIFridays()
 
     to_be_rewarded = tgi_fridays.should_send_export(export_transaction, 1, session=db_session)
