@@ -47,9 +47,7 @@ class TGIFridays(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
-    def get_retry_datetime(
-        self, retry_count: int, *, exception: t.Optional[Exception] = None
-    ) -> pendulum.DateTime | None:
+    def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
         # TEMPORARY: remove when implementing signals
         if (
             isinstance(exception, RequestException)
