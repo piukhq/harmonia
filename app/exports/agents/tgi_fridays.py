@@ -2,6 +2,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import pendulum
 from blinker import signal
+from requests import RequestException
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -16,6 +17,12 @@ PROVIDER_SLUG = "tgi-fridays"
 BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 EXPORT_DELAY_SECONDS = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.delay_seconds"
 DEFAULT_POINT_CONVERSION_RATE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.default_point_conversion_rate"
+
+MAX_RETRY_COUNT = 5
+
+RECEIPT_NO_NOT_FOUND = "receipt no not found"
+ORIGIN_ID_NOT_FOUND = "origin id not found"
+retryable_messages = [RECEIPT_NO_NOT_FOUND]
 
 
 class TGIFridays(SingularExportAgent):
@@ -40,13 +47,24 @@ class TGIFridays(SingularExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
-    def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
-        if isinstance(exception, ExportDelayRetry):
-            return pendulum.now().add(seconds=exception.delay_seconds)
-
-        # we account for the original dedupe delay by decrementing the retry
-        # count to essentially act as if the second retry is actually the first.
-        return super().get_retry_datetime(retry_count - 1, exception=exception)
+    def get_retry_datetime(
+        self, retry_count: int, *, exception: t.Optional[Exception] = None
+    ) -> pendulum.DateTime | None:
+        # TEMPORARY: remove when implementing signals
+        if (
+            isinstance(exception, RequestException)
+            and self.get_response_result(exception.response) not in retryable_messages
+        ):
+            return None
+        if retry_count == 0:
+            # first retry in 20 minutes.
+            return pendulum.now("UTC") + pendulum.duration(minutes=20)
+        elif retry_count <= MAX_RETRY_COUNT:
+            # second+ retry at 10 AM the next day.
+            return self.next_available_retry_time(10)
+        else:
+            # after the previous MAX_RETRY_COUNT tries, give up.
+            return None
 
     def should_send_export(
         self, export_transaction: models.ExportTransaction, retry_count: int, session: db.Session

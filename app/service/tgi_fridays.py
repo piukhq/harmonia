@@ -42,13 +42,12 @@ class TGIFridaysAPI:
 
         return token
 
-    def post(self, endpoint: str, body: dict = None, *, name: str) -> requests.models.Response:
+    def post(self, endpoint: str, body: dict | None = None, *, name: str) -> requests.models.Response:
         auth_token = f"Bearer {self._get_token()}"
         headers = {"Authorization": auth_token}
         log.debug(f"Posting {name} request with parameters: {body}.")
         url = urljoin(self.base_url, endpoint)
         response = self.session.post(url, json=body, headers=headers)
-        response.raise_for_status()
         return response
 
     def transactions(self, body: dict) -> requests.models.Response:
@@ -77,4 +76,6 @@ class TGIFridaysAPI:
         )
 
         atlas.queue_audit_message(message, destination="atlas")
+
+        resp.raise_for_status()  # failures will be retried
         return resp.json()["checkins"]
