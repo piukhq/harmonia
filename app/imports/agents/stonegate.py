@@ -63,7 +63,7 @@ class Stonegate(QueueAgent):
         return SchemeTransactionFields(
             merchant_slug=self.provider_slug,
             payment_provider_slug=data["payment_card_type"],
-            transaction_date=pendulum.instance(data["date"]),
+            transaction_date=pendulum.instance(data["date"], tz="Europe/London"),
             has_time=True,
             spend_amount=to_pennies(data["amount"]),
             spend_multiplier=100,

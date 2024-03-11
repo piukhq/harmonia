@@ -56,6 +56,15 @@ class VisaAuth(QueueAgent):
     provider_slug = PROVIDER_SLUG
     feed_type = FeedType.AUTH
 
+    timezones = {
+        "stonegate": "Europe/London",
+        "itsu": "Europe/London",
+        "tgi-fridays": "Europe/London",
+        "the-works": "Europe/London",
+        "viator": "GMT",
+        "slim-chickens": "GMT",
+    }
+
     def __init__(self):
         super().__init__()
 
@@ -85,11 +94,10 @@ class VisaAuth(QueueAgent):
 
     def to_transaction_fields(self, data: dict) -> PaymentTransactionFields:
         ext_user_id = data["ExternalUserId"]
-        transaction_date = self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz="GMT")
         return PaymentTransactionFields(
             merchant_slug=self.get_merchant_slug(data),
             payment_provider_slug=self.provider_slug,
-            transaction_date=transaction_date,
+            transaction_date=self.get_transaction_date(data),
             has_time=True,
             spend_amount=to_pennies(get_key_value(data, "Transaction.TransactionAmount")),
             spend_multiplier=100,
@@ -98,6 +106,11 @@ class VisaAuth(QueueAgent):
             settlement_key=_make_settlement_key(get_key_value(data, "Transaction.VipTransactionId")),
             auth_code=_get_auth_code(data, "Transaction"),
         )
+
+    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
+        slug = self.get_merchant_slug(data)
+        tz = self.timezones.get(slug, "GMT")
+        return self.pendulum_parse(get_key_value(data, "Transaction.TimeStampYYMMDD"), tz=tz)
 
 
 class VisaSettlement(QueueAgent):
