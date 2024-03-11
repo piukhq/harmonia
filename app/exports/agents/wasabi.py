@@ -23,7 +23,6 @@ MAX_RETRY_COUNT = 6
 
 
 class Wasabi(SingularExportAgent):
-
     provider_slug = PROVIDER_SLUG
 
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
@@ -56,13 +55,6 @@ class Wasabi(SingularExportAgent):
         else:
             # after the previous seven tries, give up.
             return None
-
-    def next_available_retry_time(self, run_time, timezone="Europe/London") -> t.Optional[pendulum.DateTime]:
-        run_time_today = pendulum.now(timezone).at(run_time)
-        if run_time_today.is_past():
-            return (pendulum.now(timezone) + pendulum.duration(days=1)).at(run_time)
-        else:
-            return run_time_today
 
     @staticmethod
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:

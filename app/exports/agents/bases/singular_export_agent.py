@@ -30,6 +30,14 @@ class SingularExportAgent(BaseAgent):
         else:
             return None
 
+    @staticmethod
+    def next_available_retry_time(hour: int, timezone: str | None = None) -> t.Optional[pendulum.DateTime]:
+        run_time_today = pendulum.now(timezone).at(hour)
+        if run_time_today.is_past():
+            return (pendulum.now(timezone) + pendulum.duration(days=1)).at(hour)
+        else:
+            return run_time_today
+
     def get_retry_datetime(
         self, retry_count: int, *, exception: t.Optional[Exception] = None
     ) -> t.Optional[pendulum.DateTime]:

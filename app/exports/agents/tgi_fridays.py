@@ -17,6 +17,8 @@ BASE_URL_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.base_url"
 EXPORT_DELAY_SECONDS = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.delay_seconds"
 DEFAULT_POINT_CONVERSION_RATE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.default_point_conversion_rate"
 
+MAX_RETRY_COUNT = 7
+
 
 class TGIFridays(SingularExportAgent):
     provider_slug = PROVIDER_SLUG
@@ -44,9 +46,18 @@ class TGIFridays(SingularExportAgent):
         if isinstance(exception, ExportDelayRetry):
             return pendulum.now().add(seconds=exception.delay_seconds)
 
-        # we account for the original dedupe delay by decrementing the retry
-        # count to essentially act as if the second retry is actually the first.
-        return super().get_retry_datetime(retry_count - 1, exception=exception)
+        # account for initial delay, act as if the second retry is actually the first
+        retry_count = max(0, retry_count - 1)
+
+        if retry_count == 0:
+            # first retry in 20 minutes.
+            return pendulum.now() + pendulum.duration(minutes=20)
+        elif retry_count <= MAX_RETRY_COUNT:
+            # second+ retry at 10 AM the next day.
+            return self.next_available_retry_time(10)
+        else:
+            # after the previous MAX_RETRY_COUNT tries, give up.
+            return None
 
     def should_send_export(
         self, export_transaction: models.ExportTransaction, retry_count: int, session: db.Session
@@ -128,7 +139,7 @@ class TGIFridays(SingularExportAgent):
             history_spend_amount = to_pennies(transaction["receipt_amount"])
             amount_match = amount == history_spend_amount
 
-            time_tolerance = 60 * 3
+            time_tolerance = 60 * 15  # 15 minutes
             current_tx_date = pendulum.instance(export_transaction.transaction_date)
             history_tx_date = pendulum.parse(transaction["receipt_date"])
             history_tx_date_max = history_tx_date.add(seconds=time_tolerance)
