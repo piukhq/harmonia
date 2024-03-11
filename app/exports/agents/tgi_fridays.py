@@ -43,6 +43,9 @@ class TGIFridays(SingularExportAgent):
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
+        if isinstance(exception, ExportDelayRetry):
+            return pendulum.now("UTC").add(seconds=exception.delay_seconds)
+
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
