@@ -44,14 +44,14 @@ class TGIFridays(SingularExportAgent):
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
         if isinstance(exception, ExportDelayRetry):
-            return pendulum.now("UTC").add(seconds=exception.delay_seconds)
+            return pendulum.now().add(seconds=exception.delay_seconds)
 
         # account for initial delay, act as if the second retry is actually the first
         retry_count = max(0, retry_count - 1)
 
         if retry_count == 0:
             # first retry in 20 minutes.
-            return pendulum.now("UTC") + pendulum.duration(minutes=20)
+            return pendulum.now() + pendulum.duration(minutes=20)
         elif retry_count <= MAX_RETRY_COUNT:
             # second+ retry at 10 AM the next day.
             return self.next_available_retry_time(10)
