@@ -59,7 +59,7 @@ class AmexAuth(QueueAgent):
             spend_multiplier=100,
             spend_currency="GBP",
             card_token=data["cm_alias"],
-            approval_code=data["approval_code"],
+            approval_code=data.get("approval_code", ""),
         )
 
     @staticmethod
@@ -97,7 +97,7 @@ class AmexSettlement(QueueAgent):
             card_token=data["cardToken"],
             first_six=first_six,
             last_four=last_four,
-            approval_code=data["approvalCode"],
+            approval_code=data.get("approvalCode", ""),
         )
 
     @staticmethod
