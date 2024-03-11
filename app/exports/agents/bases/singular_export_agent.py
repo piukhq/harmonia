@@ -156,8 +156,8 @@ class SingularExportAgent(BaseAgent):
         *session: db.Session,
     ) -> None:
         def set_retry_fields():
-            pending_export.retry_at = (retry_at,)
-            pending_export.failure_reason = (failure_reason,)
+            pending_export.retry_at = retry_at
+            pending_export.failure_reason = failure_reason
             session.commit()
 
         db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
