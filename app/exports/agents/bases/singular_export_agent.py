@@ -152,8 +152,9 @@ class SingularExportAgent(BaseAgent):
         self,
         pending_export: models.PendingExport,
         retry_at: pendulum.DateTime,
-        failure_reason: str,
-        *session: db.Session,
+        failure_reason: str | None = None,
+        *,
+        session: db.Session,
     ) -> None:
         def set_retry_fields():
             pending_export.retry_at = retry_at
