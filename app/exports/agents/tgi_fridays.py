@@ -2,7 +2,6 @@ from decimal import ROUND_HALF_UP, Decimal
 
 import pendulum
 from blinker import signal
-from requests import RequestException
 
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -19,10 +18,6 @@ EXPORT_DELAY_SECONDS = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.delay_second
 DEFAULT_POINT_CONVERSION_RATE_KEY = f"{KEY_PREFIX}exports.agents.{PROVIDER_SLUG}.default_point_conversion_rate"
 
 MAX_RETRY_COUNT = 5
-
-RECEIPT_NO_NOT_FOUND = "receipt no not found"
-ORIGIN_ID_NOT_FOUND = "origin id not found"
-retryable_messages = [RECEIPT_NO_NOT_FOUND]
 
 
 class TGIFridays(SingularExportAgent):
@@ -48,12 +43,6 @@ class TGIFridays(SingularExportAgent):
         return export_transaction.decrypted_credentials["merchant_identifier"]
 
     def get_retry_datetime(self, retry_count: int, *, exception: Exception | None = None) -> pendulum.DateTime | None:
-        # TEMPORARY: remove when implementing signals
-        if (
-            isinstance(exception, RequestException)
-            and self.get_response_result(exception.response) not in retryable_messages
-        ):
-            return None
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
