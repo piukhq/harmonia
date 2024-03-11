@@ -46,6 +46,9 @@ class TGIFridays(SingularExportAgent):
         if isinstance(exception, ExportDelayRetry):
             return pendulum.now("UTC").add(seconds=exception.delay_seconds)
 
+        # account for initial delay, act as if the second retry is actually the first
+        retry_count = max(0, retry_count - 1)
+
         if retry_count == 0:
             # first retry in 20 minutes.
             return pendulum.now("UTC") + pendulum.duration(minutes=20)
