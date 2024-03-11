@@ -13,6 +13,10 @@ class ExportTransactionStatus(Enum):
     EXPORTED = 1  # sent to provider
     EXPORT_FAILED = 2  # failed to export after retrying
 
+if ExportTransactionStatus == 0 or 1:
+    failure_reason = None
+else:
+    failure_reason = 
 
 @auto_repr
 @auto_str("id", "export_transaction_id")
@@ -23,6 +27,7 @@ class PendingExport(Base, ModelMixin):
     export_transaction_id = s.Column(s.Integer, s.ForeignKey("export_transaction.id"))
     retry_count = s.Column(s.Integer, nullable=False, default=0)
     retry_at = s.Column(s.DateTime, nullable=True, index=True)
+    failure_reason = s.Column(s.String(100), nullable=True)
 
 
 @auto_repr
