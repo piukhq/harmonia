@@ -6,12 +6,12 @@ from app.feeds import FeedType
 from app.models import TransactionStatus
 from app.unmatched_transactions.base import BaseAgent
 
-PROVIDER_SLUG = "stonegate_unmatched"
+PROVIDER_SLUG = "stonegate"
 SCHEDULE_KEY = f"{KEY_PREFIX}agents.unmatched_transactions.{PROVIDER_SLUG}.schedule"
 
 
 class Stonegate(BaseAgent):
-    provider_slug = PROVIDER_SLUG
+    provider_slug = f"{PROVIDER_SLUG}_unmatched"
 
     config = Config(
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
@@ -31,7 +31,7 @@ class Stonegate(BaseAgent):
             )
             .filter(
                 models.PaymentTransaction.status == TransactionStatus.PENDING.name,
-                models.Transaction.merchant_slug == self.provider_slug,
+                models.Transaction.merchant_slug == PROVIDER_SLUG,
                 models.Transaction.payment_provider_slug == "visa",
                 models.Transaction.feed_type != FeedType.REFUND.name,
                 models.Transaction.transaction_date < pendulum.now().date().subtract(days=2),
@@ -50,7 +50,7 @@ class Stonegate(BaseAgent):
             )
             .filter(
                 models.PaymentTransaction.status == TransactionStatus.PENDING.name,
-                models.Transaction.merchant_slug == self.provider_slug,
+                models.Transaction.merchant_slug == PROVIDER_SLUG,
                 models.Transaction.feed_type == FeedType.SETTLED.name,
                 models.Transaction.payment_provider_slug.in_(["mastercard", "amex"]),
             )

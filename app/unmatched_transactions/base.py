@@ -2,7 +2,7 @@ from functools import cached_property
 
 from sqlalchemy import any_
 
-from app import db, models
+from app import db, models, tasks  # noqa
 from app.core.export_director import ExportFields, create_export
 from app.models import TransactionStatus
 from app.reporting import get_logger
@@ -99,7 +99,7 @@ class BaseAgent:
             ExportFields(
                 transaction_id=transaction.transaction_id,
                 feed_type=transaction.feed_type,
-                merchant_slug=transaction.merchant_slug,
+                merchant_slug=self.provider_slug,
                 transaction_date=transaction.transaction_date,
                 spend_amount=transaction.spend_amount,
                 spend_currency=transaction.spend_currency,
