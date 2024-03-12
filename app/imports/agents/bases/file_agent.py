@@ -9,6 +9,7 @@ from pathlib import Path
 
 import humanize
 import pendulum
+import sentry_sdk
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 
@@ -53,7 +54,10 @@ class LocalFileSource(FileSourceBase):
                 if settings.DEBUG:
                     raise
                 else:
-                    self.log.error(f"File source callback {callback} for file {filepath} failed: {ex}")
+                    event_id = sentry_sdk.capture_exception(ex)
+                    self.log.error(
+                        f"File source callback {callback} for file {filepath} failed: {repr(ex)}. Event ID: {event_id}"
+                    )
             else:
                 self.archive(filepath)
 
@@ -125,7 +129,10 @@ class BlobFileSource(FileSourceBase, BlobFileArchiveMixin):
                 if settings.DEBUG:
                     raise
                 else:
-                    self.log.error(f"File source callback {callback} for blob {blob.name} failed: {ex}.")
+                    event_id = sentry_sdk.capture_exception(ex)
+                    self.log.error(
+                        f"File source callback {callback} for blob {blob.name} failed: {repr(ex)}. Event ID: {event_id}"
+                    )
             else:
                 self.archive(
                     blob.name,
@@ -179,9 +186,10 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
                         if settings.DEBUG:
                             raise
                         else:
+                            event_id = sentry_sdk.capture_exception(ex)
                             self.log.error(
                                 f"File source callback {callback} for file {file_attr.filename} on "
-                                f"{self.credentials.host} failed: {ex}"
+                                f"{self.credentials.host} failed: {repr(ex)}. Event ID: {event_id}"
                             )
                     else:
                         self.archive(
@@ -218,7 +226,6 @@ class SftpFileSource(FileSourceBase, BlobFileArchiveMixin):
         )
 
     def move_delete(self, sftp, path: str, filename: str, archive_path: str = None):
-
         if archive_path:
             if archive_path not in sftp.client.listdir("/"):
                 sftp.client.mkdir(f"/{archive_path}")
