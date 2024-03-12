@@ -82,7 +82,7 @@ class TGIFridays(FileAgent):
             spend_multiplier=100,
             spend_currency=data["currency_code"],
             auth_code=data["auth_code"],
-            transaction_date=self.get_transaction_date(data),
+            transaction_date=pendulum.parse(data["date"], tz="Europe/London"),
             first_six=data["payment_card_first_six"],
             last_four=data["payment_card_last_four"],
             extra_fields={"amount": data["amount"]},
@@ -100,6 +100,3 @@ class TGIFridays(FileAgent):
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return [data["merchant_identifier"]]
-
-    def get_transaction_date(self, data: dict) -> pendulum.DateTime:
-        return pendulum.parse(data["date"])
