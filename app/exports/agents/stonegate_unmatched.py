@@ -3,18 +3,15 @@ import typing as t
 from app import db, models
 from app.exports.agents import AgentExportData, BatchExportAgent
 from app.service import atlas
-from app.soteria import SoteriaConfigMixin
 
 PROVIDER_SLUG = "stonegate-unmatched"
 
 
-class StonegateUnmatched(BatchExportAgent, SoteriaConfigMixin):
+class StonegateUnmatched(BatchExportAgent):
     provider_slug = PROVIDER_SLUG
 
     def __init__(self):
         super().__init__()
-
-        self.merchant_config = self.get_soteria_config()
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {

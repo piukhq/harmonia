@@ -36,15 +36,12 @@ class BaseAgent:
         scheduler = CronScheduler(
             name=f"unmatched-transactions-streamer-{self.provider_slug}",
             schedule_fn=lambda: self.schedule,
-            callback=self.callback,
+            callback=self.start_unmatched_transactions_process,
             logger=self.log,  # type: ignore
         )
 
         self.log.debug(f"Beginning schedule {scheduler}.")
         scheduler.run()
-
-    def callback(self) -> None:
-        self.start_unmatched_transactions_process()
 
     def start_unmatched_transactions_process(self) -> None:
         with db.session_scope() as session:
