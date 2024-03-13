@@ -47,12 +47,11 @@ class BaseAgent:
         with db.session_scope() as session:
             transaction_ids = self.find_unmatched_transactions(session=session)
 
-            if transaction_ids:
-                for id in transaction_ids:
-                    transaction, user_identity, merchant_identifier = self.handle_transactions(id, session)
+            for id in transaction_ids:
+                transaction, user_identity, merchant_identifier = self.handle_transactions(id, session)
 
-                    self.create_export_transaction(transaction, user_identity, merchant_identifier, session=session)
-                    self.update_payment_transaction_status(transaction.transaction_id, session)
+                self.create_export_transaction(transaction, user_identity, merchant_identifier, session=session)
+                self.update_payment_transaction_status(transaction.transaction_id, session)
 
     def find_unmatched_transactions(self, session: db.Session) -> list[int]:
         raise NotImplementedError(

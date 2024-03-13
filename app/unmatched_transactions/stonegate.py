@@ -11,7 +11,7 @@ SCHEDULE_KEY = f"{KEY_PREFIX}agents.unmatched_transactions.{PROVIDER_SLUG}.sched
 
 
 class Stonegate(BaseAgent):
-    provider_slug = f"{PROVIDER_SLUG}_unmatched"
+    provider_slug = f"{PROVIDER_SLUG}-unmatched"
 
     config = Config(
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
