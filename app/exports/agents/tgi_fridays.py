@@ -87,7 +87,7 @@ class TGIFridays(SingularExportAgent):
                     "export.json",
                     {
                         "user_id": self.get_loyalty_identifier(export_transaction),
-                        "message": "You’ve been awarded stripes",
+                        "message": "Thank you for your recent visit to TGI Fridays, your stripes have been added to your account.",  # noqa
                         "gift_count": points,
                         "location_id": export_transaction.location_id,
                     },
