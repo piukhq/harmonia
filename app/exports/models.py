@@ -23,6 +23,7 @@ class PendingExport(Base, ModelMixin):
     export_transaction_id = s.Column(s.Integer, s.ForeignKey("export_transaction.id"))
     retry_count = s.Column(s.Integer, nullable=False, default=0)
     retry_at = s.Column(s.DateTime, nullable=True, index=True)
+    failure_reason = s.Column(s.Text(), nullable=True)
 
 
 @auto_repr

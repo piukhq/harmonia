@@ -4,7 +4,7 @@ from contextlib import ExitStack, contextmanager
 import humanize
 import pendulum
 import sentry_sdk
-from requests import Response
+from requests import RequestException, Response
 
 from app import db, models
 from app.exports import models as exp_model
@@ -133,17 +133,21 @@ class SingularExportAgent(BaseAgent):
 
             retry_at = self.get_retry_datetime(pending_export.retry_count, exception=ex)
 
+            failure_reason = repr(ex)
+            if isinstance(ex, RequestException) and (reason := self.get_response_result(ex.response)):
+                failure_reason = f"{failure_reason} ({reason})"
+
             if retry_at:
                 retry_humanized = humanize.naturaltime(retry_at.naive())
                 self.log.warning(
-                    f"Singular export raised exception: {repr(ex)}. Sentry event ID: {event_id} "
+                    f"Singular export raised exception: {failure_reason}. Sentry event ID: {event_id} "
                     f"This operation will be retried {retry_humanized} at {retry_at}."
                 )
-                self._retry_pending_export(pending_export, retry_at, session=session)
+                self._retry_pending_export(pending_export, retry_at, failure_reason, session=session)
                 return
             else:
                 self.log.warning(
-                    f"Singular export raised exception: {repr(ex)}. Sentry event ID: {event_id} "
+                    f"Singular export raised exception: {failure_reason}. Sentry event ID: {event_id} "
                     "This operation has exceeded its retry limit and will be discarded."
                 )
                 export_transaction.status = exp_model.ExportTransactionStatus.EXPORT_FAILED
@@ -153,10 +157,16 @@ class SingularExportAgent(BaseAgent):
         self._delete_pending_export(pending_export, session=session)
 
     def _retry_pending_export(
-        self, pending_export: models.PendingExport, retry_at: pendulum.DateTime, *, session: db.Session
+        self,
+        pending_export: models.PendingExport,
+        retry_at: pendulum.DateTime,
+        failure_reason: str | None = None,
+        *,
+        session: db.Session,
     ) -> None:
         def set_retry_fields():
             pending_export.retry_at = retry_at
+            pending_export.failure_reason = failure_reason
             session.commit()
 
         db.run_query(set_retry_fields, session=session, description="set pending export retry fields")
