@@ -1,10 +1,9 @@
+from collections.abc import Iterable
 from functools import cached_property
 
-from sqlalchemy import any_
-
-from app import db, models, tasks  # noqa
+from app import db, tasks  # noqa
 from app.core.export_director import ExportFields, create_export
-from app.models import TransactionStatus
+from app.models import MerchantIdentifier, PaymentTransaction, TransactionStatus, UserIdentity
 from app.reporting import get_logger
 from app.scheduler import CronScheduler
 from app.utils import missing_property
@@ -36,73 +35,50 @@ class BaseAgent:
         scheduler = CronScheduler(
             name=f"unmatched-transactions-streamer-{self.provider_slug}",
             schedule_fn=lambda: self.schedule,
-            callback=self.start_unmatched_transactions_process,
-            logger=self.log,  # type: ignore
+            coalesce_jobs=True,
+            callback=self.load_unmatched_transactions,
+            logger=self.log,
         )
 
         self.log.debug(f"Beginning schedule {scheduler}.")
         scheduler.run()
 
-    def start_unmatched_transactions_process(self) -> None:
+    def load_unmatched_transactions(self) -> None:
         with db.session_scope() as session:
-            transaction_ids = self.find_unmatched_transactions(session=session)
+            pt_updates: list = []
+            for ptx, uid, mid in self.find_unmatched_transactions(session=session):
+                self.create_export_transaction(ptx, uid, mid, session=session)
+                pt_updates.append({"id": ptx.id, "status": TransactionStatus.MATCHED.name})
 
-            for id in transaction_ids:
-                transaction, user_identity, merchant_identifier = self.handle_transactions(id, session)
+            if len(pt_updates) > 0:
+                session.bulk_update_mappings(PaymentTransaction, pt_updates)
 
-                self.create_export_transaction(transaction, user_identity, merchant_identifier, session=session)
-                self.update_payment_transaction_status(transaction.transaction_id, session)
-
-    def find_unmatched_transactions(self, session: db.Session) -> list[int]:
+    def find_unmatched_transactions(
+        self, session: db.Session
+    ) -> Iterable[tuple[PaymentTransaction, UserIdentity, MerchantIdentifier]]:
         raise NotImplementedError(
             "Override the find_unmatched_transactions method in your agent to obtained unmatched transactions."
         )
 
-    def handle_transactions(
-        self, transaction_id: int, session: db.Session
-    ) -> tuple[models.Transaction, models.UserIdentity, models.MerchantIdentifier]:
-        def load_data():
-            return (
-                session.query(models.Transaction, models.UserIdentity, models.MerchantIdentifier)
-                .join(
-                    models.MerchantIdentifier,
-                    models.MerchantIdentifier.id == any_(models.Transaction.merchant_identifier_ids),
-                )
-                .join(models.UserIdentity, models.UserIdentity.transaction_id == models.Transaction.transaction_id)
-                .filter(
-                    models.Transaction.id == transaction_id,
-                )
-                .one()
-            )
-
-        transaction, user_identity, merchant_identifier = db.run_query(
-            load_data,
-            session=session,
-            read_only=True,
-            description=f"load streaming data for transaction #{transaction_id}",
-        )
-
-        return transaction, user_identity, merchant_identifier
-
     def create_export_transaction(
         self,
-        transaction: models.Transaction,
-        user_identity: models.UserIdentity,
-        merchant_identifier: models.MerchantIdentifier,
+        transaction: PaymentTransaction,
+        user_identity: UserIdentity,
+        merchant_identifier: MerchantIdentifier,
         *,
         session: db.Session,
     ) -> None:
         create_export(
             ExportFields(
                 transaction_id=transaction.transaction_id,
-                feed_type=transaction.feed_type,
+                feed_type=None,
                 merchant_slug=self.provider_slug,
                 transaction_date=transaction.transaction_date,
                 spend_amount=transaction.spend_amount,
                 spend_currency=transaction.spend_currency,
                 loyalty_id=user_identity.loyalty_id,
                 mid=merchant_identifier.identifier,
-                primary_identifier=transaction.mids[0],
+                primary_identifier=transaction.mid,
                 location_id=merchant_identifier.location_id,
                 merchant_internal_id=merchant_identifier.merchant_internal_id,
                 user_id=user_identity.user_id,
@@ -113,19 +89,10 @@ class BaseAgent:
                 last_four=user_identity.last_four,
                 expiry_month=user_identity.expiry_month,
                 expiry_year=user_identity.expiry_year,
-                payment_provider_slug=transaction.payment_provider_slug,
+                payment_provider_slug=transaction.provider_slug,
                 auth_code=transaction.auth_code,
                 approval_code=transaction.approval_code,
                 extra_fields=transaction.extra_fields,
             ),
             session=session,
         )
-
-    def update_payment_transaction_status(self, transaction_id: str, session: db.Session) -> None:
-        payment_transaction = (
-            session.query(models.PaymentTransaction)
-            .filter(models.PaymentTransaction.transaction_id == transaction_id)
-            .one()
-        )
-        payment_transaction.status = TransactionStatus.MATCHED.name
-        session.commit()

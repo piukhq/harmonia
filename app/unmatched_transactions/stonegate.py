@@ -1,9 +1,12 @@
-import pendulum
-from sqlalchemy import and_, or_
+from collections.abc import Iterable
 
-from app import db, models
+import pendulum
+from sqlalchemy import and_, any_, or_
+
+from app import db
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.feeds import FeedType
+from app.models import MerchantIdentifier, PaymentTransaction, Transaction, TransactionStatus, UserIdentity
 from app.unmatched_transactions.base import BaseAgent
 
 PROVIDER_SLUG = "stonegate"
@@ -20,27 +23,41 @@ class Stonegate(BaseAgent):
     def __init__(self):
         super().__init__()
 
-    def find_unmatched_transactions(self, session: db.Session) -> list[int]:
-        query = (
-            session.query(models.Transaction.id)
+    def find_unmatched_transactions(
+        self, session: db.Session
+    ) -> Iterable[tuple[PaymentTransaction, UserIdentity, MerchantIdentifier]]:
+        q = (
+            session.query(PaymentTransaction, UserIdentity, MerchantIdentifier)
             .join(
-                models.PaymentTransaction,
-                models.Transaction.transaction_id == models.PaymentTransaction.transaction_id,
+                Transaction,
+                PaymentTransaction.transaction_id == Transaction.transaction_id,
             )
+            .join(
+                MerchantIdentifier,
+                MerchantIdentifier.id == any_(Transaction.merchant_identifier_ids),
+            )
+            .join(UserIdentity, UserIdentity.transaction_id == PaymentTransaction.transaction_id)
             .filter(
-                models.PaymentTransaction.status == models.TransactionStatus.PENDING.name,
-                models.Transaction.merchant_slug == "stonegate",
+                PaymentTransaction.status == TransactionStatus.PENDING.name,
+                Transaction.merchant_slug == "stonegate",
+                Transaction.transaction_date < pendulum.now().date().subtract(days=2),
                 or_(
                     and_(
-                        models.Transaction.payment_provider_slug == "visa",
-                        models.Transaction.feed_type != FeedType.REFUND.name,
-                        models.Transaction.transaction_date < pendulum.now().date().subtract(days=2),
+                        Transaction.payment_provider_slug == "visa",
+                        Transaction.feed_type != FeedType.REFUND.name,
                     ),
                     and_(
-                        models.Transaction.payment_provider_slug.in_(["mastercard", "amex"]),
-                        models.Transaction.feed_type == FeedType.SETTLED.name,
+                        Transaction.payment_provider_slug.in_(["mastercard", "amex"]),
+                        Transaction.feed_type == FeedType.SETTLED.name,
                     ),
                 ),
             )
+            .limit(1000)
         )
-        return [id for (id,) in query]
+
+        yield from db.run_query(
+            lambda: q,
+            session=session,
+            read_only=True,
+            description="load streaming data for Stonegate unmatched transactions",
+        )
