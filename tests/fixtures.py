@@ -59,11 +59,13 @@ class Default:
     postcode: str = "SL5 9FE"
     scheme_account_id: int = 1
     third_party_id: str = "MjAwRUZGQ"
-    credentials = get_default_credentials(
+    credentials: str = get_default_credentials(
         card_number,
         loyalty_id,
         email,
     )
+    first_six: str = "123456"
+    last_four: str = "7890"
 
 
 def get_or_create_loyalty_scheme(
@@ -86,6 +88,41 @@ def get_or_create_payment_provider(
     else:
         payment_provider = models.LoyaltyScheme(slug=slug)
     return payment_provider
+
+
+def get_or_create_user_identity(
+    session: db.Session | None = None,
+    transaction_id: str = Default.transaction_id,
+    loyalty_id: str = Default.loyalty_id,
+    scheme_account_id: int = Default.scheme_account_id,
+    user_id: int = Default.user_id,
+    credentials: str = Default.credentials,
+    first_six: str = Default.first_six,
+    last_four: str = Default.last_four,
+) -> models.UserIdentity:
+    if session:
+        user_identity, _ = db.get_or_create(
+            models.UserIdentity,
+            transaction_id=transaction_id,
+            loyalty_id=loyalty_id,
+            scheme_account_id=scheme_account_id,
+            user_id=user_id,
+            credentials=credentials,
+            first_six=first_six,
+            last_four=last_four,
+            session=session,
+        )
+    else:
+        user_identity = models.UserIdentity(
+            transaction_id=transaction_id,
+            loyalty_id=loyalty_id,
+            scheme_account_id=scheme_account_id,
+            user_id=user_id,
+            credentials=credentials,
+            first_six=first_six,
+            last_four=last_four,
+        )
+    return user_identity
 
 
 def get_or_create_merchant_identifier(
@@ -273,6 +310,7 @@ def get_or_create_payment_transaction(
     spend_multiplier: int = Default.spend_multiplier,
     spend_currency: str = Default.spend_currency,
     card_token: str = Default.card_token,
+    match_group: str = Default.match_group,
     **kwargs,
 ) -> models.PaymentTransaction:
     if session:
@@ -288,6 +326,7 @@ def get_or_create_payment_transaction(
                 spend_multiplier=spend_multiplier,
                 spend_currency=spend_currency,
                 card_token=card_token,
+                match_group=match_group,
                 **kwargs,
             ),
             session=session,
@@ -303,6 +342,7 @@ def get_or_create_payment_transaction(
             spend_multiplier=spend_multiplier,
             spend_currency=spend_currency,
             card_token=card_token,
+            match_group=match_group,
             **kwargs,
         )
     return payment_transaction
