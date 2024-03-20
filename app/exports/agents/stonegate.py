@@ -3,12 +3,13 @@ from typing import Optional
 
 import pendulum
 from requests import RequestException, Response
+from result import Err, Ok, Result
 
 import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
-from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.exports.agents.bases.singular_export_agent import FailedExport, SingularExportAgent, SuccessfulExport
 from app.service import atlas
 from app.service.acteol import ActeolAPI, InternalError
 from harness.exporters.acteol_mock import ActeolMockAPI
@@ -47,9 +48,9 @@ class Stonegate(SingularExportAgent):
 
     config = Config(ConfigValue("base_url", key=BASE_URL_KEY, default="http://localhost"))
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.api_class = ActeolMockAPI if settings.DEBUG else ActeolAPI
+        self.api_class: type[ActeolAPI] = ActeolMockAPI if settings.DEBUG else ActeolAPI
 
         # Set up Prometheus metric types
         self.prometheus_metrics = {
@@ -103,7 +104,9 @@ class Stonegate(SingularExportAgent):
             extra_data={"credentials": export_transaction.decrypted_credentials},
         )
 
-    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> Result[SuccessfulExport, FailedExport]:
         if retry_count == 0:
             now = pendulum.now()
             import_after = now.replace(hour=10, minute=30, second=0, microsecond=0)
@@ -119,26 +122,25 @@ class Stonegate(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url + endpoint
-        atlas.queue_audit_message(
-            atlas.make_audit_message(
-                self.provider_slug,
-                atlas.make_audit_transactions(
-                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-                ),
-                request=body,
-                request_timestamp=request_timestamp,
-                response=response,
-                response_timestamp=response_timestamp,
-                request_url=request_url,
-                retry_count=retry_count,
-            )
+        audit_message = atlas.make_audit_message(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+            ),
+            request=body,
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
+            request_url=request_url,
+            retry_count=retry_count,
         )
 
         if msg := self.get_response_result(response):
             if is_retryable(msg) and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
-                # fail the export for it to be retried later
-                raise RequestException(response=response)
+                return Err(FailedExport(audit_message, msg))
             self.log.warn(f"Acteol API response contained message: {msg}")
+
+        return Ok(SuccessfulExport(audit_message))
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
         if msg := response.json().get("Message"):

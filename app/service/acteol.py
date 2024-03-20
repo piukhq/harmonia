@@ -19,7 +19,7 @@ class ActeolAPI:
     def post(
         self,
         endpoint: str,
-        body: dict = None,
+        body: dict | None = None,
         *,
         name: str,
     ) -> requests.models.Response:

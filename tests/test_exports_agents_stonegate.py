@@ -50,6 +50,13 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
     return exp
 
 
+@pytest.fixture
+def pending_export(export_transaction: models.ExportTransaction, db_session: db.Session) -> models.PendingExport:
+    return get_or_create_pending_export(
+        session=db_session, export_transaction=export_transaction, provider_slug=export_transaction.provider_slug
+    )
+
+
 def make_response(response_body: dict) -> requests.Response:
     response = requests.Response()
     response._content = json.dumps(response_body).encode("utf-8")
@@ -127,9 +134,16 @@ def test_make_export_data(
 
 @responses.activate
 @time_machine.travel(pendulum.datetime(2022, 11, 24, 11, 0, 0, 0, "Europe/London"))
-@mock.patch("app.exports.agents.stonegate.atlas")
+@mock.patch("app.exports.agents.stonegate.atlas.make_audit_transactions")
+@mock.patch("app.exports.agents.stonegate.atlas.make_audit_message")
+@mock.patch("app.exports.agents.bases.singular_export_agent.atlas.queue_audit_message")
 def test_export(
-    mock_atlas, stonegate: Stonegate, export_transaction: models.ExportTransaction, db_session: db.Session
+    queue_audit_message: mock.Mock,
+    make_audit_message: mock.Mock,
+    make_audit_transactions: mock.Mock,
+    stonegate: Stonegate,
+    pending_export: models.PendingExport,
+    db_session: db.Session,
 ) -> None:
     responses.add(
         responses.POST,
@@ -137,8 +151,8 @@ def test_export(
         json=RESPONSE_SUCCESS,
         status=204,
     )
-    export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    stonegate.export(export_data, session=db_session)
+
+    stonegate.handle_pending_export(pending_export, session=db_session)
 
     # Post to Wasabi
     assert responses.calls[0].request.url == "http://localhost/PostMatchedTransaction"
@@ -147,12 +161,12 @@ def test_export(
     assert responses.calls[0].response.json() == RESPONSE_SUCCESS
 
     # Post to Atlas
-    assert mock_atlas.make_audit_transactions.call_args.args[0] == [export_transaction]
-    assert mock_atlas.make_audit_message.call_args.args == (MERCHANT_SLUG, mock_atlas.make_audit_transactions())
-    assert mock_atlas.make_audit_message.call_args.kwargs["request"] == REQUEST
-    assert json.loads(mock_atlas.make_audit_message.call_args.kwargs["response"]._content) == RESPONSE_SUCCESS
-    assert mock_atlas.make_audit_message.call_args.kwargs["request_url"] == "http://localhost/PostMatchedTransaction"
-    assert mock_atlas.queue_audit_message.call_count == 1
+    assert make_audit_transactions.call_args.args[0] == [pending_export.export_transaction]
+    assert make_audit_message.call_args.args == (MERCHANT_SLUG, make_audit_transactions())
+    assert make_audit_message.call_args.kwargs["request"] == REQUEST
+    assert json.loads(make_audit_message.call_args.kwargs["response"]._content) == RESPONSE_SUCCESS
+    assert make_audit_message.call_args.kwargs["request_url"] == "http://localhost/PostMatchedTransaction"
+    assert queue_audit_message.call_count == 1
 
 
 @responses.activate
@@ -185,10 +199,10 @@ def test_export_origin_id_not_found(
         status=204,
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        stonegate.export(export_data, session=db_session)
 
-    assert e.value.response.json() == RESPONSE_ERROR
+    result = stonegate.export(export_data, session=db_session)
+    assert result.is_err()
+    assert result.err_value.reason == "origin id not found"
 
 
 @responses.activate
@@ -205,10 +219,10 @@ def test_export_receipt_no_not_found(
         status=204,
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        stonegate.export(export_data, session=db_session)
+    result = stonegate.export(export_data, session=db_session)
 
-    assert e.value.response.json() == response_body
+    assert result.is_err()
+    assert result.err_value.reason == "transaction with accountid xxxxxx was not found"
 
 
 @responses.activate
@@ -225,10 +239,9 @@ def test_export_member_number_not_found(
         status=204,
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        stonegate.export(export_data, session=db_session)
-
-    assert e.value.response.json() == response_body
+    result = stonegate.export(export_data, session=db_session)
+    assert result.is_err()
+    assert result.err_value.reason == "member number: xxxxxx was not found"
 
 
 @responses.activate
@@ -245,10 +258,9 @@ def test_export_points_not_awarded(
         status=204,
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        stonegate.export(export_data, session=db_session)
-
-    assert e.value.response.json() == response_body
+    result = stonegate.export(export_data, session=db_session)
+    assert result.is_err()
+    assert result.err_value.reason == "points are not added successfully"
 
 
 def test_get_response_result(stonegate: Stonegate, response: requests.Response) -> None:
