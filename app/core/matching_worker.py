@@ -7,6 +7,7 @@ import settings
 from app import db, models, tasks
 from app.core import identifier
 from app.core.export_director import ExportFields, create_export
+from app.db import redis
 from app.matching.agents.base import BaseMatchingAgent, MatchResult
 from app.matching.agents.registry import matching_agents
 from app.registry import NoSuchAgent, RegistryConfigurationError
@@ -33,7 +34,7 @@ class MatchingWorker:
 
     def _get_agent_for_payment_transaction(
         self, payment_transaction: models.PaymentTransaction, *, session: db.Session
-    ) -> t.Optional[BaseMatchingAgent]:
+    ) -> tuple[str, t.Optional[BaseMatchingAgent]]:
         slug = db.run_query(
             lambda: session.query(models.MerchantIdentifier)
             .filter(models.MerchantIdentifier.id.in_(payment_transaction.merchant_identifier_ids))
@@ -47,14 +48,16 @@ class MatchingWorker:
         user_identity = identifier.get_user_identity(payment_transaction.transaction_id, session=session)
 
         try:
-            return matching_agents.instantiate(slug, payment_transaction, user_identity)
+            agent = matching_agents.instantiate(slug, payment_transaction, user_identity)
         except (NoSuchAgent, RegistryConfigurationError) as ex:
             if settings.DEBUG:
                 raise ex
             self.log.warning(
                 f"Failed to instantiate matching agent for slug {slug}: {ex}. Skipping match of {payment_transaction}."
             )
-            return None
+            agent = None
+
+        return slug, agent
 
     def _persist(self, matched_transaction: models.MatchedTransaction, *, session: db.Session):
         def add_transaction():
@@ -65,13 +68,28 @@ class MatchingWorker:
 
         self.log.info(f"Persisted matched transaction #{matched_transaction.id}.")
 
-    def _try_match(self, agent: BaseMatchingAgent, *, session: db.Session) -> t.Optional[MatchResult]:
+    def _try_match(
+        self,
+        slug: str,
+        payment_transaction: models.PaymentTransaction,
+        agent: BaseMatchingAgent,
+        *,
+        session: db.Session,
+    ) -> t.Optional[MatchResult]:
+        lock_key = f"{settings.REDIS_KEY_PREFIX}:matching-lock:{slug}:{payment_transaction.transaction_id}"
+        lock: redis.lock.Lock = db.redis.lock(lock_key, timeout=300)
+        if not lock.acquire(blocking=False):
+            self.log.warning(f"Transaction {lock_key} is already locked. Skipping.")
+            return None
+
         try:
             return agent.match(session=session)
         except agent.NoMatchFound:
             return None
         except Exception as ex:
             raise self.AgentError(f"An error occurred when matching with agent {agent}: {ex}") from ex
+        finally:
+            lock.release()
 
     def _match(self, payment_transaction: models.PaymentTransaction, *, session: db.Session) -> t.Optional[MatchResult]:
         """
@@ -79,10 +97,10 @@ class MatchingWorker:
         Returns the matched transaction on success.
         Raises AgentError if the transaction cannot be matched.
         """
-        agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
+        slug, agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
         if agent is None:
             return None
-        return self._try_match(agent, session=session)
+        return self._try_match(slug, payment_transaction, agent, session=session)
 
     def _finalise_match(
         self,
@@ -280,7 +298,7 @@ class MatchingWorker:
             models.SchemeTransaction, scheme_transaction_id, session=session
         )
 
-        agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
+        _, agent = self._get_agent_for_payment_transaction(payment_transaction, session=session)
         if agent is None:
             raise self.RedressError(f"Failed to find matching agent for {payment_transaction} and {scheme_transaction}")
 
