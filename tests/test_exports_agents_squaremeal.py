@@ -5,6 +5,7 @@ import pytest
 
 from app import db, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.singular_export_agent import SuccessfulExport
 from app.exports.agents.squaremeal import SquareMeal
 from app.feeds import FeedType
 from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_transaction
@@ -117,7 +118,8 @@ def test_export(
     squaremeal = SquareMeal()
     export_data = squaremeal.make_export_data(export_transaction, db_session)
 
-    squaremeal.export(export_data, session=db_session)
+    result = squaremeal.export(export_data, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to Squaremeal
     mock_squaremeal_post.assert_called_once_with(REQUEST_BODY, "/api/BinkTransactions")
@@ -133,4 +135,3 @@ def test_export(
         "request_url": "https://uk-bink-transactions-dev.azurewebsites.net/api/BinkTransactions",
         "retry_count": 0,
     }
-    assert mock_atlas.queue_audit_message.call_count == 1

@@ -6,6 +6,7 @@ from requests.models import Response
 
 from app import db, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.singular_export_agent import SuccessfulExport
 from app.exports.agents.tgi_fridays import ExportDelayRetry, TGIFridays
 from app.reporting import sanitise_logs
 from tests.fixtures import (
@@ -205,7 +206,8 @@ def test_export(
     tgi_fridays = TGIFridays()
     export_data = tgi_fridays.make_export_data(export_transaction, db_session)
 
-    tgi_fridays.export(export_data, retry_count=1, session=db_session)
+    result = tgi_fridays.export(export_data, retry_count=1, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to tgi_fridays
     mock_tgi_fridays_post.assert_called_once_with(REQUEST)
@@ -221,4 +223,3 @@ def test_export(
         "request_url": "https://test.tgi.com/path/transaction",
         "retry_count": 1,
     }
-    assert mock_atlas.queue_audit_message.call_count == 1

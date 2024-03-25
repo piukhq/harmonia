@@ -9,7 +9,7 @@ from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.currency import to_pounds
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput, ExportDelayRetry
-from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.exports.agents.bases.singular_export_agent import FailedExport, SingularExportAgent, SuccessfulExport
 from app.reporting import sanitise_logs
 from app.service import atlas, the_works
 
@@ -90,7 +90,9 @@ class TheWorks(SingularExportAgent):
             extra_data=export_transaction.extra_fields,
         )
 
-    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> SuccessfulExport | FailedExport:
         if retry_count == 0:
             created_at = pendulum.instance(export_data.transactions[0].created_at)
             if pendulum.now().diff(created_at).total_seconds() < 5:
@@ -106,21 +108,21 @@ class TheWorks(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url
-        atlas.queue_audit_message(
-            atlas.make_audit_message(
-                self.provider_slug,
-                atlas.make_audit_transactions(
-                    export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id
-                ),
-                request=sanitise_logs(body, self.provider_slug),
-                request_timestamp=request_timestamp,
-                response=response,
-                response_timestamp=response_timestamp,
-                request_url=request_url,
-                retry_count=retry_count,
-            )
+        audit_message = atlas.make_audit_message(
+            self.provider_slug,
+            atlas.make_audit_transactions(export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
+            request=sanitise_logs(body, self.provider_slug),
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
+            request_url=request_url,
+            retry_count=retry_count,
         )
-        response.raise_for_status()
+
+        if response.ok:
+            return SuccessfulExport(audit_message)
+        else:
+            return FailedExport(audit_message, response.text)
 
     def exportable_transaction(
         self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict, session: db.Session

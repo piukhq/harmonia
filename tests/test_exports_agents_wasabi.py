@@ -10,6 +10,7 @@ from requests import RequestException
 
 import settings
 from app import db, models
+from app.exports.agents.bases.singular_export_agent import FailedExport, SuccessfulExport
 from app.exports.agents.wasabi import Wasabi
 from tests.fixtures import Default, get_or_create_export_transaction
 
@@ -129,7 +130,8 @@ def test_export(
         status=204,
     )
     export_data = wasabi.make_export_data(export_transaction, session=db_session)
-    wasabi.export(export_data, session=db_session)
+    result = wasabi.export(export_data, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to Wasabi
     assert responses.calls[0].request.url == "http://localhost/PostMatchedTransaction"
@@ -143,7 +145,6 @@ def test_export(
     assert mock_atlas.make_audit_message.call_args.kwargs["request"] == REQUEST
     assert json.loads(mock_atlas.make_audit_message.call_args.kwargs["response"]._content) == RESPONSE_SUCCESS
     assert mock_atlas.make_audit_message.call_args.kwargs["request_url"] == "http://localhost/PostMatchedTransaction"
-    assert mock_atlas.queue_audit_message.call_count == 1
 
 
 @responses.activate
@@ -158,10 +159,9 @@ def test_export_origin_id_not_found(
         status=204,
     )
     export_data = wasabi.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        wasabi.export(export_data, session=db_session)
-
-    assert e.value.response.json() == RESPONSE_ERROR
+    result = wasabi.export(export_data, session=db_session)
+    assert isinstance(result, FailedExport)
+    assert result.reason == "origin id not found"
 
 
 @responses.activate
@@ -177,10 +177,9 @@ def test_export_receipt_no_not_found(
         status=204,
     )
     export_data = wasabi.make_export_data(export_transaction, session=db_session)
-    with pytest.raises(RequestException) as e:
-        wasabi.export(export_data, session=db_session)
-
-    assert e.value.response.json() == response_body
+    result = wasabi.export(export_data, session=db_session)
+    assert isinstance(result, FailedExport)
+    assert result.reason == "receipt no not found"
 
 
 def test_get_response_result(wasabi: Wasabi, response: requests.Response) -> None:

@@ -7,6 +7,7 @@ import pytest
 import responses
 
 from app import db
+from app.exports.agents.bases.singular_export_agent import FailedExport, SuccessfulExport
 from app.exports.agents.bpl import Bpl, Trenette
 from app.exports.models import ExportTransaction
 from app.feeds import FeedType
@@ -122,7 +123,8 @@ def test_export_atlas(
     agent = Trenette()
     export_data = agent.make_export_data(export_transaction, db_session)
 
-    agent.export(export_data, session=db_session)
+    result = agent.export(export_data, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to Atlas
     assert mock_atlas.make_audit_transactions.call_args.args[0] == [export_transaction]
@@ -130,7 +132,6 @@ def test_export_atlas(
     assert mock_atlas.make_audit_message.call_args.kwargs["request"] == REQUEST
     assert json.loads(mock_atlas.make_audit_message.call_args.kwargs["response"]._content) == RESPONSE
     assert mock_atlas.make_audit_message.call_args.kwargs["request_url"] == "http://localhost/trenette/transaction"
-    assert mock_atlas.queue_audit_message.call_count == 1
 
 
 @responses.activate
@@ -143,6 +144,6 @@ def test_export_exception_raised(
     agent = Trenette()
     export_data = agent.make_export_data(export_transaction, db_session)
 
-    with pytest.raises(Exception) as e:
-        agent.export(export_data, session=db_session)
-    assert e.value.args[0] == "BPL - bpl-trenette transaction endpoint returned 500"
+    result = agent.export(export_data, session=db_session)
+    assert isinstance(result, FailedExport)
+    assert result.reason == "BPL - bpl-trenette transaction endpoint returned 500"

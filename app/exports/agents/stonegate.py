@@ -3,7 +3,6 @@ from typing import Optional
 
 import pendulum
 from requests import RequestException, Response
-from result import Err, Ok, Result
 
 import settings
 from app import db, models
@@ -106,7 +105,7 @@ class Stonegate(SingularExportAgent):
 
     def export(
         self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> Result[SuccessfulExport, FailedExport]:
+    ) -> SuccessfulExport | FailedExport:
         if retry_count == 0:
             now = pendulum.now()
             import_after = now.replace(hour=10, minute=30, second=0, microsecond=0)
@@ -137,10 +136,10 @@ class Stonegate(SingularExportAgent):
 
         if msg := self.get_response_result(response):
             if is_retryable(msg) and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
-                return Err(FailedExport(audit_message, msg))
+                return FailedExport(audit_message, msg)
             self.log.warn(f"Acteol API response contained message: {msg}")
 
-        return Ok(SuccessfulExport(audit_message))
+        return SuccessfulExport(audit_message)
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
         if msg := response.json().get("Message"):

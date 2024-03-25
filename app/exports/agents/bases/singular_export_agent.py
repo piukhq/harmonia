@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import pendulum
 import sentry_sdk
 from requests import RequestException, Response
-from result import Err, Ok, Result
 
 from app import db, models
 from app.exports import models as exp_model
@@ -71,7 +70,7 @@ class SingularExportAgent(BaseAgent):
 
     def export(
         self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> Result[SuccessfulExport, FailedExport]:
+    ) -> SuccessfulExport | FailedExport:
         raise NotImplementedError(
             "Override the export method in your agent to act as the entry point into the singular export process."
         )
@@ -143,12 +142,11 @@ class SingularExportAgent(BaseAgent):
         try:
             if self.should_send_export(export_transaction, pending_export.retry_count, session):
                 result = self._send_export_data(export_data, retry_count=pending_export.retry_count, session=session)
-                match result:
-                    case Ok(_):  # type: ignore
-                        self.log.info(f"Exported {export_transaction}.")
-                    case Err(failure):  # type: ignore
-                        self.retry(pending_export, export_transaction, failure_reason=failure.reason, session=session)
-                        return
+                if isinstance(result, SuccessfulExport):
+                    self.log.info(f"Exported {export_transaction}.")
+                else:
+                    self.retry(pending_export, export_transaction, failure_reason=result.reason, session=session)
+                    return
         except Exception as ex:
             event_id = sentry_sdk.capture_exception()
             failure_reason = repr(ex)
@@ -197,15 +195,12 @@ class SingularExportAgent(BaseAgent):
 
     def _send_export_data(
         self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
-    ) -> Result[SuccessfulExport, FailedExport]:
+    ) -> SuccessfulExport | FailedExport:
         with self._update_metrics(export_data=export_data, session=session):
             result = self.export(export_data, retry_count=retry_count, session=session)
-            match result:
-                case Ok(success):  # type: ignore
-                    atlas.queue_audit_message(success.audit_message)
-                    self._save_export_transactions(export_data, session=session)
-                case Err(failure):  # type: ignore
-                    atlas.queue_audit_message(failure.audit_message)
+            atlas.queue_audit_message(result.audit_message)
+            if isinstance(result, SuccessfulExport):
+                self._save_export_transactions(export_data, session=session)
             return result
 
     def _delete_pending_export(self, pending_export: models.PendingExport, *, session: db.Session) -> None:

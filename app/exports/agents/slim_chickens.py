@@ -11,7 +11,7 @@ from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.core.requests_retry import requests_retry_session
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
-from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.exports.agents.bases.singular_export_agent import FailedExport, SingularExportAgent, SuccessfulExport
 from app.prometheus import bink_prometheus
 from app.reporting import get_logger
 from app.service import atlas, slim_chickens
@@ -98,7 +98,9 @@ class SlimChickens(SingularExportAgent):
             extra_data=export_transaction.extra_fields,
         )
 
-    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session) -> None:
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> SuccessfulExport | FailedExport:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = slim_chickens.SlimChickensApi(
@@ -113,17 +115,15 @@ class SlimChickens(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = urljoin(api.base_url, endpoint)
-        atlas.queue_audit_message(
-            atlas.make_audit_message(
-                self.provider_slug,
-                atlas.make_audit_transactions(
-                    export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id
-                ),
-                request=body,
-                request_timestamp=request_timestamp,
-                response=response,
-                response_timestamp=response_timestamp,
-                request_url=request_url,
-                retry_count=retry_count,
-            )
+        audit_message = atlas.make_audit_message(
+            self.provider_slug,
+            atlas.make_audit_transactions(export_data.transactions, tx_loyalty_ident_callback=lambda tx: tx.loyalty_id),
+            request=body,
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
+            request_url=request_url,
+            retry_count=retry_count,
         )
+
+        return SuccessfulExport(audit_message)

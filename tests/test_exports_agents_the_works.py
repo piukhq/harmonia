@@ -11,6 +11,7 @@ from app import db, models
 from app.config import config
 from app.currency import to_pounds
 from app.exports.agents import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.singular_export_agent import SuccessfulExport
 from app.exports.agents.the_works import ExportDelayRetry, TheWorks
 from app.reporting import sanitise_logs
 from tests.fixtures import (
@@ -308,7 +309,8 @@ def test_export(
         the_works.export(export_data, session=db_session)
 
     # the second attempt should work
-    the_works.export(export_data, retry_count=1, session=db_session)
+    result = the_works.export(export_data, retry_count=1, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to the_works
     mock_the_works_post.assert_called_once_with(REQUEST_BODY_911, "")
@@ -324,7 +326,6 @@ def test_export(
         "request_url": "https://reflector.staging.gb.bink.com/mock/",
         "retry_count": 1,
     }
-    assert mock_atlas.queue_audit_message.call_count == 1
 
 
 def test_point_conversion_rate_default(db_session: db.Session) -> None:

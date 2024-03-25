@@ -11,6 +11,7 @@ from requests import RequestException
 
 import settings
 from app import db, models
+from app.exports.agents.bases.singular_export_agent import FailedExport
 from app.exports.agents.stonegate import InitialExportDelayRetry, Stonegate
 from app.service.acteol import InternalError
 from tests.fixtures import Default, get_or_create_export_transaction, get_or_create_pending_export
@@ -201,8 +202,8 @@ def test_export_origin_id_not_found(
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
 
     result = stonegate.export(export_data, session=db_session)
-    assert result.is_err()
-    assert result.err_value.reason == "origin id not found"
+    assert isinstance(result, FailedExport)
+    assert result.reason == "origin id not found"
 
 
 @responses.activate
@@ -221,8 +222,8 @@ def test_export_receipt_no_not_found(
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
     result = stonegate.export(export_data, session=db_session)
 
-    assert result.is_err()
-    assert result.err_value.reason == "transaction with accountid xxxxxx was not found"
+    assert isinstance(result, FailedExport)
+    assert result.reason == "transaction with accountid xxxxxx was not found"
 
 
 @responses.activate
@@ -240,8 +241,8 @@ def test_export_member_number_not_found(
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
     result = stonegate.export(export_data, session=db_session)
-    assert result.is_err()
-    assert result.err_value.reason == "member number: xxxxxx was not found"
+    assert isinstance(result, FailedExport)
+    assert result.reason == "member number: xxxxxx was not found"
 
 
 @responses.activate
@@ -259,8 +260,8 @@ def test_export_points_not_awarded(
     )
     export_data = stonegate.make_export_data(export_transaction, session=db_session)
     result = stonegate.export(export_data, session=db_session)
-    assert result.is_err()
-    assert result.err_value.reason == "points are not added successfully"
+    assert isinstance(result, FailedExport)
+    assert result.reason == "points are not added successfully"
 
 
 def test_get_response_result(stonegate: Stonegate, response: requests.Response) -> None:

@@ -6,6 +6,7 @@ import responses
 
 from app import db, encryption, models
 from app.exports.agents import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.singular_export_agent import SuccessfulExport
 from app.exports.agents.slim_chickens import SlimChickens
 from app.feeds import FeedType
 from tests.fixtures import (
@@ -115,7 +116,6 @@ def pending_export(export_transaction: models.ExportTransaction, db_session: db.
 def test_get_transaction_token(
     mock_read_secrets, export_transaction: models.ExportTransaction, db_session: db.Session
 ) -> None:
-
     url = "https://localhost-auth/search"
     json = WALLET_DATA
     responses.add(responses.POST, url, json=json)
@@ -166,7 +166,8 @@ def test_export(
     slim_chickens.auth_header = {"Authorization": "Basic 123"}
     export_data = slim_chickens.make_export_data(export_transaction, db_session)
 
-    slim_chickens.export(export_data, session=db_session)
+    result = slim_chickens.export(export_data, session=db_session)
+    assert isinstance(result, SuccessfulExport)
 
     # Post to SlimChickens
     mock_slim_chickens_post.assert_called_once_with(REQUEST_BODY, "/2.0/connect/account/redeem")
@@ -183,7 +184,6 @@ def test_export(
         "request_url": "https://localhost/2.0/connect/account/redeem",
         "retry_count": 0,
     }
-    assert mock_atlas.queue_audit_message.call_count == 1
 
 
 @mock.patch("app.exports.agents.slim_chickens._read_secrets", return_value=SECRETS)

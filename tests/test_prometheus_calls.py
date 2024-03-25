@@ -3,6 +3,7 @@ from unittest.mock import ANY, MagicMock, call
 from uuid import uuid4
 
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
+from app.exports.agents.bases.singular_export_agent import SuccessfulExport
 from app.exports.agents.wasabi import Wasabi as export_wasabi
 
 
@@ -74,14 +75,17 @@ class TestExportWasabiPrometheusCalls(TestCase):
 
         # GIVEN
         wasabi = export_wasabi()
-        mock_export.return_value = {
-            "provider_slug": wasabi.provider_slug,
-            "transactions": [],
-            "audit_data": {
-                "request": {"body": {"origin_id": ANY, "ReceiptNo": None}, "timestamp": ANY},
-                "response": {"body": {"Message": ANY}, "status_code": ANY, "timestamp": ANY},
-            },
-        }
+        mock_export.return_value = SuccessfulExport(
+            {
+                "provider_slug": wasabi.provider_slug,
+                "transactions": [],
+                "audit_data": {
+                    "request": {"body": {"origin_id": ANY, "ReceiptNo": None}, "timestamp": ANY},
+                    "response": {"body": {"Message": ANY}, "status_code": ANY, "timestamp": ANY},
+                },
+                "retry_count": 1,
+            }
+        )
         mock_save_export_transactions.return_value = None
         agent_export_data = AgentExportData(
             outputs=[AgentExportDataOutput("export.json", {"origin_id": uuid4(), "ReceiptNo": None})],

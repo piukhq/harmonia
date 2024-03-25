@@ -8,7 +8,7 @@ import settings
 from app import db, models
 from app.config import KEY_PREFIX, Config, ConfigValue
 from app.exports.agents.bases.base import AgentExportData, AgentExportDataOutput
-from app.exports.agents.bases.singular_export_agent import SingularExportAgent
+from app.exports.agents.bases.singular_export_agent import FailedExport, SingularExportAgent, SuccessfulExport
 from app.service import atlas
 from app.service.acteol import ActeolAPI
 from harness.exporters.acteol_mock import ActeolMockAPI
@@ -75,7 +75,9 @@ class Wasabi(SingularExportAgent):
             extra_data={"credentials": export_transaction.decrypted_credentials},
         )
 
-    def export(self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session):
+    def export(
+        self, export_data: AgentExportData, *, retry_count: int = 0, session: db.Session
+    ) -> SuccessfulExport | FailedExport:
         body: dict
         _, body = export_data.outputs[0]  # type: ignore
         api = self.api_class(self.config.get("base_url", session=session))
@@ -85,27 +87,27 @@ class Wasabi(SingularExportAgent):
         response_timestamp = pendulum.now().to_datetime_string()
 
         request_url = api.base_url + endpoint
-        atlas.queue_audit_message(
-            atlas.make_audit_message(
-                self.provider_slug,
-                atlas.make_audit_transactions(
-                    export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
-                ),
-                request=body,
-                request_timestamp=request_timestamp,
-                response=response,
-                response_timestamp=response_timestamp,
-                request_url=request_url,
-                retry_count=retry_count,
-            )
+        audit_message = atlas.make_audit_message(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions, tx_loyalty_ident_callback=self.get_loyalty_identifier
+            ),
+            request=body,
+            request_timestamp=request_timestamp,
+            response=response,
+            response_timestamp=response_timestamp,
+            request_url=request_url,
+            retry_count=retry_count,
         )
 
         # raise exception for first 7 retries
         if msg := self.get_response_result(response):
             if msg == RECEIPT_NO_NOT_FOUND and retry_count <= MAX_RETRY_COUNT or msg == ORIGIN_ID_NOT_FOUND:
                 # fail the export for it to be retried later
-                raise RequestException(response=response)
+                return FailedExport(audit_message, reason=msg)
             self.log.warn(f"Acteol API response contained message: {msg}")
+
+        return SuccessfulExport(audit_message)
 
     def get_response_result(self, response: Response) -> t.Optional[str]:
         if msg := response.json().get("Message"):
