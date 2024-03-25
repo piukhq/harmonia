@@ -21,7 +21,7 @@ class ExportDelayRetry(Exception):
 
 class AgentExportDataOutput(t.NamedTuple):
     key: str
-    data: t.Union[str, t.Dict, t.List]
+    data: t.Union[str, t.Dict, t.List, bytes]
 
 
 @dataclass
@@ -65,16 +65,15 @@ class BaseAgent:
         )
 
     def save_to_blob(self, container: str, export_data: AgentExportData) -> t.List[str]:
-        # TODO: Where is this used? Performance testing?
         self.log.info(
             f"Saving {self.provider_slug} export data to blob storage with {len(export_data.outputs)} outputs."
         )
-        blob_name_prefix = f"{self.provider_slug}/export-{pendulum.now().isoformat()}/"
+        blob_name_prefix = f"export-{pendulum.now().isoformat()}/"
         blob_storage_client = BlobStorageClient()
 
         blob_names: t.List[str] = []
         for name, output in export_data.outputs:
-            if isinstance(output, str):
+            if isinstance(output, str) or isinstance(output, bytes):
                 content = output
             else:
                 content = json.dumps(output)

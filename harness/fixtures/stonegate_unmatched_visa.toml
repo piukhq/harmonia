@@ -34,7 +34,7 @@ password = "pass"
 email = "email@email.com"
 
 [[users.transactions]]
-date = 2024-03-05T15:01:59Z
+date = 2024-03-17T17:13:59Z
 amount = 7645
 auth_code = "333444"
 identifier = "test-mid-345"
@@ -43,7 +43,7 @@ location_id = "store_1a"
 merchant_overrides = { date = 2024-03-13T14:30:59Z }
 
 [[users.transactions]]
-date = 2024-03-06T15:01:59Z
+date = 2024-03-17T17:01:59Z
 amount = 3301
 auth_code = "555666"
 identifier = "test-mid-346"

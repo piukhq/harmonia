@@ -1,3 +1,5 @@
+import typing as t
+
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 
@@ -14,7 +16,7 @@ class BlobStorageClient:
         else:
             self.client = None
 
-    def create_blob(self, container_name: str, blob_name: str, content: str):
+    def create_blob(self, container_name: str, blob_name: str, content: t.Union[str, bytes]):
         if self.client is None:
             log.warning(f'Blob storage is not configured. Skipping creation of blob "{container_name}/{blob_name}".')
             return

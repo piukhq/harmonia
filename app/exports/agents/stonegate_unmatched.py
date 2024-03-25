@@ -1,14 +1,27 @@
+import csv
+import io
 import typing as t
 
+import pendulum
+
 from app import db, models
-from app.exports.agents import AgentExportData, BatchExportAgent
+from app.config import KEY_PREFIX, Config, ConfigValue
+from app.exports.agents import AgentExportData, AgentExportDataOutput, BatchExportAgent
+from app.sequences import batch
 from app.service import atlas
 
 PROVIDER_SLUG = "stonegate-unmatched"
+SCHEDULE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.schedule"
+BATCH_SIZE_KEY = f"{KEY_PREFIX}agents.exports.{PROVIDER_SLUG}.batch_size"
 
 
 class StonegateUnmatched(BatchExportAgent):
     provider_slug = PROVIDER_SLUG
+
+    config = Config(
+        ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
+        ConfigValue("batch_size", key=BATCH_SIZE_KEY, default="1000"),
+    )
 
     def __init__(self):
         super().__init__()
@@ -19,10 +32,66 @@ class StonegateUnmatched(BatchExportAgent):
             "histograms": ["request_latency"],
         }
 
+    @staticmethod
+    def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
+        return export_transaction.loyalty_id
+
+    def csv_transactions(self, transactions: t.Iterable[models.ExportTransaction]) -> bytes:
+        # transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date
+        export_transactions = [
+            (
+                transaction.transaction_id,
+                transaction.loyalty_id,
+                transaction.location_id,
+                transaction.spend_amount,
+                transaction.transaction_date,
+            )
+            for transaction in transactions
+        ]
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(
+            (
+                "transaction_id",
+                "member_number",
+                "retailer_location_id",
+                "transaction_amount",
+                "transaction_date",
+            )
+        )
+        writer.writerows(export_transactions)
+        return buf.getvalue().encode()
+
     def yield_export_data(
         self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
     ) -> t.Iterable[AgentExportData]:
-        pass
+        batch_size = int(self.config.get("batch_size", session=session))
+        for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
+            yield self._make_export_data(transaction_set, index=i)
+
+    def _make_export_data(self, transactions: t.List[models.ExportTransaction], *, index: int) -> AgentExportData:
+        csv_transactions = self.csv_transactions(transactions)
+        date = pendulum.now().to_date_string()
+        num_transactions = len(transactions)
+        return AgentExportData(
+            outputs=[
+                AgentExportDataOutput(
+                    f"stonegate-date{date}-rows{num_transactions}-data.csv",
+                    csv_transactions,
+                )
+            ],
+            transactions=transactions,
+            extra_data={},
+        )
 
     def send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
-        pass
+        blob_names = self.save_to_blob("stonegate-unmatched", export_data)
+        audit_message = atlas.make_audit_message(
+            self.provider_slug,
+            atlas.make_audit_transactions(
+                export_data.transactions,
+                tx_loyalty_ident_callback=self.get_loyalty_identifier,
+            ),
+            blob_names=blob_names,
+        )
+        return audit_message
