@@ -119,10 +119,7 @@ class TheWorks(SingularExportAgent):
             retry_count=retry_count,
         )
 
-        if response.ok:
-            return SuccessfulExport(audit_message)
-        else:
-            return FailedExport(audit_message, response.text)
+        return SuccessfulExport(audit_message) if response.ok else FailedExport(audit_message, response.text)
 
     def exportable_transaction(
         self, matched_transaction: models.ExportTransaction, historical_rewarded_transactions: dict, session: db.Session
