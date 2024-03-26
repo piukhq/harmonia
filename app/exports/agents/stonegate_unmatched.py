@@ -1,6 +1,6 @@
 import csv
 import io
-import typing as t
+from collections.abc import Iterable
 
 import pendulum
 
@@ -36,7 +36,7 @@ class StonegateUnmatched(BatchExportAgent):
     def get_loyalty_identifier(export_transaction: models.ExportTransaction) -> str:
         return export_transaction.loyalty_id
 
-    def csv_transactions(self, transactions: t.Iterable[models.ExportTransaction]) -> bytes:
+    def csv_transactions(self, transactions: list[models.ExportTransaction]) -> str:
         # transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date
         export_transactions = [
             (
@@ -60,16 +60,16 @@ class StonegateUnmatched(BatchExportAgent):
             )
         )
         writer.writerows(export_transactions)
-        return buf.getvalue().encode()
+        return buf.getvalue()
 
     def yield_export_data(
-        self, transactions: t.List[models.MatchedTransaction], *, session: db.Session
-    ) -> t.Iterable[AgentExportData]:
+        self, transactions: list[models.MatchedTransaction], *, session: db.Session
+    ) -> Iterable[AgentExportData]:
         batch_size = int(self.config.get("batch_size", session=session))
         for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
             yield self._make_export_data(transaction_set, index=i)
 
-    def _make_export_data(self, transactions: t.List[models.ExportTransaction], *, index: int) -> AgentExportData:
+    def _make_export_data(self, transactions: list[models.ExportTransaction], *, index: int) -> AgentExportData:
         csv_transactions = self.csv_transactions(transactions)
         date = pendulum.now().format("YYYYMMDDTHHmmss")
         num_transactions = len(transactions)
@@ -85,7 +85,7 @@ class StonegateUnmatched(BatchExportAgent):
         )
 
     def send_export_data(self, export_data: AgentExportData, *, session: db.Session) -> atlas.MessagePayload:
-        blob_names = self.save_to_blob("stonegate-unmatched", export_data)
+        blob_names = self.save_to_blob("harmonia-exports", export_data)
         audit_message = atlas.make_audit_message(
             self.provider_slug,
             atlas.make_audit_transactions(
