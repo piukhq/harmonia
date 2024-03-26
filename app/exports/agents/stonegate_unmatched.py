@@ -67,9 +67,9 @@ class StonegateUnmatched(BatchExportAgent):
     ) -> Iterable[AgentExportData]:
         batch_size = int(self.config.get("batch_size", session=session))
         for i, transaction_set in enumerate(batch(transactions, size=batch_size)):
-            yield self._make_export_data(transaction_set, index=i)
+            yield self._make_export_data(transaction_set)
 
-    def _make_export_data(self, transactions: list[models.ExportTransaction], *, index: int) -> AgentExportData:
+    def _make_export_data(self, transactions: list[models.ExportTransaction]) -> AgentExportData:
         csv_transactions = self.csv_transactions(transactions)
         date = pendulum.now().format("YYYYMMDDTHHmmss")
         num_transactions = len(transactions)

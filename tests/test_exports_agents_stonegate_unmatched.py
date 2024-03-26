@@ -16,7 +16,7 @@ settings.DEBUG = False
 
 
 MERCHANT_SLUG = "stonegate-unmatched"
-MID = Default.primary_mids
+MID = Default.primary_mids[0]
 
 
 @pytest.fixture
@@ -93,7 +93,7 @@ def test_format_transactions(stonegate_unmatched: StonegateUnmatched) -> None:
 def test_make_export_data(
     stonegate_unmatched: StonegateUnmatched, export_transaction: models.ExportTransaction
 ) -> None:
-    result = stonegate_unmatched._make_export_data(transactions=[export_transaction], index=0)
+    result = stonegate_unmatched._make_export_data(transactions=[export_transaction])
     export_data = result.outputs[0].data
 
     assert (
