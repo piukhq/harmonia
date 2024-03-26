@@ -71,12 +71,12 @@ class StonegateUnmatched(BatchExportAgent):
 
     def _make_export_data(self, transactions: t.List[models.ExportTransaction], *, index: int) -> AgentExportData:
         csv_transactions = self.csv_transactions(transactions)
-        date = pendulum.now().to_date_string()
+        date = pendulum.now().format("YYYYMMDDTHHmmss")
         num_transactions = len(transactions)
         return AgentExportData(
             outputs=[
                 AgentExportDataOutput(
-                    f"stonegate-date{date}-rows{num_transactions}-data.csv",
+                    f"stonegate_date{date}_rows{num_transactions}_data.csv",
                     csv_transactions,
                 )
             ],
