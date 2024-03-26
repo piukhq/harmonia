@@ -155,13 +155,13 @@ def test_export(
 
     stonegate.handle_pending_export(pending_export, session=db_session)
 
-    # Post to Wasabi
+    # Simulated post to Stonegate
     assert responses.calls[0].request.url == "http://localhost/PostMatchedTransaction"
     responses.assert_call_count("http://localhost/PostMatchedTransaction", 1)
     assert json.loads(responses.calls[0].request.body) == REQUEST
     assert responses.calls[0].response.json() == RESPONSE_SUCCESS
 
-    # Post to Atlas
+    # Simulated post to Atlas
     assert make_audit_transactions.call_args.args[0] == [pending_export.export_transaction]
     assert make_audit_message.call_args.args == (MERCHANT_SLUG, make_audit_transactions())
     assert make_audit_message.call_args.kwargs["request"] == REQUEST
