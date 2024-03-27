@@ -169,10 +169,18 @@ def persist_settled_payment_transactions(
 
 def match_payment_transaction(settlement_key: str) -> None:
     log.debug(f"Task started: match payment transaction #{settlement_key}")
+    lock_key = f"{settings.REDIS_KEY_PREFIX}:matching-lock:{settlement_key}"
+    lock: redis.lock.Lock = db.redis.lock(lock_key, timeout=300)
+    if not lock.acquire(blocking=False):
+        log.warning(f"Transaction {lock_key} is already locked. Skipping.")
+        return
+
     worker = matching_worker.MatchingWorker()
 
     with db.session_scope() as session:
         worker.handle_payment_transaction(settlement_key, session=session)
+
+    lock.release()
 
 
 def match_scheme_transactions(match_group: str) -> None:
