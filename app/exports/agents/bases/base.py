@@ -3,7 +3,6 @@ import typing as t
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-import pendulum
 import sentry_sdk
 
 from app import db, models
@@ -21,7 +20,11 @@ class ExportDelayRetry(Exception):
 
 class AgentExportDataOutput(t.NamedTuple):
     key: str
-    data: t.Union[str, t.Dict, t.List]
+    data: t.Union[
+        str,
+        t.Dict,
+        t.List,
+    ]
 
 
 @dataclass
@@ -65,11 +68,9 @@ class BaseAgent:
         )
 
     def save_to_blob(self, container: str, export_data: AgentExportData) -> t.List[str]:
-        # TODO: Where is this used? Performance testing?
         self.log.info(
             f"Saving {self.provider_slug} export data to blob storage with {len(export_data.outputs)} outputs."
         )
-        blob_name_prefix = f"{self.provider_slug}/export-{pendulum.now().isoformat()}/"
         blob_storage_client = BlobStorageClient()
 
         blob_names: t.List[str] = []
@@ -79,14 +80,13 @@ class BaseAgent:
             else:
                 content = json.dumps(output)
 
-            blob_name = f"{blob_name_prefix}{name}"
             try:
-                blob_storage_client.create_blob(container, blob_name, content)
+                blob_storage_client.create_blob(container, name, content)
             except Exception as ex:
                 sentry_sdk.capture_exception()
-                self.log.error(f"Failed to save blob {blob_name}: {ex}")
+                self.log.error(f"Failed to save blob {name}: {ex}")
             else:
-                blob_names.append(blob_name)
+                blob_names.append(name)
         return blob_names
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
