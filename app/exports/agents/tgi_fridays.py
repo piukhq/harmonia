@@ -139,7 +139,7 @@ class TGIFridays(SingularExportAgent):
             history_spend_amount = to_pennies(transaction["receipt_amount"])
             amount_match = amount == history_spend_amount
 
-            time_tolerance = 60 * 15  # 15 minutes
+            time_tolerance = 60 * 60 * 2  # 2 hours
             current_tx_date = pendulum.instance(export_transaction.transaction_date)
             history_tx_date = pendulum.parse(transaction["receipt_date"])
             history_tx_date_max = history_tx_date.add(seconds=time_tolerance)
