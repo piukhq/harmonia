@@ -128,10 +128,6 @@ class TGIFridays(SingularExportAgent):
         """
         Check if the current transaction has already been rewarded in the historical transactions.
         """
-        # Check for errors in the response
-        if not historical_rewarded_transactions:
-            return False
-
         for transaction in historical_rewarded_transactions:
             if not transaction["receipt_amount"] or not transaction["receipt_date"]:
                 continue
