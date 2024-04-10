@@ -87,7 +87,7 @@ class StonegateUnmatched(BatchExportAgent):
                 export_data.transactions,
                 tx_loyalty_ident_callback=self.get_loyalty_identifier,
             ),
-            response="",
+            response=None,
             blob_names=blob_names,
         )
         return audit_message

@@ -54,7 +54,7 @@ class Stonegate(ResultsFileAgent):
         return [
             AuditTransaction(
                 event_date_time=created_date,
-                user_id=None,
+                user_id="",
                 transaction_id=result["transaction_id"],
                 transaction_date=result["transaction_date"],
                 spend_amount=result["transaction_amount"],

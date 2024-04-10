@@ -1,6 +1,7 @@
 import json
 import typing as t
 import uuid
+from decimal import Decimal
 
 import pendulum
 import requests
@@ -15,9 +16,16 @@ from app.service import exchange
 log = get_logger("atlas")
 
 
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return str(o)
+        return super().default(o)
+
+
 class AuditTransaction(t.TypedDict):
     event_date_time: str
-    user_id: str | None
+    user_id: str
     transaction_id: str
     transaction_date: str
     spend_amount: int
@@ -134,9 +142,10 @@ def make_audit_result(
     result_timestamp: t.Optional[str] = None,
     source: t.Optional[t.List[str]] = None,
 ) -> MessagePayload:
+    json_results = json.dumps(result, cls=DecimalEncoder, indent=4)
     audit_data = AuditData()
     audit_data["response"] = {
-        "body": sanitise_logs(result, provider_slug),
+        "body": sanitise_logs(json_results, provider_slug),
         "status_code": 200,
         "timestamp": result_timestamp,
     }
