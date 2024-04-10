@@ -17,26 +17,26 @@ log = get_logger("atlas")
 
 class AuditTransaction(t.TypedDict):
     event_date_time: str
-    user_id: str
+    user_id: str | None
     transaction_id: str
     transaction_date: str
     spend_amount: int
-    spend_currency: str
-    loyalty_id: str
-    mid: str
-    scheme_account_id: str
-    encrypted_credentials: str
+    spend_currency: str | None
+    loyalty_id: str | None
+    mid: str | None
+    scheme_account_id: str | None
+    encrypted_credentials: str | None
     status: str
-    feed_type: str
-    location_id: str
-    merchant_internal_id: str
-    payment_card_account_id: str
-    settlement_key: str
-    authorisation_code: str
-    approval_code: str
+    feed_type: str | None
+    location_id: str | None
+    merchant_internal_id: str | None
+    payment_card_account_id: str | None
+    settlement_key: str | None
+    authorisation_code: str | None
+    approval_code: str | None
     loyalty_identifier: str
-    record_uid: t.Optional[str]
-    export_uid: str
+    record_uid: str | None
+    export_uid: str | uuid.UUID | None
 
 
 class AuditData(t.TypedDict, total=False):
@@ -125,6 +125,26 @@ def make_audit_message(
     return MessagePayload(
         provider_slug=provider_slug, transactions=transactions, audit_data=audit_data, retry_count=retry_count
     )
+
+
+def make_audit_result(
+    provider_slug: str,
+    transactions: t.List[AuditTransaction],
+    result: dict,
+    result_timestamp: t.Optional[str] = None,
+    source: t.Optional[t.List[str]] = None,
+) -> MessagePayload:
+    audit_data = AuditData()
+    audit_data["response"] = {
+        "body": sanitise_logs(result, provider_slug),
+        "status_code": 200,
+        "timestamp": result_timestamp,
+    }
+
+    if source:
+        audit_data["file_names"] = source
+
+    return MessagePayload(provider_slug=provider_slug, transactions=transactions, audit_data=audit_data, retry_count=0)
 
 
 def queue_audit_message(message: MessagePayload, destination="all") -> None:
