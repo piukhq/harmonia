@@ -94,6 +94,4 @@ class ResultsFileAgent(BaseAgent):
         scheduler.run()
 
     def callback(self):
-        while True:
-            self.filesource.provide(self._load_results)
-            break
+        self.filesource.provide(self._load_results)

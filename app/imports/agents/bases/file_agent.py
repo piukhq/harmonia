@@ -35,7 +35,7 @@ class FileSourceBase:
 
 class LocalFileSource(FileSourceBase):
     def __init__(self, path: Path, *, logger: logging.Logger) -> None:
-        super().__init__(settings.LOCAL_IMPORT_BASE_PATH / path, logger=logger)
+        super().__init__(settings.LOCAL_IMPORT_BASE_PATH / "imports" / path, logger=logger)
 
     def archive(self, filepath: Path) -> None:
         subpath = filepath.relative_to(self.path)
