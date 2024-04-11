@@ -23,7 +23,7 @@ class BaseAgent:
     def provider_slug(self) -> str:
         return missing_property(type(self), "provider_slug")
 
-    def run(self):
+    def run(self) -> None:
         raise NotImplementedError(
             "Override the run method in your agent to act as the main entry point into the export result process."
         )
@@ -39,7 +39,7 @@ class BaseAgent:
             self._enqueue(result, export_transaction_callback(result), source)
         return len(export_results)
 
-    def _enqueue(self, result: dict, export_transaction: list[AuditTransaction], source):
+    def _enqueue(self, result: dict, export_transaction: list[AuditTransaction], source) -> None:
         if settings.AUDIT_EXPORTS:
             queue_audit_message(
                 make_audit_result(

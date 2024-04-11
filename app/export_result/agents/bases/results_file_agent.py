@@ -27,7 +27,7 @@ class ResultsFileAgent(BaseAgent):
     def yield_results_data(self, data: bytes) -> Iterable[dict]:
         raise NotImplementedError
 
-    def _load_results(self, data: bytes, source: str):
+    def _load_results(self, data: bytes, source: str) -> Iterable[None]:
         self.log.info(f"Loading export results for {self.provider_slug}")
 
         results_data = []
@@ -93,5 +93,5 @@ class ResultsFileAgent(BaseAgent):
         self.log.debug(f"Beginning {scheduler}.")
         scheduler.run()
 
-    def callback(self):
+    def callback(self) -> None:
         self.filesource.provide(self._load_results)
