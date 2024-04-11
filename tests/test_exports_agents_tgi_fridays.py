@@ -37,7 +37,7 @@ export_resp.url = "https://test.tgi.com/path/transaction"
 export_resp.json.return_value = {}
 
 RESPONSE_ERROR = {"Error": None, "Message": "Origin ID not found"}
-test_date_now = pendulum.now()
+test_date_now = pendulum.now("Europe/London")
 # This is not the whole response from Punchh, only the "checkins" section of the response.
 HISTORY_TRANSACTIONS = [
     {
@@ -48,7 +48,7 @@ HISTORY_TRANSACTIONS = [
         "receipt_date": None,
         "ip_address": None,
         "bar_code": None,
-        "created_at": test_date_now.to_iso8601_string(),
+        "created_at": test_date_now.naive().to_iso8601_string(),
         "location_name": "ADDRESS_GOES_HERE",
     },
     {
@@ -56,10 +56,10 @@ HISTORY_TRANSACTIONS = [
         "channel": "POS",
         "receipt_amount": 50.60,
         "receipt_number": "8204",
-        "receipt_date": test_date_now.to_iso8601_string(),
+        "receipt_date": test_date_now.naive().to_iso8601_string(),
         "ip_address": "IP_ADDRESS_GOES_HERE",
         "bar_code": "BARCODE_GOES_HERE",
-        "created_at": test_date_now.to_iso8601_string(),
+        "created_at": test_date_now.naive().to_iso8601_string(),
         "location_name": "ADDRESS_GOES_HERE",
     },
 ]

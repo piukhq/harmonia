@@ -26,6 +26,7 @@ tximport = "app.imports.cli:cli"
 txexport = "app.exports.cli:cli"
 txcore = "app.core.cli:cli"
 txunmatched = "app.unmatched_transactions.cli:cli"
+txresults = "app.export_result.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.11"

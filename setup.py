@@ -22,6 +22,7 @@ setup(
             "txexport = app.exports.cli:cli",
             "txcore = app.core.cli:cli",
             "txunmatched = app.unmatched_transactions.cli:cli",
+            "txresults = app.export_result.cli:cli",
         )
     },
 )

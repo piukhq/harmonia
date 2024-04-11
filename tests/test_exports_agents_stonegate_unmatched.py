@@ -33,6 +33,7 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
         mid=MID,
         primary_identifier=MID,
         transaction_date="2024-03-25T16:54:33+00:00",
+        export_uid="test-uid-1234",
     )
 
 
@@ -51,7 +52,7 @@ def drop_export_transaction(db_session: db.Session, export_transaction: models.E
 
 
 class Expected:
-    csv_transactions = "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date\r\n1,test_loyalty_id,123456,300,2024-03-25 16:54:33\r\n"  # noqa
+    csv_transactions = "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date,uid\r\n1,test_loyalty_id,123456,300,2024-03-25 16:54:33,test-uid-1234\r\n"  # noqa
 
 
 class MockExportTransaction:
@@ -64,6 +65,7 @@ class MockExportTransaction:
         self.transaction_date = transaction_date
         self.loyalty_id = merchant_identifier
         self.location_id = location_id
+        self.export_uid = "test-uid-1234"
 
     @property
     def decrypted_credentials(self):
@@ -81,7 +83,11 @@ def test_get_loyalty_identifier(
 def test_format_transactions(stonegate_unmatched: StonegateUnmatched) -> None:
     transactions = [
         MockExportTransaction(
-            1, pendulum.datetime(2024, 3, 25, 16, 54, 33).format("YYYY-MM-DD HH:mm:ss"), 300, "test_loyalty_id", 123456
+            1,
+            pendulum.datetime(2024, 3, 25, 16, 54, 33).format("YYYY-MM-DD HH:mm:ss"),
+            300,
+            "test_loyalty_id",
+            "123456",
         ),
     ]
 
@@ -98,7 +104,7 @@ def test_make_export_data(
 
     assert (
         export_data
-        == "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date\r\ndb0b14a3-0ca8-4281-9a77-57b5b88ec0a4,test_loyalty_id,,5566,2024-03-25 16:54:33\r\n"  # noqa
+        == "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date,uid\r\ndb0b14a3-0ca8-4281-9a77-57b5b88ec0a4,test_loyalty_id,,5566,2024-03-25 16:54:33,test-uid-1234\r\n"  # noqa
     )
 
 
@@ -110,7 +116,7 @@ def test_yield_export_data(
 
     assert (
         data
-        == "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date\r\ndb0b14a3-0ca8-4281-9a77-57b5b88ec0a4,test_loyalty_id,,5566,2024-03-25 16:54:33\r\n"  # noqa
+        == "transaction_id,member_number,retailer_location_id,transaction_amount,transaction_date,uid\r\ndb0b14a3-0ca8-4281-9a77-57b5b88ec0a4,test_loyalty_id,,5566,2024-03-25 16:54:33,test-uid-1234\r\n"  # noqa
     )
 
 

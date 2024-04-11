@@ -45,19 +45,14 @@ class StonegateUnmatched(BatchExportAgent):
                 transaction.location_id,
                 transaction.spend_amount,
                 transaction.transaction_date,
+                transaction.export_uid,
             )
             for transaction in transactions
         ]
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(
-            (
-                "transaction_id",
-                "member_number",
-                "retailer_location_id",
-                "transaction_amount",
-                "transaction_date",
-            )
+            ("transaction_id", "member_number", "retailer_location_id", "transaction_amount", "transaction_date", "uid")
         )
         writer.writerows(export_transactions)
         return buf.getvalue()
@@ -92,6 +87,7 @@ class StonegateUnmatched(BatchExportAgent):
                 export_data.transactions,
                 tx_loyalty_ident_callback=self.get_loyalty_identifier,
             ),
+            response=None,
             blob_names=blob_names,
         )
         return audit_message

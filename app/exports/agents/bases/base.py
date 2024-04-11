@@ -71,6 +71,7 @@ class BaseAgent:
         self.log.info(
             f"Saving {self.provider_slug} export data to blob storage with {len(export_data.outputs)} outputs."
         )
+        blob_name_prefix = f"{self.provider_slug}/"
         blob_storage_client = BlobStorageClient()
 
         blob_names: t.List[str] = []
@@ -80,13 +81,14 @@ class BaseAgent:
             else:
                 content = json.dumps(output)
 
+            blob_name = f"{blob_name_prefix}{name}"
             try:
-                blob_storage_client.create_blob(container, name, content)
+                blob_storage_client.create_blob(container, blob_name, content)
             except Exception as ex:
                 sentry_sdk.capture_exception()
-                self.log.error(f"Failed to save blob {name}: {ex}")
+                self.log.error(f"Failed to save blob {blob_name}: {ex}")
             else:
-                blob_names.append(name)
+                blob_names.append(blob_name)
         return blob_names
 
     def _save_export_transactions(self, export_data: AgentExportData, *, session: db.Session):
