@@ -22,7 +22,7 @@ class MockFileAgent(FileAgent):
     feed_type = FeedType.SETTLED
 
     config = Config(
-        ConfigValue("path", key=PATH_KEY, default=f"imports/{PROVIDER_SLUG}/"),
+        ConfigValue("path", key=PATH_KEY, default=f"{PROVIDER_SLUG}/"),
         ConfigValue("schedule", key=SCHEDULE_KEY, default="* * * * *"),
     )
 
@@ -70,7 +70,7 @@ class TestFileAgent:
         with mock.patch("app.imports.agents.bases.file_agent.db.session_scope", return_value=db_session):
             file_agent_config = MockFileAgent().fileagent_config
 
-        assert file_agent_config == FileAgent._FileAgentConfig(path="imports/mock-provider-slug/", schedule="* * * * *")
+        assert file_agent_config == FileAgent._FileAgentConfig(path="mock-provider-slug/", schedule="* * * * *")
 
     def test_filesource(self) -> None:
         filesource = MockFileAgent().filesource

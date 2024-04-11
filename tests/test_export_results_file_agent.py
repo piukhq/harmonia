@@ -72,7 +72,7 @@ class TestResultFileAgent:
     def test_filesource(self) -> None:
         filesource = MockResultsFileAgent().filesource
 
-        assert filesource.path == PosixPath("files/results/mock-provider-slug")
+        assert filesource.path == PosixPath("files/imports/results/mock-provider-slug")
         assert filesource.log == get_logger("export-result-agent.mock-provider-slug")
 
     @mock.patch("app.scheduler.CronScheduler.run")
@@ -84,7 +84,7 @@ class TestResultFileAgent:
 
         mock_cron_scheduler_run.assert_called_once()
         assert caplog.messages == [
-            "Watching files/results/mock-provider-slug for export result files via LocalFileSource.",
+            "Watching files/imports/results/mock-provider-slug for export result files via LocalFileSource.",
             "Using leader election name: mock-provider-slug-export-result-load",
             "Beginning CronScheduler with schedule '* * * * *'.",
         ]
