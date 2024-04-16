@@ -45,7 +45,7 @@ def send_unexported_transaction(transactions: t.List[ExportTransaction]):
             transaction_id=transaction.transaction_id,
             provider_slug=provider_slug,
             transaction_date=transaction.transaction_date.isoformat(),
-            spend_amount=transaction.spend_amount,
+            spend_amount=int(transaction.spend_amount),
             spend_currency=transaction.spend_currency,
             loyalty_id=transaction.loyalty_id,
             mid=transaction.mid,
