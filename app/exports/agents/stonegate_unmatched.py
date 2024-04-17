@@ -44,7 +44,7 @@ class StonegateUnmatched(BatchExportAgent):
                 transaction.loyalty_id,
                 transaction.location_id,
                 transaction.spend_amount,
-                transaction.transaction_date,
+                pendulum.instance(transaction.transaction_date).format("YYYY-MM-DD HH:mm:ssZ"),
                 transaction.export_uid,
             )
             for transaction in transactions
