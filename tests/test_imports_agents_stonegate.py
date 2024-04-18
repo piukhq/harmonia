@@ -18,7 +18,7 @@ MERCHANT_SLUG = "stonegate"
 
 TRANSACTION_DATA = [
     {
-        "transaction_id": "QTZENTY0DdGOEJCQkU3",
+        "transaction_id": "0d4a7e9c6bc066c7ab77c820f44c4ca7b81ec3c3cb6c41e49c93150361b3cf02",
         "payment_card_type": "MS",
         "payment_card_first_six": None,
         "payment_card_last_four": "6309",
@@ -91,7 +91,7 @@ def test_do_import_with_invalid_first_six_and_payment_card_type(stonegate, caplo
 
     assert (
         caplog.messages[0]
-        == "Discarding transaction edf2c2a90af793df1a95a7eb0f2adb860c0d37db1ecc4bc7c836019b35ad367e - unable to get payment card type from "  # noqa
+        == "Discarding transaction 82f046333695832acbf56cd9b283606f7c22b4c63cb8e1963abc6d0f935f6417 - unable to get payment card type from "  # noqa
         "payment_card_first_six or payment_card_type fields"
     )
     assert len(caplog.messages) == 1

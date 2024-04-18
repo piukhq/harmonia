@@ -84,7 +84,10 @@ class Stonegate(QueueAgent):
             auth_code=data["auth_code"],
             first_six=data["payment_card_first_six"],
             last_four=data["payment_card_last_four"],
-            extra_fields={"account_id": data["metadata"]["AccountID"]},
+            extra_fields={
+                "account_id": data["metadata"]["AccountID"],
+                "transaction_id": data["transaction_id"],
+            },
         )
 
     @staticmethod
