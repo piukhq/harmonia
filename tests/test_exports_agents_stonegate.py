@@ -46,7 +46,9 @@ def export_transaction(db_session: db.Session) -> models.ExportTransaction:
         mid=MIDS,
         primary_identifier=MIDS,
     )
-    setattr(exp, "extra_fields", {"account_id": "account_id_123"})
+    setattr(
+        exp, "extra_fields", {"account_id": "account_id_123", "transaction_id": "db0b14a3-0ca8-4281-9a77-57b5b88ec0a4"}
+    ),
     return exp
 
 

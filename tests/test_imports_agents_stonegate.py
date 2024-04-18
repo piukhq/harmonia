@@ -1,4 +1,3 @@
-import datetime
 import logging
 from copy import copy
 from unittest import mock
@@ -19,14 +18,14 @@ MERCHANT_SLUG = "stonegate"
 
 TRANSACTION_DATA = [
     {
-        "transaction_id": "QTZENTY0DdGOEJCQkU3",
+        "transaction_id": "0d4a7e9c6bc066c7ab77c820f44c4ca7b81ec3c3cb6c41e49c93150361b3cf02",
         "payment_card_type": "MS",
         "payment_card_first_six": None,
         "payment_card_last_four": "6309",
         "amount": 23.99,
         "currency_code": "GBP",
         "auth_code": "188328",
-        "date": datetime.datetime(2023, 4, 18, 11, 14, 34, tzinfo=pendulum.timezone("Europe/London")),
+        "date": pendulum.datetime(2023, 4, 18, 11, 14, 34, tz=("Europe/London")).isoformat(),
         "merchant_identifier": "10209723",
         "retailer_location_id": "store_1a",
         "metadata": {
@@ -91,7 +90,8 @@ def test_do_import_with_invalid_first_six_and_payment_card_type(stonegate, caplo
     stonegate._do_import(transaction_data)
 
     assert (
-        caplog.messages[0] == "Discarding transaction QTZENTY0DdGOEJCQkU3 - unable to get payment card type from "
+        caplog.messages[0]
+        == "Discarding transaction 82f046333695832acbf56cd9b283606f7c22b4c63cb8e1963abc6d0f935f6417 - unable to get payment card type from "  # noqa
         "payment_card_first_six or payment_card_type fields"
     )
     assert len(caplog.messages) == 1

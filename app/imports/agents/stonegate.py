@@ -1,3 +1,5 @@
+from hashlib import sha256
+
 import pendulum
 
 from app.config import KEY_PREFIX, Config, ConfigValue
@@ -17,6 +19,17 @@ PAYMENT_CARD_TYPE_MAPPING = {
     "mastercard": ["mastercard", "mcard", "mc", "master card", "master", "maestro"],
     "amex": ["american express", "amex", "americanexpress", "am ex"],
 }
+
+
+def make_transaction_id(*, transaction_date: str, auth_code: str, identifier: str, amount: str, transaction_id: str):
+    hash_parts = [
+        transaction_date,
+        auth_code,
+        identifier,
+        amount,
+        transaction_id,
+    ]
+    return sha256(".".join(hash_parts).encode()).hexdigest()
 
 
 class Stonegate(QueueAgent):
@@ -71,12 +84,21 @@ class Stonegate(QueueAgent):
             auth_code=data["auth_code"],
             first_six=data["payment_card_first_six"],
             last_four=data["payment_card_last_four"],
-            extra_fields={"account_id": data["metadata"]["AccountID"]},
+            extra_fields={
+                "account_id": data["metadata"]["AccountID"],
+                "transaction_id": data["transaction_id"],
+            },
         )
 
     @staticmethod
     def get_transaction_id(data: dict) -> str:
-        return data["transaction_id"]
+        return make_transaction_id(
+            transaction_date=data["date"],
+            auth_code=data["auth_code"],
+            identifier=data["metadata"]["AccountID"],
+            amount=str(data["amount"]),
+            transaction_id=data["transaction_id"],
+        )
 
     def get_primary_mids(self, data: dict) -> list[str]:
         return self.location_id_mid_map[data["retailer_location_id"]]
