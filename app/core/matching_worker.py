@@ -126,7 +126,7 @@ class MatchingWorker:
         """
         matching_queue = tasks.matching_queue  # default queue
         provider_slug = scheme_transactions[0].provider_slug
-        if provider_slug in ["iceland-bonus-card"]:
+        if provider_slug in ["iceland-bonus-card", "stonegate"]:
             matching_queue = tasks.matching_slow_queue
 
         return matching_queue
