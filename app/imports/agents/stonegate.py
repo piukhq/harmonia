@@ -93,7 +93,7 @@ class Stonegate(QueueAgent):
     @staticmethod
     def get_transaction_id(data: dict) -> str:
         return make_transaction_id(
-            transaction_date=data["date"],
+            transaction_date=data["date"].isoformat(),
             auth_code=data["auth_code"],
             identifier=data["metadata"]["AccountID"],
             amount=str(data["amount"]),
